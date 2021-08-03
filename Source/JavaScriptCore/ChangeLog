@@ -1,3 +1,181 @@
+2021-08-03  Keith Miller  <keith_miller@apple.com>
+
+        for-in should only emit one loop in bytecode
+        https://bugs.webkit.org/show_bug.cgi?id=227989
+
+        Reviewed by NOBODY (OOPS!).
+
+        This patch redesigns how we implement for-in loops. Before this patch we would emit three copies of the for-in loop body. One for the indexed properties, one for the named-own properties, and one for generic properties (anything else). This had a couple of problems. Firstly, it meant bytecode size grew exponentially to number of nested for-in loops. This in turn meant DFG/FTL compilation took much longer.
+
+        Going off our experience with fast for-of, this patch turns for-in loops specializations into
+        a "fused" opcode that internally switches on the enumeration mode it currently sees. For example, if we are enumerating an own-named property, the new enumerator_get_by_val bytecode will check the enumerator cell's cached structure matches the base's then load the property offset directly.
+
+        * assembler/MacroAssemblerX86Common.h:
+        (JSC::MacroAssemblerX86Common::or8):
+        * assembler/MacroAssemblerX86_64.h:
+        (JSC::MacroAssemblerX86_64::rshift64):
+        (JSC::MacroAssemblerX86_64::or8): Deleted.
+        * bytecode/BytecodeList.rb:
+        * bytecode/BytecodeUseDef.cpp:
+        (JSC::computeUsesForBytecodeIndexImpl):
+        (JSC::computeDefsForBytecodeIndexImpl):
+        * bytecode/CodeBlock.cpp:
+        (JSC::CodeBlock::finishCreation):
+        * bytecode/Opcode.h:
+        * bytecompiler/BytecodeGenerator.cpp:
+        (JSC::BytecodeGenerator::recordHasOwnPropertyInForInLoop):
+        (JSC::BytecodeGenerator::emitInByVal):
+        (JSC::BytecodeGenerator::emitGetByVal):
+        (JSC::BytecodeGenerator::emitEnumeratorNext):
+        (JSC::BytecodeGenerator::emitEnumeratorHasOwnProperty):
+        (JSC::BytecodeGenerator::pushForInScope):
+        (JSC::BytecodeGenerator::popForInScope):
+        (JSC::rewriteOp):
+        (JSC::ForInContext::finalize):
+        (JSC::BytecodeGenerator::findForInContext):
+        (JSC::BytecodeGenerator::recordHasOwnStructurePropertyInForInLoop): Deleted.
+        (JSC::BytecodeGenerator::pushIndexedForInScope): Deleted.
+        (JSC::BytecodeGenerator::popIndexedForInScope): Deleted.
+        (JSC::BytecodeGenerator::pushStructureForInScope): Deleted.
+        (JSC::BytecodeGenerator::popStructureForInScope): Deleted.
+        (JSC::StructureForInContext::finalize): Deleted.
+        (JSC::IndexedForInContext::finalize): Deleted.
+        (JSC::BytecodeGenerator::findStructureForInContext): Deleted.
+        * bytecompiler/BytecodeGenerator.h:
+        (JSC::ForInContext::isValid const):
+        (JSC::ForInContext::invalidate):
+        (JSC::ForInContext::local const):
+        (JSC::ForInContext::propertyName const):
+        (JSC::ForInContext::propertyOffset const):
+        (JSC::ForInContext::enumerator const):
+        (JSC::ForInContext::mode const):
+        (JSC::ForInContext::ForInContext):
+        (JSC::ForInContext::bodyBytecodeStartOffset const):
+        (JSC::BytecodeGenerator::emitIsNull):
+        (JSC::ForInContext::type const): Deleted.
+        (JSC::ForInContext::isIndexedForInContext const): Deleted.
+        (JSC::ForInContext::isStructureForInContext const): Deleted.
+        (JSC::ForInContext::asIndexedForInContext): Deleted.
+        (JSC::ForInContext::asStructureForInContext): Deleted.
+        (JSC::StructureForInContext::StructureForInContext): Deleted.
+        (JSC::StructureForInContext::index const): Deleted.
+        (JSC::StructureForInContext::property const): Deleted.
+        (JSC::StructureForInContext::enumerator const): Deleted.
+        (JSC::StructureForInContext::baseVariable const): Deleted.
+        (JSC::StructureForInContext::addGetInst): Deleted.
+        (JSC::StructureForInContext::addInInst): Deleted.
+        (JSC::StructureForInContext::addHasOwnPropertyJump): Deleted.
+        (JSC::IndexedForInContext::IndexedForInContext): Deleted.
+        (JSC::IndexedForInContext::index const): Deleted.
+        (JSC::IndexedForInContext::addGetInst): Deleted.
+        * bytecompiler/NodesCodegen.cpp:
+        (JSC::HasOwnPropertyFunctionCallDotNode::emitBytecode):
+        (JSC::ForInNode::emitBytecode):
+        * dfg/DFGAbstractInterpreterInlines.h:
+        (JSC::DFG::AbstractInterpreter<AbstractStateType>::executeEffects):
+        * dfg/DFGArrayMode.h:
+        (JSC::DFG::ArrayMode::isSaneChain const):
+        * dfg/DFGBackwardsPropagationPhase.cpp:
+        (JSC::DFG::BackwardsPropagationPhase::propagate):
+        * dfg/DFGByteCodeParser.cpp:
+        (JSC::DFG::ByteCodeParser::parseBlock):
+        * dfg/DFGCFAPhase.cpp:
+        (JSC::DFG::CFAPhase::injectOSR):
+        * dfg/DFGCapabilities.cpp:
+        (JSC::DFG::capabilityLevel):
+        * dfg/DFGClobberize.h:
+        (JSC::DFG::clobberize):
+        * dfg/DFGDoesGC.cpp:
+        (JSC::DFG::doesGC):
+        * dfg/DFGFixupPhase.cpp:
+        (JSC::DFG::FixupPhase::fixupNode):
+        (JSC::DFG::FixupPhase::setJSArraySaneChainIfPossible):
+        * dfg/DFGIntegerRangeOptimizationPhase.cpp:
+        * dfg/DFGMayExit.cpp:
+        * dfg/DFGNode.h:
+        (JSC::DFG::Node::hasHeapPrediction):
+        (JSC::DFG::Node::hasStorageChild const):
+        (JSC::DFG::Node::storageChildIndex):
+        (JSC::DFG::Node::hasArrayMode):
+        (JSC::DFG::Node::hasEnumeratorMetadata const):
+        (JSC::DFG::Node::enumeratorMetadata):
+        * dfg/DFGNodeType.h:
+        * dfg/DFGOperations.cpp:
+        (JSC::DFG::JSC_DEFINE_JIT_OPERATION):
+        * dfg/DFGOperations.h:
+        * dfg/DFGPredictionPropagationPhase.cpp:
+        * dfg/DFGSSALoweringPhase.cpp:
+        (JSC::DFG::SSALoweringPhase::handleNode):
+        * dfg/DFGSafeToExecute.h:
+        (JSC::DFG::safeToExecute):
+        * dfg/DFGSpeculativeJIT.cpp:
+        (JSC::DFG::JSValueRegsTemporary::JSValueRegsTemporary):
+        (JSC::DFG::SpeculativeJIT::compileGetByValOnString):
+        (JSC::DFG::SpeculativeJIT::setIntTypedArrayLoadResult):
+        (JSC::DFG::SpeculativeJIT::compileGetByValOnIntTypedArray):
+        (JSC::DFG::SpeculativeJIT::compileGetByValOnFloatTypedArray):
+        (JSC::DFG::SpeculativeJIT::compileGetByValForObjectWithString):
+        (JSC::DFG::SpeculativeJIT::compileGetByValForObjectWithSymbol):
+        (JSC::DFG::SpeculativeJIT::compileGetByValOnDirectArguments):
+        (JSC::DFG::SpeculativeJIT::compileGetByValOnScopedArguments):
+        (JSC::DFG::SpeculativeJIT::compileEnumeratorNextUpdateIndexAndMode):
+        (JSC::DFG::SpeculativeJIT::compileEnumeratorNextExtractIndex):
+        (JSC::DFG::SpeculativeJIT::compileEnumeratorNextExtractMode):
+        (JSC::DFG::SpeculativeJIT::compileEnumeratorNextUpdatePropertyName):
+        (JSC::DFG::SpeculativeJIT::compileEnumeratorGetByVal):
+        (JSC::DFG::SpeculativeJIT::compileEnumeratorHasProperty):
+        (JSC::DFG::SpeculativeJIT::compileEnumeratorInByVal):
+        (JSC::DFG::SpeculativeJIT::compileEnumeratorHasOwnProperty):
+        * dfg/DFGSpeculativeJIT.h:
+        (JSC::DFG::SpeculativeJIT::allocate):
+        (JSC::DFG::JSValueOperand::regs):
+        (JSC::DFG::JSValueOperand::gpr):
+        (JSC::DFG::StorageOperand::StorageOperand):
+        (JSC::DFG::StorageOperand::~StorageOperand):
+        (JSC::DFG::StorageOperand::emplace):
+        (JSC::DFG::JSValueRegsTemporary::operator bool):
+        (JSC::DFG::JSValueRegsTemporary::JSValueRegsTemporary):
+        * dfg/DFGSpeculativeJIT64.cpp:
+        (JSC::DFG::SpeculativeJIT::compileGetByVal):
+        (JSC::DFG::SpeculativeJIT::compile):
+        * dfg/DFGTypeCheckHoistingPhase.cpp:
+        (JSC::DFG::TypeCheckHoistingPhase::identifyRedundantStructureChecks):
+        (JSC::DFG::TypeCheckHoistingPhase::identifyRedundantArrayChecks):
+        * ftl/FTLCapabilities.cpp:
+        (JSC::FTL::canCompile):
+        * ftl/FTLLowerDFGToB3.cpp:
+        (JSC::FTL::DFG::LowerDFGToB3::compileNode):
+        (JSC::FTL::DFG::LowerDFGToB3::compileGetByValImpl):
+        (JSC::FTL::DFG::LowerDFGToB3::compileGetByVal):
+        (JSC::FTL::DFG::LowerDFGToB3::compileStringCharAtImpl):
+        (JSC::FTL::DFG::LowerDFGToB3::compileStringCharAt):
+        (JSC::FTL::DFG::LowerDFGToB3::compileCompareStrictEq):
+        * generator/DSL.rb:
+        * interpreter/Register.h:
+        * interpreter/RegisterInlines.h:
+        (JSC::Register::operator=):
+        * jit/AssemblyHelpers.h:
+        * jit/JIT.cpp:
+        (JSC::JIT::privateCompileMainPass):
+        (JSC::JIT::privateCompileSlowCases):
+        * jit/JIT.h:
+        * jit/JITPropertyAccess.cpp:
+        (JSC::JIT::generateGetByValSlowCase):
+        (JSC::JIT::emitSlow_op_get_by_val):
+        (JSC::JIT::emit_op_enumerator_get_by_val):
+        (JSC::JIT::emitSlow_op_enumerator_get_by_val):
+        (JSC::JIT::emit_enumerator_has_propertyImpl):
+        (JSC::JIT::emit_op_enumerator_in_by_val):
+        (JSC::JIT::emit_op_enumerator_has_own_property):
+        * llint/LowLevelInterpreter.asm:
+        * runtime/CommonSlowPaths.cpp:
+        (JSC::JSC_DEFINE_COMMON_SLOW_PATH):
+        * runtime/CommonSlowPaths.h:
+        * runtime/JSPropertyNameEnumerator.cpp:
+        (JSC::JSPropertyNameEnumerator::JSPropertyNameEnumerator):
+        (JSC::JSPropertyNameEnumerator::computeNext):
+        * runtime/JSPropertyNameEnumerator.h:
+
 2021-08-05  Michael Catanzaro  <mcatanzaro@gnome.org>
 
         GCC 11 builds should use -Wno-array-bounds, -Wno-nonnull

@@ -145,6 +145,8 @@ public:
     void addIncomingToPhi(LValue phi, ValueFromBlock);
     template<typename... Params>
     void addIncomingToPhi(LValue phi, ValueFromBlock, Params... theRest);
+    template<typename... Params>
+    void addIncomingToPhiIfSet(LValue phi, Params... theRest);
     
     LValue opaque(LValue);
 
@@ -491,6 +493,16 @@ inline void Output::addIncomingToPhi(LValue phi, ValueFromBlock value, Params...
 {
     addIncomingToPhi(phi, value);
     addIncomingToPhi(phi, theRest...);
+}
+
+template<typename... Params>
+inline void Output::addIncomingToPhiIfSet(LValue phi, Params... values)
+{
+    auto addPhi = [&] (ValueFromBlock value) {
+        if (value)
+            addIncomingToPhi(phi, value);
+    };
+    (addPhi(values),...);
 }
 
 ALLOW_UNUSED_PARAMETERS_END
