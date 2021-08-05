@@ -966,7 +966,6 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
         return;
     }
 
-    // FIXME: This is far too conservative for the child1().useKind() == Int32Use case.
     case EnumeratorGetByVal: {
         clobberTop();
         return;

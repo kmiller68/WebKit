@@ -1017,35 +1017,35 @@ JSC_DEFINE_COMMON_SLOW_PATH(slow_path_enumerator_get_by_val)
     JSPropertyNameEnumerator* enumerator = jsCast<JSPropertyNameEnumerator*>(GET(bytecode.m_enumerator).jsValue());
     unsigned index = GET(bytecode.m_index).jsValue().asInt32();
     switch (mode) {
-        case JSPropertyNameEnumerator::IndexedMode: {
-            if (LIKELY(baseValue.isCell()))
-                metadata.m_arrayProfile.observeStructureID(baseValue.asCell()->structureID());
-            RETURN_PROFILED(baseValue.get(globalObject, static_cast<unsigned>(index)));
-        }
-        case JSPropertyNameEnumerator::OwnStructureMode: {
-            ASSERT(baseValue.isCell());
-            if (baseValue.asCell()->structureID() == enumerator->cachedStructureID()) {
-                // We'll only match the structure ID if the base is an object.
-                ASSERT(index < enumerator->endStructurePropertyIndex());
-                RETURN_PROFILED(baseValue.getObject()->getDirect(index < enumerator->cachedInlineCapacity() ? index : index - enumerator->cachedInlineCapacity() + firstOutOfLineOffset));
-            } else
-                metadata.m_enumeratorMetadata |= static_cast<uint8_t>(JSPropertyNameEnumerator::HasSeenOwnStructureModeStructureMismatch);
-            FALLTHROUGH;
-        }
+    case JSPropertyNameEnumerator::IndexedMode: {
+        if (LIKELY(baseValue.isCell()))
+            metadata.m_arrayProfile.observeStructureID(baseValue.asCell()->structureID());
+        RETURN_PROFILED(baseValue.get(globalObject, static_cast<unsigned>(index)));
+    }
+    case JSPropertyNameEnumerator::OwnStructureMode: {
+        ASSERT(baseValue.isCell());
+        if (baseValue.asCell()->structureID() == enumerator->cachedStructureID()) {
+            // We'll only match the structure ID if the base is an object.
+            ASSERT(index < enumerator->endStructurePropertyIndex());
+            RETURN_PROFILED(baseValue.getObject()->getDirect(index < enumerator->cachedInlineCapacity() ? index : index - enumerator->cachedInlineCapacity() + firstOutOfLineOffset));
+        } else
+            metadata.m_enumeratorMetadata |= static_cast<uint8_t>(JSPropertyNameEnumerator::HasSeenOwnStructureModeStructureMismatch);
+        FALLTHROUGH;
+    }
 
-        case JSPropertyNameEnumerator::GenericMode: {
-            if (baseValue.isCell() && mode != JSPropertyNameEnumerator::OwnStructureMode)
-                metadata.m_arrayProfile.observeStructureID(baseValue.asCell()->structureID());
-            JSString* string = asString(GET(bytecode.m_propertyName).jsValue());
-            auto propertyName = string->toIdentifier(globalObject);
-            // TODO Does this actually ever throw? Isn't string backed by a UUID?
-            CHECK_EXCEPTION();
-            RETURN_PROFILED(baseValue.get(globalObject, propertyName));
-        }
+    case JSPropertyNameEnumerator::GenericMode: {
+        if (baseValue.isCell() && mode != JSPropertyNameEnumerator::OwnStructureMode)
+            metadata.m_arrayProfile.observeStructureID(baseValue.asCell()->structureID());
+        JSString* string = asString(GET(bytecode.m_propertyName).jsValue());
+        auto propertyName = string->toIdentifier(globalObject);
+        // TODO Does this actually ever throw? Isn't string backed by a UUID?
+        CHECK_EXCEPTION();
+        RETURN_PROFILED(baseValue.get(globalObject, propertyName));
+    }
 
-        default:
-            RELEASE_ASSERT_NOT_REACHED();
-            break;
+    default:
+        RELEASE_ASSERT_NOT_REACHED();
+        break;
     };
     RELEASE_ASSERT_NOT_REACHED();
 }

@@ -2495,8 +2495,7 @@ JSC_DEFINE_JIT_OPERATION(operationEnumeratorNextUpdatePropertyName, EncodedJSVal
     if (modeNumber == JSPropertyNameEnumerator::IndexedMode) {
         if (index < enumerator->indexedLength())
             return JSValue::encode(jsString(vm, Identifier::from(vm, index).string()));
-        else
-            return JSValue::encode(jsNull());
+        return JSValue::encode(jsNull());
     }
 
     JSString* result = enumerator->propertyNameAtIndex(index);

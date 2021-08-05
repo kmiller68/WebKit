@@ -1505,6 +1505,11 @@ void JIT::emit_op_put_internal_field(const Instruction* currentInstruction)
 
 template void JIT::emit_op_put_by_val<OpPutByVal>(const Instruction*);
 
+void JIT::emit_op_enumerator_next(const Instruction* currentInstruction)
+{
+    JITSlowPathCall slowPathCall(this, currentInstruction, slow_path_enumerator_next);
+    slowPathCall.call();
+}
 
 void JIT::emit_op_enumerator_get_by_val(const Instruction* currentInstruction)
 {

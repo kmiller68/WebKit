@@ -1,10 +1,7 @@
 function test(object) {
     sum = 0;
     for (var i in object) {
-//        $vm.dumpCell(object);
-//        print("i: " + i);
         var v = object[i];
-//        print("value: " + v);
         sum += v;
     }
     return sum;

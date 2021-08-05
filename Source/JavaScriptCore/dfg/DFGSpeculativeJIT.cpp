@@ -13607,7 +13607,7 @@ void SpeculativeJIT::compileEnumeratorNextUpdatePropertyName(Node* node)
         m_jit.moveTrustedValue(jsNull(), resultRegs);
     }
 
-   if (needsOperation) {
+    if (needsOperation) {
         if (operationCall.isSet()) {
             doneCases.append(m_jit.jump());
             operationCall.link(&m_jit);
@@ -13670,10 +13670,10 @@ void SpeculativeJIT::compileEnumeratorGetByVal(Node* node)
                 m_jit.load32(MacroAssembler::Address(baseCellGPR, JSCell::structureIDOffset()), scratchGPR);
 
                 auto badStructure = m_jit.branch32(
-                        MacroAssembler::NotEqual,
-                        scratchGPR,
-                        MacroAssembler::Address(
-                            enumeratorGPR, JSPropertyNameEnumerator::cachedStructureIDOffset()));
+                    MacroAssembler::NotEqual,
+                    scratchGPR,
+                    MacroAssembler::Address(
+                        enumeratorGPR, JSPropertyNameEnumerator::cachedStructureIDOffset()));
 
                 // FIXME: Maybe we should have a better way to represent Indexed+Named?
                 if (m_graph.varArgChild(node, 1).node() == m_graph.varArgChild(node, 3).node())

@@ -1195,8 +1195,8 @@ private:
                 break;
             }
 
-            // FIXME: We can't set a non-JSValue result for EnumeratorGetByVal since we could still do a OwnStructureMode property access. We also don't have a good way to
-            // prove there's no structure properties at this point.
+            // Don't set a non-JSValue result for EnumeratorGetByVal as the indexing mode doesn't tell us about the type of OwnStructure
+            // properties. This isn't an issue for IndexedMode only as BytecodeParsing will emit a normal GetByVal if we've profiled that.
             if (node->op() == EnumeratorGetByVal)
                 break;
             switch (arrayMode.type()) {

@@ -2153,7 +2153,7 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
         break;
 
     case EnumeratorGetByVal: {
-        // FIXME: This should be able to use the code below to determine the effects of the node when propertyName == index.
+        // FIXME: This should be able to do code motion for OwnStructureMode but we'd need to teach AI about the enumerator's cached structure for that to be profitable.
         clobberWorld();
         makeHeapTopForNode(node);
         break;
@@ -2169,7 +2169,6 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
     case AtomicsStore:
     case AtomicsSub:
     case AtomicsXor: {
-        // We could do this for EnumeratorGetByVal but it's unlikely to be useful in practice.
         if (node->op() == GetByVal) {
             auto foldGetByValOnConstantProperty = [&] (Edge& arrayEdge, Edge& indexEdge) {
 
