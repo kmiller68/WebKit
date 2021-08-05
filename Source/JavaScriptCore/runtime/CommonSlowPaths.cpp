@@ -1023,8 +1023,7 @@ JSC_DEFINE_COMMON_SLOW_PATH(slow_path_enumerator_get_by_val)
         RETURN_PROFILED(baseValue.get(globalObject, static_cast<unsigned>(index)));
     }
     case JSPropertyNameEnumerator::OwnStructureMode: {
-        ASSERT(baseValue.isCell());
-        if (baseValue.asCell()->structureID() == enumerator->cachedStructureID()) {
+        if (LIKELY(baseValue.isCell()) && baseValue.asCell()->structureID() == enumerator->cachedStructureID()) {
             // We'll only match the structure ID if the base is an object.
             ASSERT(index < enumerator->endStructurePropertyIndex());
             RETURN_PROFILED(baseValue.getObject()->getDirect(index < enumerator->cachedInlineCapacity() ? index : index - enumerator->cachedInlineCapacity() + firstOutOfLineOffset));
