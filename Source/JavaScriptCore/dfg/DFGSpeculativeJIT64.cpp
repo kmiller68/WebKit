@@ -3122,7 +3122,6 @@ void SpeculativeJIT::compile(Node* node)
             case DataFormatDouble:
                 break;
             default: {
-                ASSERT(preferredFormat == DataFormatJS || preferredFormat == DataFormatJSInt32 || preferredFormat == DataFormatInt32);
                 result = JSValueRegsTemporary(this);
                 resultRegs = result.regs();
                 break;
