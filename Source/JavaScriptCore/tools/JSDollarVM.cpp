@@ -89,6 +89,10 @@ extern "C" void ctiMasmProbeTrampoline();
 
 namespace JSC {
 
+namespace LLInt {
+extern bool shouldProfileLLInt;
+}
+
 // This class is only here as a simple way to grant JSDollarVM friend privileges
 // to all the classes that it needs special access to.
 class JSDollarVMHelper {
@@ -2127,6 +2131,8 @@ static JSC_DECLARE_HOST_FUNCTION(functionDumpJITSizeStatistics);
 static JSC_DECLARE_HOST_FUNCTION(functionResetJITSizeStatistics);
 #endif
 
+static JSC_DECLARE_HOST_FUNCTION(functionShouldProfileLLInt);
+
 const ClassInfo JSDollarVM::s_info = { "DollarVM", &Base::s_info, nullptr, nullptr, CREATE_METHOD_TABLE(JSDollarVM) };
 
 static EncodedJSValue doPrint(JSGlobalObject* globalObject, CallFrame* callFrame, bool addLineFeed)
@@ -3792,6 +3798,14 @@ JSC_DEFINE_HOST_FUNCTION(functionResetJITSizeStatistics, (JSGlobalObject* global
 }
 #endif
 
+JSC_DEFINE_HOST_FUNCTION(functionShouldProfileLLInt, (JSGlobalObject* globalObject, CallFrame* callFrame))
+{
+    DollarVMAssertScope assertScope;
+
+    LLInt::shouldProfileLLInt = callFrame->argument(0).toBoolean(globalObject);
+    return encodedJSUndefined();
+}
+
 constexpr unsigned jsDollarVMPropertyAttributes = PropertyAttribute::ReadOnly | PropertyAttribute::DontEnum | PropertyAttribute::DontDelete;
 
 void JSDollarVM::finishCreation(VM& vm)
@@ -3956,6 +3970,8 @@ void JSDollarVM::finishCreation(VM& vm)
     addFunction(vm, "dumpJITSizeStatistics", functionDumpJITSizeStatistics, 0);
     addFunction(vm, "resetJITSizeStatistics", functionResetJITSizeStatistics, 0);
 #endif
+
+    addFunction(vm, "shouldProfileLLInt", functionShouldProfileLLInt, 1);
 
     m_objectDoingSideEffectPutWithoutCorrectSlotStatusStructure.set(vm, this, ObjectDoingSideEffectPutWithoutCorrectSlotStatus::createStructure(vm, globalObject, jsNull()));
 }

@@ -69,6 +69,8 @@
 
 namespace JSC { namespace LLInt {
 
+bool shouldProfileLLInt { true };
+
 #define LLINT_BEGIN_NO_SET_PC() \
     CodeBlock* codeBlock = callFrame->codeBlock(); \
     JSGlobalObject* globalObject = codeBlock->globalObject(); \
@@ -220,7 +222,7 @@ template<typename... Types> void slowPathLogF(const char*, const Types&...) { }
 
 extern "C" SlowPathReturnType llint_trace_operand(CallFrame* callFrame, const Instruction* pc, int fromWhere, int operand)
 {
-    if (!Options::traceLLIntExecution())
+    if (!Options::traceLLIntExecution() && shouldProfileLLInt)
         LLINT_END_IMPL();
 
     LLINT_BEGIN();
@@ -238,7 +240,7 @@ extern "C" SlowPathReturnType llint_trace_operand(CallFrame* callFrame, const In
 
 extern "C" SlowPathReturnType llint_trace_value(CallFrame* callFrame, const Instruction* pc, int fromWhere, VirtualRegister operand)
 {
-    if (!Options::traceLLIntExecution())
+    if (!Options::traceLLIntExecution() && shouldProfileLLInt)
         LLINT_END_IMPL();
 
     JSValue value = getOperand(callFrame, operand);
@@ -267,7 +269,7 @@ extern "C" SlowPathReturnType llint_trace_value(CallFrame* callFrame, const Inst
 
 LLINT_SLOW_PATH_DECL(trace_prologue)
 {
-    if (!Options::traceLLIntExecution())
+    if (!Options::traceLLIntExecution() && shouldProfileLLInt)
         LLINT_END_IMPL();
 
     CodeBlock* codeBlock = callFrame->codeBlock();
@@ -278,7 +280,7 @@ LLINT_SLOW_PATH_DECL(trace_prologue)
 
 static void traceFunctionPrologue(CallFrame* callFrame, const char* comment, CodeSpecializationKind kind)
 {
-    if (!Options::traceLLIntExecution())
+    if (!Options::traceLLIntExecution() && shouldProfileLLInt)
         return;
 
     JSFunction* callee = jsCast<JSFunction*>(callFrame->jsCallee());
@@ -316,7 +318,7 @@ LLINT_SLOW_PATH_DECL(trace_arityCheck_for_construct)
 
 LLINT_SLOW_PATH_DECL(trace)
 {
-    if (!Options::traceLLIntExecution())
+    if (!Options::traceLLIntExecution() && shouldProfileLLInt)
         LLINT_END_IMPL();
 
     CodeBlock* codeBlock = callFrame->codeBlock();
