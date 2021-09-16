@@ -28,6 +28,7 @@
 
 #if ENABLE(WEBASSEMBLY)
 
+#include "LLIntExceptions.h"
 #include "WasmCalleeRegistry.h"
 #include "WasmCallingConvention.h"
 
@@ -67,6 +68,35 @@ JITCallee::JITCallee(Wasm::CompilationMode compilationMode, Entrypoint&& entrypo
     , m_wasmToWasmCallsites(WTFMove(unlinkedCalls))
     , m_entrypoint(WTFMove(entrypoint))
 {
+}
+
+LLIntCallee::LLIntCallee(std::unique_ptr<FunctionCodeBlock> codeBlock, size_t index, std::pair<const Name*, RefPtr<NameSection>>&& name)
+    : Callee(Wasm::CompilationMode::LLIntMode, index, WTFMove(name))
+    , m_codeBlock(WTFMove(codeBlock))
+{
+}
+
+void LLIntCallee::linkExceptionHandlers(VM& vm)
+{
+    Instance* instance = vm.wasmContext.load();
+    if (size_t count = m_codeBlock->numberOfExceptionHandlers()) {
+        m_exceptionHandlers.resizeToFit(count);
+        for (size_t i = 0; i < count; i++) {
+            const UnlinkedHandlerInfo& unlinkedHandler = m_codeBlock->exceptionHandler(i);
+            HandlerInfo& handler = m_exceptionHandlers[i];
+            auto& instruction = *m_codeBlock->instructions().at(unlinkedHandler.m_target).ptr();
+            handler.initialize(instance, unlinkedHandler, CodeLocationLabel<ExceptionHandlerPtrTag>(LLInt::handleWasmCatch(instruction.width<WasmOpcodeTraits>()).code()));
+        }
+    }
+}
+
+const HandlerInfo* LLIntCallee::handlerForIndex(VM& vm, unsigned index, const Tag& tag)
+{
+    if (!m_codeBlock->numberOfExceptionHandlers())
+        return nullptr;
+    if (!m_exceptionHandlers.size())
+        linkExceptionHandlers(vm);
+    return HandlerInfo::handlerForIndex(m_exceptionHandlers, index, tag);
 }
 
 void LLIntCallee::setEntrypoint(MacroAssemblerCodePtr<WasmEntryPtrTag> entrypoint)

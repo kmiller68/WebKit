@@ -147,7 +147,12 @@ public:
         }
 
         static bool isIf(const ControlData& control) { return control.blockType() == BlockType::If; }
+        static bool isTry(const ControlData& control) { return control.blockType() == BlockType::Try; }
+        static bool isCatch(const ControlData& control) { return control.blockType() == BlockType::Catch; }
+        static bool isAnyCatch(const ControlData& control) { return control.blockType() == BlockType::Catch; }
         static bool isTopLevel(const ControlData& control) { return control.blockType() == BlockType::TopLevel; }
+        static bool isLoop(const ControlData& control) { return control.blockType() == BlockType::Loop; }
+        static bool isBlock(const ControlData& control) { return control.blockType() == BlockType::Block; }
 
         void dump(PrintStream& out) const
         {
@@ -163,6 +168,12 @@ public:
                 break;
             case BlockType::TopLevel:
                 out.print("TopLevel: ");
+                break;
+            case BlockType::Try:
+                out.print("Try: ");
+                break;
+            case BlockType::Catch:
+                out.print("Catch: ");
                 break;
             }
             out.print("Continuation: ", *continuation, ", Special: ");
@@ -313,6 +324,16 @@ public:
     PartialResult WARN_UNUSED_RETURN addIf(ExpressionType condition, BlockSignature, Stack& enclosingStack, ControlType& result, Stack& newStack);
     PartialResult WARN_UNUSED_RETURN addElse(ControlData&, const Stack&);
     PartialResult WARN_UNUSED_RETURN addElseToUnreachable(ControlData&);
+
+    PartialResult WARN_UNUSED_RETURN addTry(BlockSignature, Stack& enclosingStack, ControlType& result, Stack& newStack);
+    PartialResult WARN_UNUSED_RETURN addCatch(unsigned exceptionIndex, const Signature&, ControlType&, ResultList&);
+    PartialResult WARN_UNUSED_RETURN addCatchToUnreachable(unsigned exceptionIndex, const Signature&, ControlType&, ResultList&);
+    PartialResult WARN_UNUSED_RETURN addCatchAll(ControlType&);
+    PartialResult WARN_UNUSED_RETURN addCatchAllToUnreachable(ControlType&);
+    PartialResult WARN_UNUSED_RETURN addDelegate(ControlType&, ControlType&);
+    PartialResult WARN_UNUSED_RETURN addDelegateToUnreachable(ControlType&, ControlType&);
+    PartialResult WARN_UNUSED_RETURN addThrow(unsigned exceptionIndex, Stack&);
+    PartialResult WARN_UNUSED_RETURN addRethrow(unsigned, ControlType&);
 
     PartialResult WARN_UNUSED_RETURN addReturn(const ControlData&, const Stack& returnValues);
     PartialResult WARN_UNUSED_RETURN addBranch(ControlData&, ExpressionType condition, const Stack& returnValues);
@@ -2979,6 +3000,55 @@ auto AirIRGenerator::addElseToUnreachable(ControlData& data) -> PartialResult
     ASSERT(data.blockType() == BlockType::If);
     m_currentBlock = data.special;
     data.convertIfToBlock();
+    return { };
+}
+
+auto AirIRGenerator::addTry(BlockSignature, Stack& , ControlType& , Stack& ) -> PartialResult
+{
+    return { };
+}
+
+auto AirIRGenerator::addCatch(unsigned exceptionIndex, const Signature& exceptionSignature, ControlType& data, ResultList& results) -> PartialResult
+{
+    //unifyValuesWithBlock(expressionStack, data.results);
+    append(Jump);
+    m_currentBlock->setSuccessors(data.continuation);
+    return addCatchToUnreachable(exceptionIndex, exceptionSignature, data, results);
+}
+
+auto AirIRGenerator::addCatchToUnreachable(unsigned , const Signature& , ControlType& , ResultList& ) -> PartialResult
+{
+    return { };
+}
+
+auto AirIRGenerator::addCatchAll(ControlType&) -> PartialResult
+{
+    return { };
+}
+
+auto AirIRGenerator::addCatchAllToUnreachable(ControlType&) -> PartialResult
+{
+    return { };
+}
+
+auto AirIRGenerator::addDelegate(ControlType&, ControlType& ) -> PartialResult
+{
+    return { };
+}
+
+auto AirIRGenerator::addDelegateToUnreachable(ControlType&, ControlType&) -> PartialResult
+{
+    return { };
+}
+
+auto AirIRGenerator::addThrow(unsigned exceptionIndex, Stack&) -> PartialResult
+{
+    UNUSED_PARAM(exceptionIndex);
+    return { };
+}
+
+auto AirIRGenerator::addRethrow(unsigned, ControlType&) -> PartialResult
+{
     return { };
 }
 

@@ -109,7 +109,12 @@ public:
         }
 
         static bool isIf(const ControlData& control) { return control.blockType() == BlockType::If; }
+        static bool isTry(const ControlData& control) { return control.blockType() == BlockType::Try; }
+        static bool isCatch(const ControlData& control) { return control.blockType() == BlockType::Catch; }
+        static bool isAnyCatch(const ControlData& control) { return control.blockType() == BlockType::Catch; }
         static bool isTopLevel(const ControlData& control) { return control.blockType() == BlockType::TopLevel; }
+        static bool isLoop(const ControlData& control) { return control.blockType() == BlockType::Loop; }
+        static bool isBlock(const ControlData& control) { return control.blockType() == BlockType::Block; }
 
         void dump(PrintStream& out) const
         {
@@ -125,6 +130,12 @@ public:
                 break;
             case BlockType::TopLevel:
                 out.print("TopLevel: ");
+                break;
+            case BlockType::Try:
+                out.print("Try: ");
+                break;
+            case BlockType::Catch:
+                out.print("Catch: ");
                 break;
             }
             out.print("Continuation: ", *continuation, ", Special: ");
@@ -272,6 +283,16 @@ public:
     PartialResult WARN_UNUSED_RETURN addIf(ExpressionType condition, BlockSignature, Stack& enclosingStack, ControlType& result, Stack& newStack);
     PartialResult WARN_UNUSED_RETURN addElse(ControlData&, const Stack&);
     PartialResult WARN_UNUSED_RETURN addElseToUnreachable(ControlData&);
+
+    PartialResult WARN_UNUSED_RETURN addTry(BlockSignature, Stack& enclosingStack, ControlType& result, Stack& newStack);
+    PartialResult WARN_UNUSED_RETURN addCatch(unsigned exceptionIndex, const Signature&, ControlType&, ResultList&);
+    PartialResult WARN_UNUSED_RETURN addCatchToUnreachable(unsigned exceptionIndex, const Signature&, ControlType&, ResultList&);
+    PartialResult WARN_UNUSED_RETURN addCatchAll(ControlType&);
+    PartialResult WARN_UNUSED_RETURN addCatchAllToUnreachable(ControlType&);
+    PartialResult WARN_UNUSED_RETURN addDelegate(ControlType&, ControlType&);
+    PartialResult WARN_UNUSED_RETURN addDelegateToUnreachable(ControlType&, ControlType&);
+    PartialResult WARN_UNUSED_RETURN addThrow(unsigned exceptionIndex, Stack&);
+    PartialResult WARN_UNUSED_RETURN addRethrow(unsigned, ControlType&);
 
     PartialResult WARN_UNUSED_RETURN addReturn(const ControlData&, const Stack& returnValues);
     PartialResult WARN_UNUSED_RETURN addBranch(ControlData&, ExpressionType condition, const Stack& returnValues);
@@ -2278,6 +2299,55 @@ auto B3IRGenerator::addElseToUnreachable(ControlData& data) -> PartialResult
     ASSERT(data.blockType() == BlockType::If);
     m_currentBlock = data.special;
     data.convertIfToBlock();
+    return { };
+}
+
+auto B3IRGenerator::addTry(BlockSignature, Stack& , ControlType& , Stack& ) -> PartialResult
+{
+    return { };
+}
+
+auto B3IRGenerator::addCatch(unsigned exceptionIndex, const Signature& signature, ControlType& data, ResultList& results) -> PartialResult
+{
+    m_currentBlock->appendNewControlValue(m_proc, Jump, origin(), data.continuation);
+    return addCatchToUnreachable(exceptionIndex, signature, data, results);
+}
+
+auto B3IRGenerator::addCatchToUnreachable(unsigned, const Signature&, ControlType&, ResultList&) -> PartialResult
+{
+    return { };
+}
+
+auto B3IRGenerator::addCatchAll(ControlType& data) -> PartialResult
+{
+    m_currentBlock->appendNewControlValue(m_proc, Jump, origin(), data.continuation);
+    return addCatchAllToUnreachable(data);
+}
+
+auto B3IRGenerator::addCatchAllToUnreachable(ControlType&) -> PartialResult
+{
+    return { };
+}
+
+auto B3IRGenerator::addDelegate(ControlType& target, ControlType& data) -> PartialResult
+{
+    m_currentBlock->appendNewControlValue(m_proc, Jump, origin(), data.continuation);
+    return addDelegateToUnreachable(target, data);
+}
+
+auto B3IRGenerator::addDelegateToUnreachable(ControlType&, ControlType&) -> PartialResult
+{
+    return { };
+}
+
+auto B3IRGenerator::addThrow(unsigned exceptionIndex, Stack&) -> PartialResult
+{
+    UNUSED_PARAM(exceptionIndex);
+    return { };
+}
+
+auto B3IRGenerator::addRethrow(unsigned, ControlType&) -> PartialResult
+{
     return { };
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2018 Apple Inc. All rights reserved.
+ * Copyright (C) 2021 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -20,36 +20,42 @@
  * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
  * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #pragma once
 
-#include "JSCPtrTag.h"
-#include "OpcodeSize.h"
-#include <wtf/StdLibExtras.h>
+#if ENABLE(WEBASSEMBLY)
+
+#include "InternalFunction.h"
+#include "WasmOps.h"
 
 namespace JSC {
 
-class CallFrame;
-class VM;
-struct Instruction;
-template<PtrTag> class MacroAssemblerCodeRef;
+class JSWebAssemblyTag;
+class WebAssemblyTagPrototype;
 
-namespace LLInt {
+namespace Wasm {
+class Tag;
+}
 
-// Gives you a PC that you can tell the interpreter to go to, which when advanced
-// between 1 and 9 slots will give you an "instruction" that threads to the
-// interpreter's exception handler.
-Instruction* returnToThrow(VM&);
-Instruction* wasmReturnToThrow(VM&);
+class WebAssemblyTagConstructor final : public InternalFunction {
+public:
+    typedef InternalFunction Base;
 
-// Use this when you're throwing to a call thunk.
-MacroAssemblerCodeRef<ExceptionHandlerPtrTag> callToThrow(VM&);
+    static WebAssemblyTagConstructor* create(VM&, Structure*, WebAssemblyTagPrototype*);
+    static Structure* createStructure(VM&, JSGlobalObject*, JSValue);
 
-MacroAssemblerCodeRef<ExceptionHandlerPtrTag> handleUncaughtException(VM&);
-MacroAssemblerCodeRef<ExceptionHandlerPtrTag> handleCatch(OpcodeSize);
+    static JSWebAssemblyTag* createTag(JSGlobalObject*, CallFrame*, const Wasm::Tag&);
 
-MacroAssemblerCodeRef<ExceptionHandlerPtrTag> handleWasmCatch(OpcodeSize);
+    DECLARE_INFO;
 
-} } // namespace JSC::LLInt
+private:
+    WebAssemblyTagConstructor(VM&, Structure*);
+    void finishCreation(VM&, WebAssemblyTagPrototype*);
+};
+STATIC_ASSERT_ISO_SUBSPACE_SHARABLE(WebAssemblyTagConstructor, InternalFunction);
+
+} // namespace JSC
+
+#endif // ENABLE(WEBASSEMBLY)

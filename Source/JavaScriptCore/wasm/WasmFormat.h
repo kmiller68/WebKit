@@ -29,6 +29,7 @@
 
 #include "CodeLocation.h"
 #include "Identifier.h"
+#include "JSString.h"
 #include "MacroAssemblerCodeRef.h"
 #include "RegisterAtOffsetList.h"
 #include "WasmMemoryInformation.h"
@@ -76,6 +77,19 @@ inline bool isValueType(Type type)
     return false;
 }
 
+inline JSString* typeToString(VM& vm, TypeKind type)
+{
+    #define TYPE_CASE(name, ...) \
+        case TypeKind::name: \
+            return jsNontrivialString(vm, #name); \
+
+    switch (type) {
+    FOR_EACH_WASM_TYPE(TYPE_CASE)
+    }
+
+    #undef TYPE_CASE
+}
+
 inline bool isSubtype(Type sub, Type parent)
 {
     if (sub.isNullable() && !parent.isNullable())
@@ -115,6 +129,7 @@ enum class ExternalKind : uint8_t {
     Table = 1,
     Memory = 2,
     Global = 3,
+    Exception = 4,
 };
 
 template<typename Int>
@@ -125,6 +140,7 @@ inline bool isValidExternalKind(Int val)
     case static_cast<Int>(ExternalKind::Table):
     case static_cast<Int>(ExternalKind::Memory):
     case static_cast<Int>(ExternalKind::Global):
+    case static_cast<Int>(ExternalKind::Exception):
         return true;
     }
     return false;
@@ -134,6 +150,7 @@ static_assert(static_cast<int>(ExternalKind::Function) == 0, "Wasm needs Functio
 static_assert(static_cast<int>(ExternalKind::Table)    == 1, "Wasm needs Table to have the value 1");
 static_assert(static_cast<int>(ExternalKind::Memory)   == 2, "Wasm needs Memory to have the value 2");
 static_assert(static_cast<int>(ExternalKind::Global)   == 3, "Wasm needs Global to have the value 3");
+static_assert(static_cast<int>(ExternalKind::Exception)   == 4, "Wasm needs Exception to have the value 4");
 
 inline const char* makeString(ExternalKind kind)
 {
@@ -142,6 +159,7 @@ inline const char* makeString(ExternalKind kind)
     case ExternalKind::Table: return "table";
     case ExternalKind::Memory: return "memory";
     case ExternalKind::Global: return "global";
+    case ExternalKind::Exception: return "exception";
     }
     RELEASE_ASSERT_NOT_REACHED();
     return "?";

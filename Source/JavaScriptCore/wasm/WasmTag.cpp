@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2018 Apple Inc. All rights reserved.
+ * Copyright (C) 2021 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -20,36 +20,19 @@
  * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
  * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
+#include "config.h"
+#include "WasmTag.h"
 
-#include "JSCPtrTag.h"
-#include "OpcodeSize.h"
-#include <wtf/StdLibExtras.h>
+#if ENABLE(WEBASSEMBLY)
 
 namespace JSC {
+namespace Wasm {
 
-class CallFrame;
-class VM;
-struct Instruction;
-template<PtrTag> class MacroAssemblerCodeRef;
+uint32_t Tag::s_id = 0;
 
-namespace LLInt {
+}} // namespace JSC::Wasm
 
-// Gives you a PC that you can tell the interpreter to go to, which when advanced
-// between 1 and 9 slots will give you an "instruction" that threads to the
-// interpreter's exception handler.
-Instruction* returnToThrow(VM&);
-Instruction* wasmReturnToThrow(VM&);
-
-// Use this when you're throwing to a call thunk.
-MacroAssemblerCodeRef<ExceptionHandlerPtrTag> callToThrow(VM&);
-
-MacroAssemblerCodeRef<ExceptionHandlerPtrTag> handleUncaughtException(VM&);
-MacroAssemblerCodeRef<ExceptionHandlerPtrTag> handleCatch(OpcodeSize);
-
-MacroAssemblerCodeRef<ExceptionHandlerPtrTag> handleWasmCatch(OpcodeSize);
-
-} } // namespace JSC::LLInt
+#endif

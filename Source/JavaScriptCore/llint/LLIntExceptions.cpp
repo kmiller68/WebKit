@@ -49,6 +49,18 @@ Instruction* returnToThrow(VM& vm)
     return LLInt::exceptionInstructions();
 }
 
+Instruction* wasmReturnToThrow(VM& vm)
+{
+    UNUSED_PARAM(vm);
+#if LLINT_TRACING
+    if (UNLIKELY(Options::traceLLIntSlowPath())) {
+        auto scope = DECLARE_CATCH_SCOPE(vm);
+        dataLog("Throwing exception ", JSValue(scope.exception()), " (returnToThrow).\n");
+    }
+#endif
+    return LLInt::wasmExceptionInstructions();
+}
+
 MacroAssemblerCodeRef<ExceptionHandlerPtrTag> callToThrow(VM& vm)
 {
     UNUSED_PARAM(vm);
@@ -87,6 +99,20 @@ MacroAssemblerCodeRef<ExceptionHandlerPtrTag> handleCatch(OpcodeSize size)
         return LLInt::getWide16CodeRef<ExceptionHandlerPtrTag>(op_catch);
     case OpcodeSize::Wide32:
         return LLInt::getWide32CodeRef<ExceptionHandlerPtrTag>(op_catch);
+    }
+    RELEASE_ASSERT_NOT_REACHED();
+    return {};
+}
+
+MacroAssemblerCodeRef<ExceptionHandlerPtrTag> handleWasmCatch(OpcodeSize size)
+{
+    switch (size) {
+    case OpcodeSize::Narrow:
+        return LLInt::getCodeRef<ExceptionHandlerPtrTag>(wasm_catch);
+    case OpcodeSize::Wide16:
+        return LLInt::getWide16CodeRef<ExceptionHandlerPtrTag>(wasm_catch);
+    case OpcodeSize::Wide32:
+        return LLInt::getWide32CodeRef<ExceptionHandlerPtrTag>(wasm_catch);
     }
     RELEASE_ASSERT_NOT_REACHED();
     return {};

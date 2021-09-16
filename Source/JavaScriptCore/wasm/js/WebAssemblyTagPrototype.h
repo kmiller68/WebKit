@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2018 Apple Inc. All rights reserved.
+ * Copyright (C) 2021 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -20,36 +20,39 @@
  * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
  * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #pragma once
 
-#include "JSCPtrTag.h"
-#include "OpcodeSize.h"
-#include <wtf/StdLibExtras.h>
+#if ENABLE(WEBASSEMBLY)
+
+#include "JSObject.h"
 
 namespace JSC {
 
-class CallFrame;
-class VM;
-struct Instruction;
-template<PtrTag> class MacroAssemblerCodeRef;
+class WebAssemblyTagPrototype final : public JSNonFinalObject {
+public:
+    using Base = JSNonFinalObject;
+    static constexpr unsigned StructureFlags = Base::StructureFlags | HasStaticPropertyTable;
 
-namespace LLInt {
+    template<typename CellType, SubspaceAccess>
+    static IsoSubspace* subspaceFor(VM& vm)
+    {
+        STATIC_ASSERT_ISO_SUBSPACE_SHARABLE(WebAssemblyTagPrototype, Base);
+        return &vm.plainObjectSpace;
+    }
 
-// Gives you a PC that you can tell the interpreter to go to, which when advanced
-// between 1 and 9 slots will give you an "instruction" that threads to the
-// interpreter's exception handler.
-Instruction* returnToThrow(VM&);
-Instruction* wasmReturnToThrow(VM&);
+    static WebAssemblyTagPrototype* create(VM&, JSGlobalObject*, Structure*);
+    static Structure* createStructure(VM&, JSGlobalObject*, JSValue);
 
-// Use this when you're throwing to a call thunk.
-MacroAssemblerCodeRef<ExceptionHandlerPtrTag> callToThrow(VM&);
+    DECLARE_INFO;
 
-MacroAssemblerCodeRef<ExceptionHandlerPtrTag> handleUncaughtException(VM&);
-MacroAssemblerCodeRef<ExceptionHandlerPtrTag> handleCatch(OpcodeSize);
+private:
+    WebAssemblyTagPrototype(VM&, Structure*);
+    void finishCreation(VM&);
+};
 
-MacroAssemblerCodeRef<ExceptionHandlerPtrTag> handleWasmCatch(OpcodeSize);
+} // namespace JSC
 
-} } // namespace JSC::LLInt
+#endif // ENABLE(WEBASSEMBLY)

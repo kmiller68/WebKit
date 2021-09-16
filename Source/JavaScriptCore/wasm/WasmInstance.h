@@ -210,6 +210,9 @@ public:
         m_storeTopCallFrame(callFrame);
     }
 
+    void addTag(Tag tag) { m_exceptions.append(tag); }
+    const Tag& tag(unsigned i) const { return m_exceptions[i]; }
+
 private:
     Instance(Context*, Ref<Module>&&, EntryFrame**, void**, StoreTopCallFrameCallback&&);
     
@@ -237,6 +240,7 @@ private:
     HashMap<uint32_t, Ref<Global>, IntHash<uint32_t>, WTF::UnsignedWithZeroKeyHashTraits<uint32_t>> m_linkedGlobals;
     BitVector m_passiveElements;
     BitVector m_passiveDataSegments;
+    Vector<Tag> m_exceptions;
 };
 
 } } // namespace JSC::Wasm

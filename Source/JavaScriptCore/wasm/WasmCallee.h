@@ -32,7 +32,9 @@
 #include "WasmCompilationMode.h"
 #include "WasmFormat.h"
 #include "WasmFunctionCodeBlock.h"
+#include "WasmHandlerInfo.h"
 #include "WasmIndexOrName.h"
+#include "WasmLLIntTierUpCounter.h"
 #include "WasmTierUpCount.h"
 #include <wtf/ThreadSafeRefCounted.h>
 
@@ -59,6 +61,11 @@ public:
     virtual RegisterAtOffsetList* calleeSaveRegisters() = 0;
     virtual std::tuple<void*, void*> range() const = 0;
 
+    virtual const HandlerInfo* handlerForIndex(VM&, unsigned, const Tag&)
+    {
+        return nullptr;
+    }
+
 #if ENABLE(WEBASSEMBLY_B3JIT)
     virtual void setOSREntryCallee(Ref<OMGForOSREntryCallee>&&)
     {
@@ -75,6 +82,8 @@ protected:
 private:
     CompilationMode m_compilationMode;
     IndexOrName m_indexOrName;
+protected:
+    Vector<HandlerInfo> m_exceptionHandlers;
 };
 
 class JITCallee : public Callee {
@@ -203,6 +212,7 @@ public:
     JS_EXPORT_PRIVATE MacroAssemblerCodePtr<WasmEntryPtrTag> entrypoint() const final;
     JS_EXPORT_PRIVATE RegisterAtOffsetList* calleeSaveRegisters() final;
     JS_EXPORT_PRIVATE std::tuple<void*, void*> range() const final;
+    JS_EXPORT_PRIVATE const HandlerInfo* handlerForIndex(VM&, unsigned, const Tag&) final;
 
 #if ENABLE(WEBASSEMBLY_B3JIT)
     JITCallee* replacement() { return m_replacement.get(); }
@@ -218,15 +228,14 @@ public:
     }
 
     LLIntTierUpCounter& tierUpCounter() { return m_codeBlock->tierUpCounter(); }
+    FunctionCodeBlock* functionCodeBlock() const { return m_codeBlock.get(); }
 #endif
 
 private:
-    LLIntCallee(std::unique_ptr<FunctionCodeBlock> codeBlock, size_t index, std::pair<const Name*, RefPtr<NameSection>>&& name)
-        : Callee(Wasm::CompilationMode::LLIntMode, index, WTFMove(name))
-        , m_codeBlock(WTFMove(codeBlock))
-    {
-        RELEASE_ASSERT(m_codeBlock);
-    }
+    LLIntCallee(std::unique_ptr<FunctionCodeBlock>, size_t index, std::pair<const Name*, RefPtr<NameSection>>&&);
+
+    void linkExceptionHandlers(VM&);
+
 
 #if ENABLE(WEBASSEMBLY_B3JIT)
     RefPtr<JITCallee> m_replacement;

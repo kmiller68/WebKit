@@ -62,8 +62,31 @@ public:
         Ref<Label> m_alternate;
     };
 
-    struct ControlType : public Variant<ControlLoop, ControlTopLevel, ControlBlock, ControlIf> {
-        using Base = Variant<ControlLoop, ControlTopLevel, ControlBlock, ControlIf>;
+    struct ControlTry {
+        Ref<Label> m_try;
+        unsigned m_tryDepth;
+    };
+
+    enum class CatchKind {
+        Catch,
+        CatchAll,
+        Delegate,
+    };
+
+    struct ControlCatch {
+        CatchKind m_kind;
+        Ref<Label> m_tryStart;
+        Ref<Label> m_tryEnd;
+        unsigned m_tryDepth;
+    };
+
+    struct CatchRewriteInfo {
+        unsigned m_instructionOffset;
+        unsigned m_tryDepth;
+    };
+
+    struct ControlType : public Variant<ControlLoop, ControlTopLevel, ControlBlock, ControlIf, ControlTry, ControlCatch> {
+        using Base = Variant<ControlLoop, ControlTopLevel, ControlBlock, ControlIf, ControlTry, ControlCatch>;
 
         ControlType()
             : Base(ControlBlock { })
@@ -90,8 +113,29 @@ public:
             return ControlType(signature, stackSize - signature->argumentCount(), WTFMove(continuation), ControlIf { WTFMove(alternate) });
         }
 
-        static bool isIf(const ControlType& control) { return WTF::holds_alternative<ControlIf>(control); }
+        static ControlType try_(BlockSignature signature, unsigned stackSize, Ref<Label>&& try_, RefPtr<Label>&& continuation, unsigned tryDepth)
+        {
+            return ControlType(signature, stackSize - signature->argumentCount(), WTFMove(continuation), ControlTry { WTFMove(try_), tryDepth });
+        }
+
+        static ControlType catch_(BlockSignature signature, unsigned stackSize, Ref<Label>&& tryStart, RefPtr<Label>&& continuation, Ref<Label> tryEnd, unsigned tryDepth)
+        {
+            return ControlType(signature, stackSize - signature->argumentCount(), WTFMove(continuation), ControlCatch { CatchKind::Catch, WTFMove(tryStart), WTFMove(tryEnd), tryDepth});
+        }
+
+        static bool isLoop(const ControlType& control) { return WTF::holds_alternative<ControlLoop>(control); }
         static bool isTopLevel(const ControlType& control) { return WTF::holds_alternative<ControlTopLevel>(control); }
+        static bool isBlock(const ControlType& control) { return WTF::holds_alternative<ControlBlock>(control); }
+        static bool isIf(const ControlType& control) { return WTF::holds_alternative<ControlIf>(control); }
+        static bool isTry(const ControlType& control) { return WTF::holds_alternative<ControlTry>(control); }
+        static bool isAnyCatch(const ControlType& control) { return WTF::holds_alternative<ControlCatch>(control); }
+        static bool isCatch(const ControlType& control)
+        {
+            if (!WTF::holds_alternative<ControlCatch>(control))
+                return false;
+            ControlCatch catch_ = WTF::get<ControlCatch>(control);
+            return catch_.m_kind == CatchKind::Catch;
+        }
 
         unsigned stackSize() const { return m_stackSize; }
         BlockSignature signature() const { return m_signature; }
@@ -155,6 +199,9 @@ public:
     LLIntGenerator(const ModuleInformation&, unsigned functionIndex, const Signature&);
 
     std::unique_ptr<FunctionCodeBlock> finalize();
+
+    template<typename Opcode>
+    void repatch(const CatchRewriteInfo&);
 
     template<typename ExpressionListA, typename ExpressionListB>
     void unifyValuesWithBlock(const ExpressionListA& destinations, const ExpressionListB& values)
@@ -242,6 +289,16 @@ public:
     PartialResult WARN_UNUSED_RETURN addIf(ExpressionType condition, BlockSignature, Stack& enclosingStack, ControlType& result, Stack& newStack);
     PartialResult WARN_UNUSED_RETURN addElse(ControlType&, Stack&);
     PartialResult WARN_UNUSED_RETURN addElseToUnreachable(ControlType&);
+
+    PartialResult WARN_UNUSED_RETURN addTry(BlockSignature, Stack& enclosingStack, ControlType& result, Stack& newStack);
+    PartialResult WARN_UNUSED_RETURN addCatch(unsigned exceptionIndex, const Signature&, ControlType&, ResultList&);
+    PartialResult WARN_UNUSED_RETURN addCatchToUnreachable(unsigned exceptionIndex, const Signature&, ControlType&, ResultList&);
+    PartialResult WARN_UNUSED_RETURN addCatchAll(ControlType&);
+    PartialResult WARN_UNUSED_RETURN addCatchAllToUnreachable(ControlType&);
+    PartialResult WARN_UNUSED_RETURN addDelegate(ControlType&, ControlType&);
+    PartialResult WARN_UNUSED_RETURN addDelegateToUnreachable(ControlType&, ControlType&);
+    PartialResult WARN_UNUSED_RETURN addThrow(unsigned exceptionIndex, Stack&);
+    PartialResult WARN_UNUSED_RETURN addRethrow(unsigned, ControlType&);
 
     PartialResult WARN_UNUSED_RETURN addReturn(const ControlType&, Stack& returnValues);
     PartialResult WARN_UNUSED_RETURN addBranch(ControlType&, ExpressionType condition, Stack& returnValues);
@@ -440,6 +497,11 @@ private:
     Vector<VirtualRegister, 2> m_results;
     Checked<unsigned> m_stackSize { 0 };
     Checked<unsigned> m_maxStackSize { 0 };
+    Checked<unsigned> m_tryDepth { 0 };
+    Checked<unsigned> m_maxTryDepth { 0 };
+    Vector<CatchRewriteInfo> m_rethrows;
+    Vector<CatchRewriteInfo> m_catches;
+    Vector<CatchRewriteInfo> m_catchAlls;
 };
 
 Expected<std::unique_ptr<FunctionCodeBlock>, String> parseAndCompileBytecode(const uint8_t* functionStart, size_t functionLength, const Signature& signature, const ModuleInformation& info, uint32_t functionIndex)
@@ -485,9 +547,31 @@ LLIntGenerator::LLIntGenerator(const ModuleInformation& info, unsigned functionI
     WasmEnter::emit(this);
 }
 
+template<typename Opcode>
+void LLIntGenerator::repatch(const CatchRewriteInfo& info)
+{
+    auto ref = m_writer.ref(info.m_instructionOffset);
+    Opcode* instruction = ref->cast<Opcode, WasmOpcodeTraits>();
+    VirtualRegister exceptionRegister = virtualRegisterForLocal(m_stackSize + info.m_tryDepth);
+    instruction->setException(exceptionRegister, []() {
+        RELEASE_ASSERT_NOT_REACHED();
+        return VirtualRegister();
+    });
+}
+
 std::unique_ptr<FunctionCodeBlock> LLIntGenerator::finalize()
 {
     RELEASE_ASSERT(m_codeBlock);
+
+    for (const auto& info : m_rethrows)
+        repatch<WasmRethrow>(info);
+    for (const auto& info : m_catches)
+        repatch<WasmCatch>(info);
+    for (const auto& info : m_catchAlls)
+        repatch<WasmCatchAll>(info);
+
+    m_stackSize += m_maxTryDepth;
+
     size_t numCalleeLocals = WTF::roundUpToMultipleOf(stackAlignmentRegisters(), m_maxStackSize);
     m_codeBlock->m_numCalleeLocals = numCalleeLocals;
     RELEASE_ASSERT(numCalleeLocals == m_codeBlock->m_numCalleeLocals);
@@ -975,6 +1059,108 @@ auto LLIntGenerator::addElseToUnreachable(ControlType& data) -> PartialResult
     return { };
 }
 
+auto LLIntGenerator::addTry(BlockSignature signature, Stack& enclosingStack, ControlType& result, Stack& newStack) -> PartialResult
+{
+    ++m_tryDepth;
+    if (m_maxTryDepth < m_tryDepth)
+        m_maxTryDepth = m_tryDepth;
+
+    splitStack(signature, enclosingStack, newStack);
+    Ref<Label> tryLabel = newEmittedLabel();
+    Ref<Label> continuation = newLabel();
+    result = ControlType::try_(signature, m_stackSize, WTFMove(tryLabel), WTFMove(continuation), m_tryDepth);
+    return { };
+}
+
+auto LLIntGenerator::addCatch(unsigned exceptionIndex, const Signature& exceptionSignature, ControlType& data, ResultList& results) -> PartialResult
+{
+    WasmJmp::emit(this, data.m_continuation->bind(this));
+    return addCatchToUnreachable(exceptionIndex, exceptionSignature, data, results);
+}
+
+auto LLIntGenerator::addCatchToUnreachable(unsigned exceptionIndex, const Signature& exceptionSignature, ControlType& data, ResultList& results) -> PartialResult
+{
+    Ref<Label> catchLabel = newEmittedLabel();
+
+    m_stackSize = data.stackSize();
+    if (WTF::holds_alternative<ControlTry>(data)) {
+        ControlTry& try_ = WTF::get<ControlTry>(data);
+        data = ControlType::catch_(data.m_signature, m_stackSize, WTFMove(try_.m_try), WTFMove(data.m_continuation), catchLabel, try_.m_tryDepth);
+    }
+    for (unsigned i = 0; i < exceptionSignature.argumentCount(); ++i)
+        results.append(push());
+
+    WasmCatch::emit<OpcodeSize::Wide32>(this, exceptionIndex, virtualRegisterForLocal(0), exceptionSignature.argumentCount(), -results[0].offset());
+    m_catches.append({ m_lastInstruction.offset(), m_tryDepth });
+
+    ControlCatch& catch_ = WTF::get<ControlCatch>(data);
+    catch_.m_kind = CatchKind::Catch;
+    m_codeBlock->addExceptionHandler({ HandlerType::Catch, catch_.m_tryStart->location(), catch_.m_tryEnd->location(), catchLabel->location(), m_tryDepth, exceptionIndex });
+
+    return { };
+}
+
+auto LLIntGenerator::addCatchAll(ControlType& data) -> PartialResult
+{
+    WasmJmp::emit(this, data.m_continuation->bind(this));
+    return addCatchAllToUnreachable(data);
+}
+
+auto LLIntGenerator::addCatchAllToUnreachable(ControlType& data) -> PartialResult
+{
+
+    Ref<Label> catchLabel = newEmittedLabel();
+    WasmCatchAll::emit<OpcodeSize::Wide32>(this, virtualRegisterForLocal(0));
+    m_catchAlls.append({ m_lastInstruction.offset(), m_tryDepth });
+    m_stackSize = data.stackSize();
+    if (WTF::holds_alternative<ControlTry>(data)) {
+        ControlTry& try_ = WTF::get<ControlTry>(data);
+        data = ControlType::catch_(data.m_signature, m_stackSize, WTFMove(try_.m_try), WTFMove(data.m_continuation), catchLabel, try_.m_tryDepth);
+    }
+    ControlCatch& catch_ = WTF::get<ControlCatch>(data);
+    catch_.m_kind = CatchKind::CatchAll;
+    m_codeBlock->addExceptionHandler({ HandlerType::CatchAll, catch_.m_tryStart->location(), catch_.m_tryEnd->location(), catchLabel->location(), m_tryDepth, 0 });
+    return { };
+}
+
+auto LLIntGenerator::addDelegate(ControlType& target, ControlType& data) -> PartialResult
+{
+    WasmJmp::emit(this, data.m_continuation->bind(this));
+    return addDelegateToUnreachable(target, data);
+}
+
+auto LLIntGenerator::addDelegateToUnreachable(ControlType& target, ControlType& data) -> PartialResult
+{
+    Ref<Label> delegateLabel = newEmittedLabel();
+    m_stackSize = data.stackSize();
+
+    unsigned targetDepth = 0;
+    if (ControlType::isTry(target))
+        targetDepth = WTF::get<ControlTry>(target).m_tryDepth;
+
+    ControlTry& try_ = WTF::get<ControlTry>(data);
+    m_codeBlock->addExceptionHandler({ HandlerType::Delegate, try_.m_try->location(), delegateLabel->location(), 0, m_tryDepth, targetDepth });
+    --m_tryDepth;
+    emitLabel(*data.m_continuation);
+    return { };
+}
+
+auto LLIntGenerator::addThrow(unsigned exceptionIndex, Stack& enclosingStack) -> PartialResult
+{
+    materializeConstantsAndLocals(enclosingStack);
+    WasmThrow::emit(this, exceptionIndex, virtualRegisterForLocal(m_stackSize - 1));
+    return { };
+}
+
+auto LLIntGenerator::addRethrow(unsigned, ControlType& data) -> PartialResult
+{
+    ASSERT(WTF::holds_alternative<ControlCatch>(data));
+    ControlCatch catch_ = WTF::get<ControlCatch>(data);
+    WasmRethrow::emit<OpcodeSize::Wide32>(this, virtualRegisterForLocal(0));
+    m_rethrows.append({ m_lastInstruction.offset(), catch_.m_tryDepth });
+    return { };
+}
+
 auto LLIntGenerator::addReturn(const ControlType& data, Stack& returnValues) -> PartialResult
 {
     if (!data.m_signature->returnCount()) {
@@ -1061,6 +1247,9 @@ auto LLIntGenerator::addEndToUnreachable(ControlEntry& entry, const Stack& expre
     RELEASE_ASSERT(unreachable || m_stackSize == data.stackSize() + data.m_signature->returnCount());
 
     m_stackSize = data.stackSize();
+
+    if (ControlType::isTry(data) || WTF::holds_alternative<ControlCatch>(data))
+        --m_tryDepth;
 
     for (unsigned i = 0; i < data.m_signature->returnCount(); ++i) {
         // We don't want to do a consistency check here because we just reset the stack size

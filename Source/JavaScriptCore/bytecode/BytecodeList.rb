@@ -1841,4 +1841,28 @@ op :atomic_fence,
     args: {
     }
 
+op :throw,
+    args: {
+        exceptionIndex: unsigned,
+        firstValue: VirtualRegister,
+    }
+
+op :rethrow,
+    args: {
+        exception: VirtualRegister,
+    }
+
+op :catch,
+    args: {
+        exceptionIndex: unsigned,
+        exception: VirtualRegister,
+        argumentCount: unsigned,
+        startOffset: unsigned,
+    }
+
+op :catch_all,
+    args: {
+        exception: VirtualRegister,
+    }
+
 end_section :Wasm

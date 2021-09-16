@@ -52,6 +52,7 @@
 #include "JSModuleEnvironment.h"
 #include "JSModuleRecord.h"
 #include "JSString.h"
+#include "JSWebAssemblyException.h"
 #include "LLIntThunks.h"
 #include "LiteralParser.h"
 #include "ModuleProgramCodeBlock.h"
@@ -511,15 +512,44 @@ ALWAYS_INLINE static void notifyDebuggerOfUnwinding(VM& vm, CallFrame* callFrame
     }
 }
 
+CatchInfo::CatchInfo(const HandlerInfo* handler, CodeBlock* codeBlock)
+{
+    m_valid = !!handler;
+    if (m_valid) {
+        m_type = handler->type();
+        m_interpreterTarget = handler->target;
+        m_nativeCode = handler->nativeCode;
+        m_catchPCForInterpreter = codeBlock->instructions().at(handler->target).ptr();
+    }
+}
+
+#if ENABLE(WEBASSEMBLY)
+CatchInfo::CatchInfo(const Wasm::HandlerInfo* handler, const Wasm::Callee* callee)
+{
+    m_valid = !!handler;
+    if (m_valid) {
+        m_type = HandlerType::Catch;
+        m_interpreterTarget = handler->m_target;
+        m_nativeCode = handler->m_nativeCode;
+        if (const Wasm::LLIntCallee* llintCallee = reinterpret_cast<const Wasm::LLIntCallee*>(callee))
+            m_catchPCForInterpreter = llintCallee->functionCodeBlock()->instructions().at(handler->m_target).ptr();
+        else
+            m_catchPCForInterpreter = nullptr;
+    }
+}
+#endif
+
 class UnwindFunctor {
 public:
-    UnwindFunctor(VM& vm, CallFrame*& callFrame, bool isTermination, CodeBlock*& codeBlock, HandlerInfo*& handler)
+    UnwindFunctor(VM& vm, CallFrame*& callFrame, bool isTermination, JSValue thrownValue, CodeBlock*& codeBlock, CatchInfo& handler)
         : m_vm(vm)
         , m_callFrame(callFrame)
         , m_isTermination(isTermination)
         , m_codeBlock(codeBlock)
         , m_handler(handler)
     {
+        if (JSWebAssemblyException* wasmException = jsDynamicCast<JSWebAssemblyException*>(m_vm, thrownValue))
+            m_wasmTag = &wasmException->tag();
     }
 
     StackVisitor::Status operator()(StackVisitor& visitor) const
@@ -528,19 +558,28 @@ public:
         m_callFrame = visitor->callFrame();
         m_codeBlock = visitor->codeBlock();
 
-        m_handler = nullptr;
+        m_handler.m_valid = false;
         if (m_codeBlock) {
             if (!m_isTermination) {
-                m_handler = findExceptionHandler(visitor, m_codeBlock, RequiredHandler::AnyHandler);
-                if (m_handler)
+                m_handler = { findExceptionHandler(visitor, m_codeBlock, RequiredHandler::AnyHandler), m_codeBlock };
+                if (m_handler.m_valid)
                     return StackVisitor::Done;
             }
         }
 
 #if ENABLE(WEBASSEMBLY)
-        if (visitor->callee().isCell()) {
-            if (auto* jsToWasmICCallee = jsDynamicCast<JSToWasmICCallee*>(m_vm, visitor->callee().asCell()))
+        CalleeBits callee = visitor->callee();
+        if (callee.isCell()) {
+            if (auto* jsToWasmICCallee = jsDynamicCast<JSToWasmICCallee*>(m_vm, callee.asCell()))
                 m_vm.wasmContext.store(jsToWasmICCallee->function()->previousInstance(m_callFrame), m_vm.softStackLimit());
+
+        }
+
+        if (callee.isWasm() && !m_isTermination && m_wasmTag) {
+            unsigned exceptionHandlerIndex = m_callFrame->bytecodeIndex().offset();
+            m_handler = { callee.asWasmCallee()->handlerForIndex(m_vm, exceptionHandlerIndex, *m_wasmTag), callee.asWasmCallee() };
+            if (m_handler.m_valid)
+                return StackVisitor::Done;
         }
 #endif
 
@@ -587,10 +626,11 @@ private:
     CallFrame*& m_callFrame;
     bool m_isTermination;
     CodeBlock*& m_codeBlock;
-    HandlerInfo*& m_handler;
+    CatchInfo& m_handler;
+    const Wasm::Tag* m_wasmTag { nullptr };
 };
 
-NEVER_INLINE HandlerInfo* Interpreter::unwind(VM& vm, CallFrame*& callFrame, Exception* exception)
+NEVER_INLINE CatchInfo Interpreter::unwind(VM& vm, CallFrame*& callFrame, Exception* exception)
 {
     auto scope = DECLARE_CATCH_SCOPE(vm);
 
@@ -608,16 +648,13 @@ NEVER_INLINE HandlerInfo* Interpreter::unwind(VM& vm, CallFrame*& callFrame, Exc
     EXCEPTION_ASSERT_UNUSED(scope, scope.exception());
 
     // Calculate an exception handler vPC, unwinding call frames as necessary.
-    HandlerInfo* handler = nullptr;
-    UnwindFunctor functor(vm, callFrame, vm.isTerminationException(exception), codeBlock, handler);
+    CatchInfo catchInfo;
+    UnwindFunctor functor(vm, callFrame, vm.isTerminationException(exception), exceptionValue, codeBlock, catchInfo);
     StackVisitor::visit<StackVisitor::TerminateIfTopEntryFrameIsEmpty>(callFrame, vm, functor);
     if (vm.hasCheckpointOSRSideState())
         vm.popAllCheckpointOSRSideStateUntil(callFrame);
 
-    if (!handler)
-        return nullptr;
-
-    return handler;
+    return catchInfo;
 }
 
 void Interpreter::notifyDebuggerOfExceptionToBeThrown(VM& vm, JSGlobalObject* globalObject, CallFrame* callFrame, Exception* exception)

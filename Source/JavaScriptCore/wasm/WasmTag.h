@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2018 Apple Inc. All rights reserved.
+ * Copyright (C) 2021 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -20,36 +20,37 @@
  * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
  * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #pragma once
 
-#include "JSCPtrTag.h"
-#include "OpcodeSize.h"
-#include <wtf/StdLibExtras.h>
+#if ENABLE(WEBASSEMBLY)
 
-namespace JSC {
+#include "WasmSignature.h"
 
-class CallFrame;
-class VM;
-struct Instruction;
-template<PtrTag> class MacroAssemblerCodeRef;
+namespace JSC { namespace Wasm {
 
-namespace LLInt {
+class Tag {
+public:
+    Tag(const Signature& signature)
+        : m_id(++s_id)
+        , m_signature(signature)
+    {
+    }
 
-// Gives you a PC that you can tell the interpreter to go to, which when advanced
-// between 1 and 9 slots will give you an "instruction" that threads to the
-// interpreter's exception handler.
-Instruction* returnToThrow(VM&);
-Instruction* wasmReturnToThrow(VM&);
+    SignatureArgCount parameterCount() const { return m_signature.argumentCount(); }
+    Type parameter(SignatureArgCount i) const { return m_signature.argument(i); }
 
-// Use this when you're throwing to a call thunk.
-MacroAssemblerCodeRef<ExceptionHandlerPtrTag> callToThrow(VM&);
+    bool operator==(const Tag& other) const { return m_id == other.m_id; }
+    bool operator!=(const Tag& other) const { return m_id != other.m_id; }
 
-MacroAssemblerCodeRef<ExceptionHandlerPtrTag> handleUncaughtException(VM&);
-MacroAssemblerCodeRef<ExceptionHandlerPtrTag> handleCatch(OpcodeSize);
+private:
+    static uint32_t s_id;
+    uint32_t m_id;
+    const Signature& m_signature;
+};
 
-MacroAssemblerCodeRef<ExceptionHandlerPtrTag> handleWasmCatch(OpcodeSize);
+} } // namespace JSC::Wasm
 
-} } // namespace JSC::LLInt
+#endif // ENABLE(WEBASSEMBLY)

@@ -153,6 +153,7 @@
 #include "JSWeakSet.h"
 #include "JSWebAssembly.h"
 #include "JSWebAssemblyCompileError.h"
+#include "JSWebAssemblyException.h"
 #include "JSWebAssemblyGlobal.h"
 #include "JSWebAssemblyInstance.h"
 #include "JSWebAssemblyLinkError.h"
@@ -160,6 +161,7 @@
 #include "JSWebAssemblyModule.h"
 #include "JSWebAssemblyRuntimeError.h"
 #include "JSWebAssemblyTable.h"
+#include "JSWebAssemblyTag.h"
 #include "JSWithScope.h"
 #include "LazyClassStructureInlines.h"
 #include "LazyPropertyInlines.h"
@@ -220,6 +222,8 @@
 #include "WeakSetPrototype.h"
 #include "WebAssemblyCompileErrorConstructor.h"
 #include "WebAssemblyCompileErrorPrototype.h"
+#include "WebAssemblyExceptionConstructor.h"
+#include "WebAssemblyExceptionPrototype.h"
 #include "WebAssemblyFunction.h"
 #include "WebAssemblyGlobalConstructor.h"
 #include "WebAssemblyGlobalPrototype.h"
@@ -236,6 +240,8 @@
 #include "WebAssemblyRuntimeErrorPrototype.h"
 #include "WebAssemblyTableConstructor.h"
 #include "WebAssemblyTablePrototype.h"
+#include "WebAssemblyTagConstructor.h"
+#include "WebAssemblyTagPrototype.h"
 #include <wtf/RandomNumber.h>
 #include <wtf/SystemTracing.h>
 
@@ -1494,6 +1500,12 @@ capitalName ## Constructor* lowerName ## Constructor = featureFlag ? capitalName
         });
     m_linkTimeConstants[static_cast<unsigned>(LinkTimeConstant::webAssemblyInstantiateStreamingInternal)].initLater([] (const Initializer<JSCell>& init) {
             init.set(JSFunction::create(init.vm, jsCast<JSGlobalObject*>(init.owner), 1, String(), webAssemblyInstantiateStreamingInternal));
+        });
+    m_webAssemblyTagTypeStructure.initLater(
+        [] (const Initializer<Structure>& init) {
+            Structure* structure = JSFinalObject::createStructure(init.vm, init.owner, init.owner->m_objectPrototype.get(), 1);
+            structure->addPropertyWithoutTransition(init.vm, Identifier::fromString(init.vm, "parameters"), 0, [&] (const GCSafeConcurrentJSLocker&, PropertyOffset, PropertyOffset) { });
+            init.set(structure);
         });
 #endif
 

@@ -55,6 +55,7 @@
 #include "ThunkGenerator.h"
 #include "VMTraps.h"
 #include "WasmContext.h"
+#include "WasmTag.h"
 #include "Watchpoint.h"
 #include <wtf/BumpPointerAllocator.h>
 #include <wtf/CheckedArithmetic.h>
@@ -450,6 +451,7 @@ public:
     std::unique_ptr<IsoHeapCellType> intlSegmentsHeapCellType;
 #if ENABLE(WEBASSEMBLY)
     std::unique_ptr<IsoHeapCellType> webAssemblyCodeBlockHeapCellType;
+    std::unique_ptr<IsoHeapCellType> webAssemblyExceptionHeapCellType;
     std::unique_ptr<IsoHeapCellType> webAssemblyFunctionHeapCellType;
     std::unique_ptr<IsoHeapCellType> webAssemblyGlobalHeapCellType;
     std::unique_ptr<IsoHeapCellType> webAssemblyInstanceHeapCellType;
@@ -457,6 +459,7 @@ public:
     std::unique_ptr<IsoHeapCellType> webAssemblyModuleHeapCellType;
     std::unique_ptr<IsoHeapCellType> webAssemblyModuleRecordHeapCellType;
     std::unique_ptr<IsoHeapCellType> webAssemblyTableHeapCellType;
+    std::unique_ptr<IsoHeapCellType> webAssemblyTagHeapCellType;
 #endif
 
 #if ENABLE(JIT)
@@ -622,6 +625,7 @@ public:
 #if ENABLE(WEBASSEMBLY)
     DYNAMIC_ISO_SUBSPACE_DEFINE_MEMBER(jsToWasmICCalleeSpace)
     DYNAMIC_ISO_SUBSPACE_DEFINE_MEMBER(webAssemblyCodeBlockSpace)
+    DYNAMIC_ISO_SUBSPACE_DEFINE_MEMBER(webAssemblyExceptionSpace)
     DYNAMIC_ISO_SUBSPACE_DEFINE_MEMBER(webAssemblyFunctionSpace)
     DYNAMIC_ISO_SUBSPACE_DEFINE_MEMBER(webAssemblyGlobalSpace)
     DYNAMIC_ISO_SUBSPACE_DEFINE_MEMBER(webAssemblyInstanceSpace)
@@ -629,6 +633,7 @@ public:
     DYNAMIC_ISO_SUBSPACE_DEFINE_MEMBER(webAssemblyModuleSpace)
     DYNAMIC_ISO_SUBSPACE_DEFINE_MEMBER(webAssemblyModuleRecordSpace)
     DYNAMIC_ISO_SUBSPACE_DEFINE_MEMBER(webAssemblyTableSpace)
+    DYNAMIC_ISO_SUBSPACE_DEFINE_MEMBER(webAssemblyTagSpace)
     DYNAMIC_ISO_SUBSPACE_DEFINE_MEMBER(webAssemblyWrapperFunctionSpace)
 #endif
 
@@ -1305,6 +1310,10 @@ private:
 
     Lock m_loopHintExecutionCountLock;
     HashMap<const Instruction*, std::pair<unsigned, std::unique_ptr<uintptr_t>>> m_loopHintExecutionCounts;
+
+#if ENABLE(WEBASSEMBLY)
+    Vector<Wasm::Tag> m_wasmTags;
+#endif
 
     VM* m_prev; // Required by DoublyLinkedListNode.
     VM* m_next; // Required by DoublyLinkedListNode.
