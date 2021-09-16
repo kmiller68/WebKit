@@ -32,6 +32,7 @@ const _mapValues = from => {
     return values;
 };
 
+print(import.meta.url);
 export const description = utilities.json("wasm.json");
 export const type = Object.keys(description.type);
 const _typeSet = new Set(type);
