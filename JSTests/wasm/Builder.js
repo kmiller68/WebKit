@@ -327,6 +327,7 @@ const _checkImms = (op, imms, expectedImms, ret) => {
         case "target_table": break; // improve checking https://bugs.webkit.org/show_bug.cgi?id=163421
         case "reserved": break; // improve checking https://bugs.webkit.org/show_bug.cgi?id=163421
         case "table_index": break; // improve checking https://bugs.webkit.org/show_bug.cgi?id=163421
+        case "exn": break;
         case "reftype":
             assert.truthy(WASM.isValidRefType(imms[idx]), `Invalid ref type on ${op}: "${imms[idx]}"`);
             break;

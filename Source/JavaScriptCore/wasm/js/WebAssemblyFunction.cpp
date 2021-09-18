@@ -151,11 +151,10 @@ JSC_DEFINE_HOST_FUNCTION(callWebAssemblyFunction, (JSGlobalObject* globalObject,
     vm.wasmContext.store(wasmInstance, vm.softStackLimit());
     ASSERT(wasmFunction->instance());
     ASSERT(&wasmFunction->instance()->instance() == vm.wasmContext.load());
+    dataLogLn("Before the call: ", RawPointer(prevWasmInstance));
     EncodedJSValue rawResult = vmEntryToWasm(wasmFunction->jsEntrypoint(MustCheckArity).executableAddress(), &vm, &protoCallFrame);
-    // We need to make sure this is in a register or on the stack since it's stored in Vector<JSValue>.
-    // This probably isn't strictly necessary, since the WebAssemblyFunction* should keep the instance
-    // alive. But it's good hygiene.
-    instance->use();
+    WTFBreakpointTrap();
+    dataLogLn("After the call: ", RawPointer(prevWasmInstance));
     if (prevWasmInstance != wasmInstance) {
         // This is just for some extra safety instead of leaving a cached
         // value in there. If we ever forget to set the value to be a real
@@ -163,10 +162,16 @@ JSC_DEFINE_HOST_FUNCTION(callWebAssemblyFunction, (JSGlobalObject* globalObject,
         // fire. The stack limit never changes while executing except when
         // WebAssembly is used through the JSC API: API users can ask the code
         // to migrate threads.
+        dataLogLn("here");
         wasmInstance->setCachedStackLimit(bitwise_cast<void*>(std::numeric_limits<uintptr_t>::max()));
     }
     vm.wasmContext.store(prevWasmInstance, vm.softStackLimit());
     RETURN_IF_EXCEPTION(scope, { });
+
+    // We need to make sure this is in a register or on the stack since it's stored in Vector<JSValue>.
+    // This probably isn't strictly necessary, since the WebAssemblyFunction* should keep the instance
+    // alive. But it's good hygiene.
+    instance->use();
 
     return rawResult;
 }

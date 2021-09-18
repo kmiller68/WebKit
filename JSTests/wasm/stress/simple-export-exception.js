@@ -9,4 +9,8 @@ import * as assert from '../assert.js'
         .Export().Exception("foo", 0).End()
 
     const bin = b.WebAssembly().get();
+    const module = new WebAssembly.Module(bin);
+    const instance = new WebAssembly.Instance(module);
+
+    assert.instanceOf(instance.exports.foo, WebAssembly.Tag);
 }

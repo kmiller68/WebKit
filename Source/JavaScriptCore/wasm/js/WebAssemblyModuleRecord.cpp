@@ -581,8 +581,8 @@ void WebAssemblyModuleRecord::linkImpl(JSGlobalObject* globalObject, JSObject* i
             break;
         }
         case Wasm::ExternalKind::Exception: {
-            //TODO
-            RELEASE_ASSERT_NOT_REACHED();
+            exportedValue = JSWebAssemblyTag::create(vm, globalObject, globalObject->m_webAssemblyTagStructure.get(globalObject), m_instance->instance().tag(exp.kindIndex));
+            break;
         }
         }
 

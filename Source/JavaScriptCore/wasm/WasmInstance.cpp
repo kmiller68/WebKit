@@ -90,7 +90,9 @@ Ref<Instance> Instance::create(Context* context, Ref<Module>&& module, EntryFram
     return adoptRef(*new (NotNull, fastMalloc(allocationSize(module->moduleInformation().importFunctionCount(), module->moduleInformation().tableCount()))) Instance(context, WTFMove(module), pointerToTopEntryFrame, pointerToActualStackLimit, WTFMove(storeTopCallFrame)));
 }
 
-Instance::~Instance() { }
+Instance::~Instance() {
+    dataLogLn("freeing: ", RawPointer(this));
+}
 
 size_t Instance::extraMemoryAllocated() const
 {
