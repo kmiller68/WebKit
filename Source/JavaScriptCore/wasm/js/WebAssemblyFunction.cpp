@@ -151,10 +151,7 @@ JSC_DEFINE_HOST_FUNCTION(callWebAssemblyFunction, (JSGlobalObject* globalObject,
     vm.wasmContext.store(wasmInstance, vm.softStackLimit());
     ASSERT(wasmFunction->instance());
     ASSERT(&wasmFunction->instance()->instance() == vm.wasmContext.load());
-    dataLogLn("Before the call: ", RawPointer(prevWasmInstance));
     EncodedJSValue rawResult = vmEntryToWasm(wasmFunction->jsEntrypoint(MustCheckArity).executableAddress(), &vm, &protoCallFrame);
-    WTFBreakpointTrap();
-    dataLogLn("After the call: ", RawPointer(prevWasmInstance));
     if (prevWasmInstance != wasmInstance) {
         // This is just for some extra safety instead of leaving a cached
         // value in there. If we ever forget to set the value to be a real
