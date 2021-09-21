@@ -2812,6 +2812,10 @@ wasmOp(atomic_fence, WasmDropKeep, macro(ctx)
 end)
 
 wasmOp(throw, WasmThrow, macro(ctx)
+    loadp Wasm::Instance::m_pointerToTopEntryFrame[wasmInstance], t5
+    loadp [t5], t5
+    copyCalleeSavesToEntryFrameCalleeSavesBuffer(t5)
+
     callWasmSlowPath(_slow_path_wasm_throw)
     jumpToException()
 end)
