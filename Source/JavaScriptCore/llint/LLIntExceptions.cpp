@@ -118,4 +118,18 @@ MacroAssemblerCodeRef<ExceptionHandlerPtrTag> handleWasmCatch(OpcodeSize size)
     return {};
 }
 
+MacroAssemblerCodeRef<ExceptionHandlerPtrTag> handleWasmCatchAll(OpcodeSize size)
+{
+    switch (size) {
+    case OpcodeSize::Narrow:
+        return LLInt::getCodeRef<ExceptionHandlerPtrTag>(wasm_catch_all);
+    case OpcodeSize::Wide16:
+        return LLInt::getWide16CodeRef<ExceptionHandlerPtrTag>(wasm_catch_all);
+    case OpcodeSize::Wide32:
+        return LLInt::getWide32CodeRef<ExceptionHandlerPtrTag>(wasm_catch_all);
+    }
+    RELEASE_ASSERT_NOT_REACHED();
+    return {};
+}
+
 } } // namespace JSC::LLInt

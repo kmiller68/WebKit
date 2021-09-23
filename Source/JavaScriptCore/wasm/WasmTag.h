@@ -31,24 +31,30 @@
 
 namespace JSC { namespace Wasm {
 
-class Tag {
+class Tag : public ThreadSafeRefCounted<Tag> {
+    WTF_MAKE_FAST_ALLOCATED;
+    WTF_MAKE_NONCOPYABLE(Tag);
 public:
-    Tag(const Signature& signature)
-        : m_id(++s_id)
-        , m_signature(signature)
-    {
-    }
+    static Ref<Tag> create(const Signature& signature) { return adoptRef(*new Tag(signature)); }
 
-    SignatureArgCount parameterCount() const { return m_signature.argumentCount(); }
-    Type parameter(SignatureArgCount i) const { return m_signature.argument(i); }
+    SignatureArgCount parameterCount() const { return m_signature->argumentCount(); }
+    Type parameter(SignatureArgCount i) const { return m_signature->argument(i); }
 
     bool operator==(const Tag& other) const { return m_id == other.m_id; }
     bool operator!=(const Tag& other) const { return m_id != other.m_id; }
 
+    const Signature& signature() const { return m_signature.get(); }
+
 private:
+    Tag(const Signature& signature)
+        : m_id(++s_id)
+        , m_signature(makeRef(signature))
+    {
+    }
+
     static uint32_t s_id;
     uint32_t m_id;
-    const Signature& m_signature;
+    Ref<const Signature> m_signature;
 };
 
 } } // namespace JSC::Wasm

@@ -65,8 +65,6 @@ void WebAssemblyExceptionPrototype::finishCreation(VM& vm)
 {
     Base::finishCreation(vm);
     ASSERT(inherits(vm, info()));
-    putDirectWithoutTransition(vm, vm.propertyNames->name, jsNontrivialString(vm, "Exception"_s), static_cast<unsigned>(PropertyAttribute::DontEnum));
-    putDirectWithoutTransition(vm, vm.propertyNames->message, jsEmptyString(vm), static_cast<unsigned>(PropertyAttribute::DontEnum));
 }
 
 WebAssemblyExceptionPrototype::WebAssemblyExceptionPrototype(VM& vm, Structure* structure)
@@ -121,7 +119,7 @@ JSC_DEFINE_HOST_FUNCTION(webAssemblyExceptionProtoFuncGetArg, (JSGlobalObject* g
     if (index >= tag->tag().parameterCount())
         return typeError("Index out of range");
 
-    RELEASE_AND_RETURN(throwScope, JSValue::encode(jsException->getArg(index)));
+    RELEASE_AND_RETURN(throwScope, JSValue::encode(jsException->getArg(globalObject, index)));
 }
 
 JSC_DEFINE_HOST_FUNCTION(webAssemblyExceptionProtoFuncIs, (JSGlobalObject* globalObject, CallFrame* callFrame))

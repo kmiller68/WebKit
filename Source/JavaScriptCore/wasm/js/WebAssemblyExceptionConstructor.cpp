@@ -28,8 +28,10 @@
 
 #if ENABLE(WEBASSEMBLY)
 
+#include "IteratorOperations.h"
 #include "JSCInlines.h"
 #include "JSWebAssemblyException.h"
+#include "JSWebAssemblyHelpers.h"
 #include "WebAssemblyExceptionPrototype.h"
 
 #include "WebAssemblyExceptionConstructor.lut.h"
@@ -50,22 +52,40 @@ JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyException, (JSGlobalObject* globa
 {
     auto& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
-    JSValue message = callFrame->argument(0);
-    JSValue options = callFrame->argument(1);
+    JSValue tagValue = callFrame->argument(0);
+    JSValue tagParameters = callFrame->argument(1);
+
+    auto tag = jsDynamicCast<JSWebAssemblyTag*>(vm, tagValue);
+    if (!tag)
+        return throwVMTypeError(globalObject, scope, "WebAssembly.Exception constructor expects the first argument to be a WebAssembly.Tag");
+
+    MarkedArgumentBuffer values;
+    forEachInIterable(globalObject, tagParameters, [&] (VM&, JSGlobalObject*, JSValue nextValue) {
+        values.append(nextValue);
+    });
+
+    if (values.size() != tag->signature().argumentCount())
+        return throwVMTypeError(globalObject, scope, "WebAssembly.Exception constructor expects the number of paremeters in WebAssembly.Tag to match the tags parameter count.");
+
+    // Any GC'd values in here will be marked by the MarkedArugementBuffer until stored in the Exception.
+    FixedVector<uint64_t> payload(values.size());
+    for (unsigned i = 0; i < values.size(); ++i) {
+        payload[i] = fromJSValue(globalObject, tag->signature().argument(i), values.at(i));
+        RETURN_IF_EXCEPTION(scope, { });
+    }
 
     JSObject* newTarget = asObject(callFrame->newTarget());
     Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, webAssemblyExceptionStructure, newTarget, callFrame->jsCallee());
     RETURN_IF_EXCEPTION(scope, { });
 
-    RELEASE_AND_RETURN(scope, JSValue::encode(ErrorInstance::create(globalObject, structure, message, options, nullptr, TypeNothing, ErrorType::Error, false)));
+    RELEASE_AND_RETURN(scope, JSValue::encode(JSWebAssemblyException::create(vm, structure, tag->tag(), WTFMove(payload))));
 }
 
-JSC_DEFINE_HOST_FUNCTION(callJSWebAssemblyException, (JSGlobalObject* globalObject, CallFrame* callFrame))
+JSC_DEFINE_HOST_FUNCTION(callJSWebAssemblyException, (JSGlobalObject* globalObject, CallFrame*))
 {
-    JSValue message = callFrame->argument(0);
-    JSValue options = callFrame->argument(1);
-    Structure* errorStructure = globalObject->webAssemblyExceptionStructure();
-    return JSValue::encode(ErrorInstance::create(globalObject, errorStructure, message, options, nullptr, TypeNothing, ErrorType::Error, false));
+    VM& vm = globalObject->vm();
+    auto scope = DECLARE_THROW_SCOPE(vm);
+    return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "WebAssembly.Exception"));
 }
 
 WebAssemblyExceptionConstructor* WebAssemblyExceptionConstructor::create(VM& vm, Structure* structure, WebAssemblyExceptionPrototype* thisPrototype)

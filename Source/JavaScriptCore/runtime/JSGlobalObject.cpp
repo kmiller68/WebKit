@@ -1501,12 +1501,6 @@ capitalName ## Constructor* lowerName ## Constructor = featureFlag ? capitalName
     m_linkTimeConstants[static_cast<unsigned>(LinkTimeConstant::webAssemblyInstantiateStreamingInternal)].initLater([] (const Initializer<JSCell>& init) {
             init.set(JSFunction::create(init.vm, jsCast<JSGlobalObject*>(init.owner), 1, String(), webAssemblyInstantiateStreamingInternal));
         });
-    m_webAssemblyTagTypeStructure.initLater(
-        [] (const Initializer<Structure>& init) {
-            Structure* structure = JSFinalObject::createStructure(init.vm, init.owner, init.owner->m_objectPrototype.get(), 1);
-            structure->addPropertyWithoutTransition(init.vm, Identifier::fromString(init.vm, "parameters"), 0, [&] (const GCSafeConcurrentJSLocker&, PropertyOffset, PropertyOffset) { });
-            init.set(structure);
-        });
 #endif
 
     m_linkTimeConstants[static_cast<unsigned>(LinkTimeConstant::emptyPropertyNameEnumerator)].initLater([] (const Initializer<JSCell>& init) {

@@ -78,51 +78,9 @@ JSC_DEFINE_HOST_FUNCTION(callWebAssemblyFunction, (JSGlobalObject* globalObject,
     Wasm::Instance* wasmInstance = &instance->instance();
 
     for (unsigned argIndex = 0; argIndex < signature.argumentCount(); ++argIndex) {
-        JSValue arg = callFrame->argument(argIndex);
-        switch (signature.argument(argIndex).kind) {
-        case Wasm::TypeKind::I32:
-            arg = JSValue::decode(arg.toInt32(globalObject));
-            break;
-        case Wasm::TypeKind::TypeIdx:
-        case Wasm::TypeKind::Funcref: {
-            bool isNullable = signature.argument(argIndex).isNullable();
-            WebAssemblyFunction* wasmFunction = nullptr;
-            WebAssemblyWrapperFunction* wasmWrapperFunction = nullptr;
-            if (!isWebAssemblyHostFunction(vm, arg, wasmFunction, wasmWrapperFunction) && (!isNullable || !arg.isNull()))
-                return JSValue::encode(throwException(globalObject, scope, createJSWebAssemblyRuntimeError(globalObject, vm, "Funcref must be an exported wasm function")));
-            if (signature.argument(argIndex).kind == Wasm::TypeKind::TypeIdx && (wasmFunction || wasmWrapperFunction)) {
-                Wasm::SignatureIndex paramIndex = signature.argument(argIndex).index;
-                Wasm::SignatureIndex argIndex;
-                if (wasmFunction)
-                    argIndex = wasmFunction->signatureIndex();
-                else
-                    argIndex = wasmWrapperFunction->signatureIndex();
-                if (paramIndex != argIndex)
-                    return JSValue::encode(throwException(globalObject, scope, createJSWebAssemblyRuntimeError(globalObject, vm, "Argument function did not match the reference type")));
-            }
-            break;
-        }
-        case Wasm::TypeKind::Externref:
-            if (!signature.argument(argIndex).isNullable() && arg.isNull())
-                return JSValue::encode(throwException(globalObject, scope, createJSWebAssemblyRuntimeError(globalObject, vm, "Non-null Externref cannot be null")));
-            break;
-        case Wasm::TypeKind::I64:
-            arg = JSValue::decode(bitwise_cast<uint64_t>(arg.toBigInt64(globalObject)));
-            break;
-        case Wasm::TypeKind::F32:
-            arg = JSValue::decode(bitwise_cast<uint32_t>(arg.toFloat(globalObject)));
-            break;
-        case Wasm::TypeKind::F64:
-            arg = JSValue::decode(bitwise_cast<uint64_t>(arg.toNumber(globalObject)));
-            break;
-        case Wasm::TypeKind::Void:
-        case Wasm::TypeKind::Func:
-        case Wasm::TypeKind::RefNull:
-        case Wasm::TypeKind::Ref:
-            RELEASE_ASSERT_NOT_REACHED();
-        }
+        uint64_t value = fromJSValue(globalObject, signature.argument(argIndex), callFrame->argument(argIndex));
         RETURN_IF_EXCEPTION(scope, encodedJSValue());
-        boxedArgs.append(arg);
+        boxedArgs.append(JSValue::decode(value));
     }
 
     // When we don't use fast TLS to store the context, the JS
@@ -159,7 +117,6 @@ JSC_DEFINE_HOST_FUNCTION(callWebAssemblyFunction, (JSGlobalObject* globalObject,
         // fire. The stack limit never changes while executing except when
         // WebAssembly is used through the JSC API: API users can ask the code
         // to migrate threads.
-        dataLogLn("here");
         wasmInstance->setCachedStackLimit(bitwise_cast<void*>(std::numeric_limits<uintptr_t>::max()));
     }
     vm.wasmContext.store(prevWasmInstance, vm.softStackLimit());

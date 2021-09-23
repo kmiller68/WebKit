@@ -47,11 +47,12 @@ public:
     static Structure* createStructure(VM&, JSGlobalObject*, JSValue);
 
     const Wasm::Tag& tag() const { return m_tag; }
+    const Wasm::Signature& signature() const { return tag().signature(); }
 
 private:
     JSWebAssemblyTag(VM&, Structure*, const Wasm::Tag&);
 
-    const Wasm::Tag& m_tag;
+    const Ref<const Wasm::Tag> m_tag;
 };
 
 } // namespace JSC

@@ -51,5 +51,6 @@ MacroAssemblerCodeRef<ExceptionHandlerPtrTag> handleUncaughtException(VM&);
 MacroAssemblerCodeRef<ExceptionHandlerPtrTag> handleCatch(OpcodeSize);
 
 MacroAssemblerCodeRef<ExceptionHandlerPtrTag> handleWasmCatch(OpcodeSize);
+MacroAssemblerCodeRef<ExceptionHandlerPtrTag> handleWasmCatchAll(OpcodeSize);
 
 } } // namespace JSC::LLInt

@@ -1090,7 +1090,7 @@ auto LLIntGenerator::addCatchToUnreachable(unsigned exceptionIndex, const Signat
     for (unsigned i = 0; i < exceptionSignature.argumentCount(); ++i)
         results.append(push());
 
-    WasmCatch::emit<OpcodeSize::Wide32>(this, exceptionIndex, virtualRegisterForLocal(0), exceptionSignature.argumentCount(), -results[0].offset());
+    WasmCatch::emit<OpcodeSize::Wide32>(this, exceptionIndex, virtualRegisterForLocal(0), exceptionSignature.argumentCount(), results.isEmpty() ? 0 : -results[0].offset());
     m_catches.append({ m_lastInstruction.offset(), m_tryDepth });
 
     ControlCatch& catch_ = WTF::get<ControlCatch>(data);

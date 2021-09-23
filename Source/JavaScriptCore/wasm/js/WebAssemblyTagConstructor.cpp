@@ -29,6 +29,7 @@
 #if ENABLE(WEBASSEMBLY)
 
 #include "Error.h"
+#include "IteratorOperations.h"
 #include "JSGlobalObject.h"
 #include "JSWebAssemblyTag.h"
 #include "WebAssemblyTagPrototype.h"
@@ -45,14 +46,44 @@ JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyTag, (JSGlobalObject* globalObjec
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
     
-    UNUSED_PARAM(callFrame);
-    //Vector<uint8_t> source = createSourceBufferFromValue(vm, globalObject, callFrame->argument(0));
-    //RETURN_IF_EXCEPTION(scope, { });
+    constexpr ASCIILiteral errorString = "WebAssembly.Tag constructor expects the 'parameters' field of the first argument to be a sequence of WebAssembly types."_s;
 
-    //RELEASE_AND_RETURN(scope, JSValue::encode(WebAssemblyTagConstructor::createTag(globalObject, callFrame, WTFMove(source))));
-    // TODO
-    RELEASE_ASSERT_NOT_REACHED();
-    RELEASE_AND_RETURN(scope, { });
+    JSValue tagTypeValue = callFrame->argument(0);
+    JSValue signatureObject = tagTypeValue.get(globalObject, Identifier::fromString(vm, "parameters"_s));
+    if (!signatureObject.isObject())
+        return throwVMTypeError(globalObject, scope, errorString);
+
+    Vector<Wasm::Type> parameters;
+    forEachInIterable(globalObject, signatureObject, [&] (auto& vm, auto* globalObject, JSValue nextType) -> void {
+        auto scope = DECLARE_THROW_SCOPE(vm);
+
+        Wasm::Type type;
+        String valueString = nextType.toWTFString(globalObject);
+        RETURN_IF_EXCEPTION(scope, { });
+        if (valueString == "i32"_s)
+            type = Wasm::Types::I32;
+        else if (valueString == "i64"_s)
+            type = Wasm::Types::I64;
+        else if (valueString == "f32"_s)
+            type = Wasm::Types::F32;
+        else if (valueString == "f64"_s)
+            type = Wasm::Types::F64;
+        else if (valueString == "anyfunc"_s)
+            type = Wasm::Types::Funcref;
+        else if (valueString == "externref"_s)
+            type = Wasm::Types::Externref;
+        else {
+            throwTypeError(globalObject, scope, errorString);
+            return;
+        }
+
+        parameters.append(type);
+    });
+    RETURN_IF_EXCEPTION(scope, { });
+
+    RefPtr<Wasm::Signature> signature = Wasm::SignatureInformation::signatureFor({ }, parameters);
+    Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, webAssemblyTagStructure, asObject(callFrame->newTarget()), callFrame->jsCallee());
+    RELEASE_AND_RETURN(scope, JSValue::encode(JSWebAssemblyTag::create(vm, globalObject, structure, Wasm::Tag::create(*signature).get())));
 }
 
 JSC_DEFINE_HOST_FUNCTION(callJSWebAssemblyTag, (JSGlobalObject* globalObject, CallFrame*))

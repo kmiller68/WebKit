@@ -397,17 +397,15 @@ void WebAssemblyModuleRecord::linkImpl(JSGlobalObject* globalObject, JSObject* i
         }
 
         case Wasm::ExternalKind::Exception: {
-            // 7. If i is a tag import:
             JSWebAssemblyTag* tag = jsDynamicCast<JSWebAssemblyTag*>(vm, value);
-            // i. If v is not a WebAssembly.Table object, throw a WebAssembly.LinkError.
             if (!tag)
                 return exception(createJSWebAssemblyLinkError(globalObject, vm, importFailMessage(import, "Tag import", "is not an instance of WebAssembly.Tag")));
 
             Wasm::SignatureIndex expectedSignatureIndex = moduleInformation.importExceptionSignatureIndices[import.kindIndex];
             UNUSED_VARIABLE(expectedSignatureIndex);
-            // TODO
-            //if (importedSignatureIndex != expectedSignatureIndex)
-                //return exception(createJSWebAssemblyLinkError(globalObject, vm, importFailMessage(import, "imported Tag", "type doesn't match the provided WebAssembly Tag's type")));
+
+            if (expectedSignatureIndex != tag->tag().signature().index())
+                return exception(createJSWebAssemblyLinkError(globalObject, vm, importFailMessage(import, "imported Tag", "signature doesn't match the imported WebAssembly Tag's signature")));
 
             m_instance->instance().addTag(tag->tag());
             RETURN_IF_EXCEPTION(scope, void());
@@ -442,7 +440,7 @@ void WebAssemblyModuleRecord::linkImpl(JSGlobalObject* globalObject, JSObject* i
     }
 
     for (Wasm::SignatureIndex signatureIndex : moduleInformation.internalExceptionSignatureIndices)
-        m_instance->instance().addTag({ Wasm::SignatureInformation::get(signatureIndex) });
+        m_instance->instance().addTag(Wasm::Tag::create(Wasm::SignatureInformation::get(signatureIndex)).leakRef());
 
     unsigned functionImportCount = codeBlock->functionImportCount();
     auto makeFunctionWrapper = [&] (uint32_t index) -> JSValue {

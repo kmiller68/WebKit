@@ -600,11 +600,11 @@ WASM_SLOW_PATH_DECL(throw)
     auto instruction = pc->as<WasmThrow, WasmOpcodeTraits>();
     const Wasm::Tag& tag = instance->tag(instruction.m_exceptionIndex);
 
-    Vector<uint64_t> values;
+    FixedVector<uint64_t> values(tag.parameterCount());
     for (unsigned i = 0; i < tag.parameterCount(); ++i)
-        values.append(READ((instruction.m_firstValue - i)).encodedJSValue());
+        values[READ((instruction.m_firstValue - i)).encodedJSValue()];
 
-    JSWebAssemblyException* exception = JSWebAssemblyException::create(globalObject, vm, globalObject->webAssemblyExceptionStructure(), tag, WTFMove(values));
+    JSWebAssemblyException* exception = JSWebAssemblyException::create(vm, globalObject->webAssemblyExceptionStructure(), tag, WTFMove(values));
     throwException(globalObject, throwScope, exception);
 
     genericUnwind(vm, callFrame);

@@ -36,7 +36,6 @@ const ClassInfo JSWebAssemblyTag::s_info = { "WebAssembly.Tag", &Base::s_info, n
 
 JSWebAssemblyTag* JSWebAssemblyTag::create(VM& vm, JSGlobalObject* globalObject, Structure* structure, const Wasm::Tag& tag)
 {
-    // TODO: remove?
     UNUSED_PARAM(globalObject);
     auto* jsTag = new (NotNull, allocateCell<JSWebAssemblyTag>(vm.heap)) JSWebAssemblyTag(vm, structure, tag);
     jsTag->finishCreation(vm);
@@ -50,7 +49,7 @@ Structure* JSWebAssemblyTag::createStructure(VM& vm, JSGlobalObject* globalObjec
 
 JSWebAssemblyTag::JSWebAssemblyTag(VM& vm, Structure* structure, const Wasm::Tag& tag)
     : Base(vm, structure)
-    , m_tag(tag)
+    , m_tag(makeRef(tag))
 {
 }
 

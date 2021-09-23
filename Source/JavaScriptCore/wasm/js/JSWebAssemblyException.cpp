@@ -25,30 +25,50 @@
 
 #include "config.h"
 #include "JSWebAssemblyException.h"
+#include "JSWebAssemblyHelpers.h"
 
 namespace JSC {
 
-const ClassInfo JSWebAssemblyException::s_info = { "WebAssembly.Exception", &ErrorInstance::s_info, nullptr, nullptr, CREATE_METHOD_TABLE(JSWebAssemblyException) };
+const ClassInfo JSWebAssemblyException::s_info = { "WebAssembly.Exception", &Base::s_info, nullptr, nullptr, CREATE_METHOD_TABLE(JSWebAssemblyException) };
 
-// TODO: remove global object?
-JSWebAssemblyException::JSWebAssemblyException(JSGlobalObject*, VM& vm, Structure* structure, const Wasm::Tag& tag, Vector<uint64_t>&& payload)
-    : Base(vm, structure, ErrorType::Error)
-    , m_tag(tag)
+JSWebAssemblyException::JSWebAssemblyException(VM& vm, Structure* structure, const Wasm::Tag& tag, FixedVector<uint64_t>&& payload)
+    : Base(vm, structure)
+    , m_tag(makeRef(tag))
     , m_payload(WTFMove(payload))
 {
 }
 
-void JSWebAssemblyException::finishCreation(VM& vm, JSGlobalObject* globalObject)
+void JSWebAssemblyException::finishCreation(VM& vm)
 {
-    Base::finishCreation(vm, globalObject, "wasm exception", { });
+    Base::finishCreation(vm);
     ASSERT(inherits(vm, info()));
-
 }
 
-JSValue JSWebAssemblyException::getArg(unsigned) const
+template<typename Visitor>
+void JSWebAssemblyException::visitChildrenImpl(JSCell* cell, Visitor& visitor)
 {
-    // TODO
-    return { };
+    Base::visitChildren(cell, visitor);
+
+    auto* exception = jsCast<JSWebAssemblyException*>(cell);
+    const Wasm::Signature& signature = exception->tag().signature();
+    for (unsigned i = 0; i < signature.argumentCount(); ++i) {
+        if (isRefType(signature.argument(i)))
+            visitor.append(bitwise_cast<WriteBarrier<Unknown>>(exception->payload()[i]));
+    }
+}
+
+DEFINE_VISIT_CHILDREN(JSWebAssemblyException);
+
+void JSWebAssemblyException::destroy(JSCell* cell)
+{
+    static_cast<JSWebAssemblyException*>(cell)->JSWebAssemblyException::~JSWebAssemblyException();
+}
+
+JSValue JSWebAssemblyException::getArg(JSGlobalObject* globalObject, unsigned i) const
+{
+    const Wasm::Signature& signature = tag().signature();
+    ASSERT(i < signature.argumentCount());
+    return toJSValue(globalObject, signature.argument(i), payload()[i]);
 }
 
 } // namespace JSC

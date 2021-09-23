@@ -85,7 +85,13 @@ void LLIntCallee::linkExceptionHandlers(VM& vm)
             const UnlinkedHandlerInfo& unlinkedHandler = m_codeBlock->exceptionHandler(i);
             HandlerInfo& handler = m_exceptionHandlers[i];
             auto& instruction = *m_codeBlock->instructions().at(unlinkedHandler.m_target).ptr();
-            handler.initialize(instance, unlinkedHandler, CodeLocationLabel<ExceptionHandlerPtrTag>(LLInt::handleWasmCatch(instruction.width<WasmOpcodeTraits>()).code()));
+            CodeLocationLabel<ExceptionHandlerPtrTag> target;
+            if (unlinkedHandler.m_type == HandlerType::Catch)
+                target = CodeLocationLabel<ExceptionHandlerPtrTag>(LLInt::handleWasmCatch(instruction.width<WasmOpcodeTraits>()).code());
+            else
+                target = CodeLocationLabel<ExceptionHandlerPtrTag>(LLInt::handleWasmCatchAll(instruction.width<WasmOpcodeTraits>()).code());
+
+            handler.initialize(instance, unlinkedHandler, target);
         }
     }
 }

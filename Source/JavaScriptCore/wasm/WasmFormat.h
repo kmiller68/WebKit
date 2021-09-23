@@ -79,9 +79,10 @@ inline bool isValueType(Type type)
 
 inline JSString* typeToString(VM& vm, TypeKind type)
 {
-    #define TYPE_CASE(name, ...) \
-        case TypeKind::name: \
-            return jsNontrivialString(vm, #name); \
+    #define TYPE_CASE(macroName, value, b3, inc, wasmName) \
+        case TypeKind::macroName: \
+            return jsNontrivialString(vm, #wasmName); \
+
 
     switch (type) {
     FOR_EACH_WASM_TYPE(TYPE_CASE)
