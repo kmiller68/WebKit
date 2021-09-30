@@ -111,8 +111,7 @@ void BBQPlan::work(CompilationEffort effort)
     }
 
     Vector<CodeLocationLabel<ExceptionHandlerPtrTag>> exceptionHandlerLocations;
-    for (unsigned entrypointIndex = 1; entrypointIndex < context.procedure->numEntrypoints(); ++entrypointIndex)
-        exceptionHandlerLocations.append(linkBuffer.locationOf<ExceptionHandlerPtrTag>(context.procedure->code().entrypointLabel(entrypointIndex)));
+    computeExceptionHandlerLocations(exceptionHandlerLocations, function.get(), context, linkBuffer);
 
     size_t functionIndexSpace = m_functionIndex + m_moduleInformation->importFunctionCount();
     SignatureIndex signatureIndex = m_moduleInformation->internalFunctionSignatureIndices[m_functionIndex];
@@ -234,21 +233,7 @@ void BBQPlan::didCompleteCompilation()
                 return;
             }
 
-            auto& handlers = m_exceptionHandlerLocations[functionIndex];
-            unsigned entrypointIndex = 1;
-            unsigned numEntrypoints = context.procedure->numEntrypoints();
-            for (UnlinkedHandlerInfo& handlerInfo : function->exceptionHandlers) {
-                RELEASE_ASSERT(entrypointIndex < numEntrypoints);
-                if (handlerInfo.m_type == HandlerType::Delegate) {
-                    handlers.append({ });
-                    continue;
-                }
-
-                handlers.append(linkBuffer.locationOf<ExceptionHandlerPtrTag>(context.procedure->code().entrypointLabel(entrypointIndex)));
-                ++entrypointIndex;
-            }
-            RELEASE_ASSERT(entrypointIndex == numEntrypoints);
-
+            computeExceptionHandlerLocations(m_exceptionHandlerLocations[functionIndex], function, context, linkBuffer);
             function->entrypoint.compilation = makeUnique<Compilation>(
                 FINALIZE_CODE(linkBuffer, JITCompilationPtrTag, "WebAssembly BBQ function[%i] %s name %s", functionIndex, signature.toString().ascii().data(), makeString(IndexOrName(functionIndexSpace, m_moduleInformation->nameSection->get(functionIndexSpace))).ascii().data()),
                 WTFMove(context.wasmEntrypointByproducts));

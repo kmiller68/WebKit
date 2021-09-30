@@ -114,44 +114,6 @@ private:
     Wasm::Entrypoint m_entrypoint;
 };
 
-#if ENABLE(WEBASSEMBLY_B3JIT)
-class OMGCallee final : public JITCallee {
-public:
-    static Ref<OMGCallee> create(Wasm::Entrypoint&& entrypoint, size_t index, std::pair<const Name*, RefPtr<NameSection>>&& name, Vector<UnlinkedWasmToWasmCall>&& unlinkedCalls)
-    {
-        return adoptRef(*new OMGCallee(WTFMove(entrypoint), index, WTFMove(name), WTFMove(unlinkedCalls)));
-    }
-
-private:
-    OMGCallee(Wasm::Entrypoint&& entrypoint, size_t index, std::pair<const Name*, RefPtr<NameSection>>&& name, Vector<UnlinkedWasmToWasmCall>&& unlinkedCalls)
-        : JITCallee(Wasm::CompilationMode::OMGMode, WTFMove(entrypoint), index, WTFMove(name), WTFMove(unlinkedCalls))
-    {
-    }
-};
-
-class OMGForOSREntryCallee final : public JITCallee {
-public:
-    static Ref<OMGForOSREntryCallee> create(Wasm::Entrypoint&& entrypoint, size_t index, std::pair<const Name*, RefPtr<NameSection>>&& name, unsigned osrEntryScratchBufferSize, uint32_t loopIndex, Vector<UnlinkedWasmToWasmCall>&& unlinkedCalls)
-    {
-        return adoptRef(*new OMGForOSREntryCallee(WTFMove(entrypoint), index, WTFMove(name), osrEntryScratchBufferSize, loopIndex, WTFMove(unlinkedCalls)));
-    }
-
-    unsigned osrEntryScratchBufferSize() const { return m_osrEntryScratchBufferSize; }
-    uint32_t loopIndex() const { return m_loopIndex; }
-
-private:
-    OMGForOSREntryCallee(Wasm::Entrypoint&& entrypoint, size_t index, std::pair<const Name*, RefPtr<NameSection>>&& name, unsigned osrEntryScratchBufferSize, uint32_t loopIndex, Vector<UnlinkedWasmToWasmCall>&& unlinkedCalls)
-        : JITCallee(Wasm::CompilationMode::OMGForOSREntryMode, WTFMove(entrypoint), index, WTFMove(name), WTFMove(unlinkedCalls))
-        , m_osrEntryScratchBufferSize(osrEntryScratchBufferSize)
-        , m_loopIndex(loopIndex)
-    {
-    }
-
-    unsigned m_osrEntryScratchBufferSize;
-    uint32_t m_loopIndex;
-};
-#endif
-
 class EmbedderEntrypointCallee final : public JITCallee {
 public:
     static Ref<EmbedderEntrypointCallee> create(Wasm::Entrypoint&& entrypoint)
@@ -166,8 +128,68 @@ private:
     }
 };
 
+
 #if ENABLE(WEBASSEMBLY_B3JIT)
-class BBQCallee final : public JITCallee {
+class OptimizingJITCallee : public JITCallee {
+public:
+    const Vector<OSREntryValue>& stackmap(CallSiteIndex callSiteIndex) const;
+
+protected:
+    OptimizingJITCallee(Wasm::CompilationMode mode, Wasm::Entrypoint&& entrypoint, size_t index, std::pair<const Name*, RefPtr<NameSection>>&& name, Vector<UnlinkedWasmToWasmCall>&& unlinkedCalls, HashMap<CallSiteIndex, Vector<OSREntryValue>>&& stackmaps, Vector<UnlinkedHandlerInfo>&& exceptionHandlers, Vector<CodeLocationLabel<ExceptionHandlerPtrTag>>&& exceptionHandlerLocations)
+        : JITCallee(mode, WTFMove(entrypoint), index, WTFMove(name), WTFMove(unlinkedCalls))
+        , m_stackmaps(WTFMove(stackmaps))
+        , m_unlinkedExceptionHandlers(WTFMove(exceptionHandlers))
+        , m_exceptionHandlerLocations(WTFMove(exceptionHandlerLocations))
+    {
+        RELEASE_ASSERT(m_unlinkedExceptionHandlers.size() == m_exceptionHandlerLocations.size());
+        m_numberOfExceptionHandlers = m_unlinkedExceptionHandlers.size();
+    }
+
+    void linkExceptionHandlers(VM&) final;
+
+private:
+    HashMap<CallSiteIndex, Vector<OSREntryValue>> m_stackmaps;
+    Vector<UnlinkedHandlerInfo> m_unlinkedExceptionHandlers;
+    Vector<CodeLocationLabel<ExceptionHandlerPtrTag>> m_exceptionHandlerLocations;
+};
+
+class OMGCallee final : public OptimizingJITCallee {
+public:
+    static Ref<OMGCallee> create(Wasm::Entrypoint&& entrypoint, size_t index, std::pair<const Name*, RefPtr<NameSection>>&& name, Vector<UnlinkedWasmToWasmCall>&& unlinkedCalls, HashMap<CallSiteIndex, Vector<OSREntryValue>>&& stackmaps, Vector<UnlinkedHandlerInfo>&& exceptionHandlers, Vector<CodeLocationLabel<ExceptionHandlerPtrTag>>&& exceptionHandlerLocations)
+    {
+        return adoptRef(*new OMGCallee(WTFMove(entrypoint), index, WTFMove(name), WTFMove(unlinkedCalls), WTFMove(stackmaps), WTFMove(exceptionHandlers), WTFMove(exceptionHandlerLocations)));
+    }
+
+private:
+    OMGCallee(Wasm::Entrypoint&& entrypoint, size_t index, std::pair<const Name*, RefPtr<NameSection>>&& name, Vector<UnlinkedWasmToWasmCall>&& unlinkedCalls, HashMap<CallSiteIndex, Vector<OSREntryValue>>&& stackmaps, Vector<UnlinkedHandlerInfo>&& exceptionHandlers, Vector<CodeLocationLabel<ExceptionHandlerPtrTag>>&& exceptionHandlerLocations)
+        : OptimizingJITCallee(Wasm::CompilationMode::OMGMode, WTFMove(entrypoint), index, WTFMove(name), WTFMove(unlinkedCalls), WTFMove(stackmaps), WTFMove(exceptionHandlers), WTFMove(exceptionHandlerLocations))
+    {
+    }
+};
+
+class OMGForOSREntryCallee final : public OptimizingJITCallee {
+public:
+    static Ref<OMGForOSREntryCallee> create(Wasm::Entrypoint&& entrypoint, size_t index, std::pair<const Name*, RefPtr<NameSection>>&& name, unsigned osrEntryScratchBufferSize, uint32_t loopIndex, Vector<UnlinkedWasmToWasmCall>&& unlinkedCalls, HashMap<CallSiteIndex, Vector<OSREntryValue>>&& stackmaps, Vector<UnlinkedHandlerInfo>&& exceptionHandlers, Vector<CodeLocationLabel<ExceptionHandlerPtrTag>>&& exceptionHandlerLocations)
+    {
+        return adoptRef(*new OMGForOSREntryCallee(WTFMove(entrypoint), index, WTFMove(name), osrEntryScratchBufferSize, loopIndex, WTFMove(unlinkedCalls), WTFMove(stackmaps), WTFMove(exceptionHandlers), WTFMove(exceptionHandlerLocations)));
+    }
+
+    unsigned osrEntryScratchBufferSize() const { return m_osrEntryScratchBufferSize; }
+    uint32_t loopIndex() const { return m_loopIndex; }
+
+private:
+    OMGForOSREntryCallee(Wasm::Entrypoint&& entrypoint, size_t index, std::pair<const Name*, RefPtr<NameSection>>&& name, unsigned osrEntryScratchBufferSize, uint32_t loopIndex, Vector<UnlinkedWasmToWasmCall>&& unlinkedCalls, HashMap<CallSiteIndex, Vector<OSREntryValue>>&& stackmaps, Vector<UnlinkedHandlerInfo>&& exceptionHandlers, Vector<CodeLocationLabel<ExceptionHandlerPtrTag>>&& exceptionHandlerLocations)
+        : OptimizingJITCallee(Wasm::CompilationMode::OMGForOSREntryMode, WTFMove(entrypoint), index, WTFMove(name), WTFMove(unlinkedCalls), WTFMove(stackmaps), WTFMove(exceptionHandlers), WTFMove(exceptionHandlerLocations))
+        , m_osrEntryScratchBufferSize(osrEntryScratchBufferSize)
+        , m_loopIndex(loopIndex)
+    {
+    }
+
+    unsigned m_osrEntryScratchBufferSize;
+    uint32_t m_loopIndex;
+};
+
+class BBQCallee final : public OptimizingJITCallee {
 public:
     static Ref<BBQCallee> create(Wasm::Entrypoint&& entrypoint, size_t index, std::pair<const Name*, RefPtr<NameSection>>&& name, std::unique_ptr<TierUpCount>&& tierUpCount, Vector<UnlinkedWasmToWasmCall>&& unlinkedCalls, HashMap<CallSiteIndex, Vector<OSREntryValue>>&& stackmaps, Vector<UnlinkedHandlerInfo>&& exceptionHandlers, Vector<CodeLocationLabel<ExceptionHandlerPtrTag>>&& exceptionHandlerLocations)
     {
@@ -191,30 +213,17 @@ public:
 
     TierUpCount* tierUpCount() { return m_tierUpCount.get(); }
 
-    const Vector<OSREntryValue>& stackmap(CallSiteIndex callSiteIndex) const;
-
-protected:
-    void linkExceptionHandlers(VM&) final;
-
 private:
     BBQCallee(Wasm::Entrypoint&& entrypoint, size_t index, std::pair<const Name*, RefPtr<NameSection>>&& name, std::unique_ptr<TierUpCount>&& tierUpCount, Vector<UnlinkedWasmToWasmCall>&& unlinkedCalls, HashMap<CallSiteIndex, Vector<OSREntryValue>>&& stackmaps, Vector<UnlinkedHandlerInfo>&& exceptionHandlers, Vector<CodeLocationLabel<ExceptionHandlerPtrTag>>&& exceptionHandlerLocations)
-        : JITCallee(Wasm::CompilationMode::BBQMode, WTFMove(entrypoint), index, WTFMove(name), WTFMove(unlinkedCalls))
+        : OptimizingJITCallee(Wasm::CompilationMode::BBQMode, WTFMove(entrypoint), index, WTFMove(name), WTFMove(unlinkedCalls), WTFMove(stackmaps), WTFMove(exceptionHandlers), WTFMove(exceptionHandlerLocations))
         , m_tierUpCount(WTFMove(tierUpCount))
-        , m_stackmaps(WTFMove(stackmaps))
-        , m_unlinkedExceptionHandlers(WTFMove(exceptionHandlers))
-        , m_exceptionHandlerLocations(WTFMove(exceptionHandlerLocations))
     {
-        RELEASE_ASSERT(m_unlinkedExceptionHandlers.size() == m_exceptionHandlerLocations.size());
-        m_numberOfExceptionHandlers = m_unlinkedExceptionHandlers.size();
     }
 
     RefPtr<OMGForOSREntryCallee> m_osrEntryCallee;
     RefPtr<OMGCallee> m_replacement;
     std::unique_ptr<TierUpCount> m_tierUpCount;
     bool m_didStartCompilingOSREntryCallee { false };
-    HashMap<CallSiteIndex, Vector<OSREntryValue>> m_stackmaps;
-    Vector<UnlinkedHandlerInfo> m_unlinkedExceptionHandlers;
-    Vector<CodeLocationLabel<ExceptionHandlerPtrTag>> m_exceptionHandlerLocations;
 };
 #endif
 

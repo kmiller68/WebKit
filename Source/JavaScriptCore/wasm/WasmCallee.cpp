@@ -141,7 +141,7 @@ std::tuple<void*, void*> LLIntCallee::range() const
     return { nullptr, nullptr };
 }
 
-void BBQCallee::linkExceptionHandlers(VM& vm)
+void OptimizingJITCallee::linkExceptionHandlers(VM& vm)
 {
     Instance* instance = vm.wasmContext.load();
 
@@ -157,7 +157,7 @@ void BBQCallee::linkExceptionHandlers(VM& vm)
     m_exceptionHandlerLocations.clear();
 }
 
-const Vector<OSREntryValue>& BBQCallee::stackmap(CallSiteIndex callSiteIndex) const
+const Vector<OSREntryValue>& OptimizingJITCallee::stackmap(CallSiteIndex callSiteIndex) const
 {
     auto iter = m_stackmaps.find(callSiteIndex);
     if (iter == m_stackmaps.end()) {

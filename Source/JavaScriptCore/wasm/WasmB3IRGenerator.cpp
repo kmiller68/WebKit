@@ -810,7 +810,7 @@ void B3IRGenerator::insertEntrySwitch()
         jit.probe([](Probe::Context& context) {
             CallFrame* callFrame = context.fp<CallFrame*>();
             CallSiteIndex callSiteIndex = callFrame->callSiteIndex();
-            BBQCallee* callee = bitwise_cast<BBQCallee*>(callFrame->callee().asWasmCallee());
+            OptimizingJITCallee* callee = bitwise_cast<OptimizingJITCallee*>(callFrame->callee().asWasmCallee());
             const StackMap& stackmap = callee->stackmap(callSiteIndex);
             VM* vm = context.gpr<VM*>(GPRInfo::regT0);
             uint64_t* buffer = vm->wasmContext.scratchBufferForSize(stackmap.size() * 8);
@@ -3232,6 +3232,23 @@ Expected<std::unique_ptr<InternalFunction>, String> parseAndCompile(CompilationC
     result->exceptionHandlers = irGenerator.takeExceptionHandlers();
 
     return result;
+}
+
+void computeExceptionHandlerLocations(Vector<CodeLocationLabel<ExceptionHandlerPtrTag>>& handlers, const InternalFunction* function, const CompilationContext& context, LinkBuffer& linkBuffer)
+{
+    unsigned entrypointIndex = 1;
+    unsigned numEntrypoints = context.procedure->numEntrypoints();
+    for (const UnlinkedHandlerInfo& handlerInfo : function->exceptionHandlers) {
+        RELEASE_ASSERT(entrypointIndex < numEntrypoints);
+        if (handlerInfo.m_type == HandlerType::Delegate) {
+            handlers.append({ });
+            continue;
+        }
+
+        handlers.append(linkBuffer.locationOf<ExceptionHandlerPtrTag>(context.procedure->code().entrypointLabel(entrypointIndex)));
+        ++entrypointIndex;
+    }
+    RELEASE_ASSERT(entrypointIndex == numEntrypoints);
 }
 
 // Custom wasm ops. These are the ones too messy to do in wasm.json.
