@@ -202,8 +202,12 @@ public:
     {
         ASSERT(destinations.size() <= values.size());
         auto offset = values.size() - destinations.size();
-        for (size_t i = 0; i < destinations.size(); ++i)
-            WasmMov::emit(this, destinations[i], values[offset + i]);
+        for (size_t i = 0; i < destinations.size(); ++i) {
+            auto& src = values[offset + i];
+            auto& dst = destinations[i];
+            if ((VirtualRegister)src != (VirtualRegister)dst)
+                WasmMov::emit(this, dst, src);
+        }
     }
 
     enum NoConsistencyCheckTag { NoConsistencyCheck };
@@ -547,7 +551,7 @@ void LLIntGenerator::repatch(const CatchRewriteInfo& info)
 {
     auto ref = m_writer.ref(info.m_instructionOffset);
     Opcode* instruction = ref->cast<Opcode, WasmOpcodeTraits>();
-    VirtualRegister exceptionRegister = virtualRegisterForLocal(m_stackSize + info.m_tryDepth);
+    VirtualRegister exceptionRegister = virtualRegisterForLocal(m_stackSize + info.m_tryDepth - 1);
     instruction->setException(exceptionRegister, []() {
         RELEASE_ASSERT_NOT_REACHED();
         return VirtualRegister();
@@ -567,7 +571,7 @@ std::unique_ptr<FunctionCodeBlock> LLIntGenerator::finalize()
 
     m_stackSize += m_maxTryDepth;
 
-    size_t numCalleeLocals = WTF::roundUpToMultipleOf(stackAlignmentRegisters(), m_maxStackSize + 2);
+    size_t numCalleeLocals = WTF::roundUpToMultipleOf(stackAlignmentRegisters(), m_maxStackSize);
     m_codeBlock->m_numCalleeLocals = numCalleeLocals;
     RELEASE_ASSERT(numCalleeLocals == m_codeBlock->m_numCalleeLocals);
 
@@ -1071,8 +1075,9 @@ auto LLIntGenerator::addTry(BlockSignature signature, Stack& enclosingStack, Con
     return { };
 }
 
-auto LLIntGenerator::addCatch(unsigned exceptionIndex, const Signature& exceptionSignature, Stack&, ControlType& data, ResultList& results) -> PartialResult
+auto LLIntGenerator::addCatch(unsigned exceptionIndex, const Signature& exceptionSignature, Stack& expressionStack, ControlType& data, ResultList& results) -> PartialResult
 {
+    materializeConstantsAndLocals(expressionStack);
     WasmJmp::emit(this, data.m_continuation->bind(this));
     return addCatchToUnreachable(exceptionIndex, exceptionSignature, data, results);
 }
@@ -1100,8 +1105,9 @@ auto LLIntGenerator::addCatchToUnreachable(unsigned exceptionIndex, const Signat
     return { };
 }
 
-auto LLIntGenerator::addCatchAll(Stack&, ControlType& data) -> PartialResult
+auto LLIntGenerator::addCatchAll(Stack& expressionStack, ControlType& data) -> PartialResult
 {
+    materializeConstantsAndLocals(expressionStack);
     WasmJmp::emit(this, data.m_continuation->bind(this));
     return addCatchAllToUnreachable(data);
 }
@@ -1123,8 +1129,9 @@ auto LLIntGenerator::addCatchAllToUnreachable(ControlType& data) -> PartialResul
     return { };
 }
 
-auto LLIntGenerator::addDelegate(Stack&, ControlType& target, ControlType& data) -> PartialResult
+auto LLIntGenerator::addDelegate(Stack& expressionStack, ControlType& target, ControlType& data) -> PartialResult
 {
+    materializeConstantsAndLocals(expressionStack);
     WasmJmp::emit(this, data.m_continuation->bind(this));
     return addDelegateToUnreachable(target, data);
 }
@@ -1146,10 +1153,13 @@ auto LLIntGenerator::addDelegateToUnreachable(ControlType& target, ControlType& 
     return { };
 }
 
-auto LLIntGenerator::addThrow(unsigned exceptionIndex, Vector<ExpressionType>&, Stack& enclosingStack) -> PartialResult
+auto LLIntGenerator::addThrow(unsigned exceptionIndex, Vector<ExpressionType>& args, Stack&) -> PartialResult
 {
     m_usesExceptions = true;
-    materializeConstantsAndLocals(enclosingStack);
+    Vector<ExpressionType> targets;
+    for (unsigned i = 0; i < args.size(); ++i)
+        targets.append(push());
+    unifyValuesWithBlock(targets, args);
     WasmThrow::emit(this, exceptionIndex, virtualRegisterForLocal(m_stackSize - 1));
     return { };
 }

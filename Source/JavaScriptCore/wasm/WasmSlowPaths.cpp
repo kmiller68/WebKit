@@ -602,7 +602,7 @@ WASM_SLOW_PATH_DECL(throw)
 
     FixedVector<uint64_t> values(tag.parameterCount());
     for (unsigned i = 0; i < tag.parameterCount(); ++i)
-        values[READ((instruction.m_firstValue - i)).encodedJSValue()];
+        values[i] = READ((instruction.m_firstValue - i)).encodedJSValue();
 
     JSWebAssemblyException* exception = JSWebAssemblyException::create(vm, globalObject->webAssemblyExceptionStructure(), tag, WTFMove(values));
     throwException(globalObject, throwScope, exception);

@@ -374,11 +374,12 @@ testSimpleTryCatchValue();
 testCallTryCatch();
 testCallTryCatchAll();
 testCallTryCatchValue();
-// TODO: enable this test
-//testStackTryCatch();
 testLiveAfterTryCatch();
 testLiveAfterTryCatchAll();
 testUnifyTryCatchCatch();
 testUnifyTryCatchCatchAll();
 testUnifyTryNoThrow();
 testUnifyTryNoCatch();
+
+// TODO: enable this test
+// testStackTryCatch();
