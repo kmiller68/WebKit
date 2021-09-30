@@ -227,6 +227,7 @@ void BBQPlan::didCompleteCompilation()
         const uint32_t functionIndexSpace = functionIndex + m_moduleInformation->importFunctionCount();
         ASSERT(functionIndexSpace < m_moduleInformation->functionIndexSpaceSize());
         {
+            InternalFunction* function = m_wasmInternalFunctions[functionIndex].get();
             LinkBuffer linkBuffer(*context.wasmEntrypointJIT, nullptr, LinkBuffer::Profile::Wasm, JITCompilationCanFail);
             if (UNLIKELY(linkBuffer.didFailToAllocate())) {
                 Base::fail(makeString("Out of executable memory in function at index ", String::number(functionIndex)));
@@ -234,10 +235,21 @@ void BBQPlan::didCompleteCompilation()
             }
 
             auto& handlers = m_exceptionHandlerLocations[functionIndex];
-            for (unsigned entrypointIndex = 1; entrypointIndex < context.procedure->numEntrypoints(); ++entrypointIndex)
-                handlers.append(linkBuffer.locationOf<ExceptionHandlerPtrTag>(context.procedure->code().entrypointLabel(entrypointIndex)));
+            unsigned entrypointIndex = 1;
+            unsigned numEntrypoints = context.procedure->numEntrypoints();
+            for (UnlinkedHandlerInfo& handlerInfo : function->exceptionHandlers) {
+                RELEASE_ASSERT(entrypointIndex < numEntrypoints);
+                if (handlerInfo.m_type == HandlerType::Delegate) {
+                    handlers.append({ });
+                    continue;
+                }
 
-            m_wasmInternalFunctions[functionIndex]->entrypoint.compilation = makeUnique<Compilation>(
+                handlers.append(linkBuffer.locationOf<ExceptionHandlerPtrTag>(context.procedure->code().entrypointLabel(entrypointIndex)));
+                ++entrypointIndex;
+            }
+            RELEASE_ASSERT(entrypointIndex == numEntrypoints);
+
+            function->entrypoint.compilation = makeUnique<Compilation>(
                 FINALIZE_CODE(linkBuffer, JITCompilationPtrTag, "WebAssembly BBQ function[%i] %s name %s", functionIndex, signature.toString().ascii().data(), makeString(IndexOrName(functionIndexSpace, m_moduleInformation->nameSection->get(functionIndexSpace))).ascii().data()),
                 WTFMove(context.wasmEntrypointByproducts));
         }

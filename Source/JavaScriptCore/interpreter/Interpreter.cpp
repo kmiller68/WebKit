@@ -517,9 +517,18 @@ CatchInfo::CatchInfo(const HandlerInfo* handler, CodeBlock* codeBlock)
     m_valid = !!handler;
     if (m_valid) {
         m_type = handler->type();
-        m_interpreterTarget = handler->target;
         m_nativeCode = handler->nativeCode;
-        m_catchPCForInterpreter = codeBlock->instructions().at(handler->target).ptr();
+
+        // handler->target is meaningless for getting a code offset when catching
+        // the exception in a DFG/FTL frame. This bytecode target offset could be
+        // something that's in an inlined frame, which means an array access
+        // with this bytecode offset in the machine frame is utterly meaningless
+        // and can cause an overflow. OSR exit properly exits to handler->target
+        // in the proper frame.
+        if (!JITCode::isOptimizingJIT(codeBlock->jitType()))
+            m_catchPCForInterpreter = codeBlock->instructions().at(handler->target).ptr();
+        else
+            m_catchPCForInterpreter = nullptr;
     }
 }
 
@@ -529,7 +538,6 @@ CatchInfo::CatchInfo(const Wasm::HandlerInfo* handler, const Wasm::Callee* calle
     m_valid = !!handler;
     if (m_valid) {
         m_type = HandlerType::Catch;
-        m_interpreterTarget = handler->m_target;
         m_nativeCode = handler->m_nativeCode;
         if (const Wasm::FunctionCodeBlock* codeBlock = callee->functionCodeBlock())
             m_catchPCForInterpreter = codeBlock->instructions().at(handler->m_target).ptr();

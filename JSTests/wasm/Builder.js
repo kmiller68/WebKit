@@ -356,6 +356,7 @@ const _createFunctionBuilder = (func, builder, previousBuilder) => {
                 nextBuilder = functionBuilder;
                 break;
             case "End":
+            case "Delegate":
                 nextBuilder = previousBuilder;
                 break;
             case "Block":

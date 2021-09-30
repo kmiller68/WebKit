@@ -236,6 +236,12 @@ public:
             return m_tryEnd;
         }
 
+        unsigned tryDepth() const
+        {
+            ASSERT(controlBlockType == BlockType::Try || controlBlockType == BlockType::Catch);
+            return m_tryDepth;
+        }
+
         CatchKind catchKind() const
         {
             ASSERT(controlBlockType == BlockType::Catch);
@@ -496,7 +502,6 @@ private:
     unsigned m_numImportFunctions;
 
     Checked<unsigned> m_tryDepth { 0 };
-    Checked<unsigned> m_maxTryDepth { 0 };
     Checked<unsigned> m_callSiteIndex { 0 };
     StackMaps m_stackmaps;
     Vector<UnlinkedHandlerInfo> m_exceptionHandlers;
@@ -2481,8 +2486,6 @@ auto B3IRGenerator::addElseToUnreachable(ControlData& data) -> PartialResult
 auto B3IRGenerator::addTry(BlockSignature signature, Stack& enclosingStack, ControlType& result, Stack& newStack) -> PartialResult
 {
     ++m_tryDepth;
-    if (m_maxTryDepth < m_tryDepth)
-        m_maxTryDepth = m_tryDepth;
 
     BasicBlock* continuation = m_proc.addBlock();
     splitStack(signature, enclosingStack, newStack);
@@ -2531,7 +2534,7 @@ auto B3IRGenerator::addCatchToUnreachable(unsigned exceptionIndex, const Signatu
     if (ControlType::isTry(data))
         data.convertTryToCatch(++m_callSiteIndex);
 
-    m_exceptionHandlers.append({ HandlerType::Catch, data.tryStart(), data.tryEnd(), m_callSiteIndex, m_tryDepth, exceptionIndex });
+    m_exceptionHandlers.append({ HandlerType::Catch, data.tryStart(), data.tryEnd(), 0, m_tryDepth, exceptionIndex });
 
     Value* pointer = m_currentBlock->appendNew<ArgumentRegValue>(m_proc, Origin(), GPRInfo::argumentGPR0);
 
@@ -2594,7 +2597,7 @@ auto B3IRGenerator::addCatchAllToUnreachable(ControlType& data) -> PartialResult
     if (ControlType::isTry(data))
         data.convertTryToCatch(++m_callSiteIndex);
 
-    m_exceptionHandlers.append({ HandlerType::CatchAll, data.tryStart(), data.tryEnd(), m_callSiteIndex, m_tryDepth, 0 });
+    m_exceptionHandlers.append({ HandlerType::CatchAll, data.tryStart(), data.tryEnd(), 0, m_tryDepth, 0 });
 
     Value* pointer = m_currentBlock->appendNew<ArgumentRegValue>(m_proc, Origin(), GPRInfo::argumentGPR0);
 
@@ -2645,18 +2648,15 @@ auto B3IRGenerator::addDelegateToUnreachable(ControlType& target, ControlType& d
 {
     m_currentBlock = data.continuation;
     //Ref<Label> delegateLabel = newEmittedLabel();
-    //m_stackSize = data.stackSize();
 
-    //unsigned targetDepth = 0;
-    //if (ControlType::isTry(target))
-        //targetDepth = target.tryDepth();
+    unsigned targetDepth = 0;
+    if (ControlType::isTry(target))
+        targetDepth = target.tryDepth();
 
-    //m_exceptionHandlers.append({ HandlerType::Delegate, try_.m_callSiteIndex, m_callSiteIndex, m_tryDepth, targetDepth });
+    m_exceptionHandlers.append({ HandlerType::Delegate, data.tryStart(), ++m_callSiteIndex, 0, m_tryDepth, targetDepth });
 
-    //--m_tryDepth;
-    //m_currentBlock = data.continuation;
-    UNUSED_PARAM(target);
-    UNUSED_PARAM(data);
+    --m_tryDepth;
+    m_currentBlock = data.continuation;
     return { };
 }
 
