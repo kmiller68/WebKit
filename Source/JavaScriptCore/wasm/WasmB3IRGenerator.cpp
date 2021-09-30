@@ -2726,14 +2726,22 @@ auto B3IRGenerator::addThrow(unsigned exceptionIndex, Vector<ExpressionType>& ar
 auto B3IRGenerator::addRethrow(unsigned, ControlType& data) -> PartialResult
 {
     PatchpointValue* patch = m_proc.add<PatchpointValue>(B3::Void, origin());
+    patch->clobber(RegisterSet::macroScratchRegisters());
+    RegisterSet clobberLate;
+    clobberLate.add(GPRInfo::argumentGPR0);
+    clobberLate.add(GPRInfo::argumentGPR1);
+    clobberLate.add(GPRInfo::argumentGPR2);
     patch->effects.terminal = true;
     patch->append(instanceValue(), ValueRep::SomeRegister);
+    patch->appendSomeRegister(framePointer());
     patch->append(data.exception(), ValueRep::SomeRegister);
-    preparePatchpointForExceptions(m_currentBlock, patch);
-    patch->setGenerator([] (CCallHelpers& jit, const B3::StackmapGenerationParams& params) {
+    PatchpointExceptionHandle handle = preparePatchpointForExceptions(m_currentBlock, patch);
+    patch->setGenerator([this, handle] (CCallHelpers& jit, const B3::StackmapGenerationParams& params) {
         AllowMacroScratchRegisterUsage allowScratch(jit);
         jit.move(params[0].gpr(), GPRInfo::argumentGPR0);
         jit.move(params[1].gpr(), GPRInfo::argumentGPR1);
+        jit.move(params[2].gpr(), GPRInfo::argumentGPR2);
+        handle.generate(jit, params, this);
         CCallHelpers::Call call = jit.call(OperationPtrTag);
         jit.farJump(GPRInfo::returnValueGPR, ExceptionHandlerPtrTag);
         jit.addLinkTask([call] (LinkBuffer& linkBuffer) {
