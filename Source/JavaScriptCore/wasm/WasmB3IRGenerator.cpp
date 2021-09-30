@@ -3236,6 +3236,9 @@ Expected<std::unique_ptr<InternalFunction>, String> parseAndCompile(CompilationC
 
 void computeExceptionHandlerLocations(Vector<CodeLocationLabel<ExceptionHandlerPtrTag>>& handlers, const InternalFunction* function, const CompilationContext& context, LinkBuffer& linkBuffer)
 {
+    if (!context.procedure)
+        return;
+
     unsigned entrypointIndex = 1;
     unsigned numEntrypoints = context.procedure->numEntrypoints();
     for (const UnlinkedHandlerInfo& handlerInfo : function->exceptionHandlers) {

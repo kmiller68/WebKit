@@ -190,7 +190,7 @@ public:
         return UnexpectedResult(makeString("WebAssembly.Module failed compiling: "_s, makeString(args)...));
     }
 
-    LLIntGenerator(const ModuleInformation&, unsigned functionIndex, const Signature&);
+    LLIntGenerator(ModuleInformation&, unsigned functionIndex, const Signature&);
 
     std::unique_ptr<FunctionCodeBlock> finalize();
 
@@ -480,7 +480,7 @@ private:
     };
 
     FunctionParser<LLIntGenerator>* m_parser { nullptr };
-    const ModuleInformation& m_info;
+    ModuleInformation& m_info;
     const unsigned m_functionIndex { UINT_MAX };
     Vector<VirtualRegister> m_normalizedArguments;
     HashMap<Label*, Vector<SwitchEntry>> m_switches;
@@ -496,9 +496,10 @@ private:
     Vector<CatchRewriteInfo> m_rethrows;
     Vector<CatchRewriteInfo> m_catches;
     Vector<CatchRewriteInfo> m_catchAlls;
+    bool m_usesExceptions { false };
 };
 
-Expected<std::unique_ptr<FunctionCodeBlock>, String> parseAndCompileBytecode(const uint8_t* functionStart, size_t functionLength, const Signature& signature, const ModuleInformation& info, uint32_t functionIndex)
+Expected<std::unique_ptr<FunctionCodeBlock>, String> parseAndCompileBytecode(const uint8_t* functionStart, size_t functionLength, const Signature& signature, ModuleInformation& info, uint32_t functionIndex)
 {
     LLIntGenerator llintGenerator(info, functionIndex, signature);
     FunctionParser<LLIntGenerator> parser(llintGenerator, functionStart, functionLength, signature, info);
@@ -522,7 +523,7 @@ static ThreadSpecific<Buffer>& threadSpecificBuffer()
     return *threadSpecificBufferPtr;
 }
 
-LLIntGenerator::LLIntGenerator(const ModuleInformation& info, unsigned functionIndex, const Signature&)
+LLIntGenerator::LLIntGenerator(ModuleInformation& info, unsigned functionIndex, const Signature&)
     : BytecodeGeneratorBase(makeUnique<FunctionCodeBlock>(functionIndex), 0)
     , m_info(info)
     , m_functionIndex(functionIndex)
@@ -577,6 +578,9 @@ std::unique_ptr<FunctionCodeBlock> LLIntGenerator::finalize()
     usedBuffer.resize(0);
     RELEASE_ASSERT(usedBuffer.capacity() == oldCapacity);
     *threadSpecific = WTFMove(usedBuffer);
+
+    if (!m_usesExceptions)
+        m_info.m_functionDoesNotUseExceptions.set(m_functionIndex);
 
     return WTFMove(m_codeBlock);
 }
@@ -1055,6 +1059,7 @@ auto LLIntGenerator::addElseToUnreachable(ControlType& data) -> PartialResult
 
 auto LLIntGenerator::addTry(BlockSignature signature, Stack& enclosingStack, ControlType& result, Stack& newStack) -> PartialResult
 {
+    m_usesExceptions = true;
     ++m_tryDepth;
     if (m_maxTryDepth < m_tryDepth)
         m_maxTryDepth = m_tryDepth;
@@ -1074,6 +1079,7 @@ auto LLIntGenerator::addCatch(unsigned exceptionIndex, const Signature& exceptio
 
 auto LLIntGenerator::addCatchToUnreachable(unsigned exceptionIndex, const Signature& exceptionSignature, ControlType& data, ResultList& results) -> PartialResult
 {
+    m_usesExceptions = true;
     Ref<Label> catchLabel = newEmittedLabel();
 
     m_stackSize = data.stackSize();
@@ -1102,6 +1108,7 @@ auto LLIntGenerator::addCatchAll(Stack&, ControlType& data) -> PartialResult
 
 auto LLIntGenerator::addCatchAllToUnreachable(ControlType& data) -> PartialResult
 {
+    m_usesExceptions = true;
     Ref<Label> catchLabel = newEmittedLabel();
     WasmCatchAll::emit<OpcodeSize::Wide32>(this, virtualRegisterForLocal(0));
     m_catchAlls.append({ m_lastInstruction.offset(), m_tryDepth });
@@ -1124,6 +1131,7 @@ auto LLIntGenerator::addDelegate(Stack&, ControlType& target, ControlType& data)
 
 auto LLIntGenerator::addDelegateToUnreachable(ControlType& target, ControlType& data) -> PartialResult
 {
+    m_usesExceptions = true;
     Ref<Label> delegateLabel = newEmittedLabel();
     m_stackSize = data.stackSize();
 
@@ -1140,6 +1148,7 @@ auto LLIntGenerator::addDelegateToUnreachable(ControlType& target, ControlType& 
 
 auto LLIntGenerator::addThrow(unsigned exceptionIndex, Vector<ExpressionType>&, Stack& enclosingStack) -> PartialResult
 {
+    m_usesExceptions = true;
     materializeConstantsAndLocals(enclosingStack);
     WasmThrow::emit(this, exceptionIndex, virtualRegisterForLocal(m_stackSize - 1));
     return { };
@@ -1147,6 +1156,7 @@ auto LLIntGenerator::addThrow(unsigned exceptionIndex, Vector<ExpressionType>&, 
 
 auto LLIntGenerator::addRethrow(unsigned, ControlType& data) -> PartialResult
 {
+    m_usesExceptions = true;
     ASSERT(WTF::holds_alternative<ControlCatch>(data));
     ControlCatch catch_ = WTF::get<ControlCatch>(data);
     WasmRethrow::emit<OpcodeSize::Wide32>(this, virtualRegisterForLocal(0));

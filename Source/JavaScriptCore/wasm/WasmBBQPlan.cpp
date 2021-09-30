@@ -198,11 +198,15 @@ std::unique_ptr<InternalFunction> BBQPlan::compileFunction(uint32_t functionInde
     bool forceUsingB3 = false;
     if (Options::webAssemblyBBQAirModeThreshold() && m_moduleInformation->codeSectionSize >= Options::webAssemblyBBQAirModeThreshold())
         forceUsingB3 = true;
+    else if (!m_moduleInformation->m_functionDoesNotUseExceptions.get(functionIndex))
+        forceUsingB3 = true;
+    else if (!Options::wasmBBQUsesAir())
+        forceUsingB3 = true;
 
-    if (!forceUsingB3 && Options::wasmBBQUsesAir())
-        parseAndCompileResult = parseAndCompileAir(context, function, signature, unlinkedWasmToWasmCalls, m_moduleInformation.get(), m_mode, functionIndex, tierUp);
-    else
+    if (forceUsingB3)
         parseAndCompileResult = parseAndCompile(context, function, signature, unlinkedWasmToWasmCalls, osrEntryScratchBufferSize, m_moduleInformation.get(), m_mode, CompilationMode::BBQMode, functionIndex, UINT32_MAX, tierUp);
+    else
+        parseAndCompileResult = parseAndCompileAir(context, function, signature, unlinkedWasmToWasmCalls, m_moduleInformation.get(), m_mode, functionIndex, tierUp);
 
     if (UNLIKELY(!parseAndCompileResult)) {
         Locker locker { m_lock };
