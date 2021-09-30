@@ -70,7 +70,7 @@ struct UnlinkedHandlerInfo : public HandlerInfoBase {
 struct HandlerInfo : public HandlerInfoBase {
     static const HandlerInfo* handlerForIndex(const Vector<HandlerInfo>& exeptionHandlers, unsigned index, const Wasm::Tag& exceptionTag);
 
-    void initialize(Instance*, const UnlinkedHandlerInfo&, CodeLocationLabel<ExceptionHandlerPtrTag>);
+    void initialize(Instance*, const UnlinkedHandlerInfo&, MacroAssemblerCodePtr<ExceptionHandlerPtrTag>);
 
     const Wasm::Tag& tag() const
     {
@@ -84,7 +84,7 @@ struct HandlerInfo : public HandlerInfoBase {
         return m_delegateTarget;
     }
 
-    CodeLocationLabel<ExceptionHandlerPtrTag> m_nativeCode;
+    MacroAssemblerCodePtr<ExceptionHandlerPtrTag> m_nativeCode;
 
 private:
     union {

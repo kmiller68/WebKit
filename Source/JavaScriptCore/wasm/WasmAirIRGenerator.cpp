@@ -326,13 +326,13 @@ public:
     PartialResult WARN_UNUSED_RETURN addElseToUnreachable(ControlData&);
 
     PartialResult WARN_UNUSED_RETURN addTry(BlockSignature, Stack& enclosingStack, ControlType& result, Stack& newStack);
-    PartialResult WARN_UNUSED_RETURN addCatch(unsigned exceptionIndex, const Signature&, ControlType&, ResultList&);
+    PartialResult WARN_UNUSED_RETURN addCatch(unsigned exceptionIndex, const Signature&, Stack&, ControlType&, ResultList&);
     PartialResult WARN_UNUSED_RETURN addCatchToUnreachable(unsigned exceptionIndex, const Signature&, ControlType&, ResultList&);
-    PartialResult WARN_UNUSED_RETURN addCatchAll(ControlType&);
+    PartialResult WARN_UNUSED_RETURN addCatchAll(Stack&,ControlType&);
     PartialResult WARN_UNUSED_RETURN addCatchAllToUnreachable(ControlType&);
-    PartialResult WARN_UNUSED_RETURN addDelegate(ControlType&, ControlType&);
+    PartialResult WARN_UNUSED_RETURN addDelegate(Stack&, ControlType&, ControlType&);
     PartialResult WARN_UNUSED_RETURN addDelegateToUnreachable(ControlType&, ControlType&);
-    PartialResult WARN_UNUSED_RETURN addThrow(unsigned exceptionIndex, Stack&);
+    PartialResult WARN_UNUSED_RETURN addThrow(unsigned exceptionIndex, Vector<ExpressionType>& args, Stack&);
     PartialResult WARN_UNUSED_RETURN addRethrow(unsigned, ControlType&);
 
     PartialResult WARN_UNUSED_RETURN addReturn(const ControlData&, const Stack& returnValues);
@@ -3008,40 +3008,43 @@ auto AirIRGenerator::addTry(BlockSignature, Stack& , ControlType& , Stack& ) -> 
     return { };
 }
 
-auto AirIRGenerator::addCatch(unsigned exceptionIndex, const Signature& exceptionSignature, ControlType& data, ResultList& results) -> PartialResult
+auto AirIRGenerator::addCatch(unsigned, const Signature&, Stack&, ControlType&, ResultList&) -> PartialResult
 {
-    //unifyValuesWithBlock(expressionStack, data.results);
-    append(Jump);
-    m_currentBlock->setSuccessors(data.continuation);
-    return addCatchToUnreachable(exceptionIndex, exceptionSignature, data, results);
+    RELEASE_ASSERT_NOT_REACHED();
+    return { };
 }
 
 auto AirIRGenerator::addCatchToUnreachable(unsigned , const Signature& , ControlType& , ResultList& ) -> PartialResult
 {
+    RELEASE_ASSERT_NOT_REACHED();
     return { };
 }
 
-auto AirIRGenerator::addCatchAll(ControlType&) -> PartialResult
+auto AirIRGenerator::addCatchAll(Stack&, ControlType&) -> PartialResult
 {
+    RELEASE_ASSERT_NOT_REACHED();
     return { };
 }
 
 auto AirIRGenerator::addCatchAllToUnreachable(ControlType&) -> PartialResult
 {
+    RELEASE_ASSERT_NOT_REACHED();
     return { };
 }
 
-auto AirIRGenerator::addDelegate(ControlType&, ControlType& ) -> PartialResult
+auto AirIRGenerator::addDelegate(Stack&, ControlType&, ControlType&) -> PartialResult
 {
+    RELEASE_ASSERT_NOT_REACHED();
     return { };
 }
 
 auto AirIRGenerator::addDelegateToUnreachable(ControlType&, ControlType&) -> PartialResult
 {
+    RELEASE_ASSERT_NOT_REACHED();
     return { };
 }
 
-auto AirIRGenerator::addThrow(unsigned exceptionIndex, Stack&) -> PartialResult
+auto AirIRGenerator::addThrow(unsigned exceptionIndex, Vector<ExpressionType>&, Stack&) -> PartialResult
 {
     UNUSED_PARAM(exceptionIndex);
     return { };

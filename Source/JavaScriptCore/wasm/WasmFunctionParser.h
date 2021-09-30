@@ -42,6 +42,11 @@ enum class BlockType {
     Catch,
 };
 
+enum class CatchKind {
+    Catch,
+    CatchAll,
+};
+
 template<typename EnclosingStack, typename NewStack>
 void splitStack(BlockSignature signature, EnclosingStack& enclosingStack, NewStack& newStack)
 {
@@ -1385,9 +1390,10 @@ FOR_EACH_WASM_MEMORY_STORE_OP(CREATE_CASE)
         WASM_VALIDATOR_FAIL_IF(!isTryOrCatch(controlEntry.controlData), "catch block isn't associated to a try");
         WASM_FAIL_IF_HELPER_FAILS(unify(controlEntry.controlData));
 
-        m_expressionStack = { };
         ResultList results;
-        WASM_TRY_ADD_TO_CONTEXT(addCatch(exceptionIndex, exceptionSignature, controlEntry.controlData, results));
+        Stack preCatchStack;
+        m_expressionStack.swap(preCatchStack);
+        WASM_TRY_ADD_TO_CONTEXT(addCatch(exceptionIndex, exceptionSignature, preCatchStack, controlEntry.controlData, results));
 
         RELEASE_ASSERT(exceptionSignature.argumentCount() == results.size());
         for (unsigned i = 0; i < exceptionSignature.argumentCount(); ++i)
@@ -1403,8 +1409,10 @@ FOR_EACH_WASM_MEMORY_STORE_OP(CREATE_CASE)
         WASM_VALIDATOR_FAIL_IF(!isTryOrCatch(controlEntry.controlData), "catch block isn't associated to a try");
         WASM_FAIL_IF_HELPER_FAILS(unify(controlEntry.controlData));
 
-        m_expressionStack = { };
-        WASM_TRY_ADD_TO_CONTEXT(addCatchAll(controlEntry.controlData));
+        ResultList results;
+        Stack preCatchStack;
+        m_expressionStack.swap(preCatchStack);
+        WASM_TRY_ADD_TO_CONTEXT(addCatchAll(preCatchStack, controlEntry.controlData));
         return { };
     }
 
@@ -1418,16 +1426,11 @@ FOR_EACH_WASM_MEMORY_STORE_OP(CREATE_CASE)
         WASM_VALIDATOR_FAIL_IF(!ControlType::isTry(controlEntry.controlData), "delegate isn't associated to a try");
 
         ControlType& data = m_controlStack[m_controlStack.size() - 1 - target].controlData;
-        //dataLogLn("isBlock: ", ControlType::isBlock(data));
-        //dataLogLn("isTopLevel: ", ControlType::isTopLevel(data));
-        //dataLogLn("isLoop: ", ControlType::isLoop(data));
-        //dataLogLn("isIf: ", ControlType::isIf(data));
-        //dataLogLn("isTry: ", ControlType::isTry(data));
-        //dataLogLn("isCatch: ", ControlType::isCatch(data));
         WASM_VALIDATOR_FAIL_IF(!ControlType::isTry(data) && !ControlType::isTopLevel(data), "delegate target isn't a try block");
 
         WASM_FAIL_IF_HELPER_FAILS(unify(controlEntry.controlData));
-        WASM_TRY_ADD_TO_CONTEXT(addDelegate(data, controlEntry.controlData));
+        WASM_TRY_ADD_TO_CONTEXT(addDelegate(m_expressionStack, data, controlEntry.controlData));
+        m_expressionStack.swap(controlEntry.enclosedExpressionStack);
         return { };
     }
 
@@ -1439,10 +1442,17 @@ FOR_EACH_WASM_MEMORY_STORE_OP(CREATE_CASE)
 
         WASM_VALIDATOR_FAIL_IF(m_expressionStack.size() < exceptionSignature.argumentCount(), "Too few arguments on stack for the exception being thrown. The exception expects ", exceptionSignature.argumentCount(), ", but only ", m_expressionStack.size(), " were present. Exception has signature: ", exceptionSignature.toString());
         unsigned offset = m_expressionStack.size() - exceptionSignature.argumentCount();
-        for (unsigned i = 0; i < exceptionSignature.argumentCount(); ++i)
-            WASM_VALIDATOR_FAIL_IF(m_expressionStack[offset + i].type() != exceptionSignature.argument(i), "The exception being thrown expects the argument at index ", i, " to be ", exceptionSignature.argument(i).kind, " but argument has type ", m_expressionStack[i].type().kind);
+        Vector<ExpressionType> args;
+        WASM_PARSER_FAIL_IF(!args.tryReserveCapacity(exceptionSignature.argumentCount()), "can't allocate enough memory for throw's ", exceptionSignature.argumentCount(), " arguments");
+        for (unsigned i = 0; i < exceptionSignature.argumentCount(); ++i) {
+            TypedExpression arg = m_expressionStack.at(offset + i);
+            WASM_VALIDATOR_FAIL_IF(arg.type() != exceptionSignature.argument(i), "The exception being thrown expects the argument at index ", i, " to be ", exceptionSignature.argument(i).kind, " but argument has type ", arg.type().kind);
+            args.uncheckedAppend(arg);
+            m_context.didPopValueFromStack();
+        }
+        m_expressionStack.shrink(offset);
 
-        WASM_TRY_ADD_TO_CONTEXT(addThrow(exceptionIndex, m_expressionStack));
+        WASM_TRY_ADD_TO_CONTEXT(addThrow(exceptionIndex, args, m_expressionStack));
         m_unreachableBlocks = 1;
         return { };
     }
@@ -1661,6 +1671,7 @@ auto FunctionParser<Context>::parseUnreachableExpression() -> PartialResult
         WASM_VALIDATOR_FAIL_IF(!ControlType::isTry(data) && !ControlType::isTopLevel(data), "delegate target isn't a try block");
 
         WASM_TRY_ADD_TO_CONTEXT(addDelegateToUnreachable(data, controlEntry.controlData));
+        m_expressionStack.swap(controlEntry.enclosedExpressionStack);
         return { };
     }
 

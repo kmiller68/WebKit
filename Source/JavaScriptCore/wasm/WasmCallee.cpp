@@ -57,6 +57,15 @@ void Callee::dump(PrintStream& out) const
     out.print(makeString(m_indexOrName));
 }
 
+const HandlerInfo* Callee::handlerForIndex(VM& vm, unsigned index, const Tag& tag)
+{
+    if (!m_numberOfExceptionHandlers)
+        return nullptr;
+    if (!m_exceptionHandlers.size())
+        linkExceptionHandlers(vm);
+    return HandlerInfo::handlerForIndex(m_exceptionHandlers, index, tag);
+}
+
 JITCallee::JITCallee(Wasm::CompilationMode compilationMode, Entrypoint&& entrypoint)
     : Callee(compilationMode)
     , m_entrypoint(WTFMove(entrypoint))
@@ -74,6 +83,7 @@ LLIntCallee::LLIntCallee(std::unique_ptr<FunctionCodeBlock> codeBlock, size_t in
     : Callee(Wasm::CompilationMode::LLIntMode, index, WTFMove(name))
     , m_codeBlock(WTFMove(codeBlock))
 {
+    m_numberOfExceptionHandlers = m_codeBlock->numberOfExceptionHandlers();
 }
 
 void LLIntCallee::linkExceptionHandlers(VM& vm)
@@ -94,15 +104,6 @@ void LLIntCallee::linkExceptionHandlers(VM& vm)
             handler.initialize(instance, unlinkedHandler, target);
         }
     }
-}
-
-const HandlerInfo* LLIntCallee::handlerForIndex(VM& vm, unsigned index, const Tag& tag)
-{
-    if (!m_codeBlock->numberOfExceptionHandlers())
-        return nullptr;
-    if (!m_exceptionHandlers.size())
-        linkExceptionHandlers(vm);
-    return HandlerInfo::handlerForIndex(m_exceptionHandlers, index, tag);
 }
 
 void LLIntCallee::setEntrypoint(MacroAssemblerCodePtr<WasmEntryPtrTag> entrypoint)
@@ -139,6 +140,38 @@ std::tuple<void*, void*> LLIntCallee::range() const
 {
     return { nullptr, nullptr };
 }
+
+void BBQCallee::linkExceptionHandlers(VM& vm)
+{
+    Instance* instance = vm.wasmContext.load();
+
+    size_t count = m_unlinkedExceptionHandlers.size();
+    m_exceptionHandlers.resizeToFit(count);
+    for (size_t i = 0; i < count; i++) {
+        HandlerInfo& handler = m_exceptionHandlers[i];
+        const UnlinkedHandlerInfo& unlinkedHandler = m_unlinkedExceptionHandlers[i];
+        CodeLocationLabel<ExceptionHandlerPtrTag> location = m_exceptionHandlerLocations[i];
+        handler.initialize(instance, unlinkedHandler, location);
+    }
+    m_unlinkedExceptionHandlers.clear();
+    m_exceptionHandlerLocations.clear();
+}
+
+const Vector<OSREntryValue>& BBQCallee::stackmap(CallSiteIndex callSiteIndex) const
+{
+    auto iter = m_stackmaps.find(callSiteIndex);
+    if (iter == m_stackmaps.end()) {
+        for (auto pair : m_stackmaps) {
+            dataLog(pair.key.bits(), ": ");
+            for (auto value : pair.value)
+                dataLog(value, ", ");
+            dataLogLn("");
+        }
+    }
+    RELEASE_ASSERT(iter != m_stackmaps.end());
+    return iter->value;
+}
+
 
 } } // namespace JSC::Wasm
 

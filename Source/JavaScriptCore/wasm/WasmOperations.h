@@ -32,6 +32,7 @@
 #include "JSCJSValue.h"
 #include "SlowPathReturnType.h"
 #include "WasmExceptionType.h"
+#include "WasmOSREntryData.h"
 
 namespace JSC {
 
@@ -45,6 +46,8 @@ namespace Wasm {
 
 class Instance;
 class Signature;
+
+void loadValuesIntoBuffer(Probe::Context&, const StackMap&, uint64_t* buffer);
 
 #if ENABLE(WEBASSEMBLY_B3JIT)
 JSC_DECLARE_JIT_OPERATION(operationWasmTriggerOSREntryNow, void, (Probe::Context&));
@@ -85,7 +88,15 @@ JSC_DECLARE_JIT_OPERATION(operationMemoryAtomicNotify, int32_t, (Instance*, unsi
 JSC_DECLARE_JIT_OPERATION(operationWasmMemoryInit, bool, (Instance*, unsigned dataSegmentIndex, uint32_t dstAddress, uint32_t srcAddress, uint32_t length));
 JSC_DECLARE_JIT_OPERATION(operationWasmDataDrop, void, (Instance*, unsigned dataSegmentIndex));
 
+JSC_DECLARE_JIT_OPERATION(operationWasmThrow, void*, (Instance*, CallFrame*, unsigned exceptionIndex, EncodedJSValue*));
+JSC_DECLARE_JIT_OPERATION(operationWasmRethrow, void*, (Instance*, CallFrame*, EncodedJSValue thrownValue));
+
 JSC_DECLARE_JIT_OPERATION(operationWasmToJSException, void*, (CallFrame*, Wasm::ExceptionType, Instance*));
+struct PointerPair {
+    void* first;
+    void* second;
+};
+JSC_DECLARE_JIT_OPERATION(operationWasmRetrieveAndClearExceptionIfCatchable, PointerPair, (Instance*));
 
 } } // namespace JSC::Wasm
 

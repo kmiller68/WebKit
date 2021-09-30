@@ -32,9 +32,11 @@
 #include "JSString.h"
 #include "MacroAssemblerCodeRef.h"
 #include "RegisterAtOffsetList.h"
+#include "WasmHandlerInfo.h"
 #include "WasmMemoryInformation.h"
 #include "WasmName.h"
 #include "WasmNameSection.h"
+#include "WasmOSREntryData.h"
 #include "WasmOps.h"
 #include "WasmPageCount.h"
 #include "WasmSignature.h"
@@ -391,6 +393,8 @@ struct Entrypoint {
 struct InternalFunction {
     WTF_MAKE_STRUCT_FAST_ALLOCATED;
     CodeLocationDataLabelPtr<WasmEntryPtrTag> calleeMoveLocation;
+    StackMaps stackmaps;
+    Vector<UnlinkedHandlerInfo> exceptionHandlers;
     Entrypoint entrypoint;
 };
 

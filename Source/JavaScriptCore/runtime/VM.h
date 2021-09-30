@@ -29,6 +29,7 @@
 #pragma once
 
 #include "CallData.h"
+#include "CalleeBits.h"
 #include "CodeSpecializationKind.h"
 #include "CompleteSubspace.h"
 #include "ConcurrentJSLock.h"
@@ -903,6 +904,11 @@ public:
         return OBJECT_OFFSETOF(VM, callFrameForCatch);
     }
 
+    static ptrdiff_t calleeForWasmCatchOffset()
+    {
+        return OBJECT_OFFSETOF(VM, calleeForWasmCatch);
+    }
+
     static ptrdiff_t topEntryFrameOffset()
     {
         return OBJECT_OFFSETOF(VM, topEntryFrame);
@@ -997,6 +1003,7 @@ public:
     unsigned varargsLength;
     CallFrame* newCallFrameReturnValue;
     CallFrame* callFrameForCatch;
+    CalleeBits calleeForWasmCatch;
     void* targetMachinePCForThrow;
     const Instruction* targetInterpreterPCForThrow;
     uint32_t osrExitIndex;

@@ -65,8 +65,8 @@ void genericUnwind(VM& vm, CallFrame* callFrame)
         // with this bytecode offset in the machine frame is utterly meaningless
         // and can cause an overflow. OSR exit properly exits to handler.m_interpreterTarget
         // in the proper frame.
-        if (!JITCode::isOptimizingJIT(callFrame->codeBlock()->jitType()))
-            catchPCForInterpreter = handler.m_catchPCForInterpreter;
+        //if (!JITCode::isOptimizingJIT(callFrame->codeBlock()->jitType()))
+        catchPCForInterpreter = handler.m_catchPCForInterpreter;
 #if ENABLE(JIT)
         catchRoutine = handler.m_nativeCode.executableAddress();
 #else

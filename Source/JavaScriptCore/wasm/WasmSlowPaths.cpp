@@ -617,6 +617,7 @@ WASM_SLOW_PATH_DECL(throw)
     // for exceptions first load callFrameForCatch info call frame register before jumping
     // to the exception handler. If we did this, we could remove this terrible hack.
     // https://bugs.webkit.org/show_bug.cgi?id=170440
+    vm.calleeForWasmCatch = callFrame->callee();
     bitwise_cast<uint64_t*>(callFrame)[static_cast<int>(CallFrameSlot::callee)] = bitwise_cast<uint64_t>(jsInstance->module());
     WASM_RETURN_TWO(vm.targetMachinePCForThrow, nullptr);
 }
@@ -644,6 +645,7 @@ WASM_SLOW_PATH_DECL(rethrow)
     // for exceptions first load callFrameForCatch info call frame register before jumping
     // to the exception handler. If we did this, we could remove this terrible hack.
     // https://bugs.webkit.org/show_bug.cgi?id=170440
+    vm.calleeForWasmCatch = callFrame->callee();
     bitwise_cast<uint64_t*>(callFrame)[static_cast<int>(CallFrameSlot::callee)] = bitwise_cast<uint64_t>(jsInstance->module());
     WASM_RETURN_TWO(vm.targetMachinePCForThrow, nullptr);
 }

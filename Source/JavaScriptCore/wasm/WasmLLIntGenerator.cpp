@@ -67,12 +67,6 @@ public:
         unsigned m_tryDepth;
     };
 
-    enum class CatchKind {
-        Catch,
-        CatchAll,
-        Delegate,
-    };
-
     struct ControlCatch {
         CatchKind m_kind;
         Ref<Label> m_tryStart;
@@ -291,13 +285,13 @@ public:
     PartialResult WARN_UNUSED_RETURN addElseToUnreachable(ControlType&);
 
     PartialResult WARN_UNUSED_RETURN addTry(BlockSignature, Stack& enclosingStack, ControlType& result, Stack& newStack);
-    PartialResult WARN_UNUSED_RETURN addCatch(unsigned exceptionIndex, const Signature&, ControlType&, ResultList&);
+    PartialResult WARN_UNUSED_RETURN addCatch(unsigned exceptionIndex, const Signature&, Stack&, ControlType&, ResultList&);
     PartialResult WARN_UNUSED_RETURN addCatchToUnreachable(unsigned exceptionIndex, const Signature&, ControlType&, ResultList&);
-    PartialResult WARN_UNUSED_RETURN addCatchAll(ControlType&);
+    PartialResult WARN_UNUSED_RETURN addCatchAll(Stack&,ControlType&);
     PartialResult WARN_UNUSED_RETURN addCatchAllToUnreachable(ControlType&);
-    PartialResult WARN_UNUSED_RETURN addDelegate(ControlType&, ControlType&);
+    PartialResult WARN_UNUSED_RETURN addDelegate(Stack&, ControlType&, ControlType&);
     PartialResult WARN_UNUSED_RETURN addDelegateToUnreachable(ControlType&, ControlType&);
-    PartialResult WARN_UNUSED_RETURN addThrow(unsigned exceptionIndex, Stack&);
+    PartialResult WARN_UNUSED_RETURN addThrow(unsigned exceptionIndex, Vector<ExpressionType>& args, Stack&);
     PartialResult WARN_UNUSED_RETURN addRethrow(unsigned, ControlType&);
 
     PartialResult WARN_UNUSED_RETURN addReturn(const ControlType&, Stack& returnValues);
@@ -572,7 +566,7 @@ std::unique_ptr<FunctionCodeBlock> LLIntGenerator::finalize()
 
     m_stackSize += m_maxTryDepth;
 
-    size_t numCalleeLocals = WTF::roundUpToMultipleOf(stackAlignmentRegisters(), m_maxStackSize);
+    size_t numCalleeLocals = WTF::roundUpToMultipleOf(stackAlignmentRegisters(), m_maxStackSize + 2);
     m_codeBlock->m_numCalleeLocals = numCalleeLocals;
     RELEASE_ASSERT(numCalleeLocals == m_codeBlock->m_numCalleeLocals);
 
@@ -1072,7 +1066,7 @@ auto LLIntGenerator::addTry(BlockSignature signature, Stack& enclosingStack, Con
     return { };
 }
 
-auto LLIntGenerator::addCatch(unsigned exceptionIndex, const Signature& exceptionSignature, ControlType& data, ResultList& results) -> PartialResult
+auto LLIntGenerator::addCatch(unsigned exceptionIndex, const Signature& exceptionSignature, Stack&, ControlType& data, ResultList& results) -> PartialResult
 {
     WasmJmp::emit(this, data.m_continuation->bind(this));
     return addCatchToUnreachable(exceptionIndex, exceptionSignature, data, results);
@@ -1100,7 +1094,7 @@ auto LLIntGenerator::addCatchToUnreachable(unsigned exceptionIndex, const Signat
     return { };
 }
 
-auto LLIntGenerator::addCatchAll(ControlType& data) -> PartialResult
+auto LLIntGenerator::addCatchAll(Stack&, ControlType& data) -> PartialResult
 {
     WasmJmp::emit(this, data.m_continuation->bind(this));
     return addCatchAllToUnreachable(data);
@@ -1108,7 +1102,6 @@ auto LLIntGenerator::addCatchAll(ControlType& data) -> PartialResult
 
 auto LLIntGenerator::addCatchAllToUnreachable(ControlType& data) -> PartialResult
 {
-
     Ref<Label> catchLabel = newEmittedLabel();
     WasmCatchAll::emit<OpcodeSize::Wide32>(this, virtualRegisterForLocal(0));
     m_catchAlls.append({ m_lastInstruction.offset(), m_tryDepth });
@@ -1123,7 +1116,7 @@ auto LLIntGenerator::addCatchAllToUnreachable(ControlType& data) -> PartialResul
     return { };
 }
 
-auto LLIntGenerator::addDelegate(ControlType& target, ControlType& data) -> PartialResult
+auto LLIntGenerator::addDelegate(Stack&, ControlType& target, ControlType& data) -> PartialResult
 {
     WasmJmp::emit(this, data.m_continuation->bind(this));
     return addDelegateToUnreachable(target, data);
@@ -1145,7 +1138,7 @@ auto LLIntGenerator::addDelegateToUnreachable(ControlType& target, ControlType& 
     return { };
 }
 
-auto LLIntGenerator::addThrow(unsigned exceptionIndex, Stack& enclosingStack) -> PartialResult
+auto LLIntGenerator::addThrow(unsigned exceptionIndex, Vector<ExpressionType>&, Stack& enclosingStack) -> PartialResult
 {
     materializeConstantsAndLocals(enclosingStack);
     WasmThrow::emit(this, exceptionIndex, virtualRegisterForLocal(m_stackSize - 1));

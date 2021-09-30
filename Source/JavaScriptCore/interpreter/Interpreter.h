@@ -102,7 +102,7 @@ struct HandlerInfo;
         bool m_valid;
         HandlerType m_type;
         unsigned m_interpreterTarget;
-        CodeLocationLabel<ExceptionHandlerPtrTag> m_nativeCode;
+        MacroAssemblerCodePtr<ExceptionHandlerPtrTag> m_nativeCode;
         const Instruction* m_catchPCForInterpreter;
     };
 

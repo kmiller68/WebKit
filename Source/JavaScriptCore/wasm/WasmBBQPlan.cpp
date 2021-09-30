@@ -66,6 +66,7 @@ bool BBQPlan::prepareImpl()
         return false;
 
     m_wasmInternalFunctions.resize(functions.size());
+    m_exceptionHandlerLocations.resize(functions.size());
     m_compilationContexts.resize(functions.size());
     m_tierUpCounts.resize(functions.size());
 
@@ -109,6 +110,10 @@ void BBQPlan::work(CompilationEffort effort)
         return;
     }
 
+    Vector<CodeLocationLabel<ExceptionHandlerPtrTag>> exceptionHandlerLocations;
+    for (unsigned entrypointIndex = 1; entrypointIndex < context.procedure->numEntrypoints(); ++entrypointIndex)
+        exceptionHandlerLocations.append(linkBuffer.locationOf<ExceptionHandlerPtrTag>(context.procedure->code().entrypointLabel(entrypointIndex)));
+
     size_t functionIndexSpace = m_functionIndex + m_moduleInformation->importFunctionCount();
     SignatureIndex signatureIndex = m_moduleInformation->internalFunctionSignatureIndices[m_functionIndex];
     const Signature& signature = SignatureInformation::get(signatureIndex);
@@ -118,7 +123,7 @@ void BBQPlan::work(CompilationEffort effort)
 
     MacroAssemblerCodePtr<WasmEntryPtrTag> entrypoint;
     {
-        Ref<BBQCallee> callee = BBQCallee::create(WTFMove(function->entrypoint), functionIndexSpace, m_moduleInformation->nameSection->get(functionIndexSpace), WTFMove(tierUp), WTFMove(unlinkedWasmToWasmCalls));
+        Ref<BBQCallee> callee = BBQCallee::create(WTFMove(function->entrypoint), functionIndexSpace, m_moduleInformation->nameSection->get(functionIndexSpace), WTFMove(tierUp), WTFMove(unlinkedWasmToWasmCalls), WTFMove(function->stackmaps), WTFMove(function->exceptionHandlers), WTFMove(exceptionHandlerLocations));
         MacroAssembler::repatchPointer(function->calleeMoveLocation, CalleeBits::boxWasm(callee.ptr()));
         ASSERT(!m_codeBlock->m_bbqCallees[m_functionIndex]);
         entrypoint = callee->entrypoint();
@@ -228,6 +233,10 @@ void BBQPlan::didCompleteCompilation()
                 return;
             }
 
+            auto& handlers = m_exceptionHandlerLocations[functionIndex];
+            for (unsigned entrypointIndex = 1; entrypointIndex < context.procedure->numEntrypoints(); ++entrypointIndex)
+                handlers.append(linkBuffer.locationOf<ExceptionHandlerPtrTag>(context.procedure->code().entrypointLabel(entrypointIndex)));
+
             m_wasmInternalFunctions[functionIndex]->entrypoint.compilation = makeUnique<Compilation>(
                 FINALIZE_CODE(linkBuffer, JITCompilationPtrTag, "WebAssembly BBQ function[%i] %s name %s", functionIndex, signature.toString().ascii().data(), makeString(IndexOrName(functionIndexSpace, m_moduleInformation->nameSection->get(functionIndexSpace))).ascii().data()),
                 WTFMove(context.wasmEntrypointByproducts));
@@ -272,7 +281,7 @@ void BBQPlan::initializeCallees(const CalleeInitializer& callback)
 
         InternalFunction* function = m_wasmInternalFunctions[internalFunctionIndex].get();
         size_t functionIndexSpace = internalFunctionIndex + m_moduleInformation->importFunctionCount();
-        Ref<BBQCallee> wasmEntrypointCallee = BBQCallee::create(WTFMove(function->entrypoint), functionIndexSpace, m_moduleInformation->nameSection->get(functionIndexSpace), WTFMove(m_tierUpCounts[internalFunctionIndex]), WTFMove(m_unlinkedWasmToWasmCalls[internalFunctionIndex]));
+        Ref<BBQCallee> wasmEntrypointCallee = BBQCallee::create(WTFMove(function->entrypoint), functionIndexSpace, m_moduleInformation->nameSection->get(functionIndexSpace), WTFMove(m_tierUpCounts[internalFunctionIndex]), WTFMove(m_unlinkedWasmToWasmCalls[internalFunctionIndex]), WTFMove(function->stackmaps), WTFMove(function->exceptionHandlers), WTFMove(m_exceptionHandlerLocations[internalFunctionIndex]));
         MacroAssembler::repatchPointer(function->calleeMoveLocation, CalleeBits::boxWasm(wasmEntrypointCallee.ptr()));
 
         callback(internalFunctionIndex, WTFMove(embedderEntrypointCallee), WTFMove(wasmEntrypointCallee));

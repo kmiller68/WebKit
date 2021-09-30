@@ -61,10 +61,7 @@ public:
     virtual RegisterAtOffsetList* calleeSaveRegisters() = 0;
     virtual std::tuple<void*, void*> range() const = 0;
 
-    virtual const HandlerInfo* handlerForIndex(VM&, unsigned, const Tag&)
-    {
-        return nullptr;
-    }
+    const HandlerInfo* handlerForIndex(VM&, unsigned, const Tag&);
 
 #if ENABLE(WEBASSEMBLY_B3JIT)
     virtual void setOSREntryCallee(Ref<OMGForOSREntryCallee>&&)
@@ -75,14 +72,23 @@ public:
 
     void dump(PrintStream&) const;
 
+    virtual FunctionCodeBlock* functionCodeBlock() const { return 0; }
+
 protected:
     JS_EXPORT_PRIVATE Callee(Wasm::CompilationMode);
     JS_EXPORT_PRIVATE Callee(Wasm::CompilationMode, size_t, std::pair<const Name*, RefPtr<NameSection>>&&);
 
+    virtual void linkExceptionHandlers(VM&)
+    {
+        RELEASE_ASSERT_NOT_REACHED();
+    }
+
 private:
     CompilationMode m_compilationMode;
     IndexOrName m_indexOrName;
+
 protected:
+    unsigned m_numberOfExceptionHandlers { 0 };
     Vector<HandlerInfo> m_exceptionHandlers;
 };
 
@@ -163,9 +169,9 @@ private:
 #if ENABLE(WEBASSEMBLY_B3JIT)
 class BBQCallee final : public JITCallee {
 public:
-    static Ref<BBQCallee> create(Wasm::Entrypoint&& entrypoint, size_t index, std::pair<const Name*, RefPtr<NameSection>>&& name, std::unique_ptr<TierUpCount>&& tierUpCount, Vector<UnlinkedWasmToWasmCall>&& unlinkedCalls)
+    static Ref<BBQCallee> create(Wasm::Entrypoint&& entrypoint, size_t index, std::pair<const Name*, RefPtr<NameSection>>&& name, std::unique_ptr<TierUpCount>&& tierUpCount, Vector<UnlinkedWasmToWasmCall>&& unlinkedCalls, HashMap<CallSiteIndex, Vector<OSREntryValue>>&& stackmaps, Vector<UnlinkedHandlerInfo>&& exceptionHandlers, Vector<CodeLocationLabel<ExceptionHandlerPtrTag>>&& exceptionHandlerLocations)
     {
-        return adoptRef(*new BBQCallee(WTFMove(entrypoint), index, WTFMove(name), WTFMove(tierUpCount), WTFMove(unlinkedCalls)));
+        return adoptRef(*new BBQCallee(WTFMove(entrypoint), index, WTFMove(name), WTFMove(tierUpCount), WTFMove(unlinkedCalls), WTFMove(stackmaps), WTFMove(exceptionHandlers), WTFMove(exceptionHandlerLocations)));
     }
 
     OMGForOSREntryCallee* osrEntryCallee() { return m_osrEntryCallee.get(); }
@@ -185,17 +191,30 @@ public:
 
     TierUpCount* tierUpCount() { return m_tierUpCount.get(); }
 
+    const Vector<OSREntryValue>& stackmap(CallSiteIndex callSiteIndex) const;
+
+protected:
+    void linkExceptionHandlers(VM&) final;
+
 private:
-    BBQCallee(Wasm::Entrypoint&& entrypoint, size_t index, std::pair<const Name*, RefPtr<NameSection>>&& name, std::unique_ptr<TierUpCount>&& tierUpCount, Vector<UnlinkedWasmToWasmCall>&& unlinkedCalls)
+    BBQCallee(Wasm::Entrypoint&& entrypoint, size_t index, std::pair<const Name*, RefPtr<NameSection>>&& name, std::unique_ptr<TierUpCount>&& tierUpCount, Vector<UnlinkedWasmToWasmCall>&& unlinkedCalls, HashMap<CallSiteIndex, Vector<OSREntryValue>>&& stackmaps, Vector<UnlinkedHandlerInfo>&& exceptionHandlers, Vector<CodeLocationLabel<ExceptionHandlerPtrTag>>&& exceptionHandlerLocations)
         : JITCallee(Wasm::CompilationMode::BBQMode, WTFMove(entrypoint), index, WTFMove(name), WTFMove(unlinkedCalls))
         , m_tierUpCount(WTFMove(tierUpCount))
+        , m_stackmaps(WTFMove(stackmaps))
+        , m_unlinkedExceptionHandlers(WTFMove(exceptionHandlers))
+        , m_exceptionHandlerLocations(WTFMove(exceptionHandlerLocations))
     {
+        RELEASE_ASSERT(m_unlinkedExceptionHandlers.size() == m_exceptionHandlerLocations.size());
+        m_numberOfExceptionHandlers = m_unlinkedExceptionHandlers.size();
     }
 
     RefPtr<OMGForOSREntryCallee> m_osrEntryCallee;
     RefPtr<OMGCallee> m_replacement;
     std::unique_ptr<TierUpCount> m_tierUpCount;
     bool m_didStartCompilingOSREntryCallee { false };
+    HashMap<CallSiteIndex, Vector<OSREntryValue>> m_stackmaps;
+    Vector<UnlinkedHandlerInfo> m_unlinkedExceptionHandlers;
+    Vector<CodeLocationLabel<ExceptionHandlerPtrTag>> m_exceptionHandlerLocations;
 };
 #endif
 
@@ -212,7 +231,6 @@ public:
     JS_EXPORT_PRIVATE MacroAssemblerCodePtr<WasmEntryPtrTag> entrypoint() const final;
     JS_EXPORT_PRIVATE RegisterAtOffsetList* calleeSaveRegisters() final;
     JS_EXPORT_PRIVATE std::tuple<void*, void*> range() const final;
-    JS_EXPORT_PRIVATE const HandlerInfo* handlerForIndex(VM&, unsigned, const Tag&) final;
 
 #if ENABLE(WEBASSEMBLY_B3JIT)
     JITCallee* replacement() { return m_replacement.get(); }
@@ -228,13 +246,14 @@ public:
     }
 
     LLIntTierUpCounter& tierUpCounter() { return m_codeBlock->tierUpCounter(); }
-    FunctionCodeBlock* functionCodeBlock() const { return m_codeBlock.get(); }
+    FunctionCodeBlock* functionCodeBlock() const final { return m_codeBlock.get(); }
 #endif
+
+protected:
+    void linkExceptionHandlers(VM&) final;
 
 private:
     LLIntCallee(std::unique_ptr<FunctionCodeBlock>, size_t index, std::pair<const Name*, RefPtr<NameSection>>&&);
-
-    void linkExceptionHandlers(VM&);
 
 
 #if ENABLE(WEBASSEMBLY_B3JIT)

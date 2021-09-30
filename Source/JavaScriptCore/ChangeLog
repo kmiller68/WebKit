@@ -1,3 +1,262 @@
+2021-09-16  Tadeu Zagallo  <tzagallo@apple.com> and Keith Miller  <keith_miller@apple.com>
+
+        Implement the WebAssembly exception handling proposal
+        https://bugs.webkit.org/show_bug.cgi?id=229681
+        <rdar://81603387>
+
+        Reviewed by NOBODY (OOPS!).
+
+        WIP Spec: https://github.com/WebAssembly/exception-handling
+
+        * DerivedSources-input.xcfilelist:
+        * DerivedSources-output.xcfilelist:
+        * DerivedSources.make:
+        * JavaScriptCore.xcodeproj/project.pbxproj:
+        * Sources.txt:
+        * bytecode/BytecodeList.rb:
+        * bytecode/HandlerInfo.h:
+        * bytecode/Instruction.h:
+        (JSC::BaseInstruction::name const):
+        * interpreter/CallFrame.cpp:
+        (JSC::CallFrame::bytecodeIndex const):
+        * interpreter/Interpreter.cpp:
+        (JSC::CatchInfo::CatchInfo):
+        (JSC::UnwindFunctor::UnwindFunctor):
+        (JSC::UnwindFunctor::operator() const):
+        (JSC::Interpreter::unwind):
+        * interpreter/Interpreter.h:
+        (JSC::CatchInfo::CatchInfo):
+        * interpreter/StackVisitor.cpp:
+        (JSC::StackVisitor::readNonInlinedFrame):
+        * jit/JITExceptions.cpp:
+        (JSC::genericUnwind):
+        * llint/LLIntCommon.h:
+        * llint/LLIntData.h:
+        (JSC::LLInt::getCodeRef):
+        (JSC::LLInt::getWide16CodeRef):
+        (JSC::LLInt::getWide32CodeRef):
+        * llint/LLIntExceptions.cpp:
+        (JSC::LLInt::wasmReturnToThrow):
+        (JSC::LLInt::handleWasmCatch):
+        * llint/LLIntExceptions.h:
+        * llint/WebAssembly.asm:
+        * runtime/JSGlobalObject.cpp:
+        (JSC::JSGlobalObject::init):
+        * runtime/JSGlobalObject.h:
+        (JSC::JSGlobalObject::webAssemblyTagTypeStructure const):
+        * runtime/VM.cpp:
+        (JSC::VM::VM):
+        * runtime/VM.h:
+        * wasm/WasmAirIRGenerator.cpp:
+        (JSC::Wasm::AirIRGenerator::ControlData::isTry):
+        (JSC::Wasm::AirIRGenerator::ControlData::isCatch):
+        (JSC::Wasm::AirIRGenerator::ControlData::isAnyCatch):
+        (JSC::Wasm::AirIRGenerator::ControlData::isLoop):
+        (JSC::Wasm::AirIRGenerator::ControlData::isBlock):
+        (JSC::Wasm::AirIRGenerator::ControlData::dump const):
+        (JSC::Wasm::AirIRGenerator::addTry):
+        (JSC::Wasm::AirIRGenerator::addCatch):
+        (JSC::Wasm::AirIRGenerator::addCatchToUnreachable):
+        (JSC::Wasm::AirIRGenerator::addCatchAll):
+        (JSC::Wasm::AirIRGenerator::addCatchAllToUnreachable):
+        (JSC::Wasm::AirIRGenerator::addDelegate):
+        (JSC::Wasm::AirIRGenerator::addDelegateToUnreachable):
+        (JSC::Wasm::AirIRGenerator::addThrow):
+        (JSC::Wasm::AirIRGenerator::addRethrow):
+        (JSC::Wasm::AirIRGenerator::addReturn):
+        * wasm/WasmB3IRGenerator.cpp:
+        (JSC::Wasm::B3IRGenerator::ControlData::isTry):
+        (JSC::Wasm::B3IRGenerator::ControlData::isCatch):
+        (JSC::Wasm::B3IRGenerator::ControlData::isAnyCatch):
+        (JSC::Wasm::B3IRGenerator::ControlData::isLoop):
+        (JSC::Wasm::B3IRGenerator::ControlData::isBlock):
+        (JSC::Wasm::B3IRGenerator::ControlData::dump const):
+        (JSC::Wasm::B3IRGenerator::addTry):
+        (JSC::Wasm::B3IRGenerator::addCatch):
+        (JSC::Wasm::B3IRGenerator::addCatchToUnreachable):
+        (JSC::Wasm::B3IRGenerator::addCatchAll):
+        (JSC::Wasm::B3IRGenerator::addCatchAllToUnreachable):
+        (JSC::Wasm::B3IRGenerator::addDelegate):
+        (JSC::Wasm::B3IRGenerator::addDelegateToUnreachable):
+        (JSC::Wasm::B3IRGenerator::addThrow):
+        (JSC::Wasm::B3IRGenerator::addRethrow):
+        (JSC::Wasm::B3IRGenerator::addReturn):
+        (JSC::B3IRGenerator::addCatchAllToUnreachable): Deleted.
+        (JSC::B3IRGenerator::addDelegate): Deleted.
+        (JSC::B3IRGenerator::addDelegateToUnreachable): Deleted.
+        (JSC::B3IRGenerator::addThrow): Deleted.
+        (JSC::B3IRGenerator::addRethrow): Deleted.
+        (JSC::B3IRGenerator::addReturn): Deleted.
+        (JSC::B3IRGenerator::addBranch): Deleted.
+        (JSC::B3IRGenerator::addSwitch): Deleted.
+        (JSC::B3IRGenerator::endBlock): Deleted.
+        (JSC::B3IRGenerator::addEndToUnreachable): Deleted.
+        (JSC::B3IRGenerator::createCallPatchpoint): Deleted.
+        (JSC::B3IRGenerator::addCall): Deleted.
+        (JSC::B3IRGenerator::addCallIndirect): Deleted.
+        (JSC::B3IRGenerator::addCallRef): Deleted.
+        (JSC::B3IRGenerator::unify): Deleted.
+        (JSC::B3IRGenerator::unifyValuesWithBlock): Deleted.
+        (JSC::dumpExpressionStack): Deleted.
+        (JSC::B3IRGenerator::dump): Deleted.
+        (JSC::B3IRGenerator::origin): Deleted.
+        (JSC::parseAndCompile): Deleted.
+        (JSC::B3IRGenerator::emitChecksForModOrDiv): Deleted.
+        (JSC::B3IRGenerator::addOp<OpType::I32DivS>): Deleted.
+        (JSC::B3IRGenerator::addOp<OpType::I32RemS>): Deleted.
+        (JSC::B3IRGenerator::addOp<OpType::I32DivU>): Deleted.
+        (JSC::B3IRGenerator::addOp<OpType::I32RemU>): Deleted.
+        (JSC::B3IRGenerator::addOp<OpType::I64DivS>): Deleted.
+        (JSC::B3IRGenerator::addOp<OpType::I64RemS>): Deleted.
+        (JSC::B3IRGenerator::addOp<OpType::I64DivU>): Deleted.
+        (JSC::B3IRGenerator::addOp<OpType::I64RemU>): Deleted.
+        (JSC::B3IRGenerator::addOp<OpType::I32Ctz>): Deleted.
+        (JSC::B3IRGenerator::addOp<OpType::I64Ctz>): Deleted.
+        (JSC::B3IRGenerator::addOp<OpType::I32Popcnt>): Deleted.
+        (JSC::B3IRGenerator::addOp<OpType::I64Popcnt>): Deleted.
+        (JSC::B3IRGenerator::addOp<F64ConvertUI64>): Deleted.
+        (JSC::B3IRGenerator::addOp<OpType::F32ConvertUI64>): Deleted.
+        (JSC::B3IRGenerator::addOp<OpType::F64Nearest>): Deleted.
+        (JSC::B3IRGenerator::addOp<OpType::F32Nearest>): Deleted.
+        (JSC::B3IRGenerator::addOp<OpType::F64Trunc>): Deleted.
+        (JSC::B3IRGenerator::addOp<OpType::F32Trunc>): Deleted.
+        (JSC::B3IRGenerator::addOp<OpType::I32TruncSF64>): Deleted.
+        (JSC::B3IRGenerator::addOp<OpType::I32TruncSF32>): Deleted.
+        (JSC::B3IRGenerator::addOp<OpType::I32TruncUF64>): Deleted.
+        (JSC::B3IRGenerator::addOp<OpType::I32TruncUF32>): Deleted.
+        (JSC::B3IRGenerator::addOp<OpType::I64TruncSF64>): Deleted.
+        (JSC::B3IRGenerator::addOp<OpType::I64TruncUF64>): Deleted.
+        (JSC::B3IRGenerator::addOp<OpType::I64TruncSF32>): Deleted.
+        (JSC::B3IRGenerator::addOp<OpType::I64TruncUF32>): Deleted.
+        * wasm/WasmCallee.cpp:
+        (JSC::Wasm::LLIntCallee::LLIntCallee):
+        (JSC::Wasm::LLIntCallee::linkExceptionHandlers):
+        (JSC::Wasm::LLIntCallee::handlerForIndex):
+        * wasm/WasmCallee.h:
+        (JSC::Wasm::Callee::handlerForIndex):
+        * wasm/WasmFormat.h:
+        (JSC::Wasm::typeToString):
+        (JSC::Wasm::isValidExternalKind):
+        (JSC::Wasm::makeString):
+        * wasm/WasmFunctionCodeBlock.h:
+        (JSC::Wasm::FunctionCodeBlock::numberOfExceptionHandlers const):
+        (JSC::Wasm::FunctionCodeBlock::exceptionHandler):
+        (JSC::Wasm::FunctionCodeBlock::addExceptionHandler):
+        * wasm/WasmFunctionParser.h:
+        (JSC::Wasm::isTryOrCatch):
+        (JSC::Wasm::FunctionParser<Context>::parseExceptionIndex):
+        (JSC::Wasm::FunctionParser<Context>::parseExpression):
+        (JSC::Wasm::FunctionParser<Context>::parseUnreachableExpression):
+        * wasm/WasmHandlerInfo.cpp: Added.
+        (JSC::Wasm::HandlerInfo::initialize):
+        (JSC::Wasm::HandlerInfo::handlerForIndex):
+        * wasm/WasmHandlerInfo.h: Added.
+        (JSC::Wasm::UnlinkedHandlerInfo::UnlinkedHandlerInfo):
+        (JSC::Wasm::HandlerInfo::tag const):
+        (JSC::Wasm::HandlerInfo::delegateTarget const):
+        * wasm/WasmInstance.h:
+        (JSC::Wasm::Instance::addTag):
+        (JSC::Wasm::Instance::tag const):
+        * wasm/WasmLLIntGenerator.cpp:
+        (JSC::Wasm::LLIntGenerator::ControlType::try_):
+        (JSC::Wasm::LLIntGenerator::ControlType::catch_):
+        (JSC::Wasm::LLIntGenerator::ControlType::isLoop):
+        (JSC::Wasm::LLIntGenerator::ControlType::isBlock):
+        (JSC::Wasm::LLIntGenerator::ControlType::isIf):
+        (JSC::Wasm::LLIntGenerator::ControlType::isTry):
+        (JSC::Wasm::LLIntGenerator::ControlType::isAnyCatch):
+        (JSC::Wasm::LLIntGenerator::ControlType::isCatch):
+        (JSC::Wasm::LLIntGenerator::repatch):
+        (JSC::Wasm::LLIntGenerator::finalize):
+        (JSC::Wasm::LLIntGenerator::addTry):
+        (JSC::Wasm::LLIntGenerator::addCatch):
+        (JSC::Wasm::LLIntGenerator::addCatchToUnreachable):
+        (JSC::Wasm::LLIntGenerator::addCatchAll):
+        (JSC::Wasm::LLIntGenerator::addCatchAllToUnreachable):
+        (JSC::Wasm::LLIntGenerator::addDelegate):
+        (JSC::Wasm::LLIntGenerator::addDelegateToUnreachable):
+        (JSC::Wasm::LLIntGenerator::addThrow):
+        (JSC::Wasm::LLIntGenerator::addRethrow):
+        (JSC::Wasm::LLIntGenerator::addEndToUnreachable):
+        * wasm/WasmLimits.h:
+        * wasm/WasmModuleInformation.h:
+        (JSC::Wasm::ModuleInformation::exceptionIndexSpaceSize const):
+        (JSC::Wasm::ModuleInformation::isImportedExceptionFromExceptionIndexSpace const):
+        (JSC::Wasm::ModuleInformation::signatureIndexFromExceptionIndexSpace const):
+        (JSC::Wasm::ModuleInformation::importExceptionCount const):
+        (JSC::Wasm::ModuleInformation::isDeclaredException const):
+        (JSC::Wasm::ModuleInformation::addDeclaredException):
+        * wasm/WasmSectionParser.cpp:
+        (JSC::Wasm::SectionParser::parseImport):
+        (JSC::Wasm::SectionParser::parseExport):
+        (JSC::Wasm::SectionParser::parseException):
+        * wasm/WasmSections.h:
+        (JSC::Wasm::validateOrder):
+        * wasm/WasmSlowPaths.cpp:
+        (JSC::LLInt::WASM_SLOW_PATH_DECL):
+        * wasm/WasmSlowPaths.h:
+        * wasm/WasmTag.cpp: Copied from Source/JavaScriptCore/llint/LLIntCommon.h.
+        * wasm/WasmTag.h: Copied from Source/JavaScriptCore/llint/LLIntCommon.h.
+        (JSC::Wasm::Tag::Tag):
+        (JSC::Wasm::Tag::parameterCount const):
+        (JSC::Wasm::Tag::parameter const):
+        (JSC::Wasm::Tag::operator== const):
+        (JSC::Wasm::Tag::operator!= const):
+        * wasm/js/JSWebAssembly.cpp:
+        * wasm/js/JSWebAssemblyException.cpp: Copied from Source/JavaScriptCore/llint/LLIntExceptions.h.
+        (JSC::JSWebAssemblyException::JSWebAssemblyException):
+        (JSC::JSWebAssemblyException::finishCreation):
+        (JSC::JSWebAssemblyException::getArg const):
+        * wasm/js/JSWebAssemblyException.h: Added.
+        (JSC::JSWebAssemblyException::destroy):
+        (JSC::JSWebAssemblyException::subspaceFor):
+        (JSC::JSWebAssemblyException::createStructure):
+        (JSC::JSWebAssemblyException::create):
+        (JSC::JSWebAssemblyException::tag const):
+        (JSC::JSWebAssemblyException::payload const):
+        * wasm/js/JSWebAssemblyInstance.cpp:
+        (JSC::JSWebAssemblyInstance::tryCreate):
+        * wasm/js/JSWebAssemblyTag.cpp: Copied from Source/JavaScriptCore/wasm/WasmLimits.h.
+        (JSC::JSWebAssemblyTag::create):
+        (JSC::JSWebAssemblyTag::createStructure):
+        (JSC::JSWebAssemblyTag::JSWebAssemblyTag):
+        * wasm/js/JSWebAssemblyTag.h: Copied from Source/JavaScriptCore/llint/LLIntExceptions.h.
+        * wasm/js/WebAssemblyExceptionConstructor.cpp: Added.
+        (JSC::JSC_DEFINE_HOST_FUNCTION):
+        (JSC::WebAssemblyExceptionConstructor::create):
+        (JSC::WebAssemblyExceptionConstructor::createStructure):
+        (JSC::WebAssemblyExceptionConstructor::finishCreation):
+        (JSC::WebAssemblyExceptionConstructor::WebAssemblyExceptionConstructor):
+        * wasm/js/WebAssemblyExceptionConstructor.h: Copied from Source/JavaScriptCore/wasm/WasmLimits.h.
+        * wasm/js/WebAssemblyExceptionPrototype.cpp: Added.
+        (JSC::WebAssemblyExceptionPrototype::create):
+        (JSC::WebAssemblyExceptionPrototype::createStructure):
+        (JSC::WebAssemblyExceptionPrototype::finishCreation):
+        (JSC::WebAssemblyExceptionPrototype::WebAssemblyExceptionPrototype):
+        (JSC::getException):
+        (JSC::getTag):
+        (JSC::JSC_DEFINE_HOST_FUNCTION):
+        * wasm/js/WebAssemblyExceptionPrototype.h: Copied from Source/JavaScriptCore/wasm/WasmLimits.h.
+        * wasm/js/WebAssemblyModuleRecord.cpp:
+        (JSC::WebAssemblyModuleRecord::linkImpl):
+        * wasm/js/WebAssemblyTagConstructor.cpp: Added.
+        (JSC::JSC_DEFINE_HOST_FUNCTION):
+        (JSC::WebAssemblyTagConstructor::createTag):
+        (JSC::WebAssemblyTagConstructor::create):
+        (JSC::WebAssemblyTagConstructor::createStructure):
+        (JSC::WebAssemblyTagConstructor::finishCreation):
+        (JSC::WebAssemblyTagConstructor::WebAssemblyTagConstructor):
+        * wasm/js/WebAssemblyTagConstructor.h: Copied from Source/JavaScriptCore/wasm/WasmLimits.h.
+        * wasm/js/WebAssemblyTagPrototype.cpp: Added.
+        (JSC::WebAssemblyTagPrototype::create):
+        (JSC::WebAssemblyTagPrototype::createStructure):
+        (JSC::WebAssemblyTagPrototype::finishCreation):
+        (JSC::WebAssemblyTagPrototype::WebAssemblyTagPrototype):
+        (JSC::getTag):
+        (JSC::JSC_DEFINE_HOST_FUNCTION):
+        * wasm/js/WebAssemblyTagPrototype.h: Copied from Source/JavaScriptCore/wasm/WasmLimits.h.
+        * wasm/wasm.json:
+
 2021-09-16  Mikhail R. Gadelha  <mikhail@igalia.com>
 
         Fix crash in 32 bits due to not enough scratch registers available
