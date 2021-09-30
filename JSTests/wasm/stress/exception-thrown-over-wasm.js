@@ -23,8 +23,8 @@ import * as assert from '../assert.js'
     const instance = new WebAssembly.Instance(module, { context: { callback }});
 
     function callback() {
-        throw new WebAssembly.Exception(instance.exports.foo);
+        throw new WebAssembly.Exception(instance.exports.foo, []);
     }
 
-    assert.throws(instance.exports.call, WebAssembly.Exception);
+    assert.throws(instance.exports.call, WebAssembly.Exception, "wasm exception");
 }
