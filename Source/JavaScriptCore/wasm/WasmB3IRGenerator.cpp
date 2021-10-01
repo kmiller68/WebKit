@@ -260,6 +260,11 @@ public:
             m_exception = exception;
         }
 
+        Vector<std::pair<ControlData*, Value*>>& exceptionUnwind()
+        {
+            return m_exceptionUnwind;
+        }
+
     private:
         friend class B3IRGenerator;
         BlockType controlBlockType;
@@ -272,6 +277,7 @@ public:
         unsigned m_tryDepth;
         CatchKind m_catchKind;
         Value* m_exception;
+        Vector<std::pair<ControlData*, Value*>> m_exceptionUnwind;
     };
 
     using ControlType = ControlData;
@@ -453,7 +459,7 @@ private:
     void restoreWebAssemblyGlobalState(RestoreCachedStackLimit, const MemoryInformation&, Value* instance, Procedure&, BasicBlock*);
 
     ExpressionType loadFromScratchBuffer(unsigned& indexInBuffer, Value* pointer, B3::Type);
-    void connectControlEntry(unsigned& indexInBuffer, Value* pointer, const ControlData& data, Stack& expressionStack);
+    void connectControlEntry(unsigned& indexInBuffer, Value* pointer, ControlData& data, Stack& expressionStack, ControlData& currentData);
     PatchpointExceptionHandle preparePatchpointForExceptions(BasicBlock*, PatchpointValue*);
 
     Origin origin();
@@ -826,7 +832,7 @@ void B3IRGenerator::insertEntrySwitch()
     }
 
     m_currentBlock = m_topLevelBlock;
-    m_currentBlock->appendNew<Value>(m_proc, EntrySwitch, origin());
+    m_currentBlock->appendNew<Value>(m_proc, EntrySwitch, Origin());
     for (BasicBlock* block : m_rootBlocks)
         m_currentBlock->appendSuccessor(FrequentedBlock(block));
 }
@@ -2346,7 +2352,7 @@ auto B3IRGenerator::loadFromScratchBuffer(unsigned& indexInBuffer, Value* pointe
     return m_currentBlock->appendNew<MemoryValue>(m_proc, Load, type, origin(), pointer, offset);
 }
 
-void B3IRGenerator::connectControlEntry(unsigned& indexInBuffer, Value* pointer, const ControlData& data, Stack& expressionStack)
+void B3IRGenerator::connectControlEntry(unsigned& indexInBuffer, Value* pointer, ControlData& data, Stack& expressionStack, ControlData& currentData)
 {
     // For each stack entry enclosed by this loop we need to replace the value with a phi so we can fill it on OSR entry.
     BasicBlock* sourceBlock = nullptr;
@@ -2375,6 +2381,30 @@ void B3IRGenerator::connectControlEntry(unsigned& indexInBuffer, Value* pointer,
         auto* phi = data.continuation->appendNew<Value>(m_proc, Phi, value->type(), value->origin());
         expressionStack[i] = TypedExpression { value.type(), phi };
         m_currentBlock->appendNew<UpsilonValue>(m_proc, value->origin(), loadFromScratchBuffer(indexInBuffer, pointer, value->type()), phi);
+
+        auto* sourceUpsilon = m_proc.add<UpsilonValue>(value->origin(), value, phi);
+        insertionSet.insertValue(blockIndex, sourceUpsilon);
+    }
+    if (ControlType::isAnyCatch(data)) {
+        Value* value = data.exception();
+        if (value->owner != sourceBlock) {
+            if (sourceBlock)
+                insertionSet.execute(sourceBlock);
+            ASSERT(insertionSet.isEmpty());
+            dataLogLnIf(WasmB3IRGeneratorInternal::verbose && sourceBlock, "Executed insertion set into: ", *sourceBlock);
+            blockIndex = 0;
+            sourceBlock = value->owner;
+        }
+
+        while (sourceBlock->at(blockIndex++) != value)
+            ASSERT(blockIndex < sourceBlock->size());
+        ASSERT(sourceBlock->at(blockIndex - 1) == value);
+
+        auto* phi = currentData.continuation->appendNew<Value>(m_proc, Phi, value->type(), value->origin());
+        auto* load = loadFromScratchBuffer(indexInBuffer, pointer, value->type());
+        data.setException(load);
+        currentData.exceptionUnwind().constructAndAppend(&data, phi);
+        m_currentBlock->appendNew<UpsilonValue>(m_proc, value->origin(), load, phi);
 
         auto* sourceUpsilon = m_proc.add<UpsilonValue>(value->origin(), value, phi);
         insertionSet.insertValue(blockIndex, sourceUpsilon);
@@ -2414,7 +2444,7 @@ auto B3IRGenerator::addLoop(BlockSignature signature, Stack& enclosingStack, Con
         for (unsigned controlIndex = 0; controlIndex < m_parser->controlStack().size(); ++controlIndex) {
             auto& data = m_parser->controlStack()[controlIndex].controlData;
             auto& expressionStack = m_parser->controlStack()[controlIndex].enclosedExpressionStack;
-            connectControlEntry(indexInBuffer, pointer, data, expressionStack);
+            connectControlEntry(indexInBuffer, pointer, data, expressionStack, block);
         }
         for (unsigned i = 0; i < signature->argumentCount(); ++i) {
             TypedExpression value = enclosingStack.at(offset + i);
@@ -2422,7 +2452,7 @@ auto B3IRGenerator::addLoop(BlockSignature signature, Stack& enclosingStack, Con
             m_currentBlock->appendNew<UpsilonValue>(m_proc, value->origin(), loadFromScratchBuffer(indexInBuffer, pointer, value->type()), phi);
         }
         enclosingStack.shrink(offset);
-        connectControlEntry(indexInBuffer, pointer, block, enclosingStack);
+        connectControlEntry(indexInBuffer, pointer, block, enclosingStack, block);
 
         m_osrEntryScratchBufferSize = indexInBuffer;
         m_currentBlock->appendNewControlValue(m_proc, Jump, origin(), body);
@@ -2510,10 +2540,13 @@ PatchpointExceptionHandle B3IRGenerator::preparePatchpointForExceptions(BasicBlo
         Value* result = block->appendNew<VariableValue>(m_proc, B3::Get, origin, local);
         stackmap.append(result);
     }
-    for (unsigned controlIndex = 0; controlIndex < m_parser->controlStack().size(); ++controlIndex) {
+    for (unsigned controlIndex = 0; controlIndex < m_parser->controlStack().size() - 1; ++controlIndex) {
+        ControlData& data = m_parser->controlStack()[controlIndex].controlData;
         Stack& expressionStack = m_parser->controlStack()[controlIndex].enclosedExpressionStack;
         for (Value* value : expressionStack)
             stackmap.append(value);
+        if (ControlType::isAnyCatch(data))
+            stackmap.append(data.exception());
     }
 
     unsigned offset = patch->numChildren();
@@ -2545,16 +2578,14 @@ auto B3IRGenerator::addCatchToUnreachable(unsigned exceptionIndex, const Signatu
 
     // we -1 here since the Try/Catch block is still in the control stack
     for (unsigned controlIndex = 0; controlIndex < m_parser->controlStack().size() - 1; ++controlIndex) {
-        auto& data = m_parser->controlStack()[controlIndex].controlData;
+        auto& controlData = m_parser->controlStack()[controlIndex].controlData;
         auto& expressionStack = m_parser->controlStack()[controlIndex].enclosedExpressionStack;
-        connectControlEntry(indexInBuffer, pointer, data, expressionStack);
+        connectControlEntry(indexInBuffer, pointer, controlData, expressionStack, data);
     }
 
     PatchpointValue* result = m_currentBlock->appendNew<PatchpointValue>(m_proc, m_proc.addTuple({ pointerType(), pointerType() }), origin());
-    result->effects.exitsSideways = true;
-
     result->clobber(RegisterSet::macroScratchRegisters());
-    RegisterSet clobberLate;
+    RegisterSet clobberLate = RegisterSet::volatileRegistersForJSCall();
     clobberLate.add(GPRInfo::argumentGPR0);
     result->clobberLate(clobberLate);
     result->append(instanceValue(), ValueRep::SomeRegister);
@@ -2608,16 +2639,16 @@ auto B3IRGenerator::addCatchAllToUnreachable(ControlType& data) -> PartialResult
 
     // we -1 here since the Try/Catch block is still in the control stack
     for (unsigned controlIndex = 0; controlIndex < m_parser->controlStack().size() - 1; ++controlIndex) {
-        auto& data = m_parser->controlStack()[controlIndex].controlData;
+        auto& controlData = m_parser->controlStack()[controlIndex].controlData;
         auto& expressionStack = m_parser->controlStack()[controlIndex].enclosedExpressionStack;
-        connectControlEntry(indexInBuffer, pointer, data, expressionStack);
+        connectControlEntry(indexInBuffer, pointer, controlData, expressionStack, data);
     }
 
     PatchpointValue* result = m_currentBlock->appendNew<PatchpointValue>(m_proc, m_proc.addTuple({ pointerType(), pointerType() }), origin());
     result->effects.exitsSideways = true;
 
     result->clobber(RegisterSet::macroScratchRegisters());
-    RegisterSet clobberLate;
+    RegisterSet clobberLate = RegisterSet::volatileRegistersForJSCall();
     clobberLate.add(GPRInfo::argumentGPR0);
     result->clobberLate(clobberLate);
     result->resultConstraints.append(ValueRep::reg(GPRInfo::returnValueGPR));
@@ -2666,7 +2697,7 @@ auto B3IRGenerator::addThrow(unsigned exceptionIndex, Vector<ExpressionType>& ar
 
     PatchpointValue* patch = m_proc.add<PatchpointValue>(B3::Void, origin());
     patch->effects.terminal = true;
-    patch->append(instanceValue());
+    patch->append(instanceValue(), ValueRep::SomeRegister);
     patch->appendColdAnys(args);
     patch->clobber(RegisterSet::macroScratchRegisters());
     RegisterSet clobberLate = RegisterSet::volatileRegistersForJSCall();
@@ -2707,6 +2738,21 @@ auto B3IRGenerator::addThrow(unsigned exceptionIndex, Vector<ExpressionType>& ar
             offset += 8;
         }
         handle.generate(jit, params, this);
+
+        jit.loadPtr(CCallHelpers::Address(params[0].gpr(), Instance::offsetOfOwner()), scratch);
+        {
+            auto preciseAllocationCase = jit.branchTestPtr(CCallHelpers::NonZero, scratch, CCallHelpers::TrustedImm32(PreciseAllocation::halfAlignment));
+            jit.andPtr(CCallHelpers::TrustedImmPtr(MarkedBlock::blockMask), scratch);
+            jit.loadPtr(CCallHelpers::Address(scratch, MarkedBlock::offsetOfFooter + MarkedBlock::Footer::offsetOfVM()), scratch);
+            auto loadedCase = jit.jump();
+
+            preciseAllocationCase.link(&jit);
+            jit.loadPtr(CCallHelpers::Address(scratch, PreciseAllocation::offsetOfWeakSet() + WeakSet::offsetOfVM() - PreciseAllocation::headerSize()), scratch);
+
+            loadedCase.link(&jit);
+        }
+        jit.copyCalleeSavesToVMEntryFrameCalleeSavesBuffer(scratch);
+
         jit.move(params[0].gpr(), GPRInfo::argumentGPR0);
         jit.move(GPRInfo::callFrameRegister, GPRInfo::argumentGPR1);
         jit.move(MacroAssembler::TrustedImm32(exceptionIndex), GPRInfo::argumentGPR2);
@@ -2735,9 +2781,26 @@ auto B3IRGenerator::addRethrow(unsigned, ControlType& data) -> PartialResult
     patch->append(instanceValue(), ValueRep::SomeRegister);
     patch->appendSomeRegister(framePointer());
     patch->append(data.exception(), ValueRep::SomeRegister);
+    patch->numGPScratchRegisters = 1;
     PatchpointExceptionHandle handle = preparePatchpointForExceptions(m_currentBlock, patch);
     patch->setGenerator([this, handle] (CCallHelpers& jit, const B3::StackmapGenerationParams& params) {
         AllowMacroScratchRegisterUsage allowScratch(jit);
+
+        GPRReg scratch = params.gpScratch(0);
+        jit.loadPtr(CCallHelpers::Address(params[0].gpr(), Instance::offsetOfOwner()), scratch);
+        {
+            auto preciseAllocationCase = jit.branchTestPtr(CCallHelpers::NonZero, scratch, CCallHelpers::TrustedImm32(PreciseAllocation::halfAlignment));
+            jit.andPtr(CCallHelpers::TrustedImmPtr(MarkedBlock::blockMask), scratch);
+            jit.loadPtr(CCallHelpers::Address(scratch, MarkedBlock::offsetOfFooter + MarkedBlock::Footer::offsetOfVM()), scratch);
+            auto loadedCase = jit.jump();
+
+            preciseAllocationCase.link(&jit);
+            jit.loadPtr(CCallHelpers::Address(scratch, PreciseAllocation::offsetOfWeakSet() + WeakSet::offsetOfVM() - PreciseAllocation::headerSize()), scratch);
+
+            loadedCase.link(&jit);
+        }
+        jit.copyCalleeSavesToVMEntryFrameCalleeSavesBuffer(scratch);
+
         jit.move(params[0].gpr(), GPRInfo::argumentGPR0);
         jit.move(params[1].gpr(), GPRInfo::argumentGPR1);
         jit.move(params[2].gpr(), GPRInfo::argumentGPR2);
@@ -2841,6 +2904,10 @@ auto B3IRGenerator::addEndToUnreachable(ControlEntry& entry, const Stack& expres
         m_currentBlock->addPredecessor(data.special);
     } else if (data.blockType() == BlockType::If || data.blockType() == BlockType::Catch)
         --m_tryDepth;
+
+    for (auto& pair : data.exceptionUnwind()) {
+        pair.first->setException(pair.second);
+    }
 
     if (data.blockType() != BlockType::Loop) {
         for (unsigned i = 0; i < data.signature()->returnCount(); ++i) {

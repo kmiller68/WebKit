@@ -37,8 +37,7 @@ load("exceptions-utils.js");
   let instance = builder.instantiate();
 
   assertWasmThrows(instance, instance.exports.ex, [], () => instance.exports.rethrow0());
-  // FIXME: fix broken v8 wasm exceptions tests
-  // assertWasmThrows(instance, instance.exports.ex, [], () => instance.exports.rethrow1(0));
+  assertWasmThrows(instance, instance.exports.ex, [], () => instance.exports.rethrow1(0));
   assertEquals(23, instance.exports.rethrow1(1));
 })();
 
@@ -72,8 +71,7 @@ load("exceptions-utils.js");
   let instance = builder.instantiate();
 
   assertWasmThrows(instance, instance.exports.ex, [], () => instance.exports.rethrow0());
-  // FIXME: fix broken v8 wasm exceptions tests
-  // assertWasmThrows(instance, instance.exports.ex, [], () => instance.exports.rethrow1(0));
+  assertWasmThrows(instance, instance.exports.ex, [], () => instance.exports.rethrow1(0));
   assertEquals(23, instance.exports.rethrow1(1));
 })();
 
@@ -115,9 +113,7 @@ load("exceptions-utils.js");
   assertWasmThrows(instance, instance.exports.ex1, [], () => instance.exports.rethrow_nested(0));
   assertWasmThrows(instance, instance.exports.ex2, [], () => instance.exports.rethrow_nested(1));
   assertEquals(23, instance.exports.rethrow_nested(2));
-});
-// FIXME: fix broken v8 wasm exceptions tests
-// ();
+})();
 
 // Test that an exception being rethrow can be caught by another local catch
 // block in the same function without ever unwinding the activation.
@@ -145,7 +141,6 @@ load("exceptions-utils.js");
   builder.addExportOfKind("ex", kExternalTag, except);
   let instance = builder.instantiate();
 
-  // FIXME: fix broken v8 wasm exceptions tests
-  //assertEquals(23, instance.exports.rethrow_recatch(0));
+  assertEquals(23, instance.exports.rethrow_recatch(0));
   assertEquals(42, instance.exports.rethrow_recatch(1));
 })();
