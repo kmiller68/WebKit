@@ -97,6 +97,29 @@ function testDelegateCaller() {
     assert.eq(instance.exports.call(), 2, "catching an exported wasm tag thrown from JS should be possible");
 }
 
+function testSimpleDelegateMerge(){
+ const b = new Builder();
+    b.Type().End()
+        .Function().End()
+        .Export()
+            .Function("call")
+        .End()
+        .Code()
+            .Function("call", { params: [], ret: "i32" })
+                .Try("i32")
+                    .I32Const(3)
+                 .Delegate(0)
+            .End()
+        .End()
+
+
+    const bin = b.WebAssembly().get();
+    const module = new WebAssembly.Module(bin);
+    const instance = new WebAssembly.Instance(module, { });
+    assert.eq(instance.exports.call(), 3);
+}
+
 testSimpleThrowDelegate();
 testThrowDelegateSkip();
 testDelegateCaller();
+testSimpleDelegateMerge();

@@ -3298,7 +3298,7 @@ void computeExceptionHandlerLocations(Vector<CodeLocationLabel<ExceptionHandlerP
     if (!context.procedure)
         return;
 
-    unsigned entrypointIndex = 1;
+    unsigned entrypointIndex = 0;
     unsigned numEntrypoints = context.procedure->numEntrypoints();
     for (const UnlinkedHandlerInfo& handlerInfo : function->exceptionHandlers) {
         RELEASE_ASSERT(entrypointIndex < numEntrypoints);
@@ -3307,10 +3307,10 @@ void computeExceptionHandlerLocations(Vector<CodeLocationLabel<ExceptionHandlerP
             continue;
         }
 
-        handlers.append(linkBuffer.locationOf<ExceptionHandlerPtrTag>(context.procedure->code().entrypointLabel(entrypointIndex)));
         ++entrypointIndex;
+        handlers.append(linkBuffer.locationOf<ExceptionHandlerPtrTag>(context.procedure->code().entrypointLabel(entrypointIndex)));
     }
-    RELEASE_ASSERT(entrypointIndex == numEntrypoints);
+    RELEASE_ASSERT(entrypointIndex == numEntrypoints - 1);
 }
 
 // Custom wasm ops. These are the ones too messy to do in wasm.json.
