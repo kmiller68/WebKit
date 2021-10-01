@@ -839,9 +839,7 @@ load("exceptions-utils.js");
       ]).exportFunc();
   instance = builder.instantiate();
   assertEquals(1, instance.exports.test());
-});
-// FIXME: fix broken v8 wasm exceptions tests
-// ();
+})();
 
 // Delegate exception handling to outer try/catch block.
 (function TestDelegateThrow() {
@@ -869,9 +867,7 @@ load("exceptions-utils.js");
   instance = builder.instantiate();
   assertEquals(1, instance.exports.test(0));
   assertEquals(2, instance.exports.test(1));
-});
-// FIXME: fix broken v8 wasm exceptions tests
-// ();
+})();
 
 // No catch block matching the exception in the delegate target.
 (function TestDelegateThrowNoCatch() {
@@ -898,9 +894,7 @@ load("exceptions-utils.js");
       ]).exportFunc();
   instance = builder.instantiate();
   assertThrows(instance.exports.test, WebAssembly.Exception);
-});
-// FIXME: fix broken v8 wasm exceptions tests
-// ();
+})();
 
 // Check that the exception is merged properly when both scopes can throw.
 (function TestDelegateMerge() {
@@ -945,9 +939,7 @@ load("exceptions-utils.js");
   assertEquals(2, instance.exports.test(0, 1));
   assertThrows(() => instance.exports.test(0, 2), WebAssembly.Exception);
   assertEquals(1, instance.exports.test(0, 0));
-});
-// FIXME: fix broken v8 wasm exceptions tests
-// ();
+})();
 
 // Delegate to second enclosing try scope.
 (function TestDelegate1() {
@@ -974,9 +966,7 @@ load("exceptions-utils.js");
       ]).exportFunc();
   instance = builder.instantiate();
   assertEquals(3, instance.exports.test());
-});
-// FIXME: fix broken v8 wasm exceptions tests
-// ();
+})();
 
 (function TestDelegateUnreachable() {
   print(arguments.callee.name);
@@ -988,7 +978,7 @@ load("exceptions-utils.js");
         kExprTry, kWasmI32,
           kExprTry, kWasmVoid,
             kExprThrow, except1,
-          kExprDelegate, 1,
+          kExprDelegate, 0,
           kExprI32Const, 1,
         kExprCatch, except1,
           kExprI32Const, 2,
@@ -998,9 +988,7 @@ load("exceptions-utils.js");
       ]).exportFunc();
   instance = builder.instantiate();
   assertEquals(2, instance.exports.test());
-});
-// FIXME: fix broken v8 wasm exceptions tests
-// ();
+})();
 
 (function TestDelegateToCaller() {
   print(arguments.callee.name);

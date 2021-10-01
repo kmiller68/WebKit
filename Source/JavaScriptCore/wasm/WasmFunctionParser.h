@@ -1672,6 +1672,7 @@ auto FunctionParser<Context>::parseUnreachableExpression() -> PartialResult
         WASM_VALIDATOR_FAIL_IF(!ControlType::isTry(data) && !ControlType::isTopLevel(data), "delegate target isn't a try block");
 
         WASM_TRY_ADD_TO_CONTEXT(addDelegateToUnreachable(data, controlEntry.controlData));
+        WASM_TRY_ADD_TO_CONTEXT(addEndToUnreachable(controlEntry));
         m_expressionStack.swap(controlEntry.enclosedExpressionStack);
         return { };
     }

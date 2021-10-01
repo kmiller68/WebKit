@@ -2675,17 +2675,11 @@ auto B3IRGenerator::addDelegate(ControlType& target, ControlType& data) -> Parti
 
 auto B3IRGenerator::addDelegateToUnreachable(ControlType& target, ControlType& data) -> PartialResult
 {
-    m_currentBlock = data.continuation;
-    //Ref<Label> delegateLabel = newEmittedLabel();
-
     unsigned targetDepth = 0;
     if (ControlType::isTry(target))
         targetDepth = target.tryDepth();
 
     m_exceptionHandlers.append({ HandlerType::Delegate, data.tryStart(), ++m_callSiteIndex, 0, m_tryDepth, targetDepth });
-
-    --m_tryDepth;
-    m_currentBlock = data.continuation;
     return { };
 }
 
@@ -2900,7 +2894,7 @@ auto B3IRGenerator::addEndToUnreachable(ControlEntry& entry, const Stack& expres
     if (data.blockType() == BlockType::If) {
         data.special->appendNewControlValue(m_proc, Jump, origin(), m_currentBlock);
         m_currentBlock->addPredecessor(data.special);
-    } else if (data.blockType() == BlockType::If || data.blockType() == BlockType::Catch)
+    } else if (data.blockType() == BlockType::Try || data.blockType() == BlockType::Catch)
         --m_tryDepth;
 
     for (auto& pair : data.exceptionUnwind()) {
