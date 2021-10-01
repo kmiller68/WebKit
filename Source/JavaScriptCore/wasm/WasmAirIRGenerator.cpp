@@ -330,7 +330,7 @@ public:
     PartialResult WARN_UNUSED_RETURN addCatchToUnreachable(unsigned exceptionIndex, const Signature&, ControlType&, ResultList&);
     PartialResult WARN_UNUSED_RETURN addCatchAll(Stack&,ControlType&);
     PartialResult WARN_UNUSED_RETURN addCatchAllToUnreachable(ControlType&);
-    PartialResult WARN_UNUSED_RETURN addDelegate(Stack&, ControlType&, ControlType&);
+    PartialResult WARN_UNUSED_RETURN addDelegate(ControlType&, ControlType&);
     PartialResult WARN_UNUSED_RETURN addDelegateToUnreachable(ControlType&, ControlType&);
     PartialResult WARN_UNUSED_RETURN addThrow(unsigned exceptionIndex, Vector<ExpressionType>& args, Stack&);
     PartialResult WARN_UNUSED_RETURN addRethrow(unsigned, ControlType&);
@@ -3032,7 +3032,7 @@ auto AirIRGenerator::addCatchAllToUnreachable(ControlType&) -> PartialResult
     return { };
 }
 
-auto AirIRGenerator::addDelegate(Stack&, ControlType&, ControlType&) -> PartialResult
+auto AirIRGenerator::addDelegate(ControlType&, ControlType&) -> PartialResult
 {
     RELEASE_ASSERT_NOT_REACHED();
     return { };

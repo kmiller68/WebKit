@@ -291,9 +291,9 @@ public:
     PartialResult WARN_UNUSED_RETURN addTry(BlockSignature, Stack& enclosingStack, ControlType& result, Stack& newStack);
     PartialResult WARN_UNUSED_RETURN addCatch(unsigned exceptionIndex, const Signature&, Stack&, ControlType&, ResultList&);
     PartialResult WARN_UNUSED_RETURN addCatchToUnreachable(unsigned exceptionIndex, const Signature&, ControlType&, ResultList&);
-    PartialResult WARN_UNUSED_RETURN addCatchAll(Stack&,ControlType&);
+    PartialResult WARN_UNUSED_RETURN addCatchAll(Stack&, ControlType&);
     PartialResult WARN_UNUSED_RETURN addCatchAllToUnreachable(ControlType&);
-    PartialResult WARN_UNUSED_RETURN addDelegate(Stack&, ControlType&, ControlType&);
+    PartialResult WARN_UNUSED_RETURN addDelegate(ControlType&, ControlType&);
     PartialResult WARN_UNUSED_RETURN addDelegateToUnreachable(ControlType&, ControlType&);
     PartialResult WARN_UNUSED_RETURN addThrow(unsigned exceptionIndex, Vector<ExpressionType>& args, Stack&);
     PartialResult WARN_UNUSED_RETURN addRethrow(unsigned, ControlType&);
@@ -1150,10 +1150,8 @@ auto LLIntGenerator::addCatchAllToUnreachable(ControlType& data) -> PartialResul
     return { };
 }
 
-auto LLIntGenerator::addDelegate(Stack& expressionStack, ControlType& target, ControlType& data) -> PartialResult
+auto LLIntGenerator::addDelegate(ControlType& target, ControlType& data) -> PartialResult
 {
-    materializeConstantsAndLocals(expressionStack);
-    WasmJmp::emit(this, data.m_continuation->bind(this));
     return addDelegateToUnreachable(target, data);
 }
 
@@ -1161,16 +1159,13 @@ auto LLIntGenerator::addDelegateToUnreachable(ControlType& target, ControlType& 
 {
     m_usesExceptions = true;
     Ref<Label> delegateLabel = newEmittedLabel();
-    m_stackSize = data.stackSize();
 
-    unsigned targetDepth = 0;
-    if (ControlType::isTry(target))
-        targetDepth = WTF::get<ControlTry>(target).m_tryDepth;
+    ASSERT(ControlType::isTry(target) || ControlType::isTopLevel(target));
+    unsigned targetDepth = ControlType::isTry(target) ? WTF::get<ControlTry>(target).m_tryDepth : 0;
 
     ControlTry& try_ = WTF::get<ControlTry>(data);
     m_codeBlock->addExceptionHandler({ HandlerType::Delegate, try_.m_try->location(), delegateLabel->location(), 0, m_tryDepth, targetDepth });
-    --m_tryDepth;
-    emitLabel(*data.m_continuation);
+    checkConsistency();
     return { };
 }
 

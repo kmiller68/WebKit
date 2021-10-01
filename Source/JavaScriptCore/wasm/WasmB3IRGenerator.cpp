@@ -380,7 +380,7 @@ public:
     PartialResult WARN_UNUSED_RETURN addCatchToUnreachable(unsigned exceptionIndex, const Signature&, ControlType&, ResultList&);
     PartialResult WARN_UNUSED_RETURN addCatchAll(Stack&,ControlType&);
     PartialResult WARN_UNUSED_RETURN addCatchAllToUnreachable(ControlType&);
-    PartialResult WARN_UNUSED_RETURN addDelegate(Stack&, ControlType&, ControlType&);
+    PartialResult WARN_UNUSED_RETURN addDelegate(ControlType&, ControlType&);
     PartialResult WARN_UNUSED_RETURN addDelegateToUnreachable(ControlType&, ControlType&);
     PartialResult WARN_UNUSED_RETURN addThrow(unsigned exceptionIndex, Vector<ExpressionType>& args, Stack&);
     PartialResult WARN_UNUSED_RETURN addRethrow(unsigned, ControlType&);
@@ -2668,10 +2668,8 @@ auto B3IRGenerator::addCatchAllToUnreachable(ControlType& data) -> PartialResult
     return { };
 }
 
-auto B3IRGenerator::addDelegate(Stack& currentStack, ControlType& target, ControlType& data) -> PartialResult
+auto B3IRGenerator::addDelegate(ControlType& target, ControlType& data) -> PartialResult
 {
-    unifyValuesWithBlock(currentStack, data.phis);
-    m_currentBlock->appendNewControlValue(m_proc, Jump, origin(), data.continuation);
     return addDelegateToUnreachable(target, data);
 }
 

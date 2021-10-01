@@ -1425,11 +1425,12 @@ FOR_EACH_WASM_MEMORY_STORE_OP(CREATE_CASE)
         ControlEntry controlEntry = m_controlStack.takeLast();
         WASM_VALIDATOR_FAIL_IF(!ControlType::isTry(controlEntry.controlData), "delegate isn't associated to a try");
 
-        ControlType& data = m_controlStack[m_controlStack.size() - 1 - target].controlData;
-        WASM_VALIDATOR_FAIL_IF(!ControlType::isTry(data) && !ControlType::isTopLevel(data), "delegate target isn't a try block");
+        ControlType& targetData = m_controlStack[m_controlStack.size() - 1 - target].controlData;
+        WASM_VALIDATOR_FAIL_IF(!ControlType::isTry(targetData) && !ControlType::isTopLevel(targetData), "delegate target isn't a try or the top level block");
 
+        WASM_TRY_ADD_TO_CONTEXT(addDelegate(targetData, controlEntry.controlData));
         WASM_FAIL_IF_HELPER_FAILS(unify(controlEntry.controlData));
-        WASM_TRY_ADD_TO_CONTEXT(addDelegate(m_expressionStack, data, controlEntry.controlData));
+        WASM_TRY_ADD_TO_CONTEXT(endBlock(controlEntry, m_expressionStack));
         m_expressionStack.swap(controlEntry.enclosedExpressionStack);
         return { };
     }
