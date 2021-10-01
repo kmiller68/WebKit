@@ -2829,8 +2829,14 @@ commonWasmOp(wasm_catch, WasmCatch, macro() end, macro(ctx)
     loadp Callee[cfr], t3
     convertCalleeToVM(t3)
     restoreCalleeSavesFromVMEntryFrameCalleeSavesBuffer(t3, t0)
+
+    loadp VM::calleeForWasmCatch[t3], ws1
+    storep 0, VM::calleeForWasmCatch[t3]
+    storep ws1, Callee[cfr]
+
     loadp VM::callFrameForCatch[t3], cfr
     storep 0, VM::callFrameForCatch[t3]
+
     restoreStackPointerAfterCall()
 
     loadp CodeBlock[cfr], PB
@@ -2870,8 +2876,14 @@ commonWasmOp(wasm_catch_all, WasmCatchAll, macro() end, macro(ctx)
     loadp Callee[cfr], t3
     convertCalleeToVM(t3)
     restoreCalleeSavesFromVMEntryFrameCalleeSavesBuffer(t3, t0)
+
+    loadp VM::calleeForWasmCatch[t3], ws1
+    storep 0, VM::calleeForWasmCatch[t3]
+    storep ws1, Callee[cfr]
+
     loadp VM::callFrameForCatch[t3], cfr
     storep 0, VM::callFrameForCatch[t3]
+
     restoreStackPointerAfterCall()
 
     loadp CodeBlock[cfr], PB

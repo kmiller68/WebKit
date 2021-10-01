@@ -551,7 +551,7 @@ void LLIntGenerator::repatch(const CatchRewriteInfo& info)
 {
     auto ref = m_writer.ref(info.m_instructionOffset);
     Opcode* instruction = ref->cast<Opcode, WasmOpcodeTraits>();
-    VirtualRegister exceptionRegister = virtualRegisterForLocal(m_stackSize + info.m_tryDepth - 1);
+    VirtualRegister exceptionRegister = virtualRegisterForLocal(m_maxStackSize + info.m_tryDepth - 1);
     instruction->setException(exceptionRegister, []() {
         RELEASE_ASSERT_NOT_REACHED();
         return VirtualRegister();
@@ -569,7 +569,7 @@ std::unique_ptr<FunctionCodeBlock> LLIntGenerator::finalize()
     for (const auto& info : m_catchAlls)
         repatch<WasmCatchAll>(info);
 
-    m_stackSize += m_maxTryDepth;
+    m_maxStackSize += m_maxTryDepth;
 
     size_t numCalleeLocals = WTF::roundUpToMultipleOf(stackAlignmentRegisters(), m_maxStackSize);
     m_codeBlock->m_numCalleeLocals = numCalleeLocals;
