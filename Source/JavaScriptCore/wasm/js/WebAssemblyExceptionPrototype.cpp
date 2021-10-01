@@ -100,8 +100,11 @@ JSC_DEFINE_HOST_FUNCTION(webAssemblyExceptionProtoFuncGetArg, (JSGlobalObject* g
     VM& vm = globalObject->vm();
     auto throwScope = DECLARE_THROW_SCOPE(vm);
 
+    const auto& formatMessage = [&](const auto& message) {
+        return makeString("WebAssembly.Exception.getArg(): ", message);
+    };
     const auto& typeError = [&](const auto& message) {
-        throwTypeError(globalObject, throwScope, makeString("WebAssembly.Exception.getArg(): ", message));
+        throwTypeError(globalObject, throwScope, formatMessage(message));
         return encodedJSValue();
     };
 
@@ -116,8 +119,10 @@ JSC_DEFINE_HOST_FUNCTION(webAssemblyExceptionProtoFuncGetArg, (JSGlobalObject* g
         return typeError("First argument does not match the exception tag");
 
     uint32_t index = callFrame->argument(1).toUInt32(globalObject);
-    if (index >= tag->tag().parameterCount())
-        return typeError("Index out of range");
+    if (index >= tag->tag().parameterCount()) {
+        throwRangeError(globalObject, throwScope, formatMessage("Index out of range"));
+        return encodedJSValue();
+    }
 
     RELEASE_AND_RETURN(throwScope, JSValue::encode(jsException->getArg(globalObject, index)));
 }

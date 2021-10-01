@@ -162,7 +162,7 @@ inline const char* makeString(ExternalKind kind)
     case ExternalKind::Table: return "table";
     case ExternalKind::Memory: return "memory";
     case ExternalKind::Global: return "global";
-    case ExternalKind::Exception: return "exception";
+    case ExternalKind::Exception: return "tag";
     }
     RELEASE_ASSERT_NOT_REACHED();
     return "?";

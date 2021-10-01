@@ -46,12 +46,13 @@ JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyTag, (JSGlobalObject* globalObjec
     VM& vm = globalObject->vm();
     auto scope = DECLARE_THROW_SCOPE(vm);
     
-    constexpr ASCIILiteral errorString = "WebAssembly.Tag constructor expects the 'parameters' field of the first argument to be a sequence of WebAssembly types."_s;
+    if (callFrame->argumentCount() < 1)
+        return throwVMTypeError(globalObject, scope, "WebAssembly.Tag constructor expects the tag type as the first argument."_s);
 
     JSValue tagTypeValue = callFrame->argument(0);
     JSValue signatureObject = tagTypeValue.get(globalObject, Identifier::fromString(vm, "parameters"_s));
     if (!signatureObject.isObject())
-        return throwVMTypeError(globalObject, scope, errorString);
+        return throwVMTypeError(globalObject, scope, "WebAssembly.Tag constructor expects a tag type with the 'parameters' property."_s);
 
     Vector<Wasm::Type> parameters;
     forEachInIterable(globalObject, signatureObject, [&] (auto& vm, auto* globalObject, JSValue nextType) -> void {
@@ -73,7 +74,7 @@ JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyTag, (JSGlobalObject* globalObjec
         else if (valueString == "externref"_s)
             type = Wasm::Types::Externref;
         else {
-            throwTypeError(globalObject, scope, errorString);
+            throwTypeError(globalObject, scope, "WebAssembly.Tag constructor expects the 'parameters' field of the first argument to be a sequence of WebAssembly value types."_s);
             return;
         }
 
