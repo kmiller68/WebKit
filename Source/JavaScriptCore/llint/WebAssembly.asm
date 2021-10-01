@@ -2857,10 +2857,10 @@ commonWasmOp(wasm_catch, WasmCatch, macro() end, macro(ctx)
     storeq t6, [t2]
     subi 1, t3
     subp 8, t2
+    addp 8, t1
     jmp .copyLoop
 
 .done:
-
     traceExecution()
 
     dispatch(ctx)

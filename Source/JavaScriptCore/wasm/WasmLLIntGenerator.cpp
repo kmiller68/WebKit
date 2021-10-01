@@ -392,7 +392,7 @@ private:
             WasmDropKeep::emit(this, startOffset, drop, keep);
     }
 
-    template<typename Functor>
+    template<typename Stack, typename Functor>
     void walkExpressionStack(Stack& expressionStack, unsigned stackSize, const Functor& functor)
     {
         for (unsigned i = expressionStack.size(); i > 0; --i) {
@@ -401,7 +401,7 @@ private:
         }
     }
 
-    template<typename Functor>
+    template<typename Stack, typename Functor>
     void walkExpressionStack(Stack& expressionStack, const Functor& functor)
     {
         walkExpressionStack(expressionStack, m_stackSize, functor);
@@ -436,7 +436,7 @@ private:
 
     void materializeConstantsAndLocals(Stack& expressionStack, NoConsistencyCheckTag)
     {
-        walkExpressionStack(expressionStack, [&](TypedExpression& expression, VirtualRegister slot) {
+        walkExpressionStack(expressionStack, [&](auto& expression, VirtualRegister slot) {
             ASSERT(expression.value() == slot || expression.value().isConstant() || expression.value().isArgument() || static_cast<unsigned>(expression.value().toLocal()) < m_codeBlock->m_numVars);
             if (expression.value() == slot)
                 return;
@@ -1098,6 +1098,27 @@ auto LLIntGenerator::addCatchToUnreachable(unsigned exceptionIndex, const Signat
     WasmCatch::emit<OpcodeSize::Wide32>(this, exceptionIndex, virtualRegisterForLocal(0), exceptionSignature.argumentCount(), results.isEmpty() ? 0 : -results[0].offset());
     m_catches.append({ m_lastInstruction.offset(), m_tryDepth });
 
+    for (unsigned i = 0; i < exceptionSignature.argumentCount(); ++i) {
+        VirtualRegister dst = results[i];
+        Type type = exceptionSignature.argument(i);
+        switch (type.kind) {
+        case Wasm::TypeKind::F32:
+            WasmF32ReinterpretI32::emit(this, dst, dst);
+            break;
+        case Wasm::TypeKind::F64:
+            WasmF64ReinterpretI64::emit(this, dst, dst);
+            break;
+        case Wasm::TypeKind::I32:
+        case Wasm::TypeKind::I64:
+        case Wasm::TypeKind::Externref:
+        case Wasm::TypeKind::Funcref:
+            break;
+        default:
+            RELEASE_ASSERT_NOT_REACHED();
+            break;
+        }
+    }
+
     ControlCatch& catch_ = WTF::get<ControlCatch>(data);
     catch_.m_kind = CatchKind::Catch;
     m_codeBlock->addExceptionHandler({ HandlerType::Catch, catch_.m_tryStart->location(), catch_.m_tryEnd->location(), catchLabel->location(), m_tryDepth, exceptionIndex });
@@ -1156,11 +1177,13 @@ auto LLIntGenerator::addDelegateToUnreachable(ControlType& target, ControlType& 
 auto LLIntGenerator::addThrow(unsigned exceptionIndex, Vector<ExpressionType>& args, Stack&) -> PartialResult
 {
     m_usesExceptions = true;
-    Vector<ExpressionType> targets;
-    for (unsigned i = 0; i < args.size(); ++i)
-        targets.append(push());
-    unifyValuesWithBlock(targets, args);
-    WasmThrow::emit(this, exceptionIndex, virtualRegisterForLocal(m_stackSize - 1));
+    walkExpressionStack(args, [&](VirtualRegister& arg, VirtualRegister slot) {
+        if (arg == slot)
+            return;
+        WasmMov::emit(this, slot, arg);
+        arg = slot;
+    });
+    WasmThrow::emit(this, exceptionIndex, args.isEmpty() ? virtualRegisterForLocal(0) : args[0]);
     return { };
 }
 
