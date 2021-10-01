@@ -56,7 +56,7 @@ void HandlerInfo::initialize(Instance* instance, const UnlinkedHandlerInfo& unli
     }
 }
 
-const HandlerInfo* HandlerInfo::handlerForIndex(const Vector<HandlerInfo>& exeptionHandlers, unsigned index, const Wasm::Tag& exceptionTag)
+const HandlerInfo* HandlerInfo::handlerForIndex(const Vector<HandlerInfo>& exeptionHandlers, unsigned index, const Wasm::Tag* exceptionTag)
 {
     bool delegating = false;
     unsigned delegateTarget = 0;
@@ -74,7 +74,7 @@ const HandlerInfo* HandlerInfo::handlerForIndex(const Vector<HandlerInfo>& exept
             bool match = false;
             switch (handler.m_type) {
                 case HandlerType::Catch:
-                    match = *handler.m_tag == exceptionTag;
+                    match = exceptionTag && *handler.m_tag == *exceptionTag;
                     break;
                 case HandlerType::CatchAll:
                     match = true;

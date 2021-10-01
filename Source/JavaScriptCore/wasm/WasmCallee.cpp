@@ -57,7 +57,7 @@ void Callee::dump(PrintStream& out) const
     out.print(makeString(m_indexOrName));
 }
 
-const HandlerInfo* Callee::handlerForIndex(VM& vm, unsigned index, const Tag& tag)
+const HandlerInfo* Callee::handlerForIndex(VM& vm, unsigned index, const Tag* tag)
 {
     if (!m_numberOfExceptionHandlers)
         return nullptr;

@@ -556,8 +556,13 @@ public:
         , m_codeBlock(codeBlock)
         , m_handler(handler)
     {
-        if (JSWebAssemblyException* wasmException = jsDynamicCast<JSWebAssemblyException*>(m_vm, thrownValue))
-            m_wasmTag = &wasmException->tag();
+        if (!m_isTermination) {
+            if (JSWebAssemblyException* wasmException = jsDynamicCast<JSWebAssemblyException*>(m_vm, thrownValue)) {
+                m_catchableFromWasm = true;
+                m_wasmTag = &wasmException->tag();
+            } else if (ErrorInstance* error = jsDynamicCast<ErrorInstance*>(m_vm, thrownValue))
+                m_catchableFromWasm = error->isCatchableFromWasm();
+        }
     }
 
     StackVisitor::Status operator()(StackVisitor& visitor) const
@@ -583,9 +588,9 @@ public:
 
         }
 
-        if (callee.isWasm() && !m_isTermination && m_wasmTag) {
+        if (m_catchableFromWasm && callee.isWasm()) {
             unsigned exceptionHandlerIndex = m_callFrame->bytecodeIndex().offset();
-            m_handler = { callee.asWasmCallee()->handlerForIndex(m_vm, exceptionHandlerIndex, *m_wasmTag), callee.asWasmCallee() };
+            m_handler = { callee.asWasmCallee()->handlerForIndex(m_vm, exceptionHandlerIndex, m_wasmTag), callee.asWasmCallee() };
             if (m_handler.m_valid)
                 return StackVisitor::Done;
         }
@@ -636,6 +641,7 @@ private:
     CodeBlock*& m_codeBlock;
     CatchInfo& m_handler;
     const Wasm::Tag* m_wasmTag { nullptr };
+    bool m_catchableFromWasm { false };
 };
 
 NEVER_INLINE CatchInfo Interpreter::unwind(VM& vm, CallFrame*& callFrame, Exception* exception)

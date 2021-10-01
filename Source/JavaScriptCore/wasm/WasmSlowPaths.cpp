@@ -663,7 +663,11 @@ WASM_SLOW_PATH_DECL(retrieve_and_clear_exception)
     Exception* exception = throwScope.exception();
     JSValue thrownValue = exception->value();
 
+    void* payload = nullptr;
     if (pc->is<WasmCatch, WasmOpcodeTraits>()) {
+        JSWebAssemblyException* wasmException = jsDynamicCast<JSWebAssemblyException*>(vm, thrownValue);
+        RELEASE_ASSERT(!!wasmException);
+        payload = bitwise_cast<void*>(wasmException->payload().data());
         auto instruction = pc->as<WasmCatch, WasmOpcodeTraits>();
         callFrame->uncheckedR(instruction.m_exception) = thrownValue;
     } else {
@@ -675,10 +679,7 @@ WASM_SLOW_PATH_DECL(retrieve_and_clear_exception)
     // JIT code because clearing it also entails clearing a bit in an Atomic
     // bit field in VMTraps.
     throwScope.clearException();
-
-    JSWebAssemblyException* wasmException = jsDynamicCast<JSWebAssemblyException*>(vm, thrownValue);
-    RELEASE_ASSERT(!!wasmException);
-    WASM_RETURN_TWO(pc, wasmException->payload().data());
+    WASM_RETURN_TWO(pc, payload);
 }
 
 extern "C" SlowPathReturnType slow_path_wasm_throw_exception(CallFrame* callFrame, const Instruction* pc, Wasm::Instance* instance, Wasm::ExceptionType exceptionType)

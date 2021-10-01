@@ -61,7 +61,7 @@ public:
     virtual RegisterAtOffsetList* calleeSaveRegisters() = 0;
     virtual std::tuple<void*, void*> range() const = 0;
 
-    const HandlerInfo* handlerForIndex(VM&, unsigned, const Tag&);
+    const HandlerInfo* handlerForIndex(VM&, unsigned, const Tag*);
 
 #if ENABLE(WEBASSEMBLY_B3JIT)
     virtual void setOSREntryCallee(Ref<OMGForOSREntryCallee>&&)

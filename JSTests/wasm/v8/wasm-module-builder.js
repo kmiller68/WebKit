@@ -863,9 +863,9 @@ let kTrapElemSegmentDropped = 10;
 let kTrapRethrowNull = 11;
 
 let kTrapMsgs = [
-  'unreachable',                                    // --
+  /Unreachable/,                                    // --
   'memory access out of bounds',                    // --
-  'divide by zero',                                 // --
+  /Division by zero/,                               // --
   'divide result unrepresentable',                  // --
   'remainder by zero',                              // --
   'float unrepresentable in integer range',         // --

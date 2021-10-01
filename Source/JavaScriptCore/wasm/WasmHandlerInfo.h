@@ -68,7 +68,7 @@ struct UnlinkedHandlerInfo : public HandlerInfoBase {
 };
 
 struct HandlerInfo : public HandlerInfoBase {
-    static const HandlerInfo* handlerForIndex(const Vector<HandlerInfo>& exeptionHandlers, unsigned index, const Wasm::Tag& exceptionTag);
+    static const HandlerInfo* handlerForIndex(const Vector<HandlerInfo>& exeptionHandlers, unsigned index, const Wasm::Tag* exceptionTag);
 
     void initialize(Instance*, const UnlinkedHandlerInfo&, MacroAssemblerCodePtr<ExceptionHandlerPtrTag>);
 

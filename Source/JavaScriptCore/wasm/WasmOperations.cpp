@@ -996,7 +996,7 @@ JSC_DEFINE_JIT_OPERATION(operationWasmToJSException, void*, (CallFrame* callFram
         if (type == ExceptionType::StackOverflow)
             error = createStackOverflowError(globalObject);
         else
-            error = createJSWebAssemblyRuntimeError(globalObject, vm, Wasm::errorMessageForExceptionType(type));
+            error = createJSWebAssemblyRuntimeError(globalObject, vm, type);
         throwException(globalObject, throwScope, error);
     }
 
@@ -1032,9 +1032,10 @@ JSC_DEFINE_JIT_OPERATION(operationWasmRetrieveAndClearExceptionIfCatchable, Poin
     // bit field in VMTraps.
     throwScope.clearException();
 
-    JSWebAssemblyException* wasmException = jsDynamicCast<JSWebAssemblyException*>(vm, thrownValue);
-    RELEASE_ASSERT(!!wasmException);
-    return PointerPair { bitwise_cast<void*>(wasmException), bitwise_cast<void*>(wasmException->payload().data()) };
+    void* payload = nullptr;
+    if (JSWebAssemblyException* wasmException = jsDynamicCast<JSWebAssemblyException*>(vm, thrownValue))
+        payload = bitwise_cast<void*>(wasmException->payload().data());
+    return PointerPair { bitwise_cast<void*>(JSValue::encode(thrownValue)), payload };
 }
 
 } } // namespace JSC::Wasm

@@ -40,6 +40,7 @@ ErrorInstance::ErrorInstance(VM& vm, Structure* structure, ErrorType errorType)
     , m_outOfMemoryError(false)
     , m_errorInfoMaterialized(false)
     , m_nativeGetterTypeError(false)
+    , m_catchableFromWasm(true)
 {
 }
 

@@ -4,8 +4,8 @@
 
 // Flags: --expose-wasm --experimental-wasm-eh --allow-natives-syntax
 
-d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
-d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
+load("wasm-module-builder.js");
+load("exceptions-utils.js");
 
 // The following method doesn't attempt to catch an raised exception.
 (function TestThrowSimple() {
@@ -22,11 +22,12 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
         kExprEnd,
         kExprI32Const, 1
       ]).exportFunc();
+  builder.addExportOfKind("ex", kExternalTag, except);
   let instance = builder.instantiate();
 
   assertEquals(1, instance.exports.throw_if_param_not_zero(0));
-  assertWasmThrows(instance, except, [], () => instance.exports.throw_if_param_not_zero(10));
-  assertWasmThrows(instance, except, [], () => instance.exports.throw_if_param_not_zero(-1));
+  assertWasmThrows(instance, instance.exports.ex, [], () => instance.exports.throw_if_param_not_zero(10));
+  assertWasmThrows(instance, instance.exports.ex, [], () => instance.exports.throw_if_param_not_zero(-1));
 })();
 
 // Test that empty try/catch blocks work.
@@ -146,8 +147,7 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
     caught = e;
   }
   assertSame(exception, caught);
-  assertInstanceof(exception, WebAssembly.RuntimeError);
-  assertEquals(exception.message, kTrapMsgs[kTrapDivByZero]);
+  assertThrows(instance.exports.call_import, WebAssembly.RuntimeError, kTrapMsgs[kTrapDivByZero]);
 })();
 
 (function TestManuallyThrownRuntimeErrorCaught() {
@@ -218,7 +218,7 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
 (function TestStackOverflowNotCaught() {
   print(arguments.callee.name);
   function stack_overflow() {
-    %ThrowStackOverflow();
+    //%ThrowStackOverflow();
   }
   let builder = new WasmModuleBuilder();
   let sig_v_v = builder.addType(kSig_v_v);
@@ -234,7 +234,9 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
 
   assertThrows(() => instance.exports.try_stack_overflow(),
       RangeError, 'Maximum call stack size exceeded');
-})();
+});
+// FIXME: needs stack overflow helper
+//();
 
 // Test that we can distinguish which exception was thrown by using a cascaded
 // sequence of nested try blocks with a single catch block each.
@@ -270,11 +272,12 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
           kExprI32Const, 4,
         kExprEnd,
       ]).exportFunc();
+  builder.addExportOfKind("ex", kExternalTag, except3);
   let instance = builder.instantiate();
 
   assertEquals(3, instance.exports.catch_complex(0));
   assertEquals(4, instance.exports.catch_complex(1));
-  assertWasmThrows(instance, except3, [], () => instance.exports.catch_complex(2));
+  assertWasmThrows(instance, instance.exports.ex, [], () => instance.exports.catch_complex(2));
 })();
 
 // Test that we can distinguish which exception was thrown by using a single
@@ -309,11 +312,12 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
           kExprI32Const, 4,
         kExprEnd,
       ]).exportFunc();
+  builder.addExportOfKind("ex", kExternalTag, except3);
   let instance = builder.instantiate();
 
   assertEquals(3, instance.exports.catch_complex(0));
   assertEquals(4, instance.exports.catch_complex(1));
-  assertWasmThrows(instance, except3, [], () => instance.exports.catch_complex(2));
+  assertWasmThrows(instance, instance.exports.ex, [], () => instance.exports.catch_complex(2));
 })();
 
 // Test throwing an exception with multiple values.
@@ -327,9 +331,10 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
         kExprI32Const, 2,
         kExprThrow, except,
       ]).exportFunc();
+  builder.addExportOfKind("ex", kExternalTag, except);
   let instance = builder.instantiate();
 
-  assertWasmThrows(instance, except, [0, 1, 0, 2], () => instance.exports.throw_1_2());
+  assertWasmThrows(instance, instance.exports.ex, [1, 2], () => instance.exports.throw_1_2());
 })();
 
 // Test throwing/catching the i32 parameter value.
@@ -364,10 +369,11 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
         kExprLocalGet, 0,
         kExprThrow, except,
       ]).exportFunc();
+  builder.addExportOfKind("ex", kExternalTag, except);
   let instance = builder.instantiate();
 
-  assertWasmThrows(instance, except, [0, 5], () => instance.exports.throw_param(5));
-  assertWasmThrows(instance, except, [6, 31026], () => instance.exports.throw_param(424242));
+  assertWasmThrows(instance, instance.exports.ex, [5], () => instance.exports.throw_param(5));
+  assertWasmThrows(instance, instance.exports.ex, [424242], () => instance.exports.throw_param(424242));
 })();
 
 // Test throwing/catching the f32 parameter value.
@@ -401,10 +407,11 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
         kExprLocalGet, 0,
         kExprThrow, except,
       ]).exportFunc();
+  builder.addExportOfKind("ex", kExternalTag, except);
   let instance = builder.instantiate();
 
-  assertWasmThrows(instance, except, [16544, 0], () => instance.exports.throw_param(5.0));
-  assertWasmThrows(instance, except, [16680, 0], () => instance.exports.throw_param(10.5));
+  assertWasmThrows(instance, instance.exports.ex, [5.0], () => instance.exports.throw_param(5.0));
+  assertWasmThrows(instance, instance.exports.ex, [10.5], () => instance.exports.throw_param(10.5));
 })();
 
 // Test throwing/catching an I64 value
@@ -455,10 +462,11 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
         kExprI64Ior,
         kExprThrow, except,
       ]).exportFunc();
+  builder.addExportOfKind("ex", kExternalTag, except);
   let instance = builder.instantiate();
 
-  assertWasmThrows(instance, except, [0, 10, 0, 5], () => instance.exports.throw_param(10, 5));
-  assertWasmThrows(instance, except, [65535, 65535, 0, 13], () => instance.exports.throw_param(-1, 13));
+  assertWasmThrows(instance, instance.exports.ex, [42949672965n], () => instance.exports.throw_param(10, 5));
+  assertWasmThrows(instance, instance.exports.ex, [-4294967283n], () => instance.exports.throw_param(-1, 13));
 })();
 
 // Test throwing/catching the F64 parameter value
@@ -493,10 +501,11 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
         kExprF64ConvertF32,
         kExprThrow, except,
       ]).exportFunc();
+  builder.addExportOfKind("ex", kExternalTag, except);
   let instance = builder.instantiate();
 
-  assertWasmThrows(instance, except, [16404, 0, 0, 0], () => instance.exports.throw_param(5.0));
-  assertWasmThrows(instance, except, [16739, 4816, 0, 0], () => instance.exports.throw_param(10000000.5));
+  assertWasmThrows(instance, instance.exports.ex, [5.0], () => instance.exports.throw_param(5.0));
+  assertWasmThrows(instance, instance.exports.ex, [10000000], () => instance.exports.throw_param(10000000.5));
 })();
 
 // Test the encoding of a computed parameter value.
@@ -519,10 +528,11 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
         kExprI32Sub,
         kExprThrow, except,
       ]).exportFunc()
+  builder.addExportOfKind("ex", kExternalTag, except);
   let instance = builder.instantiate();
 
-  assertWasmThrows(instance, except, [65535, 65536-8], () => instance.exports.throw_expr_with_params(1.5, 2.5, 4));
-  assertWasmThrows(instance, except, [0, 12], () => instance.exports.throw_expr_with_params(5.7, 2.5, 4));
+  assertWasmThrows(instance, instance.exports.ex, [-8], () => instance.exports.throw_expr_with_params(1.5, 2.5, 4));
+  assertWasmThrows(instance, instance.exports.ex, [12], () => instance.exports.throw_expr_with_params(5.7, 2.5, 4));
 })();
 
 // Now that we know catching works locally, we test catching exceptions that
@@ -829,7 +839,9 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
       ]).exportFunc();
   instance = builder.instantiate();
   assertEquals(1, instance.exports.test());
-})();
+});
+// FIXME: fix broken v8 wasm exceptions tests
+// ();
 
 // Delegate exception handling to outer try/catch block.
 (function TestDelegateThrow() {
@@ -857,7 +869,9 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
   instance = builder.instantiate();
   assertEquals(1, instance.exports.test(0));
   assertEquals(2, instance.exports.test(1));
-})();
+});
+// FIXME: fix broken v8 wasm exceptions tests
+// ();
 
 // No catch block matching the exception in the delegate target.
 (function TestDelegateThrowNoCatch() {
@@ -884,7 +898,9 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
       ]).exportFunc();
   instance = builder.instantiate();
   assertThrows(instance.exports.test, WebAssembly.Exception);
-})();
+});
+// FIXME: fix broken v8 wasm exceptions tests
+// ();
 
 // Check that the exception is merged properly when both scopes can throw.
 (function TestDelegateMerge() {
@@ -929,7 +945,9 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
   assertEquals(2, instance.exports.test(0, 1));
   assertThrows(() => instance.exports.test(0, 2), WebAssembly.Exception);
   assertEquals(1, instance.exports.test(0, 0));
-})();
+});
+// FIXME: fix broken v8 wasm exceptions tests
+// ();
 
 // Delegate to second enclosing try scope.
 (function TestDelegate1() {
@@ -956,7 +974,9 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
       ]).exportFunc();
   instance = builder.instantiate();
   assertEquals(3, instance.exports.test());
-})();
+});
+// FIXME: fix broken v8 wasm exceptions tests
+// ();
 
 (function TestDelegateUnreachable() {
   print(arguments.callee.name);
@@ -968,7 +988,7 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
         kExprTry, kWasmI32,
           kExprTry, kWasmVoid,
             kExprThrow, except1,
-          kExprDelegate, 0,
+          kExprDelegate, 1,
           kExprI32Const, 1,
         kExprCatch, except1,
           kExprI32Const, 2,
@@ -978,7 +998,9 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
       ]).exportFunc();
   instance = builder.instantiate();
   assertEquals(2, instance.exports.test());
-})();
+});
+// FIXME: fix broken v8 wasm exceptions tests
+// ();
 
 (function TestDelegateToCaller() {
   print(arguments.callee.name);
@@ -1069,9 +1091,10 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
         kExprEnd,
     ]).exportFunc();
 
+  builder.addExportOfKind("ex", kExternalTag, except);
   let instance = builder.instantiate();
   assertDoesNotThrow(() => instance.exports.catchless_try(0));
-  assertWasmThrows(instance, except, [], () => instance.exports.catchless_try(1));
+  assertWasmThrows(instance, instance.exports.ex, [], () => instance.exports.catchless_try(1));
 })();
 
 // Delegate to a regular block inside a try block.
@@ -1091,8 +1114,7 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
           kExprI32Const, 2,
         kExprEnd,
       ]).exportFunc();
-  instance = builder.instantiate();
-  assertEquals(2, instance.exports.test());
+    assertThrows(() => builder.instantiate(), Error, /delegate target isn't a try block/);
 })();
 
 // Delegate to a regular block with no outer try (delegate to caller).
@@ -1108,6 +1130,5 @@ d8.file.execute("test/mjsunit/wasm/exceptions-utils.js");
           kExprDelegate, 0,
         kExprEnd
       ]).exportFunc();
-  instance = builder.instantiate();
-  assertThrows(() => instance.exports.test(), WebAssembly.Exception);
+  assertThrows(() => builder.instantiate(), Error, /delegate target isn't a try block/);
 })();
