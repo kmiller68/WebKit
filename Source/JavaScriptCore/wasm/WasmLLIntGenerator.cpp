@@ -500,6 +500,7 @@ private:
     Vector<CatchRewriteInfo> m_rethrows;
     Vector<CatchRewriteInfo> m_catches;
     Vector<CatchRewriteInfo> m_catchAlls;
+    HashMap<unsigned, Vector<unsigned>> m_unresolvedStackmaps;
     bool m_usesExceptions { false };
 };
 
@@ -568,6 +569,14 @@ std::unique_ptr<FunctionCodeBlock> LLIntGenerator::finalize()
         repatch<WasmCatch>(info);
     for (const auto& info : m_catchAlls)
         repatch<WasmCatchAll>(info);
+    for (const auto& pair : m_unresolvedStackmaps) {
+        const auto& osrEntryData = m_codeBlock->tierUpCounter().osrEntryDataForLoop(pair.key);
+        Vector<VirtualRegister>& stackmap = const_cast<LLIntTierUpCounter::OSREntryData&>(osrEntryData).values;
+        for (unsigned offset : pair.value) {
+            unsigned tryDepth = stackmap[offset].offset();
+            stackmap[offset] = virtualRegisterForLocal(m_maxStackSize + tryDepth - 1);
+        }
+    }
 
     m_maxStackSize += m_maxTryDepth;
 
@@ -992,6 +1001,7 @@ auto LLIntGenerator::addLoop(BlockSignature signature, Stack& enclosingStack, Co
 
     block = ControlType::loop(signature, m_stackSize, WTFMove(body), WTFMove(continuation));
 
+    Vector<unsigned> unresolvedOffsets;
     Vector<VirtualRegister> osrEntryData;
     for (uint32_t i = 0; i < m_codeBlock->m_numArguments; i++)
         osrEntryData.append(m_normalizedArguments[i]);
@@ -1002,9 +1012,15 @@ auto LLIntGenerator::addLoop(BlockSignature signature, Stack& enclosingStack, Co
     for (uint32_t i = gprCount + fprCount + numberOfLLIntCalleeSaveRegisters; i < m_codeBlock->m_numVars; i++)
         osrEntryData.append(virtualRegisterForLocal(i));
     for (unsigned controlIndex = 0; controlIndex < m_parser->controlStack().size(); ++controlIndex) {
+        ControlType& data = m_parser->controlStack()[controlIndex].controlData;
         Stack& expressionStack = m_parser->controlStack()[controlIndex].enclosedExpressionStack;
         for (TypedExpression expression : expressionStack)
             osrEntryData.append(expression);
+        if (ControlType::isAnyCatch(data)) {
+            unresolvedOffsets.append(osrEntryData.size());
+            unsigned tryDepth = WTF::get<ControlCatch>(data).m_tryDepth;
+            osrEntryData.append(VirtualRegister { static_cast<int>(tryDepth) });
+        }
     }
     for (TypedExpression expression : enclosingStack)
         osrEntryData.append(expression);
@@ -1014,6 +1030,8 @@ auto LLIntGenerator::addLoop(BlockSignature signature, Stack& enclosingStack, Co
     WasmLoopHint::emit(this);
 
     m_codeBlock->tierUpCounter().addOSREntryDataForLoop(m_lastInstruction.offset(), { loopIndex, WTFMove(osrEntryData) });
+    if (unresolvedOffsets.size())
+        m_unresolvedStackmaps.add(m_lastInstruction.offset(), WTFMove(unresolvedOffsets));
 
     return { };
 }

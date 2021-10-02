@@ -2293,9 +2293,12 @@ void B3IRGenerator::emitLoopTierUpCheck(uint32_t loopIndex, const Stack& enclosi
         stackmap.append(result);
     }
     for (unsigned controlIndex = 0; controlIndex < m_parser->controlStack().size(); ++controlIndex) {
+        auto& data = m_parser->controlStack()[controlIndex].controlData;
         auto& expressionStack = m_parser->controlStack()[controlIndex].enclosedExpressionStack;
         for (TypedExpression value : expressionStack)
             stackmap.append(value);
+        if (ControlType::isAnyCatch(data))
+            stackmap.append(data.exception());
     }
     for (TypedExpression value : enclosingStack)
         stackmap.append(value);
