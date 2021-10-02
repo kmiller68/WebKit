@@ -51,6 +51,8 @@ JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyTag, (JSGlobalObject* globalObjec
 
     JSValue tagTypeValue = callFrame->argument(0);
     JSValue signatureObject = tagTypeValue.get(globalObject, Identifier::fromString(vm, "parameters"_s));
+    RETURN_IF_EXCEPTION(scope, { });
+
     if (!signatureObject.isObject())
         return throwVMTypeError(globalObject, scope, "WebAssembly.Tag constructor expects a tag type with the 'parameters' property."_s);
 

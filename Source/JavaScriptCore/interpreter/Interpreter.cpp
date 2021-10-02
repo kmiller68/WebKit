@@ -589,7 +589,7 @@ public:
         }
 
         if (m_catchableFromWasm && callee.isWasm()) {
-            unsigned exceptionHandlerIndex = m_callFrame->bytecodeIndex().offset();
+            unsigned exceptionHandlerIndex = m_callFrame->callSiteIndex().bits();
             m_handler = { callee.asWasmCallee()->handlerForIndex(m_vm, exceptionHandlerIndex, m_wasmTag), callee.asWasmCallee() };
             if (m_handler.m_valid)
                 return StackVisitor::Done;

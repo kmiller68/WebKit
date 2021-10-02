@@ -63,6 +63,7 @@ JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyException, (JSGlobalObject* globa
     forEachInIterable(globalObject, tagParameters, [&] (VM&, JSGlobalObject*, JSValue nextValue) {
         values.append(nextValue);
     });
+    RETURN_IF_EXCEPTION(scope, { });
 
     if (values.size() != tag->signature().argumentCount())
         return throwVMTypeError(globalObject, scope, "WebAssembly.Exception constructor expects the number of paremeters in WebAssembly.Tag to match the tags parameter count.");

@@ -197,13 +197,13 @@ ALWAYS_INLINE uint64_t fromJSValue(JSGlobalObject* globalObject, const Wasm::Typ
             return throwVMException(globalObject, scope, createJSWebAssemblyRuntimeError(globalObject, vm, "Non-null Externref cannot be null"));
         break;
     case Wasm::TypeKind::I32:
-        return value.toInt32(globalObject);
+        RELEASE_AND_RETURN(scope, value.toInt32(globalObject));
     case Wasm::TypeKind::I64:
-        return bitwise_cast<uint64_t>(value.toBigInt64(globalObject));
+        RELEASE_AND_RETURN(scope, bitwise_cast<uint64_t>(value.toBigInt64(globalObject)));
     case Wasm::TypeKind::F32:
-        return bitwise_cast<uint32_t>(value.toFloat(globalObject));
+        RELEASE_AND_RETURN(scope, bitwise_cast<uint32_t>(value.toFloat(globalObject)));
     case Wasm::TypeKind::F64:
-        return bitwise_cast<uint64_t>(value.toNumber(globalObject));
+        RELEASE_AND_RETURN(scope, bitwise_cast<uint64_t>(value.toNumber(globalObject)));
     case Wasm::TypeKind::Void:
     case Wasm::TypeKind::Func:
     case Wasm::TypeKind::RefNull:
@@ -211,7 +211,7 @@ ALWAYS_INLINE uint64_t fromJSValue(JSGlobalObject* globalObject, const Wasm::Typ
         RELEASE_ASSERT_NOT_REACHED();
     }
 
-    return JSValue::encode(value);
+    RELEASE_AND_RETURN(scope, JSValue::encode(value));
 }
 
 } // namespace JSC
