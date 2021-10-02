@@ -12,5 +12,5 @@ import * as assert from '../assert.js'
     const module = new WebAssembly.Module(bin);
     const instance = new WebAssembly.Instance(module);
 
-    assert.instanceOf(instance.exports.foo, WebAssembly.Tag);
+    assert.instanceof(instance.exports.foo, WebAssembly.Tag);
 }

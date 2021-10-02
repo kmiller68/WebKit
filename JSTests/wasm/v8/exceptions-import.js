@@ -18,7 +18,6 @@ function NewExportedTag() {
 }
 
 (function TestImportSimple() {
-  print(arguments.callee.name);
   let exported = NewExportedTag();
   let builder = new WasmModuleBuilder();
   let except = builder.addImportedTag("m", "ex", kSig_v_v);
@@ -27,7 +26,6 @@ function NewExportedTag() {
 })();
 
 (function TestImportMultiple() {
-  print(arguments.callee.name);
   let exported = NewExportedTag();
   let builder = new WasmModuleBuilder();
   let except1 = builder.addImportedTag("m", "ex1", kSig_v_v);
@@ -45,7 +43,6 @@ function NewExportedTag() {
 })();
 
 (function TestImportMissing() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addImportedTag("m", "ex", kSig_v_v);
 
@@ -58,7 +55,6 @@ function NewExportedTag() {
 })();
 
 (function TestImportValueMismatch() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addImportedTag("m", "ex", kSig_v_v);
 
@@ -75,7 +71,6 @@ function NewExportedTag() {
 })();
 
 (function TestImportSignatureMismatch() {
-  print(arguments.callee.name);
   let exported = NewExportedTag();
   let builder = new WasmModuleBuilder();
   let except = builder.addImportedTag("m", "ex", kSig_v_i);
@@ -86,7 +81,6 @@ function NewExportedTag() {
 })();
 
 (function TestImportModuleGetImports() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addImportedTag("m", "ex", kSig_v_v);
   let module = new WebAssembly.Module(builder.toBuffer());

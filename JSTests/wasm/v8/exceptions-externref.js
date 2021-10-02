@@ -9,7 +9,6 @@ load("exceptions-utils.js");
 
 // Test the encoding of a thrown exception with a null-ref value.
 (function TestThrowRefNull() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_r);
   builder.addFunction("throw_null", kSig_v_v)
@@ -25,7 +24,6 @@ load("exceptions-utils.js");
 
 // Test throwing/catching the null-ref value.
 (function TestThrowCatchRefNull() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_r);
   builder.addFunction("throw_catch_null", kSig_i_i)
@@ -57,7 +55,6 @@ load("exceptions-utils.js");
 
 // Test the encoding of a thrown exception with a reference type value.
 (function TestThrowRefParam() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_r);
   builder.addFunction("throw_param", kSig_v_r)
@@ -77,7 +74,6 @@ load("exceptions-utils.js");
 
 // Test throwing/catching the reference type value.
 (function TestThrowCatchRefParam() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_r);
   builder.addFunction("throw_catch_param", kSig_r_r)

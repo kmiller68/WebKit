@@ -9,7 +9,6 @@ load("exceptions-utils.js");
 
 // The following method doesn't attempt to catch an raised exception.
 (function TestThrowSimple() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_v);
   builder.addFunction("throw_if_param_not_zero", kSig_i_i)
@@ -32,7 +31,6 @@ load("exceptions-utils.js");
 
 // Test that empty try/catch blocks work.
 (function TestCatchEmptyBlocks() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_v);
   builder.addFunction("catch_empty_try", kSig_v_v)
@@ -48,7 +46,6 @@ load("exceptions-utils.js");
 
 // Now that we know throwing works, we test catching the exceptions we raise.
 (function TestCatchSimple() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_v);
   builder.addFunction("simple_throw_catch_to_0_1", kSig_i_i)
@@ -71,7 +68,6 @@ load("exceptions-utils.js");
 })();
 
 (function TestTrapNotCaught() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   builder.addFunction('unreachable_in_try', kSig_v_v)
       .addBody([
@@ -86,7 +82,6 @@ load("exceptions-utils.js");
 })();
 
 (function TestTrapInCalleeNotCaught() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let func_div = builder.addFunction('div', kSig_i_ii).addBody([
     kExprLocalGet, 0,
@@ -110,7 +105,6 @@ load("exceptions-utils.js");
 })();
 
 (function TestTrapViaJSNotCaught() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let imp = builder.addImport('imp', 'ort', kSig_i_v);
   builder.addFunction('div', kSig_i_ii)
@@ -151,7 +145,6 @@ load("exceptions-utils.js");
 })();
 
 (function TestManuallyThrownRuntimeErrorCaught() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let imp = builder.addImport('imp', 'ort', kSig_i_v);
   builder.addFunction('call_import', kSig_i_v)
@@ -171,7 +164,6 @@ load("exceptions-utils.js");
 })();
 
 (function TestExnWithWasmProtoNotCaught() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_v);
   let imp = builder.addImport('imp', 'ort', kSig_v_v);
@@ -216,7 +208,6 @@ load("exceptions-utils.js");
 })();
 
 (function TestStackOverflowNotCaught() {
-  print(arguments.callee.name);
   function stack_overflow() {
     //%ThrowStackOverflow();
   }
@@ -241,7 +232,6 @@ load("exceptions-utils.js");
 // Test that we can distinguish which exception was thrown by using a cascaded
 // sequence of nested try blocks with a single catch block each.
 (function TestCatchComplex1() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except1 = builder.addTag(kSig_v_v);
   let except2 = builder.addTag(kSig_v_v);
@@ -283,7 +273,6 @@ load("exceptions-utils.js");
 // Test that we can distinguish which exception was thrown by using a single
 // try block with multiple associated catch blocks in sequence.
 (function TestCatchComplex2() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except1 = builder.addTag(kSig_v_v);
   let except2 = builder.addTag(kSig_v_v);
@@ -322,7 +311,6 @@ load("exceptions-utils.js");
 
 // Test throwing an exception with multiple values.
 (function TestThrowMultipleValues() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_ii);
   builder.addFunction("throw_1_2", kSig_v_v)
@@ -339,7 +327,6 @@ load("exceptions-utils.js");
 
 // Test throwing/catching the i32 parameter value.
 (function TestThrowCatchParamI() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_i);
   builder.addFunction("throw_catch_param", kSig_i_i)
@@ -361,7 +348,6 @@ load("exceptions-utils.js");
 
 // Test the encoding of a thrown exception with an integer exception.
 (function TestThrowParamI() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_i);
   builder.addFunction("throw_param", kSig_v_i)
@@ -378,7 +364,6 @@ load("exceptions-utils.js");
 
 // Test throwing/catching the f32 parameter value.
 (function TestThrowCatchParamF() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_f);
   builder.addFunction("throw_catch_param", kSig_f_f)
@@ -399,7 +384,6 @@ load("exceptions-utils.js");
 
 // Test the encoding of a thrown exception with a float value.
 (function TestThrowParamF() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_f);
   builder.addFunction("throw_param", kSig_v_f)
@@ -416,7 +400,6 @@ load("exceptions-utils.js");
 
 // Test throwing/catching an I64 value
 (function TestThrowCatchParamL() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_l);
   builder.addFunction("throw_catch_param", kSig_i_i)
@@ -448,7 +431,6 @@ load("exceptions-utils.js");
 
 // Test the encoding of a thrown exception with an I64 value.
 (function TestThrowParamL() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_l);
   builder.addFunction("throw_param", kSig_v_ii)
@@ -471,7 +453,6 @@ load("exceptions-utils.js");
 
 // Test throwing/catching the F64 parameter value
 (function TestThrowCatchParamD() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_d);
   builder.addFunction("throw_catch_param", kSig_d_d)
@@ -492,7 +473,6 @@ load("exceptions-utils.js");
 
 // Test the encoding of a thrown exception with an f64 value.
 (function TestThrowParamD() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_d);
   builder.addFunction("throw_param", kSig_v_f)
@@ -510,7 +490,6 @@ load("exceptions-utils.js");
 
 // Test the encoding of a computed parameter value.
 (function TestThrowParamComputed() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_i);
   builder.addFunction("throw_expr_with_params", kSig_v_ddi)
@@ -538,7 +517,6 @@ load("exceptions-utils.js");
 // Now that we know catching works locally, we test catching exceptions that
 // cross function boundaries and/or raised by JavaScript.
 (function TestCatchCrossFunctions() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_i);
 
@@ -824,7 +802,6 @@ load("exceptions-utils.js");
 
 // Delegate with a try block that never throws.
 (function TestDelegateNoThrow() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except1 = builder.addTag(kSig_v_v);
   builder.addFunction('test', kSig_i_v)
@@ -843,7 +820,6 @@ load("exceptions-utils.js");
 
 // Delegate exception handling to outer try/catch block.
 (function TestDelegateThrow() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_v);
   let throw_if = builder.addFunction('throw', kSig_v_i)
@@ -871,7 +847,6 @@ load("exceptions-utils.js");
 
 // No catch block matching the exception in the delegate target.
 (function TestDelegateThrowNoCatch() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except1 = builder.addTag(kSig_v_v);
   let except2 = builder.addTag(kSig_v_v);
@@ -898,7 +873,6 @@ load("exceptions-utils.js");
 
 // Check that the exception is merged properly when both scopes can throw.
 (function TestDelegateMerge() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except1 = builder.addTag(kSig_v_v);
   let except2 = builder.addTag(kSig_v_v);
@@ -943,7 +917,6 @@ load("exceptions-utils.js");
 
 // Delegate to second enclosing try scope.
 (function TestDelegate1() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_v);
   let throw_fn = builder.addFunction('throw', kSig_v_v)
@@ -969,7 +942,6 @@ load("exceptions-utils.js");
 })();
 
 (function TestDelegateUnreachable() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except1 = builder.addTag(kSig_v_v);
   let except2 = builder.addTag(kSig_v_v);
@@ -991,7 +963,6 @@ load("exceptions-utils.js");
 })();
 
 (function TestDelegateToCaller() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_v);
   builder.addFunction('test', kSig_v_v)
@@ -1008,7 +979,6 @@ load("exceptions-utils.js");
 })();
 
 (function TestThrowBeforeUnreachable() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_v);
   builder.addFunction('throw_before_unreachable', kSig_i_v)
@@ -1026,7 +996,6 @@ load("exceptions-utils.js");
 })();
 
 (function TestUnreachableInCatchAll() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_v);
   builder.addFunction('throw_before_unreachable', kSig_i_v)
@@ -1043,7 +1012,6 @@ load("exceptions-utils.js");
 })();
 
 (function TestThrowWithLocal() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_v);
   builder.addFunction('throw_with_local', kSig_i_v)
@@ -1066,7 +1034,6 @@ load("exceptions-utils.js");
 })();
 
 (function TestCatchlessTry() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_v);
   builder.addFunction('catchless_try', kSig_v_i)
@@ -1087,7 +1054,6 @@ load("exceptions-utils.js");
 
 // Delegate to a regular block inside a try block.
 (function TestDelegateToBlock() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_v);
   builder.addFunction('test', kSig_i_v)
@@ -1107,7 +1073,6 @@ load("exceptions-utils.js");
 
 // Delegate to a regular block with no outer try (delegate to caller).
 (function TestDelegateToCallerWithBlock() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_v);
   builder.addFunction('test', kSig_v_v)

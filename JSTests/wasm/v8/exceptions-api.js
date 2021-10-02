@@ -7,7 +7,6 @@
 load("wasm-module-builder.js");
 
 (function TestImport() {
-  print(arguments.callee.name);
 
   assertThrows(() => new WebAssembly.Tag(), TypeError,
       /expects the tag type as the first argument/);
@@ -34,7 +33,6 @@ load("wasm-module-builder.js");
 })();
 
 (function TestExport() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_v);
   builder.addExportOfKind("ex", kExternalTag, except);
@@ -47,7 +45,6 @@ load("wasm-module-builder.js");
 })();
 
 (function TestImportExport() {
-  print(arguments.callee.name);
 
   let js_ex_i32 = new WebAssembly.Tag({parameters: ['i32']});
   let builder = new WasmModuleBuilder();
@@ -61,7 +58,6 @@ load("wasm-module-builder.js");
 
 
 (function TestExceptionConstructor() {
-  print(arguments.callee.name);
   // Check errors.
   let js_tag = new WebAssembly.Tag({parameters: []});
   assertThrows(() => new WebAssembly.Exception(0), TypeError,
@@ -90,7 +86,6 @@ load("wasm-module-builder.js");
 })();
 
 (function TestExceptionConstructorWithPayload() {
-  print(arguments.callee.name);
   let tag = new WebAssembly.Tag(
       {parameters: ['i32', 'f32', 'i64', 'f64', 'externref']});
   assertThrows(() => new WebAssembly.Exception(
@@ -99,7 +94,6 @@ load("wasm-module-builder.js");
 })();
 
 (function TestCatchJSException() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let js_tag = new WebAssembly.Tag({parameters: []});
   let js_func_index = builder.addImport('m', 'js_func', kSig_v_v);
@@ -161,7 +155,6 @@ function TestCatchJS(types_str, types, values) {
 }
 
 (function TestCatchJSExceptionWithPayload() {
-  print(arguments.callee.name);
   TestCatchJS(['i32'], [kWasmI32], [1]);
   TestCatchJS(['i64'], [kWasmI64], [2n]);
   TestCatchJS(['f32'], [kWasmF32], [3]);
@@ -225,7 +218,6 @@ function TestGetArgHelper(types_str, types, values) {
 })();
 
 (function TestExceptionIs() {
-  print(arguments.callee.name);
   let tag1 = new WebAssembly.Tag({parameters: []});
   let tag2 = new WebAssembly.Tag({parameters: []});
   assertThrows(() => new WebAssembly.Exception({}, []), TypeError,

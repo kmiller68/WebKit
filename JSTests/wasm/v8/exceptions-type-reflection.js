@@ -15,7 +15,6 @@ let testcases = [
 ];
 
 (function TestExport() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
 
   testcases.forEach(function(expected, i) {
@@ -30,7 +29,6 @@ let testcases = [
 })();
 
 (function TestImportExport() {
-  print(arguments.callee.name);
 
   let builder = new WasmModuleBuilder();
   let imports = {m: {}};

@@ -9,7 +9,6 @@ load("exceptions-utils.js");
 
 // Test that rethrow expressions can target catch blocks.
 (function TestRethrowInCatch() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_v);
   builder.addFunction("rethrow0", kSig_v_v)
@@ -43,7 +42,6 @@ load("exceptions-utils.js");
 
 // Test that rethrow expressions can target catch-all blocks.
 (function TestRethrowInCatchAll() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_v);
   builder.addFunction("rethrow0", kSig_v_v)
@@ -78,7 +76,6 @@ load("exceptions-utils.js");
 // Test that rethrow expression properly target the correct surrounding try
 // block even in the presence of multiple handlers being involved.
 (function TestRethrowNested() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except1 = builder.addTag(kSig_v_v);
   let except2 = builder.addTag(kSig_v_v);
@@ -118,7 +115,6 @@ load("exceptions-utils.js");
 // Test that an exception being rethrow can be caught by another local catch
 // block in the same function without ever unwinding the activation.
 (function TestRethrowRecatch() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_v);
   builder.addFunction("rethrow_recatch", kSig_i_i)

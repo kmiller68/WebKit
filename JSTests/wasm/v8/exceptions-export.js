@@ -7,7 +7,6 @@
 load("wasm-module-builder.js");
 
 (function TestExportMultiple() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except1 = builder.addTag(kSig_v_v);
   let except2 = builder.addTag(kSig_v_i);
@@ -25,7 +24,6 @@ load("wasm-module-builder.js");
 })();
 
 (function TestExportOutOfBounds() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_v);
   builder.addExportOfKind("ex_oob", kExternalTag, except + 1);
@@ -35,7 +33,6 @@ load("wasm-module-builder.js");
 })();
 
 (function TestExportSameNameTwice() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_v);
   builder.addExportOfKind("ex", kExternalTag, except);
@@ -46,7 +43,6 @@ load("wasm-module-builder.js");
 })();
 
 (function TestExportModuleGetExports() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let except = builder.addTag(kSig_v_v);
   builder.addExportOfKind("ex", kExternalTag, except);

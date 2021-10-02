@@ -19,7 +19,6 @@ function NewExportedException() {
 // Check that an instance matches an exception thrown by itself, even when the
 // exception is re-thrown by a regular JavaScript function.
 (function TestSingleInstance() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let sig_index = builder.addType(kSig_v_v);
   let fun = builder.addImport("m", "f", sig_index);
@@ -51,7 +50,6 @@ function NewExportedException() {
 // Check that two instances distinguish their individual exceptions if they are
 // not shared, even when declared by the same underlying module.
 (function TestMultiInstanceNonShared() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let sig_index = builder.addType(kSig_v_v);
   let fun = builder.addImport("m", "f", sig_index);
@@ -84,7 +82,6 @@ function NewExportedException() {
 // Check that two instances match their exceptions if they are shared properly,
 // even if the local exception index of export and import is different.
 (function TestMultiInstanceShared() {
-  print(arguments.callee.name);
   let builder = new WasmModuleBuilder();
   let sig_index = builder.addType(kSig_v_v);
   let fun = builder.addImport("m", "f", sig_index);
@@ -121,7 +118,6 @@ function NewExportedException() {
 // Check that two instances based on different modules match their exceptions if
 // they are shared properly, even if the local exception index is different.
 (function TestMultiModuleShared() {
-  print(arguments.callee.name);
   let builder1 = new WasmModuleBuilder();
   let except1 = builder1.addTag(kSig_v_v);
   let except2 = builder1.addTag(kSig_v_v);
