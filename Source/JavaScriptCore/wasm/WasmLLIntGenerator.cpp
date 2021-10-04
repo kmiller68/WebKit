@@ -576,7 +576,7 @@ std::unique_ptr<FunctionCodeBlock> LLIntGenerator::finalize()
     *threadSpecific = WTFMove(usedBuffer);
 
     if (!m_usesExceptions)
-        m_info.m_functionDoesNotUseExceptions.set(m_functionIndex);
+        m_info.m_functionDoesNotUseExceptions.quickSet(m_functionIndex);
 
     return WTFMove(m_codeBlock);
 }

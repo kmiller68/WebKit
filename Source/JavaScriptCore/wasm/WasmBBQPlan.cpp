@@ -198,7 +198,7 @@ std::unique_ptr<InternalFunction> BBQPlan::compileFunction(uint32_t functionInde
     bool forceUsingB3 = false;
     if (Options::webAssemblyBBQAirModeThreshold() && m_moduleInformation->codeSectionSize >= Options::webAssemblyBBQAirModeThreshold())
         forceUsingB3 = true;
-    else if (!m_moduleInformation->m_functionDoesNotUseExceptions.get(functionIndex))
+    else if (!m_moduleInformation->m_functionDoesNotUseExceptions.quickGet(functionIndex))
         forceUsingB3 = true;
     else if (!Options::wasmBBQUsesAir())
         forceUsingB3 = true;
