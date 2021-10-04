@@ -2679,13 +2679,11 @@ auto B3IRGenerator::addDelegateToUnreachable(ControlType& target, ControlType& d
 
 auto B3IRGenerator::addThrow(unsigned exceptionIndex, Vector<ExpressionType>& args, Stack&) -> PartialResult
 {
-    SignatureIndex signatureIndex = m_info.signatureIndexFromExceptionIndexSpace(exceptionIndex);
-
     PatchpointValue* patch = m_proc.add<PatchpointValue>(B3::Void, origin());
     patch->effects.terminal = true;
     patch->append(instanceValue(), ValueRep::SomeRegister);
-    for (auto& arg : args)
-        patch->append(get(arg));
+    for (unsigned i = 0; i < args.size(); ++i)
+        patch->append(get(args[i]), ValueRep::stackArgument(i * sizeof(EncodedJSValue)));
     patch->clobber(RegisterSet::macroScratchRegisters());
     RegisterSet clobberLate = RegisterSet::volatileRegistersForJSCall();
     clobberLate.add(GPRInfo::argumentGPR0);
@@ -2695,35 +2693,9 @@ auto B3IRGenerator::addThrow(unsigned exceptionIndex, Vector<ExpressionType>& ar
     patch->clobberLate(clobberLate);
     patch->numGPScratchRegisters = 1;
     PatchpointExceptionHandle handle = preparePatchpointForExceptions(m_currentBlock, patch);
-    patch->setGenerator([this, exceptionIndex, signatureIndex, handle] (CCallHelpers& jit, const B3::StackmapGenerationParams& params) {
+    patch->setGenerator([this, exceptionIndex, handle] (CCallHelpers& jit, const B3::StackmapGenerationParams& params) {
         AllowMacroScratchRegisterUsage allowScratch(jit);
-        const Signature& signature = SignatureInformation::get(signatureIndex);
-        size_t numberOfArguments = WTF::roundUpToMultipleOf(stackAlignmentRegisters(), params.size());
-        jit.subPtr(MacroAssembler::TrustedImm32(numberOfArguments * sizeof(Register)), MacroAssembler::stackPointerRegister);
-        unsigned offset = 0;
         GPRReg scratch = params.gpScratch(0);
-        unsigned firstArgument = 1;
-        for (unsigned i = firstArgument; i < params.size(); ++i) {
-            ValueRep value = params[i];
-            if (value.isGPR())
-                jit.store64(value.gpr(), CCallHelpers::Address(MacroAssembler::stackPointerRegister, offset));
-            else if (value.isConstant())
-                jit.store64(CCallHelpers::TrustedImm64(value.value()), CCallHelpers::Address(MacroAssembler::stackPointerRegister, offset));
-            else if (value.isFPR()) {
-                if (toB3Type(signature.argument(i - 1)) == B3::Float)
-                    jit.storeFloat(value.fpr(), CCallHelpers::Address(MacroAssembler::stackPointerRegister, offset));
-                else
-                    jit.storeDouble(value.fpr(), CCallHelpers::Address(MacroAssembler::stackPointerRegister, offset));
-            } else if (value.isStack()) {
-                jit.load64(CCallHelpers::Address(GPRInfo::callFrameRegister, value.offsetFromFP()), scratch);
-                jit.store64(scratch, CCallHelpers::Address(MacroAssembler::stackPointerRegister, offset));
-            } else if (value.isStackArgument()) {
-                jit.load64(CCallHelpers::Address(MacroAssembler::stackPointerRegister, value.offsetFromSP()), scratch);
-                jit.store64(scratch, CCallHelpers::Address(MacroAssembler::stackPointerRegister, offset));
-            } else
-                RELEASE_ASSERT_NOT_REACHED();
-            offset += 8;
-        }
         handle.generate(jit, params, this);
 
         jit.loadPtr(CCallHelpers::Address(params[0].gpr(), Instance::offsetOfOwner()), scratch);
@@ -2745,7 +2717,6 @@ auto B3IRGenerator::addThrow(unsigned exceptionIndex, Vector<ExpressionType>& ar
         jit.move(MacroAssembler::TrustedImm32(exceptionIndex), GPRInfo::argumentGPR2);
         jit.move(MacroAssembler::stackPointerRegister, GPRInfo::argumentGPR3);
         CCallHelpers::Call call = jit.call(OperationPtrTag);
-        jit.addPtr(MacroAssembler::TrustedImm32(numberOfArguments * sizeof(Register)), MacroAssembler::stackPointerRegister);
         jit.farJump(GPRInfo::returnValueGPR, ExceptionHandlerPtrTag);
         jit.addLinkTask([call] (LinkBuffer& linkBuffer) {
             linkBuffer.link(call, FunctionPtr<OperationPtrTag>(operationWasmThrow));
