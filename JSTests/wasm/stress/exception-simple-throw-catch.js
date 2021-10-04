@@ -368,6 +368,35 @@ function testUnifyTryNoCatch() {
     assert.eq(instance.exports.call(), 2, "catching an exported wasm tag thrown from JS should be possible");
 }
 
+function testNestedCatch (){
+    const b = new Builder();
+    b.Type().End()
+        .Function().End()
+        .Exception().Signature({ params: []}).End()
+        .Export().Function("call")
+        .End()
+        .Code()
+            .Function("call", { params: ["i32"], ret: "i32" })
+                .GetLocal(0)
+                .Try("void")
+                    .Throw(0)
+                .CatchAll()
+                    .Try("void")
+                        .Throw(0)
+                    .CatchAll()
+                        .Throw(0)
+                    .End()
+                .End()
+            .End()
+        .End()
+
+    const bin = b.WebAssembly().get();
+    const module = new WebAssembly.Module(bin);
+    const instance = new WebAssembly.Instance(module);
+
+    assert.throws(instance.exports.call, WebAssembly.Exception, "wasm exception");
+}
+
 testSimpleTryCatch();
 testSimpleTryCatchAll();
 testSimpleTryCatchValue();
