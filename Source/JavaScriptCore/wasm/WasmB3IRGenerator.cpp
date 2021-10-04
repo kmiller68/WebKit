@@ -460,6 +460,7 @@ private:
 
     Value* loadFromScratchBuffer(unsigned& indexInBuffer, Value* pointer, B3::Type);
     void connectControlEntry(unsigned& indexInBuffer, Value* pointer, ControlData& data, Stack& expressionStack, ControlData& currentData, bool fillLoopPhis = false);
+    Value* emitCatchImpl(CatchKind, ControlType&, unsigned exceptionIndex = 0);
     PatchpointExceptionHandle preparePatchpointForExceptions(BasicBlock*, PatchpointValue*);
 
     Origin origin();
@@ -2585,57 +2586,13 @@ PatchpointExceptionHandle B3IRGenerator::preparePatchpointForExceptions(BasicBlo
 
 auto B3IRGenerator::addCatchToUnreachable(unsigned exceptionIndex, const Signature& signature, ControlType& data, ResultList& results) -> PartialResult
 {
-    m_currentBlock = m_proc.addBlock();
-    m_rootBlocks.append(m_currentBlock);
-    m_stackSize = data.stackSize();
-
-    if (ControlType::isTry(data))
-        data.convertTryToCatch(++m_callSiteIndex, m_proc.addVariable(pointerType()));
-
-    m_exceptionHandlers.append({ HandlerType::Catch, data.tryStart(), data.tryEnd(), 0, m_tryDepth, exceptionIndex });
-
-    Value* pointer = m_currentBlock->appendNew<ArgumentRegValue>(m_proc, Origin(), GPRInfo::argumentGPR0);
-
-    unsigned indexInBuffer = 0;
-
-    for (auto& local : m_locals)
-        m_currentBlock->appendNew<VariableValue>(m_proc, Set, Origin(), local, loadFromScratchBuffer(indexInBuffer, pointer, local->type()));
-
-    for (unsigned controlIndex = 0; controlIndex < m_parser->controlStack().size(); ++controlIndex) {
-        auto& controlData = m_parser->controlStack()[controlIndex].controlData;
-        auto& expressionStack = m_parser->controlStack()[controlIndex].enclosedExpressionStack;
-        connectControlEntry(indexInBuffer, pointer, controlData, expressionStack, data);
-    }
-
-    PatchpointValue* result = m_currentBlock->appendNew<PatchpointValue>(m_proc, m_proc.addTuple({ pointerType(), pointerType() }), origin());
-    result->clobber(RegisterSet::macroScratchRegisters());
-    RegisterSet clobberLate = RegisterSet::volatileRegistersForJSCall();
-    clobberLate.add(GPRInfo::argumentGPR0);
-    result->clobberLate(clobberLate);
-    result->append(instanceValue(), ValueRep::SomeRegister);
-    result->resultConstraints.append(ValueRep::reg(GPRInfo::returnValueGPR));
-    result->resultConstraints.append(ValueRep::reg(GPRInfo::returnValueGPR2));
-
-    result->setGenerator([=] (CCallHelpers& jit, const StackmapGenerationParams& params) {
-        AllowMacroScratchRegisterUsage allowScratch(jit);
-        jit.move(params[2].gpr(), GPRInfo::argumentGPR0);
-        CCallHelpers::Call call = jit.call(OperationPtrTag);
-        jit.addLinkTask([call] (LinkBuffer& linkBuffer) {
-            linkBuffer.link(call, FunctionPtr<OperationPtrTag>(operationWasmRetrieveAndClearExceptionIfCatchable));
-        });
-    });
-
-    Value* exception = m_currentBlock->appendNew<ExtractValue>(m_proc, origin(), pointerType(), result, 0);
-    Value* payload = m_currentBlock->appendNew<ExtractValue>(m_proc, origin(), pointerType(), result, 1);
-
-    m_currentBlock->appendNew<VariableValue>(m_proc, Set, origin(), data.exception(), exception);
-
+    Value* operationResult = emitCatchImpl(CatchKind::Catch, data, exceptionIndex);
+    Value* payload = m_currentBlock->appendNew<ExtractValue>(m_proc, origin(), pointerType(), operationResult, 1);
     for (unsigned i = 0; i < signature.argumentCount(); ++i) {
         Type type = signature.argument(i);
         Value* value = m_currentBlock->appendNew<MemoryValue>(m_proc, Load, toB3Type(type), origin(), payload, i * sizeof(uint64_t));
         results.append(push(value));
     }
-
     return { };
 }
 
@@ -2648,14 +2605,25 @@ auto B3IRGenerator::addCatchAll(Stack& currentStack, ControlType& data) -> Parti
 
 auto B3IRGenerator::addCatchAllToUnreachable(ControlType& data) -> PartialResult
 {
+    emitCatchImpl(CatchKind::CatchAll, data);
+    return { };
+}
+
+Value* B3IRGenerator::emitCatchImpl(CatchKind kind, ControlType& data, unsigned exceptionIndex)
+{
     m_currentBlock = m_proc.addBlock();
     m_rootBlocks.append(m_currentBlock);
     m_stackSize = data.stackSize();
 
-    if (ControlType::isTry(data))
-        data.convertTryToCatch(++m_callSiteIndex, m_proc.addVariable(pointerType()));
+    if (ControlType::isTry(data)) {
+        if (kind == CatchKind::Catch)
+            data.convertTryToCatch(++m_callSiteIndex, m_proc.addVariable(pointerType()));
+        else
+            data.convertTryToCatchAll(++m_callSiteIndex, m_proc.addVariable(pointerType()));
+    }
 
-    m_exceptionHandlers.append({ HandlerType::CatchAll, data.tryStart(), data.tryEnd(), 0, m_tryDepth, 0 });
+    HandlerType handlerType = kind == CatchKind::Catch ? HandlerType::Catch : HandlerType::CatchAll;
+    m_exceptionHandlers.append({ handlerType, data.tryStart(), data.tryEnd(), 0, m_tryDepth, exceptionIndex });
 
     Value* pointer = m_currentBlock->appendNew<ArgumentRegValue>(m_proc, Origin(), GPRInfo::argumentGPR0);
 
@@ -2672,15 +2640,13 @@ auto B3IRGenerator::addCatchAllToUnreachable(ControlType& data) -> PartialResult
 
     PatchpointValue* result = m_currentBlock->appendNew<PatchpointValue>(m_proc, m_proc.addTuple({ pointerType(), pointerType() }), origin());
     result->effects.exitsSideways = true;
-
     result->clobber(RegisterSet::macroScratchRegisters());
     RegisterSet clobberLate = RegisterSet::volatileRegistersForJSCall();
     clobberLate.add(GPRInfo::argumentGPR0);
     result->clobberLate(clobberLate);
+    result->append(instanceValue(), ValueRep::SomeRegister);
     result->resultConstraints.append(ValueRep::reg(GPRInfo::returnValueGPR));
     result->resultConstraints.append(ValueRep::reg(GPRInfo::returnValueGPR2));
-
-    result->append(instanceValue(), ValueRep::SomeRegister);
     result->setGenerator([=] (CCallHelpers& jit, const StackmapGenerationParams& params) {
         AllowMacroScratchRegisterUsage allowScratch(jit);
         jit.move(params[2].gpr(), GPRInfo::argumentGPR0);
@@ -2691,9 +2657,9 @@ auto B3IRGenerator::addCatchAllToUnreachable(ControlType& data) -> PartialResult
     });
 
     Value* exception = m_currentBlock->appendNew<ExtractValue>(m_proc, origin(), pointerType(), result, 0);
-    m_currentBlock->appendNew<VariableValue>(m_proc, Set, origin(), data.exception(), exception);
+    set(data.exception(), exception);
 
-    return { };
+    return result;
 }
 
 auto B3IRGenerator::addDelegate(ControlType& target, ControlType& data) -> PartialResult
