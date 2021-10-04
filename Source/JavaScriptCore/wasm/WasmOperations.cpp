@@ -663,12 +663,12 @@ JSC_DEFINE_JIT_OPERATION(operationGrowMemory, int32_t, (void* callFrame, Instanc
     return grown.value().pageCount();
 }
 
-JSC_DEFINE_JIT_OPERATION(operationWasmMemoryFill, bool, (Instance* instance, uint32_t dstAddress, uint32_t targetValue, uint32_t count))
+JSC_DEFINE_JIT_OPERATION(operationWasmMemoryFill, size_t, (Instance* instance, uint32_t dstAddress, uint32_t targetValue, uint32_t count))
 {
     return instance->memory()->fill(dstAddress, static_cast<uint8_t>(targetValue), count);
 }
 
-JSC_DEFINE_JIT_OPERATION(operationWasmMemoryCopy, bool, (Instance* instance, uint32_t dstAddress, uint32_t srcAddress, uint32_t count))
+JSC_DEFINE_JIT_OPERATION(operationWasmMemoryCopy, size_t, (Instance* instance, uint32_t dstAddress, uint32_t srcAddress, uint32_t count))
 {
     return instance->memory()->copy(dstAddress, srcAddress, count);
 }
@@ -716,12 +716,12 @@ static bool setWasmTableElement(Instance* instance, unsigned tableIndex, uint32_
     return true;
 }
 
-JSC_DEFINE_JIT_OPERATION(operationSetWasmTableElement, bool, (Instance* instance, unsigned tableIndex, uint32_t signedIndex, EncodedJSValue encValue))
+JSC_DEFINE_JIT_OPERATION(operationSetWasmTableElement, size_t, (Instance* instance, unsigned tableIndex, uint32_t signedIndex, EncodedJSValue encValue))
 {
     return setWasmTableElement(instance, tableIndex, signedIndex, encValue);
 }
 
-JSC_DEFINE_JIT_OPERATION(operationWasmTableInit, bool, (Instance* instance, unsigned elementIndex, unsigned tableIndex, uint32_t dstOffset, uint32_t srcOffset, uint32_t length))
+JSC_DEFINE_JIT_OPERATION(operationWasmTableInit, size_t, (Instance* instance, unsigned elementIndex, unsigned tableIndex, uint32_t dstOffset, uint32_t srcOffset, uint32_t length))
 {
     ASSERT(elementIndex < instance->module().moduleInformation().elementCount());
     ASSERT(tableIndex < instance->module().moduleInformation().tableCount());
@@ -766,7 +766,7 @@ JSC_DEFINE_JIT_OPERATION(operationWasmTableGrow, int32_t, (Instance* instance, u
     return oldSize;
 }
 
-JSC_DEFINE_JIT_OPERATION(operationWasmTableFill, bool, (Instance* instance, unsigned tableIndex, uint32_t offset, EncodedJSValue fill, uint32_t count))
+JSC_DEFINE_JIT_OPERATION(operationWasmTableFill, size_t, (Instance* instance, unsigned tableIndex, uint32_t offset, EncodedJSValue fill, uint32_t count))
 {
     ASSERT(tableIndex < instance->module().moduleInformation().tableCount());
 
@@ -782,7 +782,7 @@ JSC_DEFINE_JIT_OPERATION(operationWasmTableFill, bool, (Instance* instance, unsi
     return true;
 }
 
-JSC_DEFINE_JIT_OPERATION(operationWasmTableCopy, bool, (Instance* instance, unsigned dstTableIndex, unsigned srcTableIndex, int32_t dstOffset, int32_t srcOffset, int32_t length))
+JSC_DEFINE_JIT_OPERATION(operationWasmTableCopy, size_t, (Instance* instance, unsigned dstTableIndex, unsigned srcTableIndex, int32_t dstOffset, int32_t srcOffset, int32_t length))
 {
     ASSERT(dstTableIndex < instance->module().moduleInformation().tableCount());
     ASSERT(srcTableIndex < instance->module().moduleInformation().tableCount());
@@ -909,7 +909,7 @@ JSC_DEFINE_JIT_OPERATION(operationMemoryAtomicNotify, int32_t, (Instance* instan
     return ParkingLot::unparkCount(pointer, count);
 }
 
-JSC_DEFINE_JIT_OPERATION(operationWasmMemoryInit, bool, (Instance* instance, unsigned dataSegmentIndex, uint32_t dstAddress, uint32_t srcAddress, uint32_t length))
+JSC_DEFINE_JIT_OPERATION(operationWasmMemoryInit, size_t, (Instance* instance, unsigned dataSegmentIndex, uint32_t dstAddress, uint32_t srcAddress, uint32_t length))
 {
     ASSERT(dataSegmentIndex < instance->module().moduleInformation().dataSegmentsCount());
     return instance->memoryInit(dstAddress, srcAddress, length, dataSegmentIndex);
