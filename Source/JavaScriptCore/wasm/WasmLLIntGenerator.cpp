@@ -1107,7 +1107,10 @@ auto LLIntGenerator::addCatchToUnreachable(unsigned exceptionIndex, const Signat
     for (unsigned i = 0; i < exceptionSignature.argumentCount(); ++i)
         results.append(push());
 
-    WasmCatch::emit<OpcodeSize::Wide32>(this, exceptionIndex, exception, exceptionSignature.argumentCount(), results.isEmpty() ? 0 : -results[0].offset());
+    if (Context::useFastTLS())
+        WasmCatch::emit(this, exceptionIndex, exception, exceptionSignature.argumentCount(), results.isEmpty() ? 0 : -results[0].offset());
+    else
+        WasmCatchNoTls::emit(this, exceptionIndex, exception, exceptionSignature.argumentCount(), results.isEmpty() ? 0 : -results[0].offset());
 
     for (unsigned i = 0; i < exceptionSignature.argumentCount(); ++i) {
         VirtualRegister dst = results[i];
@@ -1157,7 +1160,11 @@ auto LLIntGenerator::addCatchAllToUnreachable(ControlType& data) -> PartialResul
     ControlCatch& catch_ = WTF::get<ControlCatch>(data);
     catch_.m_kind = CatchKind::CatchAll;
 
-    WasmCatchAll::emit<OpcodeSize::Wide32>(this, exception);
+    if (Context::useFastTLS())
+        WasmCatchAll::emit(this, exception);
+    else
+        WasmCatchAllNoTls::emit(this, exception);
+
     m_codeBlock->addExceptionHandler({ HandlerType::CatchAll, catch_.m_tryStart->location(), catch_.m_tryEnd->location(), catchLabel->location(), m_tryDepth, 0 });
     return { };
 }
@@ -1199,7 +1206,7 @@ auto LLIntGenerator::addRethrow(unsigned, ControlType& data) -> PartialResult
     m_usesExceptions = true;
     ASSERT(WTF::holds_alternative<ControlCatch>(data));
     ControlCatch catch_ = WTF::get<ControlCatch>(data);
-    WasmRethrow::emit<OpcodeSize::Wide32>(this, catch_.m_exception);
+    WasmRethrow::emit(this, catch_.m_exception);
     return { };
 }
 

@@ -1852,7 +1852,11 @@ op :rethrow,
         exception: VirtualRegister,
     }
 
-op :catch,
+op_group :Catch,
+    [
+        :catch,
+        :catch_no_tls,
+    ],
     args: {
         exceptionIndex: unsigned,
         exception: VirtualRegister,
@@ -1860,7 +1864,11 @@ op :catch,
         startOffset: unsigned,
     }
 
-op :catch_all,
+op_group :CatchAll,
+    [
+        :catch_all,
+        :catch_all_no_tls,
+    ],
     args: {
         exception: VirtualRegister,
     }

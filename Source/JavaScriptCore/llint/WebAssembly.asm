@@ -256,7 +256,6 @@ macro throwException(exception)
 end
 
 macro callWasmSlowPath(slowPath)
-    # TODO: is this correct? or do we need to store in the slow path
     storei PC, ArgumentCountIncludingThis + TagOffset[cfr]
     prepareStateForCCall()
     move cfr, a0
@@ -2840,7 +2839,7 @@ wasmOp(rethrow, WasmRethrow, macro(ctx)
     jumpToException()
 end)
 
-commonWasmOp(wasm_catch, WasmCatch, macro() end, macro(ctx)
+macro catchImpl(ctx, storeWasmInstance)
     loadp Callee[cfr], t3
     convertCalleeToVM(t3)
     restoreCalleeSavesFromVMEntryFrameCalleeSavesBuffer(t3, t0)
@@ -2861,8 +2860,7 @@ commonWasmOp(wasm_catch, WasmCatch, macro() end, macro(ctx)
     loadp VM::targetInterpreterPCForThrow[t3], PC
     subp PB, PC
 
-    # TODO: needs non-TLS version
-    storeWasmInstanceToTLS(wasmInstance)
+    storeWasmInstance(wasmInstance)
     reloadMemoryRegistersFromInstance(wasmInstance, ws0, ws1)
 
     callWasmSlowPath(_slow_path_wasm_retrieve_and_clear_exception)
@@ -2887,9 +2885,17 @@ commonWasmOp(wasm_catch, WasmCatch, macro() end, macro(ctx)
     traceExecution()
 
     dispatch(ctx)
+end
+
+commonWasmOp(wasm_catch, WasmCatch, macro() end, macro(ctx)
+    catchImpl(ctx, storeWasmInstanceToTLS)
 end)
 
-commonWasmOp(wasm_catch_all, WasmCatchAll, macro() end, macro(ctx)
+commonWasmOp(wasm_catch_no_tls, WasmCatch, macro() end, macro(ctx)
+    catchImpl(ctx, macro(instance) end)
+end)
+
+macro catchAllImpl(ctx, storeWasmInstance)
     loadp Callee[cfr], t3
     convertCalleeToVM(t3)
     restoreCalleeSavesFromVMEntryFrameCalleeSavesBuffer(t3, t0)
@@ -2910,8 +2916,7 @@ commonWasmOp(wasm_catch_all, WasmCatchAll, macro() end, macro(ctx)
     loadp VM::targetInterpreterPCForThrow[t3], PC
     subp PB, PC
 
-    # TODO: needs non-TLS version
-    storeWasmInstanceToTLS(wasmInstance)
+    storeWasmInstance(wasmInstance)
     reloadMemoryRegistersFromInstance(wasmInstance, ws0, ws1)
 
     callWasmSlowPath(_slow_path_wasm_retrieve_and_clear_exception)
@@ -2919,4 +2924,12 @@ commonWasmOp(wasm_catch_all, WasmCatchAll, macro() end, macro(ctx)
     traceExecution()
 
     dispatch(ctx)
+end
+
+commonWasmOp(wasm_catch_all, WasmCatchAll, macro() end, macro(ctx)
+    catchAllImpl(ctx, storeWasmInstanceToTLS)
+end)
+
+commonWasmOp(wasm_catch_all_no_tls, WasmCatchAll, macro() end, macro(ctx)
+    catchAllImpl(ctx, macro(instance) end)
 end)
