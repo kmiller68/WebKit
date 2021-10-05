@@ -2814,31 +2814,16 @@ wasmOp(atomic_fence, WasmDropKeep, macro(ctx)
 end)
 
 wasmOp(throw, WasmThrow, macro(ctx)
-    move PB, a1
-    move wasmInstance, PB
-
     loadp Wasm::Instance::m_pointerToTopEntryFrame[wasmInstance], t5
     loadp [t5], t5
     copyCalleeSavesToEntryFrameCalleeSavesBuffer(t5)
 
-    storei PC, ArgumentCountIncludingThis + TagOffset[cfr]
-    move cfr, a0
-    addp PC, a1
-    move PB, a2
-    cCall4(_slow_path_wasm_throw)
-
+    callWasmSlowPath(_slow_path_wasm_throw)
     jumpToException()
 end)
 
 wasmOp(rethrow, WasmRethrow, macro(ctx)
-    move wasmInstance, PB
-
-    storei PC, ArgumentCountIncludingThis + TagOffset[cfr]
-    move cfr, a0
-    addp PC, a1
-    move PB, a2
-    cCall4(_slow_path_wasm_rethrow)
-
+    callWasmSlowPath(_slow_path_wasm_rethrow)
     jumpToException()
 end)
 
@@ -2856,15 +2841,15 @@ macro catchImpl(ctx, storeWasmInstance)
 
     restoreStackPointerAfterCall()
 
-    move PB, wasmInstance
+    loadp ThisArgumentOffset[cfr], wasmInstance
+    loadp JSWebAssemblyInstance::m_instance[wasmInstance], wasmInstance
+    storeWasmInstance(wasmInstance)
+    reloadMemoryRegistersFromInstance(wasmInstance, ws0, ws1)
 
     loadp CodeBlock[cfr], PB
     loadp Wasm::FunctionCodeBlock::m_instructionsRawPointer[PB], PB
     loadp VM::targetInterpreterPCForThrow[t3], PC
     subp PB, PC
-
-    storeWasmInstance(wasmInstance)
-    reloadMemoryRegistersFromInstance(wasmInstance, ws0, ws1)
 
     callWasmSlowPath(_slow_path_wasm_retrieve_and_clear_exception)
     move r1, t1
@@ -2914,15 +2899,15 @@ macro catchAllImpl(ctx, storeWasmInstance)
 
     restoreStackPointerAfterCall()
 
-    move PB, wasmInstance
+    loadp ThisArgumentOffset[cfr], wasmInstance
+    loadp JSWebAssemblyInstance::m_instance[wasmInstance], wasmInstance
+    storeWasmInstance(wasmInstance)
+    reloadMemoryRegistersFromInstance(wasmInstance, ws0, ws1)
 
     loadp CodeBlock[cfr], PB
     loadp Wasm::FunctionCodeBlock::m_instructionsRawPointer[PB], PB
     loadp VM::targetInterpreterPCForThrow[t3], PC
     subp PB, PC
-
-    storeWasmInstance(wasmInstance)
-    reloadMemoryRegistersFromInstance(wasmInstance, ws0, ws1)
 
     callWasmSlowPath(_slow_path_wasm_retrieve_and_clear_exception)
 

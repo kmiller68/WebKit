@@ -11,7 +11,7 @@ var memoryDescription = {initial: numPages};
 var mem = new WebAssembly.Memory(memoryDescription);
 
 function test() {
-    print(instA.exports.main(42));
+    assert.eq(instA.exports.main(), 42);
 }
 
 {

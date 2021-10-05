@@ -662,18 +662,29 @@ WASM_SLOW_PATH_DECL(retrieve_and_clear_exception)
 
     Exception* exception = throwScope.exception();
     JSValue thrownValue = exception->value();
-
     void* payload = nullptr;
-    if (pc->is<WasmCatch, WasmOpcodeTraits>()) {
+
+    const auto& handleCatchAll = [&](const auto& instruction) {
+        callFrame->uncheckedR(instruction.m_exception) = thrownValue;
+    };
+
+    const auto& handleCatch = [&](const auto& instruction) {
         JSWebAssemblyException* wasmException = jsDynamicCast<JSWebAssemblyException*>(vm, thrownValue);
         RELEASE_ASSERT(!!wasmException);
         payload = bitwise_cast<void*>(wasmException->payload().data());
-        auto instruction = pc->as<WasmCatch, WasmOpcodeTraits>();
         callFrame->uncheckedR(instruction.m_exception) = thrownValue;
-    } else {
-        auto instruction = pc->as<WasmCatchAll, WasmOpcodeTraits>();
-        callFrame->uncheckedR(instruction.m_exception) = thrownValue;
-    }
+    };
+
+    if (pc->is<WasmCatch, WasmOpcodeTraits>()) {
+        handleCatch(pc->as<WasmCatch, WasmOpcodeTraits>());
+    } else if (pc->is<WasmCatchAll, WasmOpcodeTraits>()) {
+        handleCatchAll(pc->as<WasmCatchAll, WasmOpcodeTraits>());
+    } else if (pc->is<WasmCatchNoTls, WasmOpcodeTraits>()) {
+        handleCatch(pc->as<WasmCatchNoTls, WasmOpcodeTraits>());
+    } else if (pc->is<WasmCatchAllNoTls, WasmOpcodeTraits>()) {
+        handleCatchAll(pc->as<WasmCatchAllNoTls, WasmOpcodeTraits>());
+    } else
+        RELEASE_ASSERT_NOT_REACHED();
 
     // We want to clear the exception here rather than in the catch prologue
     // JIT code because clearing it also entails clearing a bit in an Atomic

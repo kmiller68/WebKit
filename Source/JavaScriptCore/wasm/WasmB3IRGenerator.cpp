@@ -89,7 +89,9 @@ class B3IRGenerator;
 struct PatchpointExceptionHandle {
     void generate(CCallHelpers&, const B3::StackmapGenerationParams&, B3IRGenerator*) const;
 
-    unsigned m_callSiteIndex;
+    static constexpr unsigned s_invalidCallSiteIndex =  std::numeric_limits<unsigned>::max();
+
+    unsigned m_callSiteIndex {s_invalidCallSiteIndex };
     unsigned m_offset;
 };
 
@@ -578,6 +580,9 @@ private:
 
 void PatchpointExceptionHandle::generate(CCallHelpers& jit, const B3::StackmapGenerationParams& params, B3IRGenerator* generator) const
 {
+    if (m_callSiteIndex == s_invalidCallSiteIndex)
+        return;
+
     StackMap values;
     for (unsigned i = m_offset; i < params.value()->numChildren(); ++i)
         values.constructAndAppend(params[i], params.value()->child(i)->type());
@@ -2574,6 +2579,8 @@ auto B3IRGenerator::addCatch(unsigned exceptionIndex, const Signature& signature
 PatchpointExceptionHandle B3IRGenerator::preparePatchpointForExceptions(BasicBlock* block, PatchpointValue* patch)
 {
     ++m_callSiteIndex;
+    if (!m_tryDepth)
+        return { };
 
     Vector<Value*> stackmap;
     Origin origin = this->origin();

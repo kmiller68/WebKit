@@ -69,6 +69,7 @@ import * as assert from '../assert.js'
                         .Throw(0)
                     .CatchAll()
                         .Call(0)
+                        .I32Eqz()
                         .BrIf(1)
                     .End()
                 .End()
@@ -77,9 +78,10 @@ import * as assert from '../assert.js'
             .End()
         .End()
 
+    var counter = 1e5;
     const bin = b.WebAssembly().get();
     const module = new WebAssembly.Module(bin);
-    const instance = new WebAssembly.Instance(module, { context: { callback: callerIsOMGCompiled } });
+    const instance = new WebAssembly.Instance(module, { context: { callback: function() { if (!--counter) return true;} } });
 
-    assert.throws(instance.exports.call, WebAssembly.Exception, "wasm exception");
+    assert.eq(instance.exports.call(), 0);
 }
