@@ -589,10 +589,14 @@ public:
         }
 
         if (m_catchableFromWasm && callee.isWasm()) {
-            unsigned exceptionHandlerIndex = m_callFrame->callSiteIndex().bits();
-            m_handler = { callee.asWasmCallee()->handlerForIndex(m_vm, exceptionHandlerIndex, m_wasmTag), callee.asWasmCallee() };
-            if (m_handler.m_valid)
-                return StackVisitor::Done;
+            Wasm::Callee* wasmCallee = callee.asWasmCallee();
+            if (wasmCallee->hasExceptionHandlers()) {
+                JSWebAssemblyInstance* jsInstance = jsCast<JSWebAssemblyInstance*>(m_callFrame->thisValue());
+                unsigned exceptionHandlerIndex = m_callFrame->callSiteIndex().bits();
+                m_handler = { wasmCallee->handlerForIndex(jsInstance->instance(), exceptionHandlerIndex, m_wasmTag), wasmCallee };
+                if (m_handler.m_valid)
+                    return StackVisitor::Done;
+            }
         }
 #endif
 

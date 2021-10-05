@@ -558,6 +558,7 @@ private:
 
     Value* m_instanceValue { nullptr }; // Always use the accessor below to ensure the instance value is materialized when used.
     bool m_usesInstanceValue { false };
+    bool m_hasCatch { false };
     Value* instanceValue()
     {
         m_usesInstanceValue = true;
@@ -904,6 +905,17 @@ void B3IRGenerator::insertEntrySwitch()
 void B3IRGenerator::insertConstants()
 {
     m_constantInsertionValues.execute(m_proc.at(0));
+
+    if (!m_hasCatch)
+        return;
+
+    Value* jsInstance = m_proc.add<MemoryValue>(Load, pointerType(), Origin(), instanceValue(), safeCast<int32_t>(Instance::offsetOfOwner()));
+    Value* store = m_proc.add<B3::MemoryValue>(B3::Store, Origin(), jsInstance, framePointer(), safeCast<int32_t>(CallFrameSlot::thisArgument * sizeof(Register)));
+
+    BasicBlock* block = m_rootBlocks[0];
+    m_constantInsertionValues.insertValue(0, jsInstance);
+    m_constantInsertionValues.insertValue(0, store);
+    m_constantInsertionValues.execute(block);
 }
 
 B3::Type B3IRGenerator::toB3ResultType(BlockSignature returnType)
@@ -2615,6 +2627,7 @@ auto B3IRGenerator::addCatchAllToUnreachable(ControlType& data) -> PartialResult
 
 Value* B3IRGenerator::emitCatchImpl(CatchKind kind, ControlType& data, unsigned exceptionIndex)
 {
+    m_hasCatch = true;
     m_currentBlock = m_proc.addBlock();
     m_rootBlocks.append(m_currentBlock);
     m_stackSize = data.stackSize();

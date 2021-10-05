@@ -61,7 +61,9 @@ public:
     virtual RegisterAtOffsetList* calleeSaveRegisters() = 0;
     virtual std::tuple<void*, void*> range() const = 0;
 
-    const HandlerInfo* handlerForIndex(VM&, unsigned, const Tag*);
+    const HandlerInfo* handlerForIndex(Instance&, unsigned, const Tag*);
+
+    bool hasExceptionHandlers() const { return !!m_exceptionHandlers.size(); }
 
 #if ENABLE(WEBASSEMBLY_B3JIT)
     virtual void setOSREntryCallee(Ref<OMGForOSREntryCallee>&&)
@@ -78,17 +80,11 @@ protected:
     JS_EXPORT_PRIVATE Callee(Wasm::CompilationMode);
     JS_EXPORT_PRIVATE Callee(Wasm::CompilationMode, size_t, std::pair<const Name*, RefPtr<NameSection>>&&);
 
-    virtual void linkExceptionHandlers(VM&)
-    {
-        RELEASE_ASSERT_NOT_REACHED();
-    }
-
 private:
     CompilationMode m_compilationMode;
     IndexOrName m_indexOrName;
 
 protected:
-    unsigned m_numberOfExceptionHandlers { 0 };
     Vector<HandlerInfo> m_exceptionHandlers;
 };
 
@@ -142,12 +138,12 @@ protected:
         , m_exceptionHandlerLocations(WTFMove(exceptionHandlerLocations))
     {
         RELEASE_ASSERT(m_unlinkedExceptionHandlers.size() == m_exceptionHandlerLocations.size());
-        m_numberOfExceptionHandlers = m_unlinkedExceptionHandlers.size();
+        linkExceptionHandlers();
     }
 
-    void linkExceptionHandlers(VM&) final;
-
 private:
+    void linkExceptionHandlers();
+
     HashMap<CallSiteIndex, Vector<OSREntryValue>> m_stackmaps;
     Vector<UnlinkedHandlerInfo> m_unlinkedExceptionHandlers;
     Vector<CodeLocationLabel<ExceptionHandlerPtrTag>> m_exceptionHandlerLocations;
@@ -258,12 +254,10 @@ public:
     FunctionCodeBlock* functionCodeBlock() const final { return m_codeBlock.get(); }
 #endif
 
-protected:
-    void linkExceptionHandlers(VM&) final;
-
 private:
     LLIntCallee(std::unique_ptr<FunctionCodeBlock>, size_t index, std::pair<const Name*, RefPtr<NameSection>>&&);
 
+    void linkExceptionHandlers();
 
 #if ENABLE(WEBASSEMBLY_B3JIT)
     RefPtr<JITCallee> m_replacement;

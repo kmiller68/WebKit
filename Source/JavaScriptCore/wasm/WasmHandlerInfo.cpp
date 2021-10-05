@@ -33,7 +33,7 @@
 namespace JSC {
 namespace Wasm {
 
-void HandlerInfo::initialize(Instance* instance, const UnlinkedHandlerInfo& unlinkedInfo, MacroAssemblerCodePtr<ExceptionHandlerPtrTag> label)
+void HandlerInfo::initialize(const UnlinkedHandlerInfo& unlinkedInfo, MacroAssemblerCodePtr<ExceptionHandlerPtrTag> label)
 {
     m_type = unlinkedInfo.m_type;
     m_start = unlinkedInfo.m_start;
@@ -44,7 +44,7 @@ void HandlerInfo::initialize(Instance* instance, const UnlinkedHandlerInfo& unli
 
     switch (m_type) {
     case HandlerType::Catch:
-        m_tag = &instance->tag(unlinkedInfo.m_exceptionIndexOrDelegateTarget);
+        m_tag = unlinkedInfo.m_exceptionIndexOrDelegateTarget;
         break;
 
     case HandlerType::CatchAll:
@@ -56,7 +56,7 @@ void HandlerInfo::initialize(Instance* instance, const UnlinkedHandlerInfo& unli
     }
 }
 
-const HandlerInfo* HandlerInfo::handlerForIndex(const Vector<HandlerInfo>& exeptionHandlers, unsigned index, const Wasm::Tag* exceptionTag)
+const HandlerInfo* HandlerInfo::handlerForIndex(Instance& instance, const Vector<HandlerInfo>& exeptionHandlers, unsigned index, const Wasm::Tag* exceptionTag)
 {
     bool delegating = false;
     unsigned delegateTarget = 0;
@@ -74,7 +74,7 @@ const HandlerInfo* HandlerInfo::handlerForIndex(const Vector<HandlerInfo>& exept
             bool match = false;
             switch (handler.m_type) {
                 case HandlerType::Catch:
-                    match = exceptionTag && *handler.m_tag == *exceptionTag;
+                    match = exceptionTag && instance.tag(handler.m_tag) == *exceptionTag;
                     break;
                 case HandlerType::CatchAll:
                     match = true;

@@ -57,13 +57,10 @@ void Callee::dump(PrintStream& out) const
     out.print(makeString(m_indexOrName));
 }
 
-const HandlerInfo* Callee::handlerForIndex(VM& vm, unsigned index, const Tag* tag)
+const HandlerInfo* Callee::handlerForIndex(Instance& instance, unsigned index, const Tag* tag)
 {
-    if (!m_numberOfExceptionHandlers)
-        return nullptr;
-    if (!m_exceptionHandlers.size())
-        linkExceptionHandlers(vm);
-    return HandlerInfo::handlerForIndex(m_exceptionHandlers, index, tag);
+    ASSERT(hasExceptionHandlers());
+    return HandlerInfo::handlerForIndex(instance, m_exceptionHandlers, index, tag);
 }
 
 JITCallee::JITCallee(Wasm::CompilationMode compilationMode, Entrypoint&& entrypoint)
@@ -83,12 +80,11 @@ LLIntCallee::LLIntCallee(std::unique_ptr<FunctionCodeBlock> codeBlock, size_t in
     : Callee(Wasm::CompilationMode::LLIntMode, index, WTFMove(name))
     , m_codeBlock(WTFMove(codeBlock))
 {
-    m_numberOfExceptionHandlers = m_codeBlock->numberOfExceptionHandlers();
+    linkExceptionHandlers();
 }
 
-void LLIntCallee::linkExceptionHandlers(VM& vm)
+void LLIntCallee::linkExceptionHandlers()
 {
-    Instance* instance = vm.wasmContext.load();
     if (size_t count = m_codeBlock->numberOfExceptionHandlers()) {
         m_exceptionHandlers.resizeToFit(count);
         for (size_t i = 0; i < count; i++) {
@@ -101,7 +97,7 @@ void LLIntCallee::linkExceptionHandlers(VM& vm)
             else
                 target = CodeLocationLabel<ExceptionHandlerPtrTag>(LLInt::handleWasmCatchAll(instruction.width<WasmOpcodeTraits>()).code());
 
-            handler.initialize(instance, unlinkedHandler, target);
+            handler.initialize(unlinkedHandler, target);
         }
     }
 }
@@ -141,17 +137,15 @@ std::tuple<void*, void*> LLIntCallee::range() const
     return { nullptr, nullptr };
 }
 
-void OptimizingJITCallee::linkExceptionHandlers(VM& vm)
+void OptimizingJITCallee::linkExceptionHandlers()
 {
-    Instance* instance = vm.wasmContext.load();
-
     size_t count = m_unlinkedExceptionHandlers.size();
     m_exceptionHandlers.resizeToFit(count);
     for (size_t i = 0; i < count; i++) {
         HandlerInfo& handler = m_exceptionHandlers[i];
         const UnlinkedHandlerInfo& unlinkedHandler = m_unlinkedExceptionHandlers[i];
         CodeLocationLabel<ExceptionHandlerPtrTag> location = m_exceptionHandlerLocations[i];
-        handler.initialize(instance, unlinkedHandler, location);
+        handler.initialize(unlinkedHandler, location);
     }
     m_unlinkedExceptionHandlers.clear();
     m_exceptionHandlerLocations.clear();

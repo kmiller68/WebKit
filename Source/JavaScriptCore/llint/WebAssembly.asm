@@ -290,6 +290,9 @@ macro wasmPrologue(codeBlockGetter, codeBlockSetter, loadWasmInstance)
     loadWasmInstance()
     reloadMemoryRegistersFromInstance(wasmInstance, ws0, ws1)
 
+    loadp Wasm::Instance::m_owner[wasmInstance], ws0
+    storep ws0, ThisArgumentOffset[cfr]
+
     codeBlockGetter(ws0)
     codeBlockSetter(ws0)
 
