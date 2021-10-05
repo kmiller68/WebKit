@@ -2812,16 +2812,31 @@ wasmOp(atomic_fence, WasmDropKeep, macro(ctx)
 end)
 
 wasmOp(throw, WasmThrow, macro(ctx)
+    move PB, a1
+    move wasmInstance, PB
+
     loadp Wasm::Instance::m_pointerToTopEntryFrame[wasmInstance], t5
     loadp [t5], t5
     copyCalleeSavesToEntryFrameCalleeSavesBuffer(t5)
 
-    callWasmSlowPath(_slow_path_wasm_throw)
+    storei PC, ArgumentCountIncludingThis + TagOffset[cfr]
+    move cfr, a0
+    addp PC, a1
+    move PB, a2
+    cCall4(_slow_path_wasm_throw)
+
     jumpToException()
 end)
 
 wasmOp(rethrow, WasmRethrow, macro(ctx)
-    callWasmSlowPath(_slow_path_wasm_rethrow)
+    move wasmInstance, PB
+
+    storei PC, ArgumentCountIncludingThis + TagOffset[cfr]
+    move cfr, a0
+    addp PC, a1
+    move PB, a2
+    cCall4(_slow_path_wasm_rethrow)
+
     jumpToException()
 end)
 
@@ -2838,6 +2853,8 @@ commonWasmOp(wasm_catch, WasmCatch, macro() end, macro(ctx)
     storep 0, VM::callFrameForCatch[t3]
 
     restoreStackPointerAfterCall()
+
+    move PB, wasmInstance
 
     loadp CodeBlock[cfr], PB
     loadp Wasm::FunctionCodeBlock::m_instructionsRawPointer[PB], PB
@@ -2885,6 +2902,8 @@ commonWasmOp(wasm_catch_all, WasmCatchAll, macro() end, macro(ctx)
     storep 0, VM::callFrameForCatch[t3]
 
     restoreStackPointerAfterCall()
+
+    move PB, wasmInstance
 
     loadp CodeBlock[cfr], PB
     loadp Wasm::FunctionCodeBlock::m_instructionsRawPointer[PB], PB
