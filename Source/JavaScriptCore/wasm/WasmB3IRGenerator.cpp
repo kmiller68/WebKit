@@ -266,6 +266,8 @@ public:
         unsigned stackSize() const { return m_stackSize; }
 
     private:
+        // FIXME: Compress B3IRGenerator::ControlData fields using an union
+        // https://bugs.webkit.org/show_bug.cgi?id=231212
         friend class B3IRGenerator;
         BlockType controlBlockType;
         BlockSignature m_signature;
@@ -854,6 +856,8 @@ void B3IRGenerator::insertEntrySwitch()
 
         jit.emitGetFromCallFrameHeaderPtr(CallFrameSlot::callee, GPRInfo::regT0);
         {
+            // FIXME: Handling precise allocations in WasmB3IRGenerator catch entrypoints might be unnecessary
+            // https://bugs.webkit.org/show_bug.cgi?id=231213
             auto preciseAllocationCase = jit.branchTestPtr(CCallHelpers::NonZero, GPRInfo::regT0, CCallHelpers::TrustedImm32(PreciseAllocation::halfAlignment));
             jit.andPtr(CCallHelpers::TrustedImmPtr(MarkedBlock::blockMask), GPRInfo::regT0);
             jit.loadPtr(CCallHelpers::Address(GPRInfo::regT0, MarkedBlock::offsetOfFooter + MarkedBlock::Footer::offsetOfVM()), GPRInfo::regT0);

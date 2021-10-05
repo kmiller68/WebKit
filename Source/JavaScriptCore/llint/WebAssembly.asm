@@ -2877,6 +2877,8 @@ macro catchImpl(ctx, storeWasmInstance)
     loadq [t1], t6
     storeq t6, [t2]
     subi 1, t3
+    # FIXME: Use arm store-add/sub instructions in wasm LLInt catch
+    # https://bugs.webkit.org/show_bug.cgi?id=231210
     subp 8, t2
     addp 8, t1
     jmp .copyLoop

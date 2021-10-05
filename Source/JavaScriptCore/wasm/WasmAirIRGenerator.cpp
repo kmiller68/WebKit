@@ -3003,6 +3003,8 @@ auto AirIRGenerator::addElseToUnreachable(ControlData& data) -> PartialResult
     return { };
 }
 
+// FIXME: Add support for Wasm exceptions in the Air generator
+// https://bugs.webkit.org/show_bug.cgi?id=231211
 auto AirIRGenerator::addTry(BlockSignature, Stack& , ControlType& , Stack& ) -> PartialResult
 {
     return { };
