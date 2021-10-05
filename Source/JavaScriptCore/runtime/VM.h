@@ -1318,10 +1318,6 @@ private:
     Lock m_loopHintExecutionCountLock;
     HashMap<const Instruction*, std::pair<unsigned, std::unique_ptr<uintptr_t>>> m_loopHintExecutionCounts;
 
-#if ENABLE(WEBASSEMBLY)
-    Vector<Wasm::Tag> m_wasmTags;
-#endif
-
     VM* m_prev; // Required by DoublyLinkedListNode.
     VM* m_next; // Required by DoublyLinkedListNode.
 
