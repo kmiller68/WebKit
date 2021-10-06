@@ -658,7 +658,7 @@ auto LLIntGenerator::callInformationForCaller(const Signature& signature) -> LLI
 
     // FIXME: we are allocating the extra space for the argument/return count in order to avoid interference, but we could do better
     // NOTE: We increase arg count by 1 for the case of indirect calls
-    m_stackSize += std::max(signature.argumentCount() + 1, signature.returnCount()) + gprCount + fprCount + stackCount + CallFrame::headerSizeInRegisters;
+    m_stackSize += std::max(signature.argumentCount() + 1, signature.returnCount()) + gprCount + fprCount + stackCount + CallFrame::headerSizeInRegisters + 1;
     if (m_stackSize.value() % stackAlignmentRegisters())
         ++m_stackSize;
     if (m_maxStackSize < m_stackSize)
@@ -669,7 +669,7 @@ auto LLIntGenerator::callInformationForCaller(const Signature& signature) -> LLI
     ResultList temporaryResults(signature.returnCount());
 
     const unsigned stackOffset = m_stackSize;
-    const unsigned base = stackOffset - CallFrame::headerSizeInRegisters;
+    const unsigned base = stackOffset - CallFrame::headerSizeInRegisters - 1;
 
     const uint32_t gprLimit = base - stackCount - gprCount;
     const uint32_t fprLimit = gprLimit - fprCount;
@@ -761,7 +761,7 @@ auto LLIntGenerator::callInformationForCallee(const Signature& signature) -> Vec
 
     uint32_t gprIndex = 0;
     uint32_t fprIndex = gprCount;
-    uint32_t stackIndex = 0;
+    uint32_t stackIndex = 1;
     const uint32_t maxGPRIndex = gprCount;
     const uint32_t maxFPRIndex = maxGPRIndex + fprCount;
 
@@ -809,7 +809,7 @@ auto LLIntGenerator::addArguments(const Signature& signature) -> PartialResult
     const uint32_t maxFPRIndex = gprCount + fprCount;
     uint32_t gprIndex = 0;
     uint32_t fprIndex = maxGPRIndex;
-    uint32_t stackIndex = 0;
+    uint32_t stackIndex = 1;
 
     Vector<VirtualRegister> registerArguments(gprCount + fprCount);
     for (uint32_t i = 0; i < gprCount + fprCount; i++)

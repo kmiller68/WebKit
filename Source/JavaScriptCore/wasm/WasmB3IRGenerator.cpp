@@ -460,7 +460,7 @@ private:
 
     void restoreWasmContextInstance(Procedure&, BasicBlock*, Value*);
     enum class RestoreCachedStackLimit { No, Yes };
-    void restoreWebAssemblyGlobalState(RestoreCachedStackLimit, const MemoryInformation&, Value* instance, Procedure&, BasicBlock*);
+    void restoreWebAssemblyGlobalState(RestoreCachedStackLimit, const MemoryInformation&, Value* instance, Procedure&, BasicBlock*, bool restoreInstance = true);
 
     Value* loadFromScratchBuffer(unsigned& indexInBuffer, Value* pointer, B3::Type);
     void connectControlEntry(unsigned& indexInBuffer, Value* pointer, ControlData& data, Stack& expressionStack, ControlData& currentData, bool fillLoopPhis = false);
@@ -783,9 +783,10 @@ B3IRGenerator::B3IRGenerator(const ModuleInformation& info, Procedure& procedure
         m_currentBlock = m_proc.addBlock();
 }
 
-void B3IRGenerator::restoreWebAssemblyGlobalState(RestoreCachedStackLimit restoreCachedStackLimit, const MemoryInformation& memory, Value* instance, Procedure& proc, BasicBlock* block)
+void B3IRGenerator::restoreWebAssemblyGlobalState(RestoreCachedStackLimit restoreCachedStackLimit, const MemoryInformation& memory, Value* instance, Procedure& proc, BasicBlock* block, bool restoreInstance)
 {
-    restoreWasmContextInstance(proc, block, instance);
+    if (restoreInstance)
+        restoreWasmContextInstance(proc, block, instance);
 
     if (restoreCachedStackLimit == RestoreCachedStackLimit::Yes) {
         // The Instance caches the stack limit, but also knows where its canonical location is.
@@ -876,12 +877,16 @@ void B3IRGenerator::insertEntrySwitch()
         }
         jit.restoreCalleeSavesFromVMEntryFrameCalleeSavesBuffer(GPRInfo::regT0, GPRInfo::regT3);
 
-        jit.load64(CCallHelpers::Address(GPRInfo::regT0, VM::calleeForWasmCatchOffset()), GPRInfo::regT3);
+        jit.loadPtr(CCallHelpers::Address(GPRInfo::regT0, VM::calleeForWasmCatchOffset()), GPRInfo::regT3);
         jit.storePtr(CCallHelpers::TrustedImmPtr(nullptr), CCallHelpers::Address(GPRInfo::regT0, VM::calleeForWasmCatchOffset()));
         jit.emitPutToCallFrameHeader(GPRInfo::regT3, CallFrameSlot::callee);
 
         jit.load64(CCallHelpers::Address(GPRInfo::regT0, VM::callFrameForCatchOffset()), GPRInfo::callFrameRegister);
         jit.storePtr(CCallHelpers::TrustedImmPtr(nullptr), CCallHelpers::Address(GPRInfo::regT0, VM::callFrameForCatchOffset()));
+
+        jit.loadPtr(CCallHelpers::Address(GPRInfo::callFrameRegister, CallFrameSlot::thisArgument * sizeof(Register)), GPRInfo::regT3);
+        jit.loadPtr(CCallHelpers::Address(GPRInfo::regT3, JSWebAssemblyInstance::offsetOfInstance()), GPRInfo::regT3);
+        jit.storeWasmContextInstance(GPRInfo::regT3);
 
         jit.probe([](Probe::Context& context) {
             CallFrame* callFrame = context.fp<CallFrame*>();
@@ -2649,7 +2654,7 @@ Value* B3IRGenerator::emitCatchImpl(CatchKind kind, ControlType& data, unsigned 
     HandlerType handlerType = kind == CatchKind::Catch ? HandlerType::Catch : HandlerType::CatchAll;
     m_exceptionHandlers.append({ handlerType, data.tryStart(), data.tryEnd(), 0, m_tryDepth, exceptionIndex });
 
-    restoreWebAssemblyGlobalState(RestoreCachedStackLimit::Yes, m_info.memory, instanceValue(), m_proc, m_currentBlock);
+    restoreWebAssemblyGlobalState(RestoreCachedStackLimit::Yes, m_info.memory, instanceValue(), m_proc, m_currentBlock, false);
 
     Value* pointer = m_currentBlock->appendNew<ArgumentRegValue>(m_proc, Origin(), GPRInfo::argumentGPR0);
 

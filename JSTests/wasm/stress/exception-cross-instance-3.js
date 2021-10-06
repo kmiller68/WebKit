@@ -17,6 +17,9 @@ function test() {
 {
     const b = new Builder();
     b.Type().End()
+        .Import()
+            .Memory("context", "mem", { initial: 0 })
+        .End()
         .Function().End()
         .Exception().Signature({ params: []}).End()
         .Export()
@@ -32,7 +35,7 @@ function test() {
 
     const bin = b.WebAssembly().get();
     const module = new WebAssembly.Module(bin);
-    instB = new WebAssembly.Instance(module);
+    instB = new WebAssembly.Instance(module, { context: { mem: new WebAssembly.Memory({ initial: 0 }) } });
 }
 
 {

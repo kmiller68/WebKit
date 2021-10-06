@@ -782,11 +782,11 @@ macro slowPathForWasmCall(ctx, slowPath, storeWasmInstance)
 
             # Load registers from stack
             forEachArgumentGPR(macro (offset, gpr)
-                loadq CallFrameHeaderSize + offset[sp, ws1, 8], gpr
+                loadq CallFrameHeaderSize + 8 + offset[sp, ws1, 8], gpr
             end)
 
             forEachArgumentFPR(macro (offset, fpr)
-                loadd CallFrameHeaderSize + offset[sp, ws1, 8], fpr
+                loadd CallFrameHeaderSize + 8 + offset[sp, ws1, 8], fpr
             end)
 
             addp CallerFrameAndPCSize, sp
@@ -844,11 +844,11 @@ macro slowPathForWasmCall(ctx, slowPath, storeWasmInstance)
             wgetu(ctx, m_numberOfStackArgs, ws0)
             move memoryBase, PC
             forEachArgumentGPR(macro (offset, gpr)
-                storeq gpr, CallFrameHeaderSize + offset[ws1, ws0, 8]
+                storeq gpr, CallFrameHeaderSize + 8 + offset[ws1, ws0, 8]
             end)
 
             forEachArgumentFPR(macro (offset, fpr)
-                stored fpr, CallFrameHeaderSize + offset[ws1, ws0, 8]
+                stored fpr, CallFrameHeaderSize + 8 + offset[ws1, ws0, 8]
             end)
 
             loadi ArgumentCountIncludingThis + TagOffset[cfr], PC
