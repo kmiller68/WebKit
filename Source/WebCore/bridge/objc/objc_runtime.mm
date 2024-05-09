@@ -222,9 +222,10 @@ ObjcFallbackObjectImp::ObjcFallbackObjectImp(JSGlobalObject* globalObject, Struc
 {
 }
 
-void ObjcFallbackObjectImp::destroy(JSCell* cell)
+DestructionResult ObjcFallbackObjectImp::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<ObjcFallbackObjectImp*>(cell)->ObjcFallbackObjectImp::~ObjcFallbackObjectImp();
+    return DestructionResult::Destroyed;
 }
 
 void ObjcFallbackObjectImp::finishCreation(JSGlobalObject* globalObject)

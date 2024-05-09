@@ -48,10 +48,11 @@ JSObject* JSJavaScriptCallFrame::createPrototype(VM& vm, JSGlobalObject* globalO
     return JSJavaScriptCallFramePrototype::create(vm, globalObject, JSJavaScriptCallFramePrototype::createStructure(vm, globalObject, globalObject->objectPrototype()));
 }
 
-void JSJavaScriptCallFrame::destroy(JSC::JSCell* cell)
+JSC::DestructionResult JSJavaScriptCallFrame::destroy(JSC::JSCell* cell, JSC::DestructionConcurrency)
 {
     JSJavaScriptCallFrame* thisObject = static_cast<JSJavaScriptCallFrame*>(cell);
     thisObject->JSJavaScriptCallFrame::~JSJavaScriptCallFrame();
+    return JSC::DestructionResult::Destroyed;
 }
 
 void JSJavaScriptCallFrame::releaseImpl()

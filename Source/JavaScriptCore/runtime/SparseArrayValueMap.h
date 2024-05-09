@@ -67,7 +67,7 @@ public:
     static SparseArrayValueMap* create(VM&);
     
     static constexpr bool needsDestruction = true;
-    static void destroy(JSCell*);
+    static DestructionResult destroy(JSCell*, DestructionConcurrency);
 
     template<typename CellType, SubspaceAccess>
     static GCClient::IsoSubspace* subspaceFor(VM& vm)

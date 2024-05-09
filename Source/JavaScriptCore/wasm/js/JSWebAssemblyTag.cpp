@@ -56,9 +56,10 @@ JSWebAssemblyTag::JSWebAssemblyTag(VM& vm, Structure* structure, const Wasm::Tag
 {
 }
 
-void JSWebAssemblyTag::destroy(JSCell* cell)
+DestructionResult JSWebAssemblyTag::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<JSWebAssemblyTag*>(cell)->JSWebAssemblyTag::~JSWebAssemblyTag();
+    return DestructionResult::Destroyed;
 }
 
 } // namespace JSC

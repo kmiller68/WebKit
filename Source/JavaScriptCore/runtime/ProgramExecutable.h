@@ -53,7 +53,7 @@ public:
 
     JSObject* initializeGlobalProperties(VM&, JSGlobalObject*, JSScope*);
 
-    static void destroy(JSCell*);
+    static DestructionResult destroy(JSCell*, DestructionConcurrency);
 
     ProgramCodeBlock* codeBlock() const
     {

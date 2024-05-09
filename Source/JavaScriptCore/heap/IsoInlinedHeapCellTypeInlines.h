@@ -38,21 +38,24 @@ inline IsoInlinedHeapCellType<CellType>::IsoInlinedHeapCellType()
 }
 
 template<typename CellType>
-ALWAYS_INLINE void IsoInlinedHeapCellType<CellType>::DestroyFunc::operator()(VM&, JSCell* cell) const
+ALWAYS_INLINE DestructionResult IsoInlinedHeapCellType<CellType>::DestroyFunc::operator()(VM&, JSCell* cell, DestructionConcurrency concurrency) const
 {
-    CellType::destroy(cell);
+    return CellType::destroy(cell, concurrency);
 }
 
 template<typename CellType>
-inline void IsoInlinedHeapCellType<CellType>::finishSweep(MarkedBlock::Handle& handle, FreeList* freeList) const
+inline void IsoInlinedHeapCellType<CellType>::finishSweep(MarkedBlock::Handle& handle, FreeList* freeList, DestructionConcurrency concurrency) const
 {
-    handle.finishSweepKnowingHeapCellType(freeList, DestroyFunc());
+    if (concurrency == DestructionConcurrency::Mutator)
+        handle.finishSweepKnowingHeapCellType<DestructionConcurrency::Mutator>(freeList, DestroyFunc());
+    else
+        handle.finishSweepKnowingHeapCellType<DestructionConcurrency::Concurrent>(freeList, DestroyFunc());
 }
 
 template<typename CellType>
-inline void IsoInlinedHeapCellType<CellType>::destroy(VM&, JSCell* cell) const
+inline DestructionResult IsoInlinedHeapCellType<CellType>::destroy(VM&, JSCell* cell, DestructionConcurrency concurrency) const
 {
-    CellType::destroy(cell);
+    return CellType::destroy(cell, concurrency);
 }
 
 } // namespace JSC

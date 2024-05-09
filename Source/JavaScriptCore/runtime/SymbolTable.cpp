@@ -51,10 +51,11 @@ SymbolTableEntry& SymbolTableEntry::copySlow(const SymbolTableEntry& other)
     return *this;
 }
 
-void SymbolTable::destroy(JSCell* cell)
+DestructionResult SymbolTable::destroy(JSCell* cell, DestructionConcurrency)
 {
     SymbolTable* thisObject = static_cast<SymbolTable*>(cell);
     thisObject->SymbolTable::~SymbolTable();
+    return DestructionResult::Destroyed;
 }
 
 void SymbolTableEntry::freeFatEntrySlow()

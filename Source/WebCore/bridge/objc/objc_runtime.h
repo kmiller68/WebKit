@@ -130,7 +130,7 @@ private:
     ObjcFallbackObjectImp(JSGlobalObject*, Structure*, ObjcInstance*, const String& propertyName);
     void finishCreation(JSGlobalObject*);
 
-    static void destroy(JSCell*);
+    static DestructionResult destroy(JSCell*, DestructionConcurrency);
     static bool getOwnPropertySlot(JSObject*, JSGlobalObject*, PropertyName, PropertySlot&);
     static bool put(JSCell*, JSGlobalObject*, PropertyName, JSValue, PutPropertySlot&);
     static CallData getCallData(JSCell*);

@@ -51,7 +51,7 @@ class WEBCORE_EXPORT JSDOMWindowBase : public JSDOMGlobalObject {
 public:
     using Base = JSDOMGlobalObject;
 
-    static void destroy(JSCell*);
+    static JSC::DestructionResult destroy(JSCell*, JSC::DestructionConcurrency);
 
     template<typename, JSC::SubspaceAccess>
     static void subspaceFor(JSC::VM&) { RELEASE_ASSERT_NOT_REACHED(); }

@@ -71,7 +71,7 @@ public:
 private:
     Exception(VM&, JSValue thrownValue);
     void finishCreation(VM&, StackCaptureAction);
-    static void destroy(JSCell*);
+    static DestructionResult destroy(JSCell*, DestructionConcurrency);
 
     WriteBarrier<Unknown> m_value;
     Vector<StackFrame> m_stack;

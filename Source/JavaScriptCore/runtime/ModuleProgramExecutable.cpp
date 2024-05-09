@@ -79,9 +79,10 @@ ModuleProgramExecutable* ModuleProgramExecutable::create(JSGlobalObject* globalO
     return executable;
 }
 
-void ModuleProgramExecutable::destroy(JSCell* cell)
+DestructionResult ModuleProgramExecutable::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<ModuleProgramExecutable*>(cell)->ModuleProgramExecutable::~ModuleProgramExecutable();
+    return DestructionResult::Destroyed;
 }
 
 auto ModuleProgramExecutable::ensureTemplateObjectMap(VM&) -> TemplateObjectMap&

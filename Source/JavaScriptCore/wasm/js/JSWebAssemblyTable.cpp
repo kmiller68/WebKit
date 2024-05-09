@@ -62,9 +62,10 @@ JSWebAssemblyTable::JSWebAssemblyTable(VM& vm, Structure* structure, Ref<Wasm::T
 {
 }
 
-void JSWebAssemblyTable::destroy(JSCell* cell)
+DestructionResult JSWebAssemblyTable::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<JSWebAssemblyTable*>(cell)->JSWebAssemblyTable::~JSWebAssemblyTable();
+    return DestructionResult::Destroyed;
 }
 
 template<typename Visitor>

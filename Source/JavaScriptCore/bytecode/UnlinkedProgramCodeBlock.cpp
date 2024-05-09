@@ -32,9 +32,10 @@ namespace JSC {
 
 const ClassInfo UnlinkedProgramCodeBlock::s_info = { "UnlinkedProgramCodeBlock"_s, &Base::s_info, nullptr, nullptr, CREATE_METHOD_TABLE(UnlinkedProgramCodeBlock) };
 
-void UnlinkedProgramCodeBlock::destroy(JSCell* cell)
+DestructionResult UnlinkedProgramCodeBlock::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<UnlinkedProgramCodeBlock*>(cell)->~UnlinkedProgramCodeBlock();
+    return DestructionResult::Destroyed;
 }
 
 }

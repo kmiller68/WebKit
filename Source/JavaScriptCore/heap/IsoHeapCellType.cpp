@@ -42,14 +42,17 @@ IsoHeapCellType::IsoHeapCellType(DestructionMode destructionMode, DestroyFunctio
 
 IsoHeapCellType::~IsoHeapCellType() = default;
 
-void IsoHeapCellType::finishSweep(MarkedBlock::Handle& handle, FreeList* freeList) const
+void IsoHeapCellType::finishSweep(MarkedBlock::Handle& handle, FreeList* freeList, DestructionConcurrency concurrency) const
 {
-    handle.finishSweepKnowingHeapCellType(freeList, *this);
+    if (concurrency == DestructionConcurrency::Mutator)
+        handle.finishSweepKnowingHeapCellType<DestructionConcurrency::Mutator>(freeList, *this);
+    else
+        handle.finishSweepKnowingHeapCellType<DestructionConcurrency::Concurrent>(freeList, *this);
 }
 
-void IsoHeapCellType::destroy(VM&, JSCell* cell) const
+DestructionResult IsoHeapCellType::destroy(VM&, JSCell* cell, DestructionConcurrency concurrency) const
 {
-    m_destroy(cell);
+    return m_destroy(cell, concurrency);
 }
 
 } // namespace JSC

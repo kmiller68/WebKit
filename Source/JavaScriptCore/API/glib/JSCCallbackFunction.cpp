@@ -233,9 +233,10 @@ JSObjectRef JSCCallbackFunction::construct(JSContextRef callerContext, size_t ar
     return nullptr;
 }
 
-void JSCCallbackFunction::destroy(JSCell* cell)
+DestructionResult JSCCallbackFunction::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<JSCCallbackFunction*>(cell)->JSCCallbackFunction::~JSCCallbackFunction();
+    return DestructionResult::Destroyed;
 }
 
 } // namespace JSC

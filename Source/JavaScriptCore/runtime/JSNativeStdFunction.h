@@ -39,9 +39,10 @@ public:
 
     static constexpr unsigned StructureFlags = Base::StructureFlags;
     static constexpr bool needsDestruction = true;
-    static void destroy(JSCell* cell)
+    static DestructionResult destroy(JSCell* cell, DestructionConcurrency)
     {
         static_cast<JSNativeStdFunction*>(cell)->JSNativeStdFunction::~JSNativeStdFunction();
+        return DestructionResult::Destroyed;
     }
 
     template<typename CellType, SubspaceAccess mode>

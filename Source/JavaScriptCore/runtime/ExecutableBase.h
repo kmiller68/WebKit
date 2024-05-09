@@ -72,7 +72,7 @@ public:
     static constexpr unsigned StructureFlags = Base::StructureFlags;
 
     static constexpr bool needsDestruction = true;
-    static void destroy(JSCell*);
+    static DestructionResult destroy(JSCell*, DestructionConcurrency);
     
     // Force subclasses to override this.
     template<typename, SubspaceAccess>

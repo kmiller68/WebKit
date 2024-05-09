@@ -114,7 +114,7 @@ public:
     enum CreatingWellDefinedBuiltinCellTag { CreatingWellDefinedBuiltinCell };
     JSCell(CreatingWellDefinedBuiltinCellTag, StructureID, int32_t typeInfoBlob);
 
-    JS_EXPORT_PRIVATE static void destroy(JSCell*);
+    JS_EXPORT_PRIVATE static DestructionResult destroy(JSCell*, DestructionConcurrency);
 
 protected:
     JSCell(VM&, Structure*);

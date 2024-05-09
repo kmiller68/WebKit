@@ -32,9 +32,10 @@ namespace JSC {
 
 const ClassInfo UnlinkedFunctionCodeBlock::s_info = { "UnlinkedFunctionCodeBlock"_s, &Base::s_info, nullptr, nullptr, CREATE_METHOD_TABLE(UnlinkedFunctionCodeBlock) };
 
-void UnlinkedFunctionCodeBlock::destroy(JSCell* cell)
+DestructionResult UnlinkedFunctionCodeBlock::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<UnlinkedFunctionCodeBlock*>(cell)->~UnlinkedFunctionCodeBlock();
+    return DestructionResult::Destroyed;
 }
 
 }

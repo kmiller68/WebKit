@@ -713,9 +713,10 @@ JSGlobalObject::~JSGlobalObject()
         m_debugger->detach(this, Debugger::GlobalObjectIsDestructing);
 }
 
-void JSGlobalObject::destroy(JSCell* cell)
+DestructionResult JSGlobalObject::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<JSGlobalObject*>(cell)->JSGlobalObject::~JSGlobalObject();
+    return DestructionResult::Destroyed;
 }
 
 void JSGlobalObject::setGlobalThis(VM& vm, JSObject* globalThis)

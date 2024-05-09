@@ -139,9 +139,10 @@ void PropertyTable::visitChildrenImpl(JSCell* cell, Visitor& visitor)
 
 DEFINE_VISIT_CHILDREN(PropertyTable);
 
-void PropertyTable::destroy(JSCell* cell)
+DestructionResult PropertyTable::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<PropertyTable*>(cell)->PropertyTable::~PropertyTable();
+    return DestructionResult::Destroyed;
 }
 
 PropertyTable::~PropertyTable()

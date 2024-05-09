@@ -42,10 +42,11 @@ Exception* Exception::create(VM& vm, JSValue thrownValue, StackCaptureAction act
     return result;
 }
 
-void Exception::destroy(JSCell* cell)
+DestructionResult Exception::destroy(JSCell* cell, DestructionConcurrency)
 {
     Exception* exception = static_cast<Exception*>(cell);
     exception->~Exception();
+    return DestructionResult::Destroyed;
 }
 
 Structure* Exception::createStructure(VM& vm, JSGlobalObject* globalObject, JSValue prototype)

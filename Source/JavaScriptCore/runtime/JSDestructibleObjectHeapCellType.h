@@ -36,8 +36,8 @@ public:
     JS_EXPORT_PRIVATE JSDestructibleObjectHeapCellType();
     JS_EXPORT_PRIVATE ~JSDestructibleObjectHeapCellType() final;
     
-    void finishSweep(MarkedBlock::Handle&, FreeList*) const final;
-    void destroy(VM&, JSCell*) const final;
+    void finishSweep(MarkedBlock::Handle&, FreeList*, DestructionConcurrency) const final;
+    DestructionResult destroy(VM&, JSCell*, DestructionConcurrency) const final;
 };
 
 } // namespace JSC

@@ -3172,7 +3172,7 @@ sub GenerateHeader
     }
     
     if (!$hasParent) {
-        push(@headerContent, "    static void destroy(JSC::JSCell*);\n");
+        push(@headerContent, "    static JSC::DestructionResult destroy(JSC::JSCell*, JSC::DestructionConcurrency);\n");
     }
 
     # Class info
@@ -5074,10 +5074,11 @@ sub GenerateImplementation
     }
 
     if (!$hasParent) {
-        push(@implContent, "void ${className}::destroy(JSC::JSCell* cell)\n");
+        push(@implContent, "JSC::DestructionResult ${className}::destroy(JSC::JSCell* cell, JSC::DestructionConcurrency)\n");
         push(@implContent, "{\n");
         push(@implContent, "    ${className}* thisObject = static_cast<${className}*>(cell);\n");
         push(@implContent, "    thisObject->${className}::~${className}();\n");
+        push(@implContent, "    return JSC::DestructionResult::Destroyed;\n");
         push(@implContent, "}\n\n");
     }
 

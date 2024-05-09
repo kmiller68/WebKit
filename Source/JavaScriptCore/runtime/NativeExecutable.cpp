@@ -48,9 +48,10 @@ NativeExecutable* NativeExecutable::create(VM& vm, Ref<JSC::JITCode>&& callThunk
     return executable;
 }
 
-void NativeExecutable::destroy(JSCell* cell)
+DestructionResult NativeExecutable::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<NativeExecutable*>(cell)->NativeExecutable::~NativeExecutable();
+    return DestructionResult::Destroyed;
 }
 
 Structure* NativeExecutable::createStructure(VM& vm, JSGlobalObject* globalObject, JSValue proto)

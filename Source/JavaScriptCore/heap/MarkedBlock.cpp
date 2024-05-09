@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2022 Apple Inc. All rights reserved.
+ * Copyright (C) 2011-2023 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -109,6 +109,7 @@ void MarkedBlock::Handle::unsweepWithNoNewlyAllocated()
 {
     RELEASE_ASSERT(m_isFreeListed);
     m_isFreeListed = false;
+    m_directory->didFinishUsingBlock(this);
 }
 
 void MarkedBlock::Handle::stopAllocating(const FreeList& freeList)
@@ -154,10 +155,12 @@ void MarkedBlock::Handle::stopAllocating(const FreeList& freeList)
         });
     
     m_isFreeListed = false;
+    directory()->didFinishUsingBlock(this);
 }
 
 void MarkedBlock::Handle::lastChanceToFinalize()
 {
+    // Concurrent sweeper is shut down at this point.
     directory()->setIsAllocated(NoLockingNecessary, this, false);
     directory()->setIsDestructible(NoLockingNecessary, this, true);
     blockHeader().m_marks.clearAll();
@@ -166,6 +169,7 @@ void MarkedBlock::Handle::lastChanceToFinalize()
     m_weakSet.lastChanceToFinalize();
     blockHeader().m_newlyAllocated.clearAll();
     blockHeader().m_newlyAllocatedVersion = heap()->objectSpace().newlyAllocatedVersion();
+    directory()->setIsInUse(NoLockingNecessary, this, true);
     sweep(nullptr);
 }
 
@@ -186,6 +190,19 @@ void MarkedBlock::Handle::resumeAllocating(FreeList& freeList)
             freeList.clear();
             return;
         }
+    }
+
+    {
+        BlockDirectory* directory = this->directory();
+        Locker locker { directory->bitvectorLock() };
+
+        if (directory->isInUse(locker, this)) {
+            dataLogLnIf(MarkedBlockInternal::verbose, "Block is now in use");
+            freeList.clear();
+            return;
+        }
+
+        directory->setIsInUse(locker, this, true);
     }
 
     // Re-create our free list from before stopping allocation. Note that this may return an empty
@@ -298,6 +315,7 @@ void MarkedBlock::Handle::didConsumeFreeList()
     ASSERT(isFreeListed());
     m_isFreeListed = false;
     directory()->setIsAllocated(NoLockingNecessary, this, true);
+    directory()->didFinishUsingBlock(this);
 }
 
 size_t MarkedBlock::markCount()
@@ -397,18 +415,24 @@ Subspace* MarkedBlock::Handle::subspace() const
 void MarkedBlock::Handle::sweep(FreeList* freeList)
 {
     SweepingScope sweepingScope(*heap());
-    
+    ASSERT(m_directory->isInUse(NoLockingNecessary, this));
+
     SweepMode sweepMode = freeList ? SweepToFreeList : SweepOnly;
-    
-    m_directory->setIsUnswept(NoLockingNecessary, this, false);
-    
-    m_weakSet.sweep();
-    
     bool needsDestruction = m_attributes.destruction == NeedsDestruction
         && m_directory->isDestructible(NoLockingNecessary, this);
 
-    if (sweepMode == SweepOnly && !needsDestruction)
+    // TODO: Is this the right spot for this?
+    ConcurrentSweeper* concurrentSweeper = vm().heap.concurrentSweeper();
+    if (concurrentSweeper)
+        concurrentSweeper->clearUniquedStringImplsToMainThreadDestroy();
+    
+    m_weakSet.sweep();
+    
+    if (sweepMode == SweepOnly && !needsDestruction) {
+        Locker locker(m_directory->bitvectorLock());
+        m_directory->setIsUnswept(NoLockingNecessary, this, false);
         return;
+    }
 
     if (m_isFreeListed) {
         dataLog("FATAL: ", RawPointer(this), "->sweep: block is free-listed.\n");
@@ -425,8 +449,9 @@ void MarkedBlock::Handle::sweep(FreeList* freeList)
     
     subspace()->didBeginSweepingToFreeList(this);
     
+    const DestructionConcurrency concurrency = DestructionConcurrency::Mutator;
     if (needsDestruction) {
-        subspace()->finishSweep(*this, freeList);
+        subspace()->finishSweep(*this, freeList, concurrency);
         return;
     }
     
@@ -438,6 +463,8 @@ void MarkedBlock::Handle::sweep(FreeList* freeList)
     NewlyAllocatedMode newlyAllocatedMode = this->newlyAllocatedMode();
     MarksMode marksMode = this->marksMode();
     
+    auto destroyCallback = [] (VM&, JSCell*, DestructionConcurrency) { return DestructionResult::Destroyed; };
+
     auto trySpecialized = [&] () -> bool {
         if (sweepMode != SweepToFreeList)
             return false;
@@ -450,20 +477,20 @@ void MarkedBlock::Handle::sweep(FreeList* freeList)
         case IsEmpty:
             switch (marksMode) {
             case MarksNotStale:
-                specializedSweep<true, IsEmpty, SweepToFreeList, BlockHasNoDestructors, DontScribble, DoesNotHaveNewlyAllocated, MarksNotStale>(freeList, IsEmpty, SweepToFreeList, BlockHasNoDestructors, DontScribble, DoesNotHaveNewlyAllocated, MarksNotStale, [] (VM&, JSCell*) { });
+                specializedSweep<concurrency, true, IsEmpty, SweepToFreeList, BlockHasNoDestructors, DontScribble, DoesNotHaveNewlyAllocated, MarksNotStale>(freeList, IsEmpty, SweepToFreeList, BlockHasNoDestructors, DontScribble, DoesNotHaveNewlyAllocated, MarksNotStale, destroyCallback);
                 return true;
             case MarksStale:
-                specializedSweep<true, IsEmpty, SweepToFreeList, BlockHasNoDestructors, DontScribble, DoesNotHaveNewlyAllocated, MarksStale>(freeList, IsEmpty, SweepToFreeList, BlockHasNoDestructors, DontScribble, DoesNotHaveNewlyAllocated, MarksStale, [] (VM&, JSCell*) { });
+                specializedSweep<concurrency, true, IsEmpty, SweepToFreeList, BlockHasNoDestructors, DontScribble, DoesNotHaveNewlyAllocated, MarksStale>(freeList, IsEmpty, SweepToFreeList, BlockHasNoDestructors, DontScribble, DoesNotHaveNewlyAllocated, MarksStale, destroyCallback);
                 return true;
             }
             break;
         case NotEmpty:
             switch (marksMode) {
             case MarksNotStale:
-                specializedSweep<true, NotEmpty, SweepToFreeList, BlockHasNoDestructors, DontScribble, DoesNotHaveNewlyAllocated, MarksNotStale>(freeList, IsEmpty, SweepToFreeList, BlockHasNoDestructors, DontScribble, DoesNotHaveNewlyAllocated, MarksNotStale, [] (VM&, JSCell*) { });
+                specializedSweep<concurrency, true, NotEmpty, SweepToFreeList, BlockHasNoDestructors, DontScribble, DoesNotHaveNewlyAllocated, MarksNotStale>(freeList, IsEmpty, SweepToFreeList, BlockHasNoDestructors, DontScribble, DoesNotHaveNewlyAllocated, MarksNotStale, destroyCallback);
                 return true;
             case MarksStale:
-                specializedSweep<true, NotEmpty, SweepToFreeList, BlockHasNoDestructors, DontScribble, DoesNotHaveNewlyAllocated, MarksStale>(freeList, IsEmpty, SweepToFreeList, BlockHasNoDestructors, DontScribble, DoesNotHaveNewlyAllocated, MarksStale, [] (VM&, JSCell*) { });
+                specializedSweep<concurrency, true, NotEmpty, SweepToFreeList, BlockHasNoDestructors, DontScribble, DoesNotHaveNewlyAllocated, MarksStale>(freeList, IsEmpty, SweepToFreeList, BlockHasNoDestructors, DontScribble, DoesNotHaveNewlyAllocated, MarksStale, destroyCallback);
                 return true;
             }
             break;
@@ -476,7 +503,23 @@ void MarkedBlock::Handle::sweep(FreeList* freeList)
         return;
 
     // The template arguments don't matter because the first one is false.
-    specializedSweep<false, IsEmpty, SweepOnly, BlockHasNoDestructors, DontScribble, HasNewlyAllocated, MarksStale>(freeList, emptyMode, sweepMode, BlockHasNoDestructors, scribbleMode, newlyAllocatedMode, marksMode, [] (VM&, JSCell*) { });
+    specializedSweep<concurrency, false, IsEmpty, SweepOnly, BlockHasNoDestructors, DontScribble, HasNewlyAllocated, MarksStale>(freeList, emptyMode, sweepMode, BlockHasNoDestructors, scribbleMode, newlyAllocatedMode, marksMode, destroyCallback);
+}
+
+void MarkedBlock::Handle::sweepConcurrently()
+{
+    ASSERT(m_attributes.destruction == NeedsDestruction);
+    ASSERT(m_directory->isInUse(NoLockingNecessary, this));
+
+    if (!m_directory->isDestructible(NoLockingNecessary, this))
+        return;
+
+    if (space()->isMarking())
+        blockHeader().m_lock.lock();
+
+    subspace()->didBeginSweepingToFreeListConcurrently(this);
+    subspace()->finishSweep(*this, nullptr, DestructionConcurrency::Concurrent);
+    directory()->didFinishUsingBlock(this);
 }
 
 bool MarkedBlock::Handle::isFreeListedCell(const void* target) const

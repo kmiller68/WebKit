@@ -614,16 +614,18 @@ IGNORE_WARNINGS_END
         Structure* structure = createStructure(vm, globalObject, createPrototype(vm, globalObject));
         RuntimeArray* runtimeArray = new (NotNull, allocateCell<RuntimeArray>(vm)) RuntimeArray(globalObject, structure);
         runtimeArray->finishCreation(globalObject, callFrame);
-        vm.heap.addFinalizer(runtimeArray, destroy);
+        auto destroyCallback = [] (JSCell* cell) { destroy(cell, DestructionConcurrency::Mutator); };
+        vm.heap.addFinalizer(runtimeArray, destroyCallback);
         return runtimeArray;
     }
 
     ~RuntimeArray() { }
 
-    static void destroy(JSCell* cell)
+    static DestructionResult destroy(JSCell* cell, DestructionConcurrency)
     {
         DollarVMAssertScope assertScope;
         static_cast<RuntimeArray*>(cell)->RuntimeArray::~RuntimeArray();
+        return DestructionResult::Destroyed;
     }
 
     static bool getOwnPropertySlot(JSObject* object, JSGlobalObject* globalObject, PropertyName propertyName, PropertySlot& slot)

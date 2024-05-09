@@ -35,7 +35,14 @@ ALWAYS_INLINE bool hasFence(std::memory_order order)
 {
     return order != std::memory_order_relaxed;
 }
-    
+
+// This indicicates CPUs where the exchange<Op> instructions do not cost more than the non-atomic version.
+#if CPU(ARM64E) && OS(DARWIN) // TODO: Add || (CPU(ARM64) && PLATFORM(MAC))
+#define WTF_CPU_EXCHANGE_OPS_ARE_FREE 1
+#else
+#define WTF_CPU_EXCHANGE_OPS_ARE_FREE 0
+#endif
+
 // Atomic wraps around std::atomic with the sole purpose of making the compare_exchange
 // operations not alter the expected value. This is more in line with how we typically
 // use CAS in our code.
@@ -107,21 +114,19 @@ struct Atomic {
         return expectedOrActual;
     }
 
-    template<typename U>
-    ALWAYS_INLINE T exchangeAdd(U operand, std::memory_order order = std::memory_order_seq_cst) { return value.fetch_add(operand, order); }
+    ALWAYS_INLINE T exchangeAdd(auto operand, std::memory_order order = std::memory_order_seq_cst) { return value.fetch_add(operand, order); }
+    ALWAYS_INLINE T exchangeAnd(auto operand, std::memory_order order = std::memory_order_seq_cst) { return value.fetch_and(operand, order); }
+    ALWAYS_INLINE T exchangeOr(auto operand, std::memory_order order = std::memory_order_seq_cst) { return value.fetch_or(operand, order); }
+    ALWAYS_INLINE T exchangeSub(auto operand, std::memory_order order = std::memory_order_seq_cst) { return value.fetch_sub(operand, order); }
+    ALWAYS_INLINE T exchangeXor(auto operand, std::memory_order order = std::memory_order_seq_cst) { return value.fetch_xor(operand, order); }
     
-    template<typename U>
-    ALWAYS_INLINE T exchangeAnd(U operand, std::memory_order order = std::memory_order_seq_cst) { return value.fetch_and(operand, order); }
-    
-    template<typename U>
-    ALWAYS_INLINE T exchangeOr(U operand, std::memory_order order = std::memory_order_seq_cst) { return value.fetch_or(operand, order); }
-    
-    template<typename U>
-    ALWAYS_INLINE T exchangeSub(U operand, std::memory_order order = std::memory_order_seq_cst) { return value.fetch_sub(operand, order); }
-    
-    template<typename U>
-    ALWAYS_INLINE T exchangeXor(U operand, std::memory_order order = std::memory_order_seq_cst) { return value.fetch_xor(operand, order); }
-    
+    // Note: these are different from the exchangeOp methods above because these return the updated value not the old value.
+    ALWAYS_INLINE T operator+=(auto operand) { return value += operand; }
+    ALWAYS_INLINE T operator&=(auto operand) { return value &= operand; }
+    ALWAYS_INLINE T operator|=(auto operand) { return value |= operand; }
+    ALWAYS_INLINE T operator-=(auto operand) { return value -= operand; }
+    ALWAYS_INLINE T operator^=(auto operand) { return value ^= operand; }
+
     ALWAYS_INLINE T exchange(T newValue, std::memory_order order = std::memory_order_seq_cst) { return value.exchange(newValue, order); }
 
     // func is supposed to return false if the value is already in the desired state.

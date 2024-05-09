@@ -54,8 +54,8 @@ public:
     const HeapCellType* heapCellType() const { return m_heapCellType; }
     AlignedMemoryAllocator* alignedMemoryAllocator() const { return m_alignedMemoryAllocator; }
     
-    void finishSweep(MarkedBlock::Handle&, FreeList*);
-    void destroy(VM&, JSCell*);
+    void finishSweep(MarkedBlock::Handle&, FreeList*, DestructionConcurrency);
+    DestructionResult destroy(VM&, JSCell*, DestructionConcurrency);
 
     void prepareForAllocation();
     
@@ -97,6 +97,7 @@ public:
     virtual void didResizeBits(unsigned newSize);
     virtual void didRemoveBlock(unsigned blockIndex);
     virtual void didBeginSweepingToFreeList(MarkedBlock::Handle*);
+    virtual void didBeginSweepingToFreeListConcurrently(MarkedBlock::Handle*);
 
     bool isIsoSubspace() const { return m_isIsoSubspace; }
 

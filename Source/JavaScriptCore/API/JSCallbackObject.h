@@ -146,9 +146,10 @@ public:
     static JSCallbackObject<Parent>* create(VM&, JSClassRef, Structure*);
 
     static const bool needsDestruction;
-    static void destroy(JSCell* cell)
+    static DestructionResult destroy(JSCell* cell, DestructionConcurrency)
     {
         static_cast<JSCallbackObject*>(cell)->JSCallbackObject::~JSCallbackObject();
+        return DestructionResult::Destroyed;
     }
 
     template<typename CellType, SubspaceAccess mode>

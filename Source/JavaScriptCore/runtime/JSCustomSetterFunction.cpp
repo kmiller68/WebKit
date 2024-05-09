@@ -62,9 +62,10 @@ JSCustomSetterFunction* JSCustomSetterFunction::create(VM& vm, JSGlobalObject* g
     return function;
 }
 
-void JSCustomSetterFunction::destroy(JSCell* cell)
+DestructionResult JSCustomSetterFunction::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<JSCustomSetterFunction*>(cell)->~JSCustomSetterFunction();
+    return DestructionResult::Destroyed;
 }
 
 } // namespace JSC

@@ -57,7 +57,7 @@ public:
 private:
     JSTemplateObjectDescriptor(VM&, Ref<TemplateObjectDescriptor>&&, int);
 
-    static void destroy(JSCell*);
+    static DestructionResult destroy(JSCell*, DestructionConcurrency);
 
     Ref<TemplateObjectDescriptor> m_descriptor;
     int m_endOffset { 0 };

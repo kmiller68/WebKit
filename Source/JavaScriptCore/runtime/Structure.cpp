@@ -349,9 +349,10 @@ Structure::~Structure()
         static_cast<BrandedStructure*>(this)->destruct();
 }
 
-void Structure::destroy(JSCell* cell)
+DestructionResult Structure::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<Structure*>(cell)->Structure::~Structure();
+    return DestructionResult::Destroyed;
 }
 
 Structure* Structure::create(PolyProtoTag, VM& vm, JSGlobalObject* globalObject, JSObject* prototype, const TypeInfo& typeInfo, const ClassInfo* classInfo, IndexingType indexingType, unsigned inlineCapacity)

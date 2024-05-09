@@ -112,9 +112,10 @@ const JSDOMGlobalObject* JSShadowRealmGlobalScopeBase::incubatingRealm() const
     return incubatingWrapper;
 }
 
-void JSShadowRealmGlobalScopeBase::destroy(JSCell* cell)
+JSC::DestructionResult JSShadowRealmGlobalScopeBase::destroy(JSCell* cell, JSC::DestructionConcurrency)
 {
     static_cast<JSShadowRealmGlobalScopeBase*>(cell)->JSShadowRealmGlobalScopeBase::~JSShadowRealmGlobalScopeBase();
+    return JSC::DestructionResult::Destroyed;
 }
 
 bool JSShadowRealmGlobalScopeBase::supportsRichSourceInfo(const JSGlobalObject* object)

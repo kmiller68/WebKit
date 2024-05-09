@@ -38,9 +38,9 @@ WTF_MAKE_TZONE_ALLOCATED_IMPL(JSDestructibleObjectHeapCellType);
 struct JSDestructibleObjectDestroyFunc {
     WTF_FORBID_HEAP_ALLOCATION;
 public:
-    ALWAYS_INLINE void operator()(VM&, JSCell* cell) const
+    ALWAYS_INLINE DestructionResult operator()(VM&, JSCell* cell, DestructionConcurrency concurrency) const
     {
-        static_cast<JSDestructibleObject*>(cell)->classInfo()->methodTable.destroy(cell);
+        return static_cast<JSDestructibleObject*>(cell)->classInfo()->methodTable.destroy(cell, concurrency);
     }
 };
 
@@ -53,14 +53,17 @@ JSDestructibleObjectHeapCellType::~JSDestructibleObjectHeapCellType()
 {
 }
 
-void JSDestructibleObjectHeapCellType::finishSweep(MarkedBlock::Handle& handle, FreeList* freeList) const
+void JSDestructibleObjectHeapCellType::finishSweep(MarkedBlock::Handle& handle, FreeList* freeList, DestructionConcurrency concurrency) const
 {
-    handle.finishSweepKnowingHeapCellType(freeList, JSDestructibleObjectDestroyFunc());
+    if (concurrency == DestructionConcurrency::Mutator)
+        handle.finishSweepKnowingHeapCellType<DestructionConcurrency::Mutator>(freeList, JSDestructibleObjectDestroyFunc());
+    else
+        handle.finishSweepKnowingHeapCellType<DestructionConcurrency::Concurrent>(freeList, JSDestructibleObjectDestroyFunc());
 }
 
-void JSDestructibleObjectHeapCellType::destroy(VM& vm, JSCell* cell) const
+DestructionResult JSDestructibleObjectHeapCellType::destroy(VM& vm, JSCell* cell, DestructionConcurrency concurrency) const
 {
-    JSDestructibleObjectDestroyFunc()(vm, cell);
+    return JSDestructibleObjectDestroyFunc()(vm, cell, concurrency);
 }
 
 } // namespace JSC

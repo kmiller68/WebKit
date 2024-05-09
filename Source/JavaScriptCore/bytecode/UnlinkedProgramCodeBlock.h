@@ -49,7 +49,7 @@ public:
         return instance;
     }
 
-    static void destroy(JSCell*);
+    static DestructionResult destroy(JSCell*, DestructionConcurrency);
 
     void setVariableDeclarations(const VariableEnvironment& environment) { m_varDeclarations = environment; }
     const VariableEnvironment& variableDeclarations() const { return m_varDeclarations; }

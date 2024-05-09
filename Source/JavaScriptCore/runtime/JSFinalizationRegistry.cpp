@@ -92,9 +92,10 @@ void JSFinalizationRegistry::visitChildrenImpl(JSCell* cell, Visitor& visitor)
 
 DEFINE_VISIT_CHILDREN(JSFinalizationRegistry);
 
-void JSFinalizationRegistry::destroy(JSCell* table)
+DestructionResult JSFinalizationRegistry::destroy(JSCell* table, DestructionConcurrency)
 {
     static_cast<JSFinalizationRegistry*>(table)->~JSFinalizationRegistry();
+    return DestructionResult::Destroyed;
 }
 
 void JSFinalizationRegistry::finalizeUnconditionally(VM& vm, CollectionScope)

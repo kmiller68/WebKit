@@ -73,9 +73,10 @@ void JSObservableArray::finishCreation(VM& vm, Ref<ObservableArray>&& array)
 
 JSObservableArray::~JSObservableArray() = default;
 
-void JSObservableArray::destroy(JSCell* cell)
+DestructionResult JSObservableArray::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<JSObservableArray*>(cell)->JSObservableArray::~JSObservableArray();
+    return DestructionResult::Destroyed;
 }
 
 JSC_DEFINE_CUSTOM_GETTER(arrayLengthGetter, (JSGlobalObject* lexicalGlobalObject, EncodedJSValue thisValue, PropertyName))

@@ -37,9 +37,10 @@ namespace JSC {
 
 const ClassInfo ExecutableBase::s_info = { "Executable"_s, nullptr, nullptr, nullptr, CREATE_METHOD_TABLE(ExecutableBase) };
 
-void ExecutableBase::destroy(JSCell* cell)
+DestructionResult ExecutableBase::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<ExecutableBase*>(cell)->ExecutableBase::~ExecutableBase();
+    return DestructionResult::Destroyed;
 }
 
 void ExecutableBase::dump(PrintStream& out) const

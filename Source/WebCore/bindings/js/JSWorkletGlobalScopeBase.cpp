@@ -98,9 +98,10 @@ void JSWorkletGlobalScopeBase::visitChildrenImpl(JSCell* cell, Visitor& visitor)
 
 DEFINE_VISIT_CHILDREN(JSWorkletGlobalScopeBase);
 
-void JSWorkletGlobalScopeBase::destroy(JSCell* cell)
+JSC::DestructionResult JSWorkletGlobalScopeBase::destroy(JSCell* cell, JSC::DestructionConcurrency)
 {
     static_cast<JSWorkletGlobalScopeBase*>(cell)->JSWorkletGlobalScopeBase::~JSWorkletGlobalScopeBase();
+    return JSC::DestructionResult::Destroyed;
 }
 
 ScriptExecutionContext* JSWorkletGlobalScopeBase::scriptExecutionContext() const

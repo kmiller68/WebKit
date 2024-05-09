@@ -32,9 +32,10 @@ namespace JSC {
 
 const ClassInfo JSGlobalLexicalEnvironment::s_info = { "JSGlobalLexicalEnvironment"_s, &Base::s_info, nullptr, nullptr, CREATE_METHOD_TABLE(JSGlobalLexicalEnvironment) };
 
-void JSGlobalLexicalEnvironment::destroy(JSCell* cell)
+DestructionResult JSGlobalLexicalEnvironment::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<JSGlobalLexicalEnvironment*>(cell)->JSGlobalLexicalEnvironment::~JSGlobalLexicalEnvironment();
+    return DestructionResult::Destroyed;
 }
 
 bool JSGlobalLexicalEnvironment::getOwnPropertySlot(JSObject* object, JSGlobalObject*, PropertyName propertyName, PropertySlot& slot)

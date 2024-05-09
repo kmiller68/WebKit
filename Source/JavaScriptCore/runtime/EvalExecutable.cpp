@@ -40,9 +40,10 @@ EvalExecutable::EvalExecutable(JSGlobalObject* globalObject, const SourceCode& s
     ASSERT(source.provider()->sourceType() == SourceProviderSourceType::Program);
 }
 
-void EvalExecutable::destroy(JSCell* cell)
+DestructionResult EvalExecutable::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<EvalExecutable*>(cell)->EvalExecutable::~EvalExecutable();
+    return DestructionResult::Destroyed;
 }
 
 auto EvalExecutable::ensureTemplateObjectMap(VM&) -> TemplateObjectMap&

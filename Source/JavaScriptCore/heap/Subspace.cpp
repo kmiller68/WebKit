@@ -58,14 +58,14 @@ Subspace::~Subspace()
 {
 }
 
-void Subspace::finishSweep(MarkedBlock::Handle& block, FreeList* freeList)
+void Subspace::finishSweep(MarkedBlock::Handle& block, FreeList* freeList, DestructionConcurrency concurrency)
 {
-    m_heapCellType->finishSweep(block, freeList);
+    m_heapCellType->finishSweep(block, freeList, concurrency);
 }
 
-void Subspace::destroy(VM& vm, JSCell* cell)
+DestructionResult Subspace::destroy(VM& vm, JSCell* cell, DestructionConcurrency concurrency)
 {
-    m_heapCellType->destroy(vm, cell);
+    return m_heapCellType->destroy(vm, cell, concurrency);
 }
 
 void Subspace::prepareForAllocation()
@@ -143,6 +143,11 @@ void Subspace::didRemoveBlock(unsigned)
 void Subspace::didBeginSweepingToFreeList(MarkedBlock::Handle*)
 {
 }
+
+void Subspace::didBeginSweepingToFreeListConcurrently(MarkedBlock::Handle*)
+{
+}
+
 
 } // namespace JSC
 

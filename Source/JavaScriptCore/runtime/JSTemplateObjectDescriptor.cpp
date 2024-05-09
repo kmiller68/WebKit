@@ -50,9 +50,10 @@ JSTemplateObjectDescriptor* JSTemplateObjectDescriptor::create(VM& vm, Ref<Templ
     return result;
 }
 
-void JSTemplateObjectDescriptor::destroy(JSCell* cell)
+DestructionResult JSTemplateObjectDescriptor::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<JSTemplateObjectDescriptor*>(cell)->JSTemplateObjectDescriptor::~JSTemplateObjectDescriptor();
+    return DestructionResult::Destroyed;
 }
 
 JSArray* JSTemplateObjectDescriptor::createTemplateObject(JSGlobalObject* globalObject)

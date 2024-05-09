@@ -312,7 +312,7 @@ public:
     JS_EXPORT_PRIVATE Structure* flattenDictionaryStructure(VM&, JSObject*);
 
     static constexpr bool needsDestruction = true;
-    static void destroy(JSCell*);
+    static DestructionResult destroy(JSCell*, DestructionConcurrency);
 
     // Versions that take a func will call it after making the change but while still holding
     // the lock. The callback is not called if there is no change being made, like if you call

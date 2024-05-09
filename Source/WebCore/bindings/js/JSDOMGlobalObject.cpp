@@ -117,9 +117,10 @@ JSDOMGlobalObject::JSDOMGlobalObject(VM& vm, Structure* structure, Ref<DOMWrappe
 
 JSDOMGlobalObject::~JSDOMGlobalObject() = default;
 
-void JSDOMGlobalObject::destroy(JSCell* cell)
+JSC::DestructionResult JSDOMGlobalObject::destroy(JSCell* cell, JSC::DestructionConcurrency)
 {
     static_cast<JSDOMGlobalObject*>(cell)->JSDOMGlobalObject::~JSDOMGlobalObject();
+    return JSC::DestructionResult::Destroyed;
 }
 
 JSC_DEFINE_HOST_FUNCTION(makeThisTypeErrorForBuiltins, (JSGlobalObject* globalObject, CallFrame* callFrame))

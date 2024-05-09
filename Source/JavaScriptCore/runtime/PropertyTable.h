@@ -114,7 +114,7 @@ public:
     }
 
     static constexpr bool needsDestruction = true;
-    static void destroy(JSCell*);
+    static DestructionResult destroy(JSCell*, DestructionConcurrency);
     DECLARE_VISIT_CHILDREN;
 
     DECLARE_EXPORT_INFO;

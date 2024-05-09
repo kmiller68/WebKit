@@ -25,6 +25,7 @@
 #include <limits.h>
 #include <unicode/ustring.h>
 #include <wtf/ASCIICType.h>
+#include <wtf/Atomics.h>
 #include <wtf/CheckedArithmetic.h>
 #include <wtf/CompactPtr.h>
 #include <wtf/DebugHeap.h>
@@ -153,7 +154,44 @@ protected:
     template<unsigned characterCount> constexpr StringImplShape(unsigned refCount, unsigned length, const char (&characters)[characterCount], unsigned hashAndFlags, ConstructWithConstExprTag);
     template<unsigned characterCount> constexpr StringImplShape(unsigned refCount, unsigned length, const char16_t (&characters)[characterCount], unsigned hashAndFlags, ConstructWithConstExprTag);
 
-    unsigned m_refCount;
+#if CPU(EXCHANGE_OPS_ARE_FREE)
+    using RefCountType = Atomic<unsigned>;
+#else
+    // Just a stub wrapper that looks like Atomic without doing any fencing.
+    struct RefCountType {
+        constexpr RefCountType(unsigned refCount) : m_refCountImpl(refCount) { }
+
+        ALWAYS_INLINE unsigned loadRelaxed() const { return m_refCountImpl; }
+        ALWAYS_INLINE unsigned exchangeAdd(unsigned value, std::memory_order)
+        {
+            unsigned old = m_refCountImpl;
+            m_refCountImpl += value;
+            return old;
+        }
+        ALWAYS_INLINE unsigned exchangeSub(unsigned value, std::memory_order)
+        {
+            unsigned old = m_refCountImpl;
+            m_refCountImpl -= value;
+            return old;
+        }
+        ALWAYS_INLINE unsigned exchangeOr(unsigned value, std::memory_order)
+        {
+            unsigned old = m_refCountImpl;
+            m_refCountImpl |= value;
+            return old;
+        }
+        ALWAYS_INLINE unsigned exchangeAnd(unsigned value, std::memory_order)
+        {
+            unsigned old = m_refCountImpl;
+            m_refCountImpl &= value;
+            return old;
+        }
+
+        unsigned m_refCountImpl;
+    };
+#endif
+
+    RefCountType m_refCount;
     unsigned m_length;
     union {
         const LChar* m_data8;
@@ -313,8 +351,9 @@ public:
 
     WTF_EXPORT_PRIVATE size_t sizeInBytes() const;
 
-    bool isSymbol() const { return m_hashAndFlags & s_hashFlagStringKindIsSymbol; }
-    bool isAtom() const { return m_hashAndFlags & s_hashFlagStringKindIsAtom; }
+    bool isSymbol() const { ASSERT(!(m_hashAndFlags & s_hashFlagStringKindIsSymbol) || (m_refCount.loadRelaxed() & s_refCountFlagIsUniqued)); return m_hashAndFlags & s_hashFlagStringKindIsSymbol; }
+    bool isAtom() const { ASSERT(!(m_hashAndFlags & s_hashFlagStringKindIsAtom) || (m_refCount.loadRelaxed() & s_refCountFlagIsUniqued)); return m_hashAndFlags & s_hashFlagStringKindIsAtom; }
+    bool isUniqued() const { return isAtom() || isSymbol(); }
     void setIsAtom(bool);
     
     bool isExternal() const { return bufferOwnership() == BufferExternal; }
@@ -354,14 +393,21 @@ public:
     unsigned symbolAwareHash() const;
     unsigned existingSymbolAwareHash() const;
 
-    SUPPRESS_TSAN bool isStatic() const { return m_refCount & s_refCountFlagIsStaticString; }
+    SUPPRESS_TSAN bool isStatic() const { return m_refCount.loadRelaxed() & s_refCountFlagIsStaticString; }
 
-    size_t refCount() const { return m_refCount / s_refCountIncrement; }
-    bool hasOneRef() const { return m_refCount == s_refCountIncrement; }
-    bool hasAtLeastOneRef() const { return m_refCount; } // For assertions.
+    unsigned refCountBitsRelaxed() const;
+    size_t refCount() const { return m_refCount.loadRelaxed() / s_refCountIncrement; }
+    bool hasOneRef() const { return (m_refCount.loadRelaxed() & ~s_refCountFlagIsUniqued) == s_refCountIncrement; }
+    bool hasAtLeastOneRef() const { return m_refCount.loadRelaxed() & ~s_refCountFlagIsUniqued; } // For assertions.
 
     void ref();
     void deref();
+
+#if CPU(EXCHANGE_OPS_ARE_FREE)
+    // This function should be avoided unless you know what you're doing.
+    enum class DerefResult { NeedsUniquedDestruction, StillAlive, Destroyed };
+    DerefResult tryDerefConcurrently() WARN_UNUSED_RETURN;
+#endif
 
     class StaticStringImpl : private StringImplShape {
         WTF_MAKE_NONCOPYABLE(StaticStringImpl);
@@ -386,7 +432,7 @@ public:
         //       This means StaticStringImpl costs are not counted. But since there should only
         //       be a finite set of StaticStringImpls, their cost can be aggregated into a single
         //       system cost if needed.
-        //    b. setIsAtom() is never called on a StaticStringImpl.
+        //    b. setIsAtom() is never called on a StaticStringImpl (StaticStringImpl can be an atom though)
         //       setIsAtom() asserts !isStatic().
         //    c. setHash() is never called on a StaticStringImpl.
         //       StaticStringImpl's constructor sets the hash on construction.
@@ -557,8 +603,9 @@ private:
     WTF_EXPORT_PRIVATE NEVER_INLINE unsigned hashSlowCase() const;
 
     // The bottom bit in the ref count indicates a static (immortal) string.
-    static constexpr unsigned s_refCountFlagIsStaticString = 0x1;
-    static constexpr unsigned s_refCountIncrement = 0x2; // This allows us to ref / deref without disturbing the static string flag.
+    static constexpr unsigned s_refCountFlagIsUniqued = 1 << 0;
+    static constexpr unsigned s_refCountFlagIsStaticString = 1 << 1;
+    static constexpr unsigned s_refCountIncrement = 1 << 2; // This allows us to ref / deref without disturbing the static string / uniqued flag.
 
 #if STRING_STATS
     WTF_EXPORT_PRIVATE static StringStats m_stringStats;
@@ -1101,10 +1148,14 @@ inline void StringImpl::setIsAtom(bool isAtom)
 {
     ASSERT(!isStatic());
     ASSERT(!isSymbol());
-    if (isAtom)
+    if (isAtom) {
         m_hashAndFlags |= s_hashFlagStringKindIsAtom;
-    else
+        m_refCount.exchangeOr(s_refCountFlagIsUniqued, std::memory_order_relaxed);
+    }
+    else {
         m_hashAndFlags &= ~s_hashFlagStringKindIsAtom;
+        m_refCount.exchangeAnd(~s_refCountFlagIsUniqued, std::memory_order_relaxed);
+    }
 }
 
 inline void StringImpl::setHash(unsigned hash) const
@@ -1135,7 +1186,7 @@ inline void StringImpl::ref()
         return;
 #endif
 
-    m_refCount += s_refCountIncrement;
+    m_refCount.exchangeAdd(s_refCountIncrement, std::memory_order_relaxed);
 }
 
 inline void StringImpl::deref()
@@ -1147,13 +1198,34 @@ inline void StringImpl::deref()
         return;
 #endif
 
-    unsigned tempRefCount = m_refCount - s_refCountIncrement;
-    if (!tempRefCount) {
+    unsigned newRefCount = (m_refCount.exchangeSub(s_refCountIncrement, std::memory_order_relaxed) - s_refCountIncrement) & ~s_refCountFlagIsUniqued;
+    if (!newRefCount) {
         StringImpl::destroy(this);
         return;
     }
-    m_refCount = tempRefCount;
 }
+
+#if CPU(EXCHANGE_OPS_ARE_FREE)
+inline StringImpl::DerefResult StringImpl::tryDerefConcurrently()
+{
+    StringImpl::DerefResult result;
+    m_refCount.transaction([&] (unsigned& oldValue) {
+        unsigned newRefCount = oldValue -= s_refCountIncrement;
+        // Static, Uniqued StringImpls are never destroyed.
+        if (newRefCount == s_refCountFlagIsUniqued) {
+            result = DerefResult::NeedsUniquedDestruction;
+            return false;
+        }
+
+        result = newRefCount ? DerefResult::StillAlive : DerefResult::Destroyed;
+        return true;
+    });
+
+    if (result == DerefResult::Destroyed)
+        StringImpl::destroy(this);
+    return result;
+}
+#endif
 
 inline UChar StringImpl::at(unsigned i) const
 {
@@ -1162,7 +1234,7 @@ inline UChar StringImpl::at(unsigned i) const
 }
 
 inline StringImpl::StringImpl(CreateSymbolTag, std::span<const LChar> characters)
-    : StringImplShape(s_refCountIncrement, characters, s_hashFlag8BitBuffer | StringSymbol | BufferSubstring)
+    : StringImplShape(s_refCountIncrement | s_refCountFlagIsUniqued, characters, s_hashFlag8BitBuffer | StringSymbol | BufferSubstring)
 {
     ASSERT(is8Bit());
     ASSERT(m_data8);
@@ -1170,7 +1242,7 @@ inline StringImpl::StringImpl(CreateSymbolTag, std::span<const LChar> characters
 }
 
 inline StringImpl::StringImpl(CreateSymbolTag, std::span<const UChar> characters)
-    : StringImplShape(s_refCountIncrement, characters, s_hashZeroValue | StringSymbol | BufferSubstring)
+    : StringImplShape(s_refCountIncrement | s_refCountFlagIsUniqued, characters, s_hashZeroValue | StringSymbol | BufferSubstring)
 {
     ASSERT(!is8Bit());
     ASSERT(m_data16);
@@ -1178,7 +1250,7 @@ inline StringImpl::StringImpl(CreateSymbolTag, std::span<const UChar> characters
 }
 
 inline StringImpl::StringImpl(CreateSymbolTag)
-    : StringImplShape(s_refCountIncrement, empty()->span8(), s_hashFlag8BitBuffer | StringSymbol | BufferSubstring)
+    : StringImplShape(s_refCountIncrement | s_refCountFlagIsUniqued, empty()->span8(), s_hashFlag8BitBuffer | StringSymbol | BufferSubstring)
 {
     ASSERT(is8Bit());
     ASSERT(m_data8);
@@ -1242,13 +1314,13 @@ inline void StringImpl::assertHashIsCorrect() const
 }
 
 template<unsigned characterCount> constexpr StringImpl::StaticStringImpl::StaticStringImpl(const char (&characters)[characterCount], StringKind stringKind)
-    : StringImplShape(s_refCountFlagIsStaticString, characterCount - 1, characters,
+    : StringImplShape(s_refCountFlagIsStaticString | (stringKind == StringNormal ? 0 : s_refCountFlagIsUniqued), characterCount - 1, characters,
         s_hashFlag8BitBuffer | s_hashFlagDidReportCost | stringKind | BufferInternal | (StringHasher::computeLiteralHashAndMaskTop8Bits(characters) << s_flagCount), ConstructWithConstExpr)
 {
 }
 
 template<unsigned characterCount> constexpr StringImpl::StaticStringImpl::StaticStringImpl(const char16_t (&characters)[characterCount], StringKind stringKind)
-    : StringImplShape(s_refCountFlagIsStaticString, characterCount - 1, characters,
+    : StringImplShape(s_refCountFlagIsStaticString | (stringKind == StringNormal ? 0 : s_refCountFlagIsUniqued), characterCount - 1, characters,
         s_hashFlagDidReportCost | stringKind | BufferInternal | (StringHasher::computeLiteralHashAndMaskTop8Bits(characters) << s_flagCount), ConstructWithConstExpr)
 {
 }

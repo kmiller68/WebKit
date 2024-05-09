@@ -71,7 +71,7 @@ public:
 
     void finalizeUnconditionally(VM&, CollectionScope);
     DECLARE_VISIT_CHILDREN;
-    static void destroy(JSCell*);
+    static DestructionResult destroy(JSCell*, DestructionConcurrency);
     static constexpr bool needsDestruction = true;
 
     JSValue takeDeadHoldingsValue();

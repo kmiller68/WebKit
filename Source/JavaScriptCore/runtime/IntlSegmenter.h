@@ -39,9 +39,10 @@ public:
 
     static constexpr bool needsDestruction = true;
 
-    static void destroy(JSCell* cell)
+    static DestructionResult destroy(JSCell* cell, DestructionConcurrency)
     {
         static_cast<IntlSegmenter*>(cell)->IntlSegmenter::~IntlSegmenter();
+        return DestructionResult::Destroyed;
     }
 
     template<typename CellType, SubspaceAccess mode>

@@ -148,9 +148,10 @@ void JSDOMWindowBase::finishCreation(VM& vm, JSWindowProxy* proxy)
         putDirectCustomAccessor(vm, builtinNames(vm).showModalDialogPublicName(), CustomGetterSetter::create(vm, showModalDialogGetter, nullptr), enumToUnderlyingType(PropertyAttribute::CustomValue));
 }
 
-void JSDOMWindowBase::destroy(JSCell* cell)
+DestructionResult JSDOMWindowBase::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<JSDOMWindowBase*>(cell)->JSDOMWindowBase::~JSDOMWindowBase();
+    return DestructionResult::Destroyed;
 }
 
 void JSDOMWindowBase::updateDocument()

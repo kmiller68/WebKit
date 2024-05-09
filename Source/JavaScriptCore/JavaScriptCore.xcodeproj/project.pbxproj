@@ -1004,6 +1004,7 @@
 		531374BD1D5CE67600AF7A0B /* WasmPlan.h in Headers */ = {isa = PBXBuildFile; fileRef = 531374BC1D5CE67600AF7A0B /* WasmPlan.h */; };
 		5318045C22EAAC4B004A7342 /* B3ExtractValue.h in Headers */ = {isa = PBXBuildFile; fileRef = 5318045B22EAAC4B004A7342 /* B3ExtractValue.h */; };
 		531EE7BA22DE6BBB0030DA81 /* FinalizationRegistryPrototype.h in Headers */ = {isa = PBXBuildFile; fileRef = 531EE7B922DE6BBB0030DA81 /* FinalizationRegistryPrototype.h */; };
+		531F70EB2BED1A5D00960249 /* ConcurrentSweeper.h in Headers */ = {isa = PBXBuildFile; fileRef = 531F70E92BED1A5D00960249 /* ConcurrentSweeper.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		5333BBDB2110F7D2007618EC /* DFGSpeculativeJIT32_64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 86880F1B14328BB900B08D42 /* DFGSpeculativeJIT32_64.cpp */; };
 		5333BBDC2110F7D9007618EC /* DFGSpeculativeJIT.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 86EC9DC21328DF82002B2AD7 /* DFGSpeculativeJIT.cpp */; };
 		5333BBDD2110F7E1007618EC /* DFGSpeculativeJIT64.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 86880F4C14353B2100B08D42 /* DFGSpeculativeJIT64.cpp */; };
@@ -4047,6 +4048,8 @@
 		531D4E191F59CDD200EC836C /* testapi.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = testapi.cpp; path = API/tests/testapi.cpp; sourceTree = "<group>"; };
 		531EE7B922DE6BBB0030DA81 /* FinalizationRegistryPrototype.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FinalizationRegistryPrototype.h; sourceTree = "<group>"; };
 		531EE7BC22DE6EC60030DA81 /* FinalizationRegistryPrototype.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = FinalizationRegistryPrototype.cpp; sourceTree = "<group>"; };
+		531F70E82BED1A5D00960249 /* ConcurrentSweeper.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ConcurrentSweeper.cpp; sourceTree = "<group>"; };
+		531F70E92BED1A5D00960249 /* ConcurrentSweeper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ConcurrentSweeper.h; sourceTree = "<group>"; };
 		532631B3218777A5007B8191 /* JavaScriptCore.modulemap */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = "sourcecode.module-map"; path = JavaScriptCore.modulemap; sourceTree = "<group>"; };
 		533699B127A3078600C9561D /* IsoMemoryAllocatorBase.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = IsoMemoryAllocatorBase.h; sourceTree = "<group>"; };
 		533699B227A3078700C9561D /* IsoMemoryAllocatorBase.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = IsoMemoryAllocatorBase.cpp; sourceTree = "<group>"; };
@@ -6994,6 +6997,8 @@
 				0FDCE1271FAFA859006F3901 /* CompleteSubspace.cpp */,
 				0FDCE1281FAFA859006F3901 /* CompleteSubspace.h */,
 				0FD2FD9320B52BDD00F09441 /* CompleteSubspaceInlines.h */,
+				531F70E82BED1A5D00960249 /* ConcurrentSweeper.cpp */,
+				531F70E92BED1A5D00960249 /* ConcurrentSweeper.h */,
 				146B14DB12EB5B12001BEC1B /* ConservativeRoots.cpp */,
 				149DAAF212EB559D0083B12B /* ConservativeRoots.h */,
 				0F41545A1FD20B1F001B58F6 /* ConstraintConcurrency.h */,
@@ -10517,6 +10522,7 @@
 				0F6FC751196110A800E1D02D /* ComplexGetStatus.h in Headers */,
 				E36EDCE524F0975700E60DA2 /* Concurrency.h in Headers */,
 				0FDB2CEA174896C7007B3C1B /* ConcurrentJSLock.h in Headers */,
+				531F70EB2BED1A5D00960249 /* ConcurrentSweeper.h in Headers */,
 				BC18C3F50E16F5CD00B34460 /* config.h in Headers */,
 				658824AF1E5CFDB000FB7359 /* ConfigFile.h in Headers */,
 				144836E7132DA7BE005BE785 /* ConservativeRoots.h in Headers */,

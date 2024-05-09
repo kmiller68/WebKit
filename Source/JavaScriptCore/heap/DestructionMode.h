@@ -32,12 +32,24 @@ enum DestructionMode : int8_t {
     NeedsDestruction
 };
 
+enum class DestructionConcurrency : uint8_t {
+    Concurrent,
+    Mutator,
+};
+
+enum class DestructionResult : uint8_t {
+    DidNothing,
+    Destroyed,
+};
+
 } // namespace JSC
 
 namespace WTF {
 
 class PrintStream;
 void printInternal(PrintStream&, JSC::DestructionMode);
+void printInternal(PrintStream&, JSC::DestructionConcurrency);
+void printInternal(PrintStream&, JSC::DestructionResult);
 
 } // namespace WTF
 

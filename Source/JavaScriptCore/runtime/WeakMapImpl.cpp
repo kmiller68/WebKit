@@ -35,9 +35,10 @@
 namespace JSC {
 
 template <typename WeakMapBucket>
-void WeakMapImpl<WeakMapBucket>::destroy(JSCell* cell)
+DestructionResult WeakMapImpl<WeakMapBucket>::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<WeakMapImpl*>(cell)->~WeakMapImpl();
+    return DestructionResult::Destroyed;
 }
 
 template<typename WeakMapBucket>

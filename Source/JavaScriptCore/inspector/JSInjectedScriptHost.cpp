@@ -89,10 +89,11 @@ JSObject* JSInjectedScriptHost::createPrototype(VM& vm, JSGlobalObject* globalOb
     return JSInjectedScriptHostPrototype::create(vm, globalObject, JSInjectedScriptHostPrototype::createStructure(vm, globalObject, globalObject->objectPrototype()));
 }
 
-void JSInjectedScriptHost::destroy(JSC::JSCell* cell)
+JSC::DestructionResult JSInjectedScriptHost::destroy(JSC::JSCell* cell, JSC::DestructionConcurrency)
 {
     JSInjectedScriptHost* thisObject = static_cast<JSInjectedScriptHost*>(cell);
     thisObject->JSInjectedScriptHost::~JSInjectedScriptHost();
+    return JSC::DestructionResult::Destroyed;
 }
 
 JSValue JSInjectedScriptHost::evaluate(JSGlobalObject* globalObject) const

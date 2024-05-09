@@ -122,7 +122,7 @@ protected:
     static JSC::EncodedJSValue JSC_HOST_CALL_ATTRIBUTES onPromiseRejected(JSC::JSGlobalObject*, JSC::CallFrame*);
     JSBoundFunction* createOnRejectedFunction(JSC::JSGlobalObject*);
 
-    static void destroy(JSC::JSCell*);
+    static JSC::DestructionResult destroy(JSC::JSCell*, JSC::DestructionConcurrency);
 
     RefPtr<typename DOMWrapped::Iterator> m_iterator;
     IterationKind m_kind;
@@ -168,10 +168,11 @@ inline EnableIfSet<IteratorTraits, JSC::JSValue> convertToJS(JSC::JSGlobalObject
 }
 
 template<typename JSWrapper, typename IteratorTraits>
-void JSDOMAsyncIteratorBase<JSWrapper, IteratorTraits>::destroy(JSCell* cell)
+JSC::DestructionResult JSDOMAsyncIteratorBase<JSWrapper, IteratorTraits>::destroy(JSCell* cell, JSC::DestructionConcurrency)
 {
     JSDOMAsyncIteratorBase<JSWrapper, IteratorTraits>* thisObject = static_cast<JSDOMAsyncIteratorBase<JSWrapper, IteratorTraits>*>(cell);
     thisObject->JSDOMAsyncIteratorBase<JSWrapper, IteratorTraits>::~JSDOMAsyncIteratorBase();
+    return JSC::DestructionResult::Destroyed;
 }
 
 template<typename JSWrapper, typename IteratorTraits>

@@ -59,7 +59,7 @@ public:
     template<typename, JSC::SubspaceAccess>
     static void subspaceFor(JSC::VM&) { RELEASE_ASSERT_NOT_REACHED(); }
 
-    static void destroy(JSC::JSCell*);
+    static JSC::DestructionResult destroy(JSC::JSCell*, JSC::DestructionConcurrency);
 
 public:
     Lock& gcLock() WTF_RETURNS_LOCK(m_gcLock) { return m_gcLock; }

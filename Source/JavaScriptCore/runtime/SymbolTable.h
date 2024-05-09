@@ -467,7 +467,7 @@ public:
     }
     
     static constexpr bool needsDestruction = true;
-    static void destroy(JSCell*);
+    static DestructionResult destroy(JSCell*, DestructionConcurrency);
 
     inline static Structure* createStructure(VM&, JSGlobalObject*, JSValue);
 

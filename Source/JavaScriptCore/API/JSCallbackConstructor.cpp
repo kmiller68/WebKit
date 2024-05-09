@@ -56,9 +56,10 @@ JSCallbackConstructor::~JSCallbackConstructor()
         JSClassRelease(m_class);
 }
 
-void JSCallbackConstructor::destroy(JSCell* cell)
+DestructionResult JSCallbackConstructor::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<JSCallbackConstructor*>(cell)->JSCallbackConstructor::~JSCallbackConstructor();
+    return DestructionResult::Destroyed;
 }
 
 static JSC_DECLARE_HOST_FUNCTION(constructJSCallbackConstructor);

@@ -81,10 +81,11 @@ void JSModuleNamespaceObject::finishCreation(JSGlobalObject* globalObject, Abstr
     scope.assertNoExceptionExceptTermination();
 }
 
-void JSModuleNamespaceObject::destroy(JSCell* cell)
+DestructionResult JSModuleNamespaceObject::destroy(JSCell* cell, DestructionConcurrency)
 {
     JSModuleNamespaceObject* thisObject = static_cast<JSModuleNamespaceObject*>(cell);
     thisObject->JSModuleNamespaceObject::~JSModuleNamespaceObject();
+    return DestructionResult::Destroyed;
 }
 
 template<typename Visitor>

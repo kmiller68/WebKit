@@ -564,11 +564,12 @@ ObjCCallbackFunction* ObjCCallbackFunction::create(JSC::VM& vm, JSC::JSGlobalObj
     return function;
 }
 
-void ObjCCallbackFunction::destroy(JSCell* cell)
+DestructionResult ObjCCallbackFunction::destroy(JSCell* cell, DestructionConcurrency)
 {
     ObjCCallbackFunction& function = *static_cast<ObjCCallbackFunction*>(cell);
     function.impl()->destroy(*Heap::heap(cell));
     function.~ObjCCallbackFunction();
+    return DestructionResult::Destroyed;
 }
 
 String ObjCCallbackFunctionImpl::name()

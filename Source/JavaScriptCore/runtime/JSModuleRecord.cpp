@@ -59,10 +59,11 @@ JSModuleRecord::JSModuleRecord(VM& vm, Structure* structure, const Identifier& m
 {
 }
 
-void JSModuleRecord::destroy(JSCell* cell)
+DestructionResult JSModuleRecord::destroy(JSCell* cell, DestructionConcurrency)
 {
     JSModuleRecord* thisObject = static_cast<JSModuleRecord*>(cell);
     thisObject->JSModuleRecord::~JSModuleRecord();
+    return DestructionResult::Destroyed;
 }
 
 void JSModuleRecord::finishCreation(JSGlobalObject* globalObject, VM& vm)

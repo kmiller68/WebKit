@@ -39,9 +39,10 @@ const ASCIILiteral SymbolCoercionError { "Cannot convert a symbol to a string"_s
 static_assert(sizeof(JSCell) == sizeof(uint64_t), "jscell is eight bytes");
 STATIC_ASSERT_IS_TRIVIALLY_DESTRUCTIBLE(JSCell);
 
-void JSCell::destroy(JSCell* cell)
+DestructionResult JSCell::destroy(JSCell* cell, DestructionConcurrency)
 {
     cell->JSCell::~JSCell();
+    return DestructionResult::Destroyed;
 }
 
 void JSCell::dump(PrintStream& out) const

@@ -47,9 +47,10 @@ ProgramExecutable::ProgramExecutable(JSGlobalObject* globalObject, const SourceC
         vm.functionHasExecutedCache()->insertUnexecutedRange(sourceID(), typeProfilingStartOffset(), typeProfilingEndOffset());
 }
 
-void ProgramExecutable::destroy(JSCell* cell)
+DestructionResult ProgramExecutable::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<ProgramExecutable*>(cell)->ProgramExecutable::~ProgramExecutable();
+    return DestructionResult::Destroyed;
 }
 
 // http://www.ecma-international.org/ecma-262/6.0/index.html#sec-hasrestrictedglobalproperty

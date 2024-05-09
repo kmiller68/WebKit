@@ -193,9 +193,10 @@ void JSWebAssemblyArray::copy(JSWebAssemblyArray& dst, uint32_t dstOffset, uint3
     }
 }
 
-void JSWebAssemblyArray::destroy(JSCell* cell)
+DestructionResult JSWebAssemblyArray::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<JSWebAssemblyArray*>(cell)->JSWebAssemblyArray::~JSWebAssemblyArray();
+    return DestructionResult::Destroyed;
 }
 
 template<typename Visitor>

@@ -98,10 +98,11 @@ void JSWebAssemblyModule::finishCreation(VM& vm)
     m_exportSymbolTable.set(vm, this, exportSymbolTable);
 }
 
-void JSWebAssemblyModule::destroy(JSCell* cell)
+DestructionResult JSWebAssemblyModule::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<JSWebAssemblyModule*>(cell)->JSWebAssemblyModule::~JSWebAssemblyModule();
     Wasm::TypeInformation::tryCleanup();
+    return DestructionResult::Destroyed;
 }
 
 const Wasm::ModuleInformation& JSWebAssemblyModule::moduleInformation() const

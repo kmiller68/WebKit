@@ -39,9 +39,10 @@ public:
 
     static constexpr bool needsDestruction = true;
 
-    static void destroy(JSCell* cell)
+    static DestructionResult destroy(JSCell* cell, DestructionConcurrency)
     {
         static_cast<IntlDisplayNames*>(cell)->IntlDisplayNames::~IntlDisplayNames();
+        return DestructionResult::Destroyed;
     }
 
     template<typename CellType, SubspaceAccess mode>

@@ -65,10 +65,11 @@ WebAssemblyModuleRecord::WebAssemblyModuleRecord(VM& vm, Structure* structure, c
 {
 }
 
-void WebAssemblyModuleRecord::destroy(JSCell* cell)
+DestructionResult WebAssemblyModuleRecord::destroy(JSCell* cell, DestructionConcurrency)
 {
     WebAssemblyModuleRecord* thisObject = static_cast<WebAssemblyModuleRecord*>(cell);
     thisObject->WebAssemblyModuleRecord::~WebAssemblyModuleRecord();
+    return DestructionResult::Destroyed;
 }
 
 void WebAssemblyModuleRecord::finishCreation(JSGlobalObject* globalObject, VM& vm, const Wasm::ModuleInformation& moduleInformation)

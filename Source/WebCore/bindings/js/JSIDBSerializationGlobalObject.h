@@ -49,7 +49,7 @@ public:
     {
         return JSC::Structure::create(vm, 0, prototype, JSC::TypeInfo(JSC::GlobalObjectType, StructureFlags), info());
     }
-    static void destroy(JSC::JSCell*);
+    static JSC::DestructionResult destroy(JSC::JSCell*, JSC::DestructionConcurrency);
 
     ScriptExecutionContext* scriptExecutionContext() const { return m_scriptExecutionContext.ptr(); }
 

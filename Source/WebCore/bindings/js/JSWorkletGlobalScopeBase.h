@@ -40,7 +40,7 @@ public:
     template<typename, JSC::SubspaceAccess>
     static void subspaceFor(JSC::VM&) { RELEASE_ASSERT_NOT_REACHED(); }
 
-    static void destroy(JSC::JSCell*);
+    static JSC::DestructionResult destroy(JSC::JSCell*, JSC::DestructionConcurrency);
 
     DECLARE_INFO;
 

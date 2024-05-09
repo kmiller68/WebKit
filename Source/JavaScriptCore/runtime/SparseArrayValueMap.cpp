@@ -49,9 +49,10 @@ SparseArrayValueMap* SparseArrayValueMap::create(VM& vm)
     return result;
 }
 
-void SparseArrayValueMap::destroy(JSCell* cell)
+DestructionResult SparseArrayValueMap::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<SparseArrayValueMap*>(cell)->SparseArrayValueMap::~SparseArrayValueMap();
+    return DestructionResult::Destroyed;
 }
 
 Structure* SparseArrayValueMap::createStructure(VM& vm, JSGlobalObject* globalObject, JSValue prototype)

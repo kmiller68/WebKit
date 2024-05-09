@@ -45,9 +45,10 @@ ScopedArgumentsTable::~ScopedArgumentsTable()
 {
 }
 
-void ScopedArgumentsTable::destroy(JSCell* cell)
+DestructionResult ScopedArgumentsTable::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<ScopedArgumentsTable*>(cell)->ScopedArgumentsTable::~ScopedArgumentsTable();
+    return DestructionResult::Destroyed;
 }
 
 ScopedArgumentsTable* ScopedArgumentsTable::create(VM& vm)

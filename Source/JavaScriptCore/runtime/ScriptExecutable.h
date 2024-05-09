@@ -40,7 +40,7 @@ public:
     typedef ExecutableBase Base;
     static constexpr unsigned StructureFlags = Base::StructureFlags;
 
-    static void destroy(JSCell*);
+    static DestructionResult destroy(JSCell*, DestructionConcurrency);
 
     using TemplateObjectMap = HashMap<uint64_t, WriteBarrier<JSArray>, WTF::IntHash<uint64_t>, WTF::UnsignedWithZeroKeyHashTraits<uint64_t>>;
         

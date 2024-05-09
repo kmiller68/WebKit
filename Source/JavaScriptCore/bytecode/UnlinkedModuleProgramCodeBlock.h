@@ -50,7 +50,7 @@ public:
         return instance;
     }
 
-    static void destroy(JSCell*);
+    static DestructionResult destroy(JSCell*, DestructionConcurrency);
 
     // This offset represents the constant register offset to the stored symbol table that represents the layout of the
     // module environment. This symbol table is created by the byte code generator since the module environment includes

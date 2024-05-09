@@ -191,9 +191,10 @@ void JSWebAssemblyStruct::visitChildrenImpl(JSCell* cell, Visitor& visitor)
 
 DEFINE_VISIT_CHILDREN(JSWebAssemblyStruct);
 
-void JSWebAssemblyStruct::destroy(JSCell* cell)
+DestructionResult JSWebAssemblyStruct::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<JSWebAssemblyStruct*>(cell)->JSWebAssemblyStruct::~JSWebAssemblyStruct();
+    return DestructionResult::Destroyed;
 }
 
 } // namespace JSC

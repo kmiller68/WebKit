@@ -67,9 +67,10 @@ void JSWebAssemblyInstance::finishCreation(VM& vm)
     vm.heap.reportExtraMemoryAllocated(this, m_instance->extraMemoryAllocated());
 }
 
-void JSWebAssemblyInstance::destroy(JSCell* cell)
+DestructionResult JSWebAssemblyInstance::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<JSWebAssemblyInstance*>(cell)->JSWebAssemblyInstance::~JSWebAssemblyInstance();
+    return DestructionResult::Destroyed;
 }
 
 template<typename Visitor>

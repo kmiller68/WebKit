@@ -72,9 +72,10 @@ JSCustomGetterFunction* JSCustomGetterFunction::create(VM& vm, JSGlobalObject* g
     return function;
 }
 
-void JSCustomGetterFunction::destroy(JSCell* cell)
+DestructionResult JSCustomGetterFunction::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<JSCustomGetterFunction*>(cell)->~JSCustomGetterFunction();
+    return DestructionResult::Destroyed;
 }
 
 } // namespace JSC

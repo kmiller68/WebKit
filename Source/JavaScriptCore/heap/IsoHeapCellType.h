@@ -34,7 +34,7 @@ namespace JSC {
 class JS_EXPORT_PRIVATE IsoHeapCellType final : public HeapCellType {
     WTF_MAKE_TZONE_ALLOCATED(IsoHeapCellType);
 public:
-    using DestroyFunctionPtr = void (*)(JSCell*);
+    using DestroyFunctionPtr = DestructionResult (*)(JSCell*, DestructionConcurrency);
 
     ~IsoHeapCellType();
 
@@ -54,12 +54,12 @@ public:
         : IsoHeapCellType(args.mode, args.functionPtr)
     { }
 
-    void finishSweep(MarkedBlock::Handle&, FreeList*) const final;
-    void destroy(VM&, JSCell*) const final;
+    void finishSweep(MarkedBlock::Handle&, FreeList*, DestructionConcurrency) const final;
+    DestructionResult destroy(VM&, JSCell*, DestructionConcurrency) const final;
 
-    ALWAYS_INLINE void operator()(VM&, JSCell* cell) const
+    ALWAYS_INLINE DestructionResult operator()(VM&, JSCell* cell, DestructionConcurrency concurrency) const
     {
-        m_destroy(cell);
+        return m_destroy(cell, concurrency);
     }
 
 private:

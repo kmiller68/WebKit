@@ -59,9 +59,10 @@ RuntimeArray::~RuntimeArray()
     delete getConcreteArray();
 }
 
-void RuntimeArray::destroy(JSCell* cell)
+DestructionResult RuntimeArray::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<RuntimeArray*>(cell)->RuntimeArray::~RuntimeArray();
+    return DestructionResult::Destroyed;
 }
 
 JSC_DEFINE_CUSTOM_GETTER(arrayLengthGetter, (JSGlobalObject* lexicalGlobalObject, EncodedJSValue thisValue, PropertyName))

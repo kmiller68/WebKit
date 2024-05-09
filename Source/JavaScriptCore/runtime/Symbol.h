@@ -71,7 +71,7 @@ public:
     }
 
 private:
-    static void destroy(JSCell*);
+    static DestructionResult destroy(JSCell*, DestructionConcurrency);
 
     Symbol(VM&);
     Symbol(VM&, const String&);

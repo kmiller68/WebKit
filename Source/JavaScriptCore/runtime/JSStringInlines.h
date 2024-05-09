@@ -25,24 +25,53 @@
 
 #pragma once
 
+#include "ConcurrentSweeper.h"
 #include "JSGlobalObjectInlines.h"
 #include "JSString.h"
 #include "KeyAtomStringCacheInlines.h"
 
 namespace JSC {
 
-ALWAYS_INLINE void JSString::destroy(JSCell* cell)
+ALWAYS_INLINE DestructionResult JSString::destroy(JSCell* cell, DestructionConcurrency concurrency)
 {
     auto* string = static_cast<JSString*>(cell);
+
+#if CPU(EXCHANGE_OPS_ARE_FREE)
+    if (UNLIKELY(concurrency == DestructionConcurrency::Concurrent)) {
+        StringImpl* impl = string->valueInternal().releaseImpl().leakRef();
+        StringImpl::DerefResult derefResult = impl->tryDerefConcurrently();
+        if (UNLIKELY(derefResult == StringImpl::DerefResult::NeedsUniquedDestruction))
+            cell->vm().heap.concurrentSweeper()->pushUniquedStringImplToMainThreadDestroy(adoptRef(*impl));
+        return DestructionResult::Destroyed;
+    }
+#else
+    ASSERT_UNUSED(concurrency, concurrency != DestructionConcurrency::Concurrent);
+#endif
+
     string->valueInternal().~String();
+    return DestructionResult::Destroyed;
 }
 
-ALWAYS_INLINE void JSRopeString::destroy(JSCell* cell)
+ALWAYS_INLINE DestructionResult JSRopeString::destroy(JSCell* cell, DestructionConcurrency concurrency)
 {
     auto* string = static_cast<JSRopeString*>(cell);
     if (string->isRope())
-        return;
+        return DestructionResult::Destroyed;
+
+#if CPU(EXCHANGE_OPS_ARE_FREE)
+    if (UNLIKELY(concurrency == DestructionConcurrency::Concurrent)) {
+        StringImpl* impl = string->valueInternal().releaseImpl().leakRef();
+        StringImpl::DerefResult derefResult = impl->tryDerefConcurrently();
+        if (UNLIKELY(derefResult == StringImpl::DerefResult::NeedsUniquedDestruction))
+            cell->vm().heap.concurrentSweeper()->pushUniquedStringImplToMainThreadDestroy(adoptRef(*impl));
+        return DestructionResult::Destroyed;
+    }
+#else
+    ASSERT_UNUSED(concurrency, concurrency != DestructionConcurrency::Concurrent);
+#endif
+
     string->valueInternal().~String();
+    return DestructionResult::Destroyed;
 }
 
 bool JSString::equal(JSGlobalObject* globalObject, JSString* other) const

@@ -48,7 +48,7 @@ struct HashTable;
     WTF_VTBL_FUNCPTR_PTRAUTH_STR("MethodTable." #method) method
 
 struct MethodTable {
-    using DestroyFunctionPtr = void (*)(JSCell*);
+    using DestroyFunctionPtr = DestructionResult (*)(JSCell*, DestructionConcurrency);
     DestroyFunctionPtr METHOD_TABLE_ENTRY(destroy);
 
     using GetCallDataFunctionPtr = CallData (*)(JSCell*);

@@ -66,7 +66,7 @@ public:
         return m_parameters.get();
     }
 
-    static void destroy(JSCell*);
+    static DestructionResult destroy(JSCell*, DestructionConcurrency);
 
 private:
     JSScriptFetchParameters(VM& vm, Structure* structure, Ref<ScriptFetchParameters>&& parameters)

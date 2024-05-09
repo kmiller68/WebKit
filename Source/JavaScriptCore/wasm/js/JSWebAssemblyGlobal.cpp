@@ -61,9 +61,10 @@ JSWebAssemblyGlobal::JSWebAssemblyGlobal(VM& vm, Structure* structure, Ref<Wasm:
 {
 }
 
-void JSWebAssemblyGlobal::destroy(JSCell* cell)
+DestructionResult JSWebAssemblyGlobal::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<JSWebAssemblyGlobal*>(cell)->JSWebAssemblyGlobal::~JSWebAssemblyGlobal();
+    return DestructionResult::Destroyed;
 }
 
 template<typename Visitor>

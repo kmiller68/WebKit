@@ -487,9 +487,10 @@ void WebAssemblyFunction::visitChildrenImpl(JSCell* cell, Visitor& visitor)
 
 DEFINE_VISIT_CHILDREN(WebAssemblyFunction);
 
-void WebAssemblyFunction::destroy(JSCell* cell)
+DestructionResult WebAssemblyFunction::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<WebAssemblyFunction*>(cell)->WebAssemblyFunction::~WebAssemblyFunction();
+    return DestructionResult::Destroyed;
 }
 
 } // namespace JSC

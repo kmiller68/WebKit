@@ -117,7 +117,7 @@ protected:
     template<typename IteratorValue, typename T = Traits> EnableIfMap<T, JSC::JSValue> asJS(JSC::JSGlobalObject&, IteratorValue&);
     template<typename IteratorValue, typename T = Traits> EnableIfSet<T, JSC::JSValue> asJS(JSC::JSGlobalObject&, IteratorValue&);
 
-    static void destroy(JSC::JSCell*);
+    static JSC::DestructionResult destroy(JSC::JSCell*, JSC::DestructionConcurrency);
 
     std::optional<typename DOMWrapped::Iterator> m_iterator;
     IterationKind m_kind;
@@ -229,10 +229,11 @@ template<typename JSIterator> JSC::JSValue iteratorForEach(JSC::JSGlobalObject& 
 }
 
 template<typename JSWrapper, typename IteratorTraits>
-void JSDOMIteratorBase<JSWrapper, IteratorTraits>::destroy(JSCell* cell)
+JSC::DestructionResult JSDOMIteratorBase<JSWrapper, IteratorTraits>::destroy(JSCell* cell, JSC::DestructionConcurrency)
 {
     JSDOMIteratorBase<JSWrapper, IteratorTraits>* thisObject = static_cast<JSDOMIteratorBase<JSWrapper, IteratorTraits>*>(cell);
     thisObject->JSDOMIteratorBase<JSWrapper, IteratorTraits>::~JSDOMIteratorBase();
+    return JSC::DestructionResult::Destroyed;
 }
 
 template<typename JSWrapper, typename IteratorTraits>

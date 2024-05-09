@@ -65,7 +65,7 @@ public:
         return m_sourceCode;
     }
 
-    static void destroy(JSCell*);
+    static DestructionResult destroy(JSCell*, DestructionConcurrency);
 
 private:
     JSSourceCode(VM& vm, Structure* structure, SourceCode&& sourceCode)

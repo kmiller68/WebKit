@@ -58,9 +58,10 @@ GCClient::IsoSubspace* JSIDBSerializationGlobalObject::subspaceForImpl(VM& vm)
     return &static_cast<JSVMClientData*>(vm.clientData)->idbSerializationSpace();
 }
 
-void JSIDBSerializationGlobalObject::destroy(JSCell* cell)
+DestructionResult JSIDBSerializationGlobalObject::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<JSIDBSerializationGlobalObject*>(cell)->JSIDBSerializationGlobalObject::~JSIDBSerializationGlobalObject();
+    return DestructionResult::Destroyed;
 }
 
 } // namespace WebCore

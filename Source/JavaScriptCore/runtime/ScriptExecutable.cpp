@@ -66,9 +66,10 @@ ScriptExecutable::ScriptExecutable(Structure* structure, VM& vm, const SourceCod
 {
 }
 
-void ScriptExecutable::destroy(JSCell* cell)
+DestructionResult ScriptExecutable::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<ScriptExecutable*>(cell)->ScriptExecutable::~ScriptExecutable();
+    return DestructionResult::Destroyed;
 }
 
 void ScriptExecutable::clearCode(IsoCellSet& clearableCodeSet)

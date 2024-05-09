@@ -50,7 +50,7 @@ public:
         return instance;
     }
 
-    static void destroy(JSCell*);
+    static DestructionResult destroy(JSCell*, DestructionConcurrency);
 
     const Identifier& variable(unsigned index) { return m_variables[index]; }
     unsigned numVariables() { return m_variables.size(); }

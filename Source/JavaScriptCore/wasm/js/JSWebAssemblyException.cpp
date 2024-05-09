@@ -67,9 +67,10 @@ void JSWebAssemblyException::visitChildrenImpl(JSCell* cell, Visitor& visitor)
 
 DEFINE_VISIT_CHILDREN(JSWebAssemblyException);
 
-void JSWebAssemblyException::destroy(JSCell* cell)
+DestructionResult JSWebAssemblyException::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<JSWebAssemblyException*>(cell)->JSWebAssemblyException::~JSWebAssemblyException();
+    return DestructionResult::Destroyed;
 }
 
 JSValue JSWebAssemblyException::getArg(JSGlobalObject* globalObject, unsigned i) const

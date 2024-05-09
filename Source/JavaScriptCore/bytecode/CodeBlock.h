@@ -207,7 +207,7 @@ public:
     DECLARE_VISIT_CHILDREN;
 
     static size_t estimatedSize(JSCell*, VM&);
-    static void destroy(JSCell*);
+    static DestructionResult destroy(JSCell*, DestructionConcurrency);
     void finalizeUnconditionally(VM&, CollectionScope);
 
     void notifyLexicalBindingUpdate();

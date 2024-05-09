@@ -41,9 +41,10 @@ public:
 
     static constexpr bool needsDestruction = true;
 
-    static void destroy(JSCell* cell)
+    static DestructionResult destroy(JSCell* cell, DestructionConcurrency)
     {
         static_cast<IntlDurationFormat*>(cell)->IntlDurationFormat::~IntlDurationFormat();
+        return DestructionResult::Destroyed;
     }
 
     template<typename CellType, SubspaceAccess mode>

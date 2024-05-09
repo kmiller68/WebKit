@@ -45,7 +45,7 @@ public:
 
     static ModuleProgramExecutable* create(JSGlobalObject*, const SourceCode&);
 
-    static void destroy(JSCell*);
+    static DestructionResult destroy(JSCell*, DestructionConcurrency);
 
     ModuleProgramCodeBlock* codeBlock() const
     {

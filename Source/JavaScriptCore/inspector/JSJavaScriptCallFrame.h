@@ -57,7 +57,7 @@ public:
     }
 
     static JSC::JSObject* createPrototype(JSC::VM&, JSC::JSGlobalObject*);
-    static void destroy(JSC::JSCell*);
+    static JSC::DestructionResult destroy(JSC::JSCell*, JSC::DestructionConcurrency);
 
     JavaScriptCallFrame& impl() const { return *m_impl; }
     void releaseImpl();

@@ -61,7 +61,7 @@ public:
         return vm.functionRareDataSpace<mode>();
     }
 
-    static void destroy(JSCell*);
+    static DestructionResult destroy(JSCell*, DestructionConcurrency);
 
     static Structure* createStructure(VM&, JSGlobalObject*, JSValue prototype);
 

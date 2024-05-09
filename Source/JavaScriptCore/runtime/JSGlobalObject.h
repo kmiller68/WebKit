@@ -623,7 +623,7 @@ protected:
 
 public:
     JS_EXPORT_PRIVATE ~JSGlobalObject();
-    JS_EXPORT_PRIVATE static void destroy(JSCell*);
+    JS_EXPORT_PRIVATE static DestructionResult destroy(JSCell*, DestructionConcurrency);
 
     DECLARE_VISIT_CHILDREN_WITH_MODIFIER(JS_EXPORT_PRIVATE);
 

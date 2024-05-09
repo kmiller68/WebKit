@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2021 Apple Inc. All rights reserved.
+ * Copyright (C) 2017-2023 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -36,14 +36,14 @@ namespace JSC {
 // the function's type and it would have indirect calls to that function. And unlike a lambda, it's
 // possible to mark this ALWAYS_INLINE.
 struct DefaultDestroyFunc {
-    ALWAYS_INLINE void operator()(VM&, JSCell* cell) const
+    ALWAYS_INLINE DestructionResult operator()(VM&, JSCell* cell, DestructionConcurrency concurrency) const
     {
         ASSERT(cell->structureID());
         Structure* structure = cell->structure();
         ASSERT(structure->typeInfo().structureIsImmortal());
         const ClassInfo* classInfo = structure->classInfoForCells();
         MethodTable::DestroyFunctionPtr destroy = classInfo->methodTable.destroy;
-        destroy(cell);
+        return destroy(cell, concurrency);
     }
 };
 
@@ -56,14 +56,17 @@ HeapCellType::~HeapCellType()
 {
 }
 
-void HeapCellType::finishSweep(MarkedBlock::Handle& block, FreeList* freeList) const
+void HeapCellType::finishSweep(MarkedBlock::Handle& block, FreeList* freeList, DestructionConcurrency concurrency) const
 {
-    block.finishSweepKnowingHeapCellType(freeList, DefaultDestroyFunc());
+    if (concurrency == DestructionConcurrency::Mutator)
+        block.finishSweepKnowingHeapCellType<DestructionConcurrency::Mutator>(freeList, DefaultDestroyFunc());
+    else
+        block.finishSweepKnowingHeapCellType<DestructionConcurrency::Concurrent>(freeList, DefaultDestroyFunc());
 }
 
-void HeapCellType::destroy(VM& vm, JSCell* cell) const
+DestructionResult HeapCellType::destroy(VM& vm, JSCell* cell, DestructionConcurrency concurrency) const
 {
-    DefaultDestroyFunc()(vm, cell);
+    return DefaultDestroyFunc()(vm, cell, concurrency);
 }
 
 } // namespace JSC

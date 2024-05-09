@@ -145,9 +145,10 @@ UnlinkedFunctionExecutable::~UnlinkedFunctionExecutable()
         m_decoder.~RefPtr();
 }
 
-void UnlinkedFunctionExecutable::destroy(JSCell* cell)
+DestructionResult UnlinkedFunctionExecutable::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<UnlinkedFunctionExecutable*>(cell)->~UnlinkedFunctionExecutable();
+    return DestructionResult::Destroyed;
 }
 
 template<typename Visitor>

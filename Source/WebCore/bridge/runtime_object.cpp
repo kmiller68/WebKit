@@ -61,9 +61,10 @@ void RuntimeObject::finishCreation(VM& vm)
         enumToUnderlyingType(PropertyAttribute::DontEnum));
 }
 
-void RuntimeObject::destroy(JSCell* cell)
+DestructionResult RuntimeObject::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<RuntimeObject*>(cell)->RuntimeObject::~RuntimeObject();
+    return DestructionResult::Destroyed;
 }
 
 void RuntimeObject::invalidate()

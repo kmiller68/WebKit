@@ -40,6 +40,8 @@ public:
     struct Node {
         WTF_MAKE_FAST_ALLOCATED;
     public:
+        Node(T&& value) : data(WTFMove(value)) { }
+
         T data;
         Node* next;
     };
@@ -52,8 +54,7 @@ public:
     enum PushResult { Empty, NonEmpty };
     PushResult add(T&& element)
     {
-        Node* newNode = new Node();
-        newNode->data = std::forward<T>(element);
+        Node* newNode = new Node(std::forward<T>(element));
 
         Node* oldHead;
         m_head.transaction([&] (Node*& head) {
@@ -61,7 +62,7 @@ public:
             newNode->next = head;
             head = newNode;
             return true;
-        });
+        }, std::memory_order_release);
 
         return oldHead == nullptr ? Empty : NonEmpty;
     }
@@ -69,10 +70,9 @@ public:
     // CONSUMER FUNCTIONS: Everything below here is only safe to call from the consumer thread.
 
     // This function is actually safe to call from more than one thread, but ONLY if no thread can call consumeAll.
-    template<typename Functor>
-    void iterate(const Functor& func)
+    void iterate(const auto& func)
     {
-        Node* node = m_head.load();
+        Node* node = m_head.load(std::memory_order_acquire);
         while (node) {
             const T& data = node->data;
             func(data);
@@ -80,23 +80,21 @@ public:
         }
     }
 
-    template<typename Functor>
-    void consumeAll(const Functor& func)
+    void consumeAll(const auto& func)
     {
-        consumeAllWithNode([&] (T&& data, Node* node) {
+        consumeAllWithNode([&] (T&& data, Node*) {
             func(WTFMove(data));
-            delete node;
         });
     }
 
-    template<typename Functor>
-    void consumeAllWithNode(const Functor& func)
+    void consumeAllWithNode(const auto& func)
     {
-        Node* node = m_head.exchange(nullptr);
+        Node* node = m_head.exchange(nullptr, std::memory_order_acquire);
         while (node) {
             Node* oldNode = node;
             node = node->next;
             func(WTFMove(oldNode->data), oldNode);
+            delete oldNode;
         }
     }
 
@@ -110,3 +108,5 @@ private:
 };
     
 } // namespace WTF
+
+using WTF::LocklessBag;

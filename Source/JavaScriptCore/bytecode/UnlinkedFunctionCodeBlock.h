@@ -49,7 +49,7 @@ public:
         return instance;
     }
 
-    static void destroy(JSCell*);
+    static DestructionResult destroy(JSCell*, DestructionConcurrency);
 
 private:
     friend CachedFunctionCodeBlock;

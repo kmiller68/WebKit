@@ -58,7 +58,7 @@ public:
         const Identifier& name, JSGlobalObject*, const SourceCode&, 
         JSObject*& exception, int overrideLineNumber, std::optional<int> functionConstructorParametersEndPosition);
 
-    static void destroy(JSCell*);
+    static DestructionResult destroy(JSCell*, DestructionConcurrency);
         
     UnlinkedFunctionExecutable* unlinkedExecutable() const
     {

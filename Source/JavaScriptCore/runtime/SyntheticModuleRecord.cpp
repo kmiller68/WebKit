@@ -55,10 +55,11 @@ SyntheticModuleRecord::SyntheticModuleRecord(VM& vm, Structure* structure, const
 {
 }
 
-void SyntheticModuleRecord::destroy(JSCell* cell)
+DestructionResult SyntheticModuleRecord::destroy(JSCell* cell, DestructionConcurrency)
 {
     SyntheticModuleRecord* thisObject = static_cast<SyntheticModuleRecord*>(cell);
     thisObject->SyntheticModuleRecord::~SyntheticModuleRecord();
+    return DestructionResult::Destroyed;
 }
 
 void SyntheticModuleRecord::finishCreation(JSGlobalObject* globalObject, VM& vm)

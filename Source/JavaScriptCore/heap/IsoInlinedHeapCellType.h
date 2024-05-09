@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2021 Apple Inc. All rights reserved.
+ * Copyright (C) 2019-2023 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -35,11 +35,11 @@ public:
     IsoInlinedHeapCellType();
 
     struct DestroyFunc {
-        ALWAYS_INLINE void operator()(VM&, JSCell*) const;
+        ALWAYS_INLINE DestructionResult operator()(VM&, JSCell*, DestructionConcurrency) const;
     };
 
-    void finishSweep(MarkedBlock::Handle&, FreeList*) const final;
-    void destroy(VM&, JSCell*) const final;
+    void finishSweep(MarkedBlock::Handle&, FreeList*, DestructionConcurrency) const final;
+    DestructionResult destroy(VM&, JSCell*, DestructionConcurrency) const final;
 };
 
 } // namespace JSC

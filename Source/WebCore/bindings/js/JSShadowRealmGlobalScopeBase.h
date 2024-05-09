@@ -36,7 +36,7 @@ class JSShadowRealmGlobalScopeBase : public JSDOMGlobalObject {
 public:
     using Base = JSDOMGlobalObject;
 
-    static void destroy(JSC::JSCell*);
+    static JSC::DestructionResult destroy(JSC::JSCell*, JSC::DestructionConcurrency);
 
     DECLARE_INFO;
 

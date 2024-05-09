@@ -46,9 +46,10 @@ FunctionExecutable::FunctionExecutable(VM& vm, ScriptExecutable* topLevelExecuta
     ASSERT(source.length());
 }
 
-void FunctionExecutable::destroy(JSCell* cell)
+DestructionResult FunctionExecutable::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<FunctionExecutable*>(cell)->FunctionExecutable::~FunctionExecutable();
+    return DestructionResult::Destroyed;
 }
 
 FunctionCodeBlock* FunctionExecutable::baselineCodeBlockFor(CodeSpecializationKind kind)

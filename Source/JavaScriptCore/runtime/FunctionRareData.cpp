@@ -40,10 +40,11 @@ FunctionRareData* FunctionRareData::create(VM& vm, ExecutableBase* executable)
     return rareData;
 }
 
-void FunctionRareData::destroy(JSCell* cell)
+DestructionResult FunctionRareData::destroy(JSCell* cell, DestructionConcurrency)
 {
     FunctionRareData* rareData = static_cast<FunctionRareData*>(cell);
     rareData->FunctionRareData::~FunctionRareData();
+    return DestructionResult::Destroyed;
 }
 
 Structure* FunctionRareData::createStructure(VM& vm, JSGlobalObject* globalObject, JSValue prototype)

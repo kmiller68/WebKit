@@ -63,7 +63,7 @@ public:
     static ScopedArgumentsTable* create(VM&);
     static ScopedArgumentsTable* tryCreate(VM&, uint32_t length);
 
-    static void destroy(JSCell*);
+    static DestructionResult destroy(JSCell*, DestructionConcurrency);
 
     uint32_t length() const { return m_length; }
     ScopedArgumentsTable* trySetLength(VM&, uint32_t newLength);

@@ -173,13 +173,14 @@ void RegExp::finishCreation(VM& vm)
     }
 }
 
-void RegExp::destroy(JSCell* cell)
+DestructionResult RegExp::destroy(JSCell* cell, DestructionConcurrency)
 {
     RegExp* thisObject = static_cast<RegExp*>(cell);
 #if REGEXP_FUNC_TEST_DATA_GEN
     RegExpFunctionalTestCollector::get()->clearRegExp(this);
 #endif
     thisObject->RegExp::~RegExp();
+    return DestructionResult::Destroyed;
 }
 
 size_t RegExp::estimatedSize(JSCell* cell, VM& vm)

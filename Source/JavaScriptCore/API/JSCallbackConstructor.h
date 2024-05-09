@@ -55,7 +55,7 @@ public:
     }
     
     ~JSCallbackConstructor();
-    static void destroy(JSCell*);
+    static DestructionResult destroy(JSCell*, DestructionConcurrency);
     JSClassRef classRef() const { return m_class; }
     JSObjectCallAsConstructorCallback callback() const { return m_callback; }
     DECLARE_INFO;

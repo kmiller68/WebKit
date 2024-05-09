@@ -53,7 +53,7 @@ public:
     static bool getOwnPropertySlot(JSObject*, JSGlobalObject*, PropertyName, PropertySlot&);
     static bool put(JSCell*, JSGlobalObject*, PropertyName, JSValue, PutPropertySlot&);
 
-    static void destroy(JSCell*);
+    static DestructionResult destroy(JSCell*, DestructionConcurrency);
     static constexpr bool needsDestruction = true;
 
     bool isEmpty() const { return !symbolTable()->size(); }

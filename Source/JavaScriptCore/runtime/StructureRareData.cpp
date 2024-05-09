@@ -56,9 +56,10 @@ StructureRareData* StructureRareData::create(VM& vm, Structure* previous)
     return rareData;
 }
 
-void StructureRareData::destroy(JSCell* cell)
+DestructionResult StructureRareData::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<StructureRareData*>(cell)->StructureRareData::~StructureRareData();
+    return DestructionResult::Destroyed;
 }
 
 StructureRareData::StructureRareData(VM& vm, Structure* previous)

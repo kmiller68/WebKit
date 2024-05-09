@@ -36,7 +36,7 @@ public:
     using Base = GlobalExecutable;
     static constexpr unsigned StructureFlags = Base::StructureFlags | StructureIsImmortal;
 
-    static void destroy(JSCell*);
+    static DestructionResult destroy(JSCell*, DestructionConcurrency);
     
     EvalCodeBlock* codeBlock() const
     {

@@ -78,9 +78,10 @@ double Symbol::toNumber(JSGlobalObject* globalObject) const
     return 0.0;
 }
 
-void Symbol::destroy(JSCell* cell)
+DestructionResult Symbol::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<Symbol*>(cell)->Symbol::~Symbol();
+    return DestructionResult::Destroyed;
 }
 
 String Symbol::descriptiveString() const

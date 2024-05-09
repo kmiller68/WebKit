@@ -58,7 +58,7 @@ public:
     public:
         template<unsigned characterCount>
         constexpr StaticSymbolImpl(const char (&characters)[characterCount], Flags flags = s_flagDefault)
-            : StringImplShape(s_refCountFlagIsStaticString, characterCount - 1, characters,
+            : StringImplShape(s_refCountFlagIsStaticString | s_refCountFlagIsUniqued, characterCount - 1, characters,
                 s_hashFlag8BitBuffer | s_hashFlagDidReportCost | StringSymbol | BufferInternal | (StringHasher::computeLiteralHashAndMaskTop8Bits(characters) << s_flagCount), ConstructWithConstExpr)
             , m_hashForSymbolShiftedWithFlagCount(StringHasher::computeLiteralHashAndMaskTop8Bits(characters) << s_flagCount)
             , m_flags(flags)
@@ -67,7 +67,7 @@ public:
 
         template<unsigned characterCount>
         constexpr StaticSymbolImpl(const char16_t (&characters)[characterCount], Flags flags = s_flagDefault)
-            : StringImplShape(s_refCountFlagIsStaticString, characterCount - 1, characters,
+            : StringImplShape(s_refCountFlagIsStaticString | s_refCountFlagIsUniqued, characterCount - 1, characters,
                 s_hashFlagDidReportCost | StringSymbol | BufferInternal | (StringHasher::computeLiteralHashAndMaskTop8Bits(characters) << s_flagCount), ConstructWithConstExpr)
             , m_hashForSymbolShiftedWithFlagCount(StringHasher::computeLiteralHashAndMaskTop8Bits(characters) << s_flagCount)
             , m_flags(flags)

@@ -32,9 +32,10 @@ namespace JSC {
 
 const ClassInfo JSScriptFetcher::s_info = { "JSScriptFetcher"_s, nullptr, nullptr, nullptr, CREATE_METHOD_TABLE(JSScriptFetcher) };
 
-void JSScriptFetcher::destroy(JSCell* cell)
+DestructionResult JSScriptFetcher::destroy(JSCell* cell, DestructionConcurrency)
 {
     static_cast<JSScriptFetcher*>(cell)->~JSScriptFetcher();
+    return DestructionResult::Destroyed;
 }
 
 } // namespace JSC
