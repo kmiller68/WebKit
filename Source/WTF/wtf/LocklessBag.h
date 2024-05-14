@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Apple Inc. All rights reserved.
+ * Copyright (C) 2017-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,7 +30,7 @@
 
 namespace WTF {
 
-// This a simple single consumer, multiple producer Bag data structure.
+// This a simple single consumer, multiple producer or multiple reader/producer (no-consumer) Bag data structure.
 
 template<typename T>
 class LocklessBag final {
@@ -40,10 +40,11 @@ public:
     struct Node {
         WTF_MAKE_FAST_ALLOCATED;
     public:
-        Node(T&& value) : data(WTFMove(value)) { }
+        using Data = T;
+        Node(Data&& value) : data(std::forward<Data>(value)) { }
 
-        T data;
-        Node* next;
+        Data data;
+        Node* next { nullptr };
     };
 
     LocklessBag()
@@ -54,7 +55,13 @@ public:
     enum PushResult { Empty, NonEmpty };
     PushResult add(T&& element)
     {
-        Node* newNode = new Node(std::forward<T>(element));
+        return add(std::make_unique<Node>(std::forward<T>(element)));
+    }
+
+    // This is useful when you want to fill up a node on one thread then push it once it's full.
+    PushResult add(std::unique_ptr<Node>&& node)
+    {
+        Node* newNode = node.release();
 
         Node* oldHead;
         m_head.transaction([&] (Node*& head) {
@@ -67,12 +74,15 @@ public:
         return oldHead == nullptr ? Empty : NonEmpty;
     }
 
-    // CONSUMER FUNCTIONS: Everything below here is only safe to call from the consumer thread.
+    // READER/CONSUMER FUNCTIONS: Everything below here is only safe to call from the consumer, if there is one.
+    // If there is no consumer anyone can call these.
 
-    // This function is actually safe to call from more than one thread, but ONLY if no thread can call consumeAll.
-    void iterate(const auto& func)
+    bool isEmpty() const { return !m_head.load(std::memory_order_relaxed); }
+    const Node* head() const { return m_head.load(std::memory_order_acquire); }
+
+    void iterate(const auto& func) const
     {
-        Node* node = m_head.load(std::memory_order_acquire);
+        const Node* node = head();
         while (node) {
             const T& data = node->data;
             func(data);
@@ -80,10 +90,12 @@ public:
         }
     }
 
+    // CONSUMER FUNCTIONS: Everything below here is only safe to call from the consumer thread.
+
     void consumeAll(const auto& func)
     {
         consumeAllWithNode([&] (T&& data, Node*) {
-            func(WTFMove(data));
+            func(std::forward<T>(data));
         });
     }
 
@@ -93,7 +105,7 @@ public:
         while (node) {
             Node* oldNode = node;
             node = node->next;
-            func(WTFMove(oldNode->data), oldNode);
+            func(std::forward<T>(oldNode->data), oldNode);
             delete oldNode;
         }
     }

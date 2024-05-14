@@ -396,8 +396,20 @@ Heap::Heap(VM& vm, HeapType heapType)
         else
             m_scheduler = makeUnique<SpaceTimeMutatorScheduler>(*this);
 
-        if (Options::useConcurrentSweeper() && heapType == HeapType::Large)
+        if (Options::useConcurrentSweeper() && heapType == HeapType::Large) {
             m_concurrentSweeper = ConcurrentSweeper::create(vm);
+            dateInstanceSpace.forEachDirectory([&] (BlockDirectory& directory) {
+                m_concurrentSweeper->pushDirectoryToSweep(directory);
+            });
+#if CPU(EXCHANGE_OPS_ARE_FREE)
+            stringSpace.forEachDirectory([&] (BlockDirectory& directory) {
+                m_concurrentSweeper->pushDirectoryToSweep(directory);
+            });
+            ropeStringSpace.forEachDirectory([&] (BlockDirectory& directory) {
+                m_concurrentSweeper->pushDirectoryToSweep(directory);
+            });
+#endif
+        }
     } else {
         // We simulate turning off concurrent GC by making the scheduler say that the world
         // should always be stopped when the collector is running.
@@ -493,11 +505,7 @@ void Heap::lastChanceToFinalize()
     }
 
     if (m_concurrentSweeper) {
-        {
-            Locker locker { m_concurrentSweeper->lock() };
-            m_concurrentSweeper->shouldStop();
-            m_concurrentSweeper->notifyPushedDirectories(locker);
-        }
+        m_concurrentSweeper->shouldStop();
         m_concurrentSweeper->join();
         // Make sure to clear the concurrent sweeper since we could still be running a collection and
         // we don't want to notify it's thread after stopping.
@@ -1689,29 +1697,8 @@ NEVER_INLINE bool Heap::runEndPhase(GCConductor conn)
     // mutator is suspended so there is no race condition.
     deleteUnmarkedCompiledCode();
 
-    if (m_concurrentSweeper) {
-        Locker locker { m_concurrentSweeper->lock() };
-        m_concurrentSweeper->clearDirectoriesToSweep(locker);
-
-        bool didPushDirectory = false;
-        dateInstanceSpace.forEachDirectory([&] (BlockDirectory& directory) {
-            didPushDirectory = true;
-            m_concurrentSweeper->pushDirectoryToSweep(locker, &directory);
-        });
-#if CPU(EXCHANGE_OPS_ARE_FREE)
-        stringSpace.forEachDirectory([&] (BlockDirectory& directory) {
-            didPushDirectory = true;
-            m_concurrentSweeper->pushDirectoryToSweep(locker, &directory);
-        });
-        ropeStringSpace.forEachDirectory([&] (BlockDirectory& directory) {
-            didPushDirectory = true;
-            m_concurrentSweeper->pushDirectoryToSweep(locker, &directory);
-        });
-#endif
-
-        if (didPushDirectory)
-            m_concurrentSweeper->notifyPushedDirectories(locker);
-    }
+    if (m_concurrentSweeper)
+        m_concurrentSweeper->maybeNotify();
 
     notifyIncrementalSweeper();
     

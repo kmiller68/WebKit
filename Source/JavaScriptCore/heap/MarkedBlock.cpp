@@ -508,11 +508,15 @@ void MarkedBlock::Handle::sweep(FreeList* freeList)
 
 void MarkedBlock::Handle::sweepConcurrently()
 {
-    ASSERT(m_attributes.destruction == NeedsDestruction);
-    ASSERT(m_directory->isInUse(NoLockingNecessary, this));
+    {
+        // The BlockDirectory could be adding a new block as we're doing this check, which could trigger a BitVector resize.
+        Locker locker(m_directory->bitvectorLock());
+        ASSERT(m_attributes.destruction == NeedsDestruction);
+        ASSERT(m_directory->isInUse(locker, this));
 
-    if (!m_directory->isDestructible(NoLockingNecessary, this))
-        return;
+        if (!m_directory->isDestructible(locker, this))
+            return;
+    }
 
     if (space()->isMarking())
         blockHeader().m_lock.lock();

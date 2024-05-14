@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2019 Apple Inc. All rights reserved.
+ * Copyright (C) 2012-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -136,6 +136,7 @@ MarkedBlock::Handle* BlockDirectory::tryAllocateBlock(JSC::Heap& heap)
 
 void BlockDirectory::addBlock(MarkedBlock::Handle* block)
 {
+    Locker locker { m_bitvectorLock };
     unsigned index;
     if (m_freeBlockIndices.isEmpty()) {
         index = m_blocks.size();
@@ -146,7 +147,6 @@ void BlockDirectory::addBlock(MarkedBlock::Handle* block)
             ASSERT(m_bits.numBits() == oldCapacity);
             ASSERT(m_blocks.capacity() > oldCapacity);
             
-            Locker locker { m_bitvectorLock };
             subspace()->didResizeBits(m_blocks.capacity());
             m_bits.resize(m_blocks.capacity());
         }
@@ -156,7 +156,6 @@ void BlockDirectory::addBlock(MarkedBlock::Handle* block)
         m_blocks[index] = block;
     }
     
-    Locker locker { m_bitvectorLock };
     forEachBitVector(
         locker,
         [&](auto vectorRef) {
@@ -385,6 +384,14 @@ void BlockDirectory::assertNoUnswept()
     dataLog("Assertion failed: unswept not empty in ", *this, ".\n");
     dumpBits();
     ASSERT_NOT_REACHED();
+}
+
+size_t BlockDirectory::unsweptCount() const
+{
+    ConcurrentSweeper* sweeper = subspace()->space().heap().concurrentSweeper();
+    ASSERT_UNUSED(sweeper, !sweeper || sweeper->isSuspended());
+
+    return m_bits.unswept().bitCount();
 }
 
 void BlockDirectory::didFinishUsingBlock(MarkedBlock::Handle* handle)

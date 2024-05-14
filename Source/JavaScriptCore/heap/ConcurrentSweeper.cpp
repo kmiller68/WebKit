@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Apple Inc. All rights reserved.
+ * Copyright (C) 2023-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,11 +32,17 @@
 #include "MarkedBlock.h"
 #include "VM.h"
 
+#include <wtf/SimpleStats.h>
 
 namespace JSC {
 
+namespace ConcurrentSweeperInternal {
+static constexpr bool verbose = false;
+}
+
+static Atomic<size_t> numBlocksSwept;
+
 ConcurrentSweeper::ConcurrentSweeper(const AbstractLocker& locker, VM&, Box<Lock> lock, Ref<AutomaticThreadCondition>&& condition)
-    // FIXME: This should probably have its own thread type even if it's just nominally different from Compiler.
     : AutomaticThread(locker, WTFMove(lock), WTFMove(condition), ThreadType::GarbageCollection)
 {
 }
@@ -57,19 +63,12 @@ auto ConcurrentSweeper::poll(const AbstractLocker&) -> PollResult
     if (m_shouldStop)
         return PollResult::Stop;
 
-    if (m_currentDirectory)
-        return PollResult::Work;
+    if (!m_currentDirectory && (m_hasNewWork || Options::collectContinuously())) {
+        m_hasNewWork = false;
+        m_currentDirectory = m_directoriesToSweep.head();
+    }
 
-    if (m_directoriesToSweep.isEmpty())
-        return PollResult::Wait;
-
-#if ENABLE(JIT)
-    if (JITWorklist::ensureGlobalWorklist().queueLength())
-        return PollResult::Wait;
-#endif
-
-    m_currentDirectory = m_directoriesToSweep.takeFirst();
-    return PollResult::Work;
+    return m_currentDirectory ? PollResult::Work : PollResult::Wait;
 }
 
 auto ConcurrentSweeper::work() -> WorkResult
@@ -78,22 +77,64 @@ auto ConcurrentSweeper::work() -> WorkResult
 
     MarkedBlock::Handle* handle;
     {
-        Locker locker(m_currentDirectory->bitvectorLock());
-        handle = m_currentDirectory->findBlockToSweep(locker, m_currentMarkedBlockIndex);
+        Locker locker(m_currentDirectory->data.bitvectorLock());
+        handle = m_currentDirectory->data.findBlockToSweep(locker, m_currentMarkedBlockIndex);
     }
 
     if (!handle) {
-        m_currentDirectory = nullptr;
+        m_currentDirectory = m_currentDirectory->next;
         m_currentMarkedBlockIndex = 0;
         return WorkResult::Continue;
     }
 
     handle->sweepConcurrently();
+    if constexpr (ConcurrentSweeperInternal::verbose)
+        numBlocksSwept.exchangeAdd(1, std::memory_order_relaxed);
     return WorkResult::Continue;
 }
 
-void ConcurrentSweeper::notifyPushedDirectories(AbstractLocker& locker)
+void ConcurrentSweeper::threadIsStopping(const AbstractLocker&)
 {
+    dataLogLnIf(ConcurrentSweeperInternal::verbose, "Shutting down concurrent sweeper thread");
+}
+
+void ConcurrentSweeper::maybeNotify()
+{
+    ASSERT(isSuspended());
+
+    size_t unsweptCount = 0;
+    unsigned threshold = Options::concurrentSweeperThreshold();
+    for (auto* node = m_directoriesToSweep.head(); node; node = node->next) {
+        unsweptCount += node->data.unsweptCount();
+        if (unsweptCount >= threshold) {
+            if constexpr (ConcurrentSweeperInternal::verbose) {
+                dataLogLn("Hit threshold of ", threshold, " posting work: ", unsweptCount);
+                size_t count = numBlocksSwept.exchange(0, std::memory_order_relaxed);
+                dataLogLn("Swept ", count, " marked blocks since last posting");
+            }
+            Locker locker(lock());
+            m_hasNewWork = true;
+            condition().notifyAll(locker);
+            return;
+        }
+    }
+    dataLogLnIf(ConcurrentSweeperInternal::verbose, "Didn't hit threshold of ", threshold, " no work posted: ", unsweptCount);
+}
+
+void ConcurrentSweeper::clearUniquedStringImplsToMainThreadDestroySlow()
+{
+    size_t numberOfStringsFreedOnMainThread = 0;
+    m_uniquedStringsToMainThreadDestroy.consumeAll([] (Ref<StringImpl>&&) ALWAYS_INLINE_LAMBDA {
+        if constexpr (ConcurrentSweeperInternal::verbose)
+            numberOfStringsFreedOnMainThread++;
+    });
+    dataLogLnIf(ConcurrentSweeperInternal::verbose, "Freed ", numberOfStringsFreedOnMainThread, " StringImpls on the main thread");
+}
+
+void ConcurrentSweeper::shouldStop()
+{
+    Locker locker(lock());
+    m_shouldStop = true;
     condition().notifyAll(locker);
 }
 

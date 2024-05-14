@@ -54,23 +54,14 @@ public:
     }
 
     bool isSuspended() const { return m_isSuspended; }
+    void maybeNotify();
+    void shouldStop();
 
-    void shouldStop() { m_shouldStop = true; }
-    bool isStopped() const { return m_shouldStop; }
-
-    Lock& lock() { return this->AutomaticThread::lock(); }
-
-    void clearDirectoriesToSweep(AbstractLocker&)
+    void pushDirectoryToSweep(BlockDirectory& directory)
     {
-        m_directoriesToSweep.clear();
+        m_directoriesToSweep.add(directory);
     }
 
-    void pushDirectoryToSweep(AbstractLocker&, BlockDirectory* directory)
-    {
-        m_directoriesToSweep.append(directory);
-    }
-
-    void notifyPushedDirectories(AbstractLocker&);
 
     void pushUniquedStringImplToMainThreadDestroy(Ref<StringImpl>&& impl)
     {
@@ -80,24 +71,30 @@ public:
 
     void clearUniquedStringImplsToMainThreadDestroy()
     {
-        m_uniquedStringsToMainThreadDestroy.consumeAll([] (Ref<StringImpl>&&) ALWAYS_INLINE_LAMBDA { });
+        if (UNLIKELY(m_uniquedStringsToMainThreadDestroy.head()))
+            clearUniquedStringImplsToMainThreadDestroySlow();
     }
 
     ASCIILiteral name() const override { return "Concurrent Sweeper"_s; }
 private:
     PollResult poll(const AbstractLocker&) override;
     WorkResult work() override;
+    void threadIsStopping(const AbstractLocker&) override;
 
-    // This should probably be a Darwin's OSUnfairLock because that supports priority boosting which we don't support here.
+    void clearUniquedStringImplsToMainThreadDestroySlow();
+
+    // TODO: This could just be a priority boost for the thread we're running on.
     UnfairLock m_rightToSweep;
     // TODO: Should we use something more efficient for this?
     LocklessBag<Ref<StringImpl>> m_uniquedStringsToMainThreadDestroy;
-    // FIXME: Handle the worklist growing faster than we empty it and blowing up.
-    Deque<BlockDirectory*> m_directoriesToSweep;
-    BlockDirectory* m_currentDirectory { nullptr };
+    // If we ever decide this is too inefficient then we can do LocklessBag<std::array<BlockDirectory*, X>>
+    LocklessBag<BlockDirectory&> m_directoriesToSweep;
+
+    const LocklessBag<BlockDirectory&>::Node* m_currentDirectory { nullptr };
     unsigned m_currentMarkedBlockIndex { 0 };
 
-    bool m_isSuspended { false };
+    bool m_hasNewWork { true };
+    bool m_isSuspended { true };
     bool m_shouldStop { false };
 };
 

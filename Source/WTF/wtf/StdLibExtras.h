@@ -156,9 +156,13 @@ inline ToType safeCast(FromType value)
 // Returns a count of the number of bits set in 'bits'.
 inline size_t bitCount(unsigned bits)
 {
+#if COMPILER(GCC_COMPATIBLE)
+    return __builtin_popcount(bits);
+#else
     bits = bits - ((bits >> 1) & 0x55555555);
     bits = (bits & 0x33333333) + ((bits >> 2) & 0x33333333);
     return (((bits + (bits >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24;
+#endif
 }
 
 inline size_t bitCount(uint64_t bits)
