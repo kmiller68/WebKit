@@ -44,6 +44,7 @@ static Atomic<size_t> numBlocksSwept;
 
 ConcurrentSweeper::ConcurrentSweeper(const AbstractLocker& locker, VM&, Box<Lock> lock, Ref<AutomaticThreadCondition>&& condition)
     : AutomaticThread(locker, WTFMove(lock), WTFMove(condition), ThreadType::GarbageCollection)
+    , m_uniquedStringsBuffer(std::make_unique<StringImplBag::Node>(StringImplBag::Node::Data { }))
 {
 }
 
@@ -68,7 +69,12 @@ auto ConcurrentSweeper::poll(const AbstractLocker&) -> PollResult
         m_currentDirectory = m_directoriesToSweep.head();
     }
 
-    return m_currentDirectory ? PollResult::Work : PollResult::Wait;
+    if (m_currentDirectory)
+        return PollResult::Work;
+
+    // We're about to stop, make sure the mutator can see any strings.
+    flushUniquedStringImplsToMainThreadDestroy();
+    return PollResult::Wait;
 }
 
 auto ConcurrentSweeper::work() -> WorkResult
@@ -95,6 +101,8 @@ auto ConcurrentSweeper::work() -> WorkResult
 
 void ConcurrentSweeper::threadIsStopping(const AbstractLocker&)
 {
+    // This is unnecesssary but it doesn't hurt to be conservative.
+    flushUniquedStringImplsToMainThreadDestroy();
     dataLogLnIf(ConcurrentSweeperInternal::verbose, "Shutting down concurrent sweeper thread");
 }
 
@@ -123,12 +131,26 @@ void ConcurrentSweeper::maybeNotify()
 
 void ConcurrentSweeper::clearUniquedStringImplsToMainThreadDestroySlow()
 {
-    size_t numberOfStringsFreedOnMainThread = 0;
-    m_uniquedStringsToMainThreadDestroy.consumeAll([] (Ref<StringImpl>&&) ALWAYS_INLINE_LAMBDA {
-        if constexpr (ConcurrentSweeperInternal::verbose)
-            numberOfStringsFreedOnMainThread++;
+    SimpleStats stats;
+    m_uniquedStringsToMainThreadDestroy.consumeAll([&] (auto&& strings) ALWAYS_INLINE_LAMBDA {
+        if constexpr (ConcurrentSweeperInternal::verbose) {
+            unsigned bucketCount = 0;
+            for (auto string : strings) {
+                if (string)
+                    bucketCount++;
+            }
+            stats.add(bucketCount);
+        }
     });
-    dataLogLnIf(ConcurrentSweeperInternal::verbose, "Freed ", numberOfStringsFreedOnMainThread, " StringImpls on the main thread");
+    dataLogLnIf(ConcurrentSweeperInternal::verbose, "Freed ", stats.sum(), " StringImpls on the mutator thread with ", stats.mean(), " StringImpls per bucket");
+}
+
+void ConcurrentSweeper::flushUniquedStringImplsToMainThreadDestroy()
+{
+    if (!m_uniquedStringsBuffer->data.isEmpty()) {
+        m_uniquedStringsToMainThreadDestroy.add(WTFMove(m_uniquedStringsBuffer));
+        m_uniquedStringsBuffer = std::make_unique<StringImplBag::Node>(StringImplBag::Node::Data { });
+    }
 }
 
 void ConcurrentSweeper::shouldStop()

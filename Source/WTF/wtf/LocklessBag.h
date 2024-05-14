@@ -43,8 +43,8 @@ public:
         using Data = T;
         Node(Data&& value) : data(std::forward<Data>(value)) { }
 
-        Data data;
         Node* next { nullptr };
+        Data data;
     };
 
     LocklessBag()

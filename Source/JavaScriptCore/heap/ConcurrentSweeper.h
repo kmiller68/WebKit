@@ -66,7 +66,7 @@ public:
     void pushUniquedStringImplToMainThreadDestroy(Ref<StringImpl>&& impl)
     {
         ASSERT(impl->isUniqued());
-        m_uniquedStringsToMainThreadDestroy.add(WTFMove(impl));
+        m_uniquedStringsBuffer->data.append(WTFMove(impl));
     }
 
     void clearUniquedStringImplsToMainThreadDestroy()
@@ -82,15 +82,22 @@ private:
     void threadIsStopping(const AbstractLocker&) override;
 
     void clearUniquedStringImplsToMainThreadDestroySlow();
+    void flushUniquedStringImplsToMainThreadDestroy();
 
-    // TODO: This could just be a priority boost for the thread we're running on.
+    // Use an UnfairLock since it can boost the priority of the ConcurrentSweeper thread if needed.
     UnfairLock m_rightToSweep;
-    // TODO: Should we use something more efficient for this?
-    LocklessBag<Ref<StringImpl>> m_uniquedStringsToMainThreadDestroy;
-    // If we ever decide this is too inefficient then we can do LocklessBag<std::array<BlockDirectory*, X>>
-    LocklessBag<BlockDirectory&> m_directoriesToSweep;
 
-    const LocklessBag<BlockDirectory&>::Node* m_currentDirectory { nullptr };
+    using StringImplBag = LocklessBag<Vector<Ref<StringImpl>, 5>>;
+    static_assert(!is64Bit() || hasOneBitSet(sizeof(StringImplBag::Node)));
+    StringImplBag m_uniquedStringsToMainThreadDestroy;
+
+    std::unique_ptr<StringImplBag::Node> m_uniquedStringsBuffer;
+
+    // If we ever decide this is too inefficient then we could do LocklessBag<std::array<BlockDirectory*, X>>
+    using DirectoryBag = LocklessBag<BlockDirectory&>;
+    DirectoryBag m_directoriesToSweep;
+
+    const DirectoryBag::Node* m_currentDirectory { nullptr };
     unsigned m_currentMarkedBlockIndex { 0 };
 
     bool m_hasNewWork { true };
