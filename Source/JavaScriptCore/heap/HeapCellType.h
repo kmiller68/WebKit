@@ -39,9 +39,10 @@ public:
 
     CellAttributes attributes() const { return m_attributes; }
 
-    // The purpose of overriding this is to specialize the sweep for your destructors. This won't
+    // The purpose of overriding these is to specialize the sweep for your destructors. This won't
     // be called for no-destructor blocks. This must call MarkedBlock::finishSweepKnowingSubspace.
     virtual void finishSweep(MarkedBlock::Handle&, FreeList*) const;
+    virtual void finishSweepConcurrently(MarkedBlock::Handle&) const;
 
     // These get called for large objects.
     virtual void destroy(VM&, JSCell*) const;

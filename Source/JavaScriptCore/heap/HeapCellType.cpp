@@ -59,6 +59,19 @@ void HeapCellType::finishSweep(MarkedBlock::Handle& block, FreeList* freeList) c
     block.finishSweepKnowingHeapCellType(freeList, DefaultDestroyFunc());
 }
 
+void HeapCellType::finishSweepConcurrently(MarkedBlock::Handle& block) const
+{
+    block.finishSweepKnowingHeapCellType(nullptr, [] (VM& vm, JSCell* cell) ALWAYS_INLINE_LAMBDA {
+        ASSERT(cell->structureID());
+        Structure* structure = cell->structure();
+        ASSERT(structure->typeInfo().structureIsImmortal());
+        const ClassInfo* classInfo = structure->classInfoForCells();
+        MethodTable::DestroyConcurrentlyFunctionPtr destroyConcurrently = classInfo->methodTable.destroyConcurrently;
+        destroyConcurrently(vm, cell);
+    });
+}
+
+
 void HeapCellType::destroy(VM& vm, JSCell* cell) const
 {
     DefaultDestroyFunc()(vm, cell);

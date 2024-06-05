@@ -196,16 +196,11 @@ inline ToType safeCast(FromType value)
 }
 
 // Returns a count of the number of bits set in 'bits'.
-inline size_t bitCount(unsigned bits)
+template<std::integral BitType>
+inline size_t bitCount(BitType bits)
 {
-    bits = bits - ((bits >> 1) & 0x55555555);
-    bits = (bits & 0x33333333) + ((bits >> 2) & 0x33333333);
-    return (((bits + (bits >> 4)) & 0xF0F0F0F) * 0x1010101) >> 24;
-}
-
-inline size_t bitCount(uint64_t bits)
-{
-    return bitCount(static_cast<unsigned>(bits)) + bitCount(static_cast<unsigned>(bits >> 32));
+    using UnsignedType = std::make_unsigned_t<BitType>;
+    return std::popcount(bitwise_cast<UnsignedType>(bits));
 }
 
 inline constexpr bool isPowerOfTwo(size_t size) { return !(size & (size - 1)); }

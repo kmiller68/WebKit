@@ -680,7 +680,8 @@ inline MarkedBlock::Handle::EmptyMode MarkedBlock::Handle::emptyMode()
     // - It's true when the block is freshly allocated.
     // - It's true if the block had been swept in the past, all destructors were called, and that
     //   sweep proved that the block is empty.
-    return isEmpty() ? IsEmpty : NotEmpty;
+    Locker locker(m_directory->bitvectorLock());
+    return m_directory->isEmpty(this) ? IsEmpty : NotEmpty;
 }
 
 inline MarkedBlock::Handle::ScribbleMode MarkedBlock::Handle::scribbleMode()

@@ -983,6 +983,7 @@
 		52EED7942492B870008F4C93 /* FunctionAllowlist.h in Headers */ = {isa = PBXBuildFile; fileRef = 52EED7932492B868008F4C93 /* FunctionAllowlist.h */; };
 		52F6C35E1E71EB080081F4CC /* WebAssemblyWrapperFunction.h in Headers */ = {isa = PBXBuildFile; fileRef = 52F6C35C1E71EB080081F4CC /* WebAssemblyWrapperFunction.h */; };
 		52FDABC32788076B00C15B59 /* WasmIRGeneratorHelpers.h in Headers */ = {isa = PBXBuildFile; fileRef = 52FDABC22788076900C15B59 /* WasmIRGeneratorHelpers.h */; };
+		530836032BFD55E1001C195C /* ConcurrentSweeper.h in Headers */ = {isa = PBXBuildFile; fileRef = 530836012BFD55E1001C195C /* ConcurrentSweeper.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		53091F9A2ABE1F570076CBC4 /* WasmIPIntSlowPaths.h in Headers */ = {isa = PBXBuildFile; fileRef = 53091F982ABE1F570076CBC4 /* WasmIPIntSlowPaths.h */; };
 		530A66B91FA3E78B0026A545 /* UnifiedSource3-mm.mm in Sources */ = {isa = PBXBuildFile; fileRef = 530A66B11FA3E77A0026A545 /* UnifiedSource3-mm.mm */; };
 		530A66BA1FA3E78B0026A545 /* UnifiedSource4-mm.mm in Sources */ = {isa = PBXBuildFile; fileRef = 530A66B81FA3E77E0026A545 /* UnifiedSource4-mm.mm */; };
@@ -4048,6 +4049,8 @@
 		52F6C35C1E71EB080081F4CC /* WebAssemblyWrapperFunction.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = WebAssemblyWrapperFunction.h; path = js/WebAssemblyWrapperFunction.h; sourceTree = "<group>"; };
 		52FDABC22788076900C15B59 /* WasmIRGeneratorHelpers.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WasmIRGeneratorHelpers.h; sourceTree = "<group>"; };
 		5300740C22DD6F6600B9ACB3 /* JSFinalizationRegistry.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = JSFinalizationRegistry.cpp; sourceTree = "<group>"; };
+		530836002BFD55E1001C195C /* ConcurrentSweeper.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ConcurrentSweeper.cpp; sourceTree = "<group>"; };
+		530836012BFD55E1001C195C /* ConcurrentSweeper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ConcurrentSweeper.h; sourceTree = "<group>"; };
 		53091F972ABE1F570076CBC4 /* WasmIPIntSlowPaths.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = WasmIPIntSlowPaths.cpp; sourceTree = "<group>"; };
 		53091F982ABE1F570076CBC4 /* WasmIPIntSlowPaths.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WasmIPIntSlowPaths.h; sourceTree = "<group>"; };
 		530A63401FA3E31C0026A545 /* SourcesCocoa.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = SourcesCocoa.txt; sourceTree = "<group>"; };
@@ -7068,6 +7071,8 @@
 				0FDCE1271FAFA859006F3901 /* CompleteSubspace.cpp */,
 				0FDCE1281FAFA859006F3901 /* CompleteSubspace.h */,
 				0FD2FD9320B52BDD00F09441 /* CompleteSubspaceInlines.h */,
+				530836002BFD55E1001C195C /* ConcurrentSweeper.cpp */,
+				530836012BFD55E1001C195C /* ConcurrentSweeper.h */,
 				146B14DB12EB5B12001BEC1B /* ConservativeRoots.cpp */,
 				149DAAF212EB559D0083B12B /* ConservativeRoots.h */,
 				0F41545A1FD20B1F001B58F6 /* ConstraintConcurrency.h */,
@@ -10635,6 +10640,7 @@
 				0F6FC751196110A800E1D02D /* ComplexGetStatus.h in Headers */,
 				E36EDCE524F0975700E60DA2 /* Concurrency.h in Headers */,
 				0FDB2CEA174896C7007B3C1B /* ConcurrentJSLock.h in Headers */,
+				530836032BFD55E1001C195C /* ConcurrentSweeper.h in Headers */,
 				BC18C3F50E16F5CD00B34460 /* config.h in Headers */,
 				658824AF1E5CFDB000FB7359 /* ConfigFile.h in Headers */,
 				144836E7132DA7BE005BE785 /* ConservativeRoots.h in Headers */,

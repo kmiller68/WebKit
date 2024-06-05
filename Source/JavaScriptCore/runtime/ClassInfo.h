@@ -51,6 +51,9 @@ struct MethodTable {
     using DestroyFunctionPtr = void (*)(JSCell*);
     DestroyFunctionPtr METHOD_TABLE_ENTRY(destroy);
 
+    using DestroyConcurrentlyFunctionPtr = void (*)(VM&, JSCell*);
+    DestroyConcurrentlyFunctionPtr METHOD_TABLE_ENTRY(destroyConcurrently);
+
     using GetCallDataFunctionPtr = CallData (*)(JSCell*);
     GetCallDataFunctionPtr METHOD_TABLE_ENTRY(getCallData);
 
@@ -131,6 +134,7 @@ struct MethodTable {
     JSCastingHelpers::InheritsTraits<ClassName>::typeRange, \
     { \
         &ClassName::destroy, \
+        &ClassName::destroyConcurrently, \
         &ClassName::getCallData, \
         &ClassName::getConstructData, \
         &ClassName::put, \

@@ -116,6 +116,7 @@ public:
     JSCell(CreatingWellDefinedBuiltinCellTag, StructureID, int32_t typeInfoBlob);
 
     JS_EXPORT_PRIVATE static void destroy(JSCell*);
+    JS_EXPORT_PRIVATE static void destroyConcurrently(VM&, JSCell*);
 
 protected:
     JSCell(VM&, Structure*);

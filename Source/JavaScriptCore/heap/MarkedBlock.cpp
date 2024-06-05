@@ -585,6 +585,11 @@ void MarkedBlock::Handle::sweep(FreeList* freeList)
     bool needsDestruction = m_attributes.destruction == NeedsDestruction
         && m_directory->isDestructible(this);
 
+    // // TODO: Is this the right spot for this?
+    ConcurrentSweeper* concurrentSweeper = vm().heap.concurrentSweeper();
+    if (concurrentSweeper)
+        concurrentSweeper->clearStringImplsToMainThreadDeref();
+
     m_weakSet.sweep();
 
     if (sweepMode == SweepOnly && !needsDestruction) {
@@ -687,6 +692,29 @@ void MarkedBlock::Handle::sweep(FreeList* freeList)
     // The template arguments don't matter because the first one is false.
     specializedSweep<false, SpecializedSweepData { }>(freeList, emptyMode, sweepMode, BlockHasNoDestructors, scribbleMode, newlyAllocatedMode, marksMode, [] (VM&, JSCell*) { });
     validateSweep();
+}
+
+void MarkedBlock::Handle::sweepConcurrently()
+{
+    {
+        // We need this lock here because the mutator could be resizing the bit vectors as we check.
+        Locker locker(m_directory->bitvectorLock());
+        ASSERT(m_attributes.destruction == NeedsDestruction);
+        ASSERT(m_directory->isInUse(this));
+
+        if (!m_directory->isDestructible(this)) {
+            m_directory->setIsUnswept(this, false);
+            m_directory->didFinishUsingBlock(locker, this);
+            return;
+        }
+    }
+
+    if (space()->isMarking())
+        blockHeader().m_lock.lock();
+
+    subspace()->didBeginSweepingToFreeListConcurrently(this);
+    subspace()->finishSweepConcurrently(*this);
+    m_directory->didFinishUsingBlock(this);
 }
 
 NO_RETURN_DUE_TO_CRASH NEVER_INLINE void MarkedBlock::dumpInfoAndCrashForInvalidHandleV2(AbstractLocker&, HeapCell* heapCell)

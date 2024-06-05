@@ -39,6 +39,7 @@ public:
     };
 
     void finishSweep(MarkedBlock::Handle&, FreeList*) const final;
+    void finishSweepConcurrently(MarkedBlock::Handle&) const final;
     void destroy(VM&, JSCell*) const final;
 };
 

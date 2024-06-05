@@ -34,6 +34,11 @@ public:
         static_cast<DateInstance*>(cell)->DateInstance::~DateInstance();
     }
 
+    static void destroyConcurrently(VM&, JSCell* cell)
+    {
+        static_cast<DateInstance*>(cell)->DateInstance::~DateInstance();
+    }
+
     template<typename CellType, SubspaceAccess mode>
     static GCClient::IsoSubspace* subspaceFor(VM& vm)
     {

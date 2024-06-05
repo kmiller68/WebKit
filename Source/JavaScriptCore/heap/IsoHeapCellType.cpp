@@ -34,9 +34,10 @@ namespace JSC {
 
 WTF_MAKE_TZONE_ALLOCATED_IMPL(IsoHeapCellType);
 
-IsoHeapCellType::IsoHeapCellType(DestructionMode destructionMode, DestroyFunctionPtr destroyFunction)
+IsoHeapCellType::IsoHeapCellType(DestructionMode destructionMode, DestroyFunctionPtr destroyFunction, DestroyConcurrentlyFunctionPtr destroyConcurrently)
     : HeapCellType(CellAttributes(destructionMode, HeapCell::JSCell))
     , m_destroy(destroyFunction)
+    , m_destroyConcurrently(destroyConcurrently)
 {
 }
 
@@ -45,6 +46,13 @@ IsoHeapCellType::~IsoHeapCellType() = default;
 void IsoHeapCellType::finishSweep(MarkedBlock::Handle& handle, FreeList* freeList) const
 {
     handle.finishSweepKnowingHeapCellType(freeList, *this);
+}
+
+void IsoHeapCellType::finishSweepConcurrently(MarkedBlock::Handle& handle) const
+{
+    handle.finishSweepKnowingHeapCellType(nullptr, [&] (VM& vm, JSCell* cell) ALWAYS_INLINE_LAMBDA {
+        m_destroyConcurrently(vm, cell);
+    });
 }
 
 void IsoHeapCellType::destroy(VM&, JSCell* cell) const

@@ -27,6 +27,7 @@
 #include "BlockDirectory.h"
 
 #include "BlockDirectoryInlines.h"
+#include "ConcurrentSweeper.h"
 #include "Heap.h"
 #include "MarkedSpaceInlines.h"
 #include "SubspaceInlines.h"
@@ -497,6 +498,12 @@ MarkedSpace& BlockDirectory::markedSpace() const
     return m_subspace->space();
 }
 
+size_t BlockDirectory::unsweptCount() const
+{
+    assertIsMutatorOrMutatorIsStopped();
+    return unsweptBitsView().bitCount();
+}
+
 #if ASSERT_ENABLED
 void BlockDirectory::assertIsMutatorOrMutatorIsStopped() const
 {
@@ -514,6 +521,9 @@ void BlockDirectory::assertIsMutatorOrMutatorIsStopped() const
 void BlockDirectory::assertSweeperIsSuspended() const
 {
     assertIsMutatorOrMutatorIsStopped();
+    ConcurrentSweeper* sweeper = markedSpace().heap().concurrentSweeper();
+    ASSERT(!sweeper || sweeper->isSuspended());
+
 }
 #endif
 } // namespace JSC

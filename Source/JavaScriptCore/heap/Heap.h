@@ -63,6 +63,7 @@ namespace JSC {
 class CodeBlock;
 class CodeBlockSet;
 class CollectingScope;
+class ConcurrentSweeper;
 class ConservativeRoots;
 class GCDeferralContext;
 class EdenGCActivityCallback;
@@ -347,6 +348,7 @@ public:
     JS_EXPORT_PRIVATE void scheduleOpportunisticFullCollection();
 
     JS_EXPORT_PRIVATE IncrementalSweeper& sweeper();
+    ConcurrentSweeper* concurrentSweeper() { return m_concurrentSweeper.get(); }
 
     void addObserver(HeapObserver* observer) { m_observers.append(observer); }
     void removeObserver(HeapObserver* observer) { m_observers.removeFirst(observer); }
@@ -880,6 +882,7 @@ private:
     RefPtr<GCActivityCallback> m_fullActivityCallback;
     RefPtr<GCActivityCallback> m_edenActivityCallback;
     Ref<IncrementalSweeper> m_sweeper;
+    RefPtr<ConcurrentSweeper> m_concurrentSweeper;
     Ref<StopIfNecessaryTimer> m_stopIfNecessaryTimer;
 
     Vector<HeapObserver*> m_observers;

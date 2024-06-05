@@ -152,6 +152,7 @@ public:
         // the block. If it's not set and the block has nothing marked, then we'll make the
         // mistake of making a pop freelist rather than a bump freelist.
         void sweep(FreeList*);
+        void sweepConcurrently();
         
         // This is to be called by Subspace.
         // Note: We can't use std::optional because apparently it's non-structural.

@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include "ConcurrentSweeper.h"
 #include "JSGlobalObjectInlines.h"
 #include "JSString.h"
 #include "KeyAtomStringCacheInlines.h"
@@ -45,6 +46,26 @@ ALWAYS_INLINE void JSRopeString::destroy(JSCell* cell)
     if (string->isRope())
         return;
     string->valueInternal().~String();
+}
+
+ALWAYS_INLINE void JSString::destroyConcurrently(VM& vm, JSCell* cell)
+{
+    auto* string = static_cast<JSString*>(cell);
+    StringImpl* impl = string->valueInternal().releaseImpl().leakRef();
+    StringImpl::DerefResult derefResult = impl->tryDerefConcurrently();
+    if (UNLIKELY(derefResult == StringImpl::DerefResult::NeedsMainThreadDeref))
+        vm.heap.concurrentSweeper()->pushStringImplToMainThreadDeref(adoptRef(*impl));
+}
+
+ALWAYS_INLINE void JSRopeString::destroyConcurrently(VM& vm, JSCell* cell)
+{
+    auto* string = static_cast<JSRopeString*>(cell);
+    if (string->isRope())
+        return;
+    StringImpl* impl = string->valueInternal().releaseImpl().leakRef();
+    StringImpl::DerefResult derefResult = impl->tryDerefConcurrently();
+    if (UNLIKELY(derefResult == StringImpl::DerefResult::NeedsMainThreadDeref))
+        vm.heap.concurrentSweeper()->pushStringImplToMainThreadDeref(adoptRef(*impl));
 }
 
 bool JSString::equal(JSGlobalObject* globalObject, JSString* other) const

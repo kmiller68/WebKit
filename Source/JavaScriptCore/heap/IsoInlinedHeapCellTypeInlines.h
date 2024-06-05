@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Apple Inc. All rights reserved.
+ * Copyright (C) 2021-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -48,6 +48,14 @@ inline void IsoInlinedHeapCellType<CellType>::finishSweep(MarkedBlock::Handle& h
 {
     constexpr std::pair<unsigned, unsigned> atomsPerCellAndStartAtom = MarkedBlock::Handle::atomsPerCellAndStartAtom(WTF::roundUpToMultipleOf<MarkedBlock::atomSize>(sizeof(CellType)));
     handle.finishSweepKnowingHeapCellType<true, atomsPerCellAndStartAtom.first, atomsPerCellAndStartAtom.second>(freeList, DestroyFunc());
+}
+
+template<typename CellType>
+inline void IsoInlinedHeapCellType<CellType>::finishSweepConcurrently(MarkedBlock::Handle& handle) const
+{
+    handle.finishSweepKnowingHeapCellType(nullptr, [] (VM& vm, JSCell* cell) ALWAYS_INLINE_LAMBDA {
+        CellType::destroyConcurrently(vm, cell);
+    });
 }
 
 template<typename CellType>

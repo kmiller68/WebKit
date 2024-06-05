@@ -113,6 +113,7 @@ public:
 
     static constexpr bool needsDestruction = true;
     static void destroy(JSCell*);
+    static void destroyConcurrently(VM&, JSCell*);
 
     // We specialize the string subspace to get the fastest possible sweep. This wouldn't be
     // necessary if JSString didn't have a destructor.
@@ -323,6 +324,7 @@ class JSRopeString final : public JSString {
     friend class RegExpSubstringGlobalAtomCache;
 public:
     static void destroy(JSCell*);
+    static void destroyConcurrently(VM&, JSCell*);
 
     template<typename, SubspaceAccess>
     static GCClient::IsoSubspace* subspaceFor(VM& vm)

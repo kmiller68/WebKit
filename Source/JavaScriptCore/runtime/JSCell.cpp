@@ -46,6 +46,11 @@ void JSCell::destroy(JSCell* cell)
     cell->JSCell::~JSCell();
 }
 
+void JSCell::destroyConcurrently(VM&, JSCell*)
+{
+    UNREACHABLE_FOR_PLATFORM();
+}
+
 void JSCell::dump(PrintStream& out) const
 {
     methodTable()->dumpToStream(this, out);

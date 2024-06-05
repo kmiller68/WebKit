@@ -56,6 +56,7 @@ public:
     AlignedMemoryAllocator* alignedMemoryAllocator() const { return m_alignedMemoryAllocator; }
     
     void finishSweep(MarkedBlock::Handle&, FreeList*);
+    void finishSweepConcurrently(MarkedBlock::Handle&);
     void destroy(VM&, JSCell*);
 
     void prepareForAllocation();
@@ -98,6 +99,7 @@ public:
     virtual void didResizeBits(unsigned newSize);
     virtual void didRemoveBlock(unsigned blockIndex);
     virtual void didBeginSweepingToFreeList(MarkedBlock::Handle*);
+    virtual void didBeginSweepingToFreeListConcurrently(MarkedBlock::Handle*);
 
     bool isIsoSubspace() const { return m_isIsoSubspace; }
     bool isPreciseOnly() const { return m_isPreciseOnly; }
