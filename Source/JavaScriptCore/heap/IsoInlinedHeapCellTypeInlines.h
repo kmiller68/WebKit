@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Apple Inc. All rights reserved.
+ * Copyright (C) 2021-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -47,6 +47,14 @@ template<typename CellType>
 inline void IsoInlinedHeapCellType<CellType>::finishSweep(MarkedBlock::Handle& handle, FreeList* freeList) const
 {
     handle.finishSweepKnowingHeapCellType(freeList, DestroyFunc());
+}
+
+template<typename CellType>
+inline void IsoInlinedHeapCellType<CellType>::finishSweepConcurrently(MarkedBlock::Handle& handle) const
+{
+    handle.finishSweepKnowingHeapCellType(nullptr, [] (VM& vm, JSCell* cell) ALWAYS_INLINE_LAMBDA {
+        CellType::destroyConcurrently(vm, cell);
+    });
 }
 
 template<typename CellType>

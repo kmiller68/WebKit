@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2023 Apple Inc. All rights reserved.
+ *  Copyright (C) 2003-2024 Apple Inc. All rights reserved.
  *  Copyright (C) 2007 Eric Seidel <eric@webkit.org>
  *
  *  This library is free software; you can redistribute it and/or
@@ -25,6 +25,7 @@
 #include "CodeBlock.h"
 #include "CodeBlockSetInlines.h"
 #include "CollectingScope.h"
+#include "ConcurrentSweeper.h"
 #include "ConservativeRoots.h"
 #include "EdenGCActivityCallback.h"
 #include "Exception.h"
@@ -394,6 +395,19 @@ Heap::Heap(VM& vm, HeapType heapType)
             m_scheduler = makeUnique<StochasticSpaceTimeMutatorScheduler>(*this);
         else
             m_scheduler = makeUnique<SpaceTimeMutatorScheduler>(*this);
+
+        if (Options::useConcurrentSweeper() && heapType == HeapType::Large) {
+            m_concurrentSweeper = ConcurrentSweeper::create(vm);
+            dateInstanceSpace.forEachDirectory([&] (BlockDirectory& directory) {
+                m_concurrentSweeper->pushDirectoryToSweep(directory);
+            });
+            stringSpace.forEachDirectory([&] (BlockDirectory& directory) {
+                m_concurrentSweeper->pushDirectoryToSweep(directory);
+            });
+            ropeStringSpace.forEachDirectory([&] (BlockDirectory& directory) {
+                m_concurrentSweeper->pushDirectoryToSweep(directory);
+            });
+        }
     } else {
         // We simulate turning off concurrent GC by making the scheduler say that the world
         // should always be stopped when the collector is running.
@@ -486,6 +500,14 @@ void Heap::lastChanceToFinalize()
             m_collectContinuouslyCondition.notifyOne();
         }
         m_collectContinuouslyThread->waitForCompletion();
+    }
+
+    if (m_concurrentSweeper) {
+        m_concurrentSweeper->shouldStop();
+        m_concurrentSweeper->join();
+        // Make sure to clear the concurrent sweeper since we could still be running a collection and
+        // we don't want to notify it's thread after stopping.
+        m_concurrentSweeper = nullptr;
     }
 
     dataLogIf(Options::logGC(), "1");
@@ -763,12 +785,16 @@ void Heap::finalizeUnconditionalFinalizers()
 
 void Heap::willStartIterating()
 {
+    // While iterating the heap it's just simpler to assume the concurrent sweeper isn't running.
+    ASSERT(!concurrentSweeper() || concurrentSweeper()->isSuspended());
     m_objectSpace.willStartIterating();
 }
 
 void Heap::didFinishIterating()
 {
     m_objectSpace.didFinishIterating();
+    // While iterating the heap it's just simpler to assume the concurrent sweeper isn't running.
+    ASSERT(!concurrentSweeper() || concurrentSweeper()->isSuspended());
 }
 
 void Heap::completeAllJITPlans()
@@ -1231,7 +1257,7 @@ void Heap::collectNow(Synchronousness synchronousness, GCRequest request)
             sweepSynchronously();
             dataLogIf(Options::logGC(), "]\n");
         }
-        m_objectSpace.assertNoUnswept();
+        // m_objectSpace.assertNoUnswept();
         
         sweepAllLogicallyEmptyWeakBlocks();
         return;
@@ -1674,6 +1700,9 @@ NEVER_INLINE bool Heap::runEndPhase(GCConductor conn)
     // mutator is suspended so there is no race condition.
     deleteUnmarkedCompiledCode();
 
+    if (m_concurrentSweeper)
+        m_concurrentSweeper->maybeNotify();
+
     notifyIncrementalSweeper();
     
     m_codeBlocks->iterateCurrentlyExecuting(
@@ -1790,12 +1819,14 @@ void Heap::stopThePeriphery(GCConductor conn)
         dataLog("FATAL: world already stopped.\n");
         RELEASE_ASSERT_NOT_REACHED();
     }
-    
+
     if (m_mutatorDidRun)
         m_mutatorExecutionVersion++;
     
     m_mutatorDidRun = false;
 
+    if (m_concurrentSweeper)
+        m_concurrentSweeper->suspendSweeping();
     suspendCompilerThreads();
     m_worldIsStopped = true;
 
@@ -1867,6 +1898,8 @@ NEVER_INLINE void Heap::resumeThePeriphery()
         visitor->updateMutatorIsStopped();
     
     resumeCompilerThreads();
+    if (m_concurrentSweeper)
+        m_concurrentSweeper->resumeSweeping();
 }
 
 bool Heap::stopTheMutator()

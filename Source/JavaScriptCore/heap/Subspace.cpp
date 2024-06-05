@@ -61,6 +61,11 @@ void Subspace::finishSweep(MarkedBlock::Handle& block, FreeList* freeList)
     m_heapCellType->finishSweep(block, freeList);
 }
 
+void Subspace::finishSweepConcurrently(MarkedBlock::Handle& block)
+{
+    m_heapCellType->finishSweepConcurrently(block);
+}
+
 void Subspace::destroy(VM& vm, JSCell* cell)
 {
     m_heapCellType->destroy(vm, cell);
@@ -139,6 +144,10 @@ void Subspace::didRemoveBlock(unsigned)
 }
 
 void Subspace::didBeginSweepingToFreeList(MarkedBlock::Handle*)
+{
+}
+
+void Subspace::didBeginSweepingToFreeListConcurrently(MarkedBlock::Handle*)
 {
 }
 

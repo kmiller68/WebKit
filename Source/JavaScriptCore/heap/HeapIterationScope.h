@@ -25,12 +25,14 @@
 
 #pragma once
 
+#include "ConcurrentSweeper.h"
 #include "Heap.h"
 #include <wtf/Noncopyable.h>
 
 namespace JSC {
 
 class HeapIterationScope {
+    WTF_FORBID_HEAP_ALLOCATION;
     WTF_MAKE_NONCOPYABLE(HeapIterationScope);
 public:
     HeapIterationScope(Heap&);
@@ -38,6 +40,7 @@ public:
 
 private:
     JSC::Heap& m_heap;
+    bool m_didSuspendSweeper { false };
 };
 
 inline HeapIterationScope::HeapIterationScope(JSC::Heap& heap)
@@ -47,12 +50,20 @@ inline HeapIterationScope::HeapIterationScope(JSC::Heap& heap)
     // but adding `ASSERT_WITH_MESSAGE(heap.vm().currentThreadIsHoldingAPILock(), "Trying to iterate the JS heap without the API lock");`
     // causes spurious crashes since the only thing technically needed is just heap.hasAccess() but that doesn't verify this thread is
     // the one with access only that *some* thread has access.
+
+    // While iterating the heap it's just simpler to assume the concurrent sweeper isn't running.
+    if (m_heap.concurrentSweeper() && !m_heap.concurrentSweeper()->isSuspended()) {
+        m_didSuspendSweeper = true;
+        m_heap.concurrentSweeper()->suspendSweeping();
+    }
     m_heap.willStartIterating();
 }
 
 inline HeapIterationScope::~HeapIterationScope()
 {
     m_heap.didFinishIterating();
+    if (m_didSuspendSweeper)
+        m_heap.concurrentSweeper()->resumeSweeping();
 }
 
 } // namespace JSC

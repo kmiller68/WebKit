@@ -177,6 +177,7 @@ void MarkedBlock::Handle::resumeAllocating(FreeList& freeList)
 {
     BlockDirectory* directory = this->directory();
     directory->assertSweeperIsSuspended();
+    ASSERT(!directory->isInUse(this));
     {
         Locker locker { blockHeader().m_lock };
         
@@ -196,10 +197,9 @@ void MarkedBlock::Handle::resumeAllocating(FreeList& freeList)
         }
     }
 
-    directory->setIsInUse(this, true);
-
     // Re-create our free list from before stopping allocation. Note that this may return an empty
     // freelist, in which case the block will still be Marked!
+    directory->setIsInUse(this, true);
     sweep(&freeList);
 }
 
@@ -422,6 +422,11 @@ void MarkedBlock::Handle::sweep(FreeList* freeList)
     bool needsDestruction = m_attributes.destruction == NeedsDestruction
         && m_directory->isDestructible(this);
 
+    // // TODO: Is this the right spot for this?
+    ConcurrentSweeper* concurrentSweeper = vm().heap.concurrentSweeper();
+    if (concurrentSweeper)
+        concurrentSweeper->clearStringImplsToMainThreadDeref();
+
     m_weakSet.sweep();
 
     // If we don't "release" our read access without locking then the ThreadSafetyAnalysis code gets upset with the locker below.
@@ -500,6 +505,29 @@ void MarkedBlock::Handle::sweep(FreeList* freeList)
 
     // The template arguments don't matter because the first one is false.
     specializedSweep<false, IsEmpty, SweepOnly, BlockHasNoDestructors, DontScribble, HasNewlyAllocated, MarksStale>(freeList, emptyMode, sweepMode, BlockHasNoDestructors, scribbleMode, newlyAllocatedMode, marksMode, [] (VM&, JSCell*) { });
+}
+
+void MarkedBlock::Handle::sweepConcurrently()
+{
+    {
+        // We need this lock here because the mutator could be resizing the bit vectors as we check.
+        Locker locker(m_directory->bitvectorLock());
+        ASSERT(m_attributes.destruction == NeedsDestruction);
+        ASSERT(m_directory->isInUse(this));
+
+        if (!m_directory->isDestructible(this)) {
+            m_directory->setIsUnswept(this, false);
+            m_directory->didFinishUsingBlock(locker, this);
+            return;
+        }
+    }
+
+    if (space()->isMarking())
+        blockHeader().m_lock.lock();
+
+    subspace()->didBeginSweepingToFreeListConcurrently(this);
+    subspace()->finishSweepConcurrently(*this);
+    m_directory->didFinishUsingBlock(this);
 }
 
 bool MarkedBlock::Handle::isFreeListedCell(const void* target) const

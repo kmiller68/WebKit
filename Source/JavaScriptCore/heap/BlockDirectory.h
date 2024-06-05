@@ -73,6 +73,7 @@ public:
     void sweep();
     void shrink();
     void assertNoUnswept();
+    size_t unsweptCount() const;
     size_t cellSize() const { return m_cellSize; }
     CellAttributes attributes() const { return m_attributes; }
     bool needsDestruction() const { return m_attributes.destruction == NeedsDestruction; }

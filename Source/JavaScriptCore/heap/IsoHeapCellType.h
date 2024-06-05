@@ -35,6 +35,7 @@ class JS_EXPORT_PRIVATE IsoHeapCellType final : public HeapCellType {
     WTF_MAKE_TZONE_ALLOCATED(IsoHeapCellType);
 public:
     using DestroyFunctionPtr = void (*)(JSCell*);
+    using DestroyConcurrentlyFunctionPtr = void (*)(VM&, JSCell*);
 
     ~IsoHeapCellType();
 
@@ -42,19 +43,22 @@ public:
     struct Args {
         Args()
             : mode(CellType::needsDestruction ? NeedsDestruction : DoesNotNeedDestruction)
-            , functionPtr(&CellType::destroy)
+            , destroyPtr(&CellType::destroy)
+            , destroyConcurrentlyPtr(&CellType::destroyConcurrently)
         { }
 
         DestructionMode mode;
-        DestroyFunctionPtr functionPtr;
+        DestroyFunctionPtr destroyPtr;
+        DestroyConcurrentlyFunctionPtr destroyConcurrentlyPtr;
     };
 
     template<typename CellType>
     IsoHeapCellType(Args<CellType>&& args)
-        : IsoHeapCellType(args.mode, args.functionPtr)
+        : IsoHeapCellType(args.mode, args.destroyPtr, args.destroyConcurrentlyPtr)
     { }
 
     void finishSweep(MarkedBlock::Handle&, FreeList*) const final;
+    void finishSweepConcurrently(MarkedBlock::Handle&) const final;
     void destroy(VM&, JSCell*) const final;
 
     ALWAYS_INLINE void operator()(VM&, JSCell* cell) const
@@ -63,9 +67,10 @@ public:
     }
 
 private:
-    IsoHeapCellType(DestructionMode, DestroyFunctionPtr);
+    IsoHeapCellType(DestructionMode, DestroyFunctionPtr, DestroyConcurrentlyFunctionPtr);
 
     DestroyFunctionPtr WTF_VTBL_FUNCPTR_PTRAUTH_STR("IsoHeapCellType.destroy") m_destroy;
+    DestroyConcurrentlyFunctionPtr WTF_VTBL_FUNCPTR_PTRAUTH_STR("IsoHeapCellType.destroyConcurrently") m_destroyConcurrently;
 };
 
 } // namespace JSC
