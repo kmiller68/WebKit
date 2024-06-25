@@ -54,7 +54,7 @@ public:
     void* tryAllocateFromLowerTier();
     void destroyLowerTierFreeList();
 
-    void sweep();
+    void sweepSynchronously();
 
     template<typename Func> void forEachLowerTierFreeListedPreciseAllocation(const Func&);
 

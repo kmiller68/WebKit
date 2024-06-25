@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Apple Inc. All rights reserved.
+ * Copyright (C) 2016-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,15 +28,6 @@
 
 namespace JSC {
 
-FreeList::FreeList(unsigned cellSize)
-    : m_cellSize(cellSize)
-{
-}
-
-FreeList::~FreeList()
-{
-}
-
 void FreeList::clear()
 {
     m_intervalStart = nullptr;
@@ -56,6 +47,12 @@ void FreeList::initialize(FreeCell* start, uint64_t secret, unsigned bytes)
     m_nextInterval = start;
     FreeCell::advance(m_secret, m_nextInterval, m_intervalStart, m_intervalEnd);
     m_originalSize = bytes;
+}
+
+void FreeList::stealFrom(FreeList& other)
+{
+    std::swap(*this, other);
+    other.clear();
 }
 
 bool FreeList::contains(HeapCell* target) const

@@ -35,6 +35,27 @@
 
 namespace JSC {
 
+inline bool MarkedBlock::Handle::isFreeListed() const
+{
+    m_directory->assertIsMutatorOrMutatorIsStopped();
+    return m_directory->isFreeListed(this);
+}
+
+inline bool MarkedBlock::Handle::isFreeListedOnLocalAllocator() const
+{
+    if (isFreeListed()) {
+        if (m_cachedFreeList.isClear()) {
+            bool foundLocalAllocator = false;
+            m_directory->m_localAllocators.forEach([&] (LocalAllocator* allocator) {
+                    foundLocalAllocator |= allocator->currentBlock() == this;
+                });
+            ASSERT(foundLocalAllocator);
+            return true;
+        }
+    }
+    return false;
+}
+
 inline unsigned MarkedBlock::Handle::cellsPerBlock()
 {
     return MarkedSpace::blockPayload / cellSize();
@@ -149,7 +170,7 @@ ALWAYS_INLINE bool MarkedBlock::Handle::isLive(HeapVersion markingVersion, HeapV
         MarkedBlock::Header& fencedHeader = fencedBlock.header();
         MarkedBlock::Handle* fencedThis = fenceBefore.consume(this);
 
-        ASSERT_UNUSED(fencedThis, !fencedThis->isFreeListed());
+        ASSERT_UNUSED(fencedThis, !fencedThis->isFreeListedOnLocalAllocator());
 
         HeapVersion myNewlyAllocatedVersion = fencedHeader.m_newlyAllocatedVersion;
         if (myNewlyAllocatedVersion == newlyAllocatedVersion) {
@@ -172,7 +193,7 @@ ALWAYS_INLINE bool MarkedBlock::Handle::isLive(HeapVersion markingVersion, HeapV
 
     Locker locker { header.m_lock };
 
-    ASSERT(!isFreeListed());
+    ASSERT(!isFreeListedOnLocalAllocator());
 
     HeapVersion myNewlyAllocatedVersion = header.m_newlyAllocatedVersion;
     if (myNewlyAllocatedVersion == newlyAllocatedVersion)
@@ -225,7 +246,7 @@ inline bool MarkedBlock::Handle::areMarksStaleForSweep()
 //     destructionMode = DoesNotNeedDestruction
 //         marksMode = MarksNotStale (3)
 //         marksMode = MarksStale (4)
-//     destructionMode = NeedsDestruction
+//     destructionMode = NeedsDestruction || NeedsMainThreadDestruction
 //         marksMode = MarksNotStale (5)
 //         marksMode = MarksStale (6)
 //
@@ -292,11 +313,10 @@ void MarkedBlock::Handle::specializedSweep(FreeList* freeList, MarkedBlock::Hand
         m_directory->setIsDestructible(this, false);
         m_directory->setIsEmpty(this, false);
         if (sweepMode == SweepToFreeList)
-            m_isFreeListed = true;
+            m_directory->setIsFreeListed(this, true);
         else if (isEmpty)
             m_directory->setIsEmpty(this, true);
     };
-    UNUSED_PARAM(setBits);
 
     if (Options::useBumpAllocator()
         && emptyMode == IsEmpty
@@ -310,6 +330,8 @@ void MarkedBlock::Handle::specializedSweep(FreeList* freeList, MarkedBlock::Hand
                     out.print("Block lock is held: ", header.m_lock.isHeld(), "\n");
                     out.print("Marking version of block: ", header.m_markingVersion, "\n");
                     out.print("Marking version of heap: ", space()->markingVersion(), "\n");
+                    dumpState(out);
+                    out.print("\n");
                     UNREACHABLE_FOR_PLATFORM();
                 });
         }
@@ -419,6 +441,8 @@ void MarkedBlock::Handle::specializedSweep(FreeList* freeList, MarkedBlock::Hand
     if (sweepMode == SweepToFreeList && newlyAllocatedMode == HasNewlyAllocated)
         header.m_newlyAllocatedVersion = MarkedSpace::nullVersion;
 
+    ASSERT(!isEmpty || marksMode != MarksNotStale || header.m_marks.isEmpty());
+
     if (space()->isMarking())
         header.m_lock.unlock();
 
@@ -514,7 +538,7 @@ void MarkedBlock::Handle::finishSweepKnowingHeapCellType(FreeList* freeList, con
 
 inline MarkedBlock::Handle::SweepDestructionMode MarkedBlock::Handle::sweepDestructionMode()
 {
-    if (m_attributes.destruction == NeedsDestruction) {
+    if (m_attributes.destruction != DoesNotNeedDestruction) {
         if (space()->isMarking())
             return BlockHasDestructorsAndCollectorIsRunning;
         return BlockHasDestructors;

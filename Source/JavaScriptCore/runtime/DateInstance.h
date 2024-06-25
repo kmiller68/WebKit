@@ -1,6 +1,6 @@
 /*
  *  Copyright (C) 1999-2000 Harri Porten (porten@kde.org)
- *  Copyright (C) 2008-2023 Apple Inc. All rights reserved.
+ *  Copyright (C) 2008-2024 Apple Inc. All rights reserved.
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -29,6 +29,8 @@ public:
     using Base = JSNonFinalObject;
 
     static constexpr bool needsDestruction = true;
+    static constexpr bool allowsConcurrentDestruction = true;
+
     static void destroy(JSCell* cell)
     {
         static_cast<DateInstance*>(cell)->DateInstance::~DateInstance();

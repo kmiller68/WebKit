@@ -53,10 +53,12 @@ public:
     enum ZapReason : int8_t { Unspecified, Destruction, StopAllocating };
     void zap(ZapReason reason)
     {
+        UNUSED_PARAM(reason);
         uint32_t* cellWords = bitwise_cast<uint32_t*>(this);
         cellWords[0] = 0;
         // Leaving cellWords[1] alone for crash analysis if needed.
-        cellWords[2] = reason;
+        // TODO: Figure out if any bits in cellWords[1] could be used for reason.
+        // cellWords[2] = reason;
     }
     bool isZapped() const { return !*bitwise_cast<const uint32_t*>(this); }
 

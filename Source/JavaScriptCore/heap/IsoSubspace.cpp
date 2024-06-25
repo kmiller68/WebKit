@@ -82,7 +82,8 @@ void IsoSubspace::didBeginSweepingToFreeList(MarkedBlock::Handle* block)
 
 void IsoSubspace::didBeginSweepingToFreeListConcurrently(MarkedBlock::Handle*)
 {
-    ASSERT(m_cellSets.isEmpty());
+    // FIXME: Make this work. Maybe it just does?
+    ASSERT_WITH_MESSAGE(m_cellSets.isEmpty(), "IsoCellSets are not supported with concurrent sweeping.");
 }
 
 void* IsoSubspace::tryAllocateFromLowerTier()

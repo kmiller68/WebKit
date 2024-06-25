@@ -1201,8 +1201,10 @@ inline StringImpl::DerefResult StringImpl::tryDerefConcurrently()
         return true;
     });
 
-    if (result == DerefResult::Destroyed)
+    if (result == DerefResult::Destroyed) {
+        RELEASE_ASSERT(!isUniqued());
         StringImpl::destroy(this);
+    }
     return result;
 #else
     bool hasOneRef = this->hasOneRef();

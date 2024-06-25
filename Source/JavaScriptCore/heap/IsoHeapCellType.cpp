@@ -50,7 +50,7 @@ void IsoHeapCellType::finishSweep(MarkedBlock::Handle& handle, FreeList* freeLis
 
 void IsoHeapCellType::finishSweepConcurrently(MarkedBlock::Handle& handle) const
 {
-    handle.finishSweepKnowingHeapCellType(nullptr, [&] (VM& vm, JSCell* cell) ALWAYS_INLINE_LAMBDA {
+    handle.finishSweepKnowingHeapCellType(&handle.cachedFreeList(), [&] (VM& vm, JSCell* cell) ALWAYS_INLINE_LAMBDA {
         m_destroyConcurrently(vm, cell);
     });
 }

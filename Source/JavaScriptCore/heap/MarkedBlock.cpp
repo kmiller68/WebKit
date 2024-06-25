@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2023 Apple Inc. All rights reserved.
+ * Copyright (C) 2011-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -105,9 +105,11 @@ MarkedBlock::Header::~Header() = default;
 
 void MarkedBlock::Handle::unsweepWithNoNewlyAllocated()
 {
-    RELEASE_ASSERT(m_isFreeListed);
-    m_isFreeListed = false;
-    m_directory->didFinishUsingBlock(this);
+    // TODO: Should this retire the block?
+    Locker locker(m_directory->bitvectorLock());
+    ASSERT(m_directory->isFreeListed(this));
+    m_directory->setIsFreeListed(this, false);
+    m_directory->didFinishUsingBlock(locker, this);
 }
 
 void MarkedBlock::Handle::stopAllocating(const FreeList& freeList)
@@ -116,45 +118,50 @@ void MarkedBlock::Handle::stopAllocating(const FreeList& freeList)
     
     if (MarkedBlockInternal::verbose)
         dataLog(RawPointer(this), ": MarkedBlock::Handle::stopAllocating!\n");
-    m_directory->assertIsMutatorOrMutatorIsStopped();
+    m_directory->assertSweeperIsSuspended();
     ASSERT(!m_directory->isAllocated(this));
 
-    if (!isFreeListed()) {
-        if (MarkedBlockInternal::verbose)
-            dataLog("There ain't no newly allocated.\n");
-        // This means that we either didn't use this block at all for allocation since last GC,
-        // or someone had already done stopAllocating() before.
-        ASSERT(freeList.allocationWillFail());
+    ASSERT(isFreeListed());
+    if (&freeList == &cachedFreeList()) {
+        dataLogLnIf(MarkedBlockInternal::verbose, "saw cached free list, nothing to do.");
+        ASSERT(blockHeader().m_newlyAllocated.isEmpty());
+        blockHeader().m_newlyAllocatedVersion = heap()->objectSpace().newlyAllocatedVersion();
         return;
     }
     
-    if (MarkedBlockInternal::verbose)
-        dataLog("Free list: ", freeList, "\n");
+    dataLogLnIf(MarkedBlockInternal::verbose, "Free list: ", freeList);
     
     // Roll back to a coherent state for Heap introspection. Cells newly
     // allocated from our free list are not currently marked, so we need another
-    // way to tell what's live vs dead. 
+    // way to tell what's live vs dead.
     
     blockHeader().m_newlyAllocated.clearAll();
     blockHeader().m_newlyAllocatedVersion = heap()->objectSpace().newlyAllocatedVersion();
 
+#if ASSERT_ENABLED
+    freeList.forEach([&] (HeapCell* cell) {
+        ASSERT(cell->isZapped());
+    }, cellSize());
+#endif
+
     forEachCell(
         [&] (size_t, HeapCell* cell, HeapCell::Kind) -> IterationStatus {
-            block().setNewlyAllocated(cell);
+            if (!cell->isZapped())
+                block().setNewlyAllocated(cell);
             return IterationStatus::Continue;
         });
 
-    freeList.forEach(
-        [&] (HeapCell* cell) {
-            if constexpr (MarkedBlockInternal::verbose)
-                dataLog("Free cell: ", RawPointer(cell), "\n");
-            if (m_attributes.destruction == NeedsDestruction)
-                cell->zap(HeapCell::StopAllocating);
-            block().clearNewlyAllocated(cell);
-        });
+    // freeList.forEach(
+    //     [&] (HeapCell* cell) {
+    //         if constexpr (MarkedBlockInternal::verbose)
+    //             dataLog("Free cell: ", RawPointer(cell), "\n");
+    //         if (m_attributes.destruction != DoesNotNeedDestruction)
+    //             cell->zap(HeapCell::StopAllocating);
+    //         block().clearNewlyAllocated(cell);
+    //     }, cellSize());
     
-    m_isFreeListed = false;
-    directory()->didFinishUsingBlock(this);
+    m_directory->setIsFreeListed(this, false);
+    m_directory->didFinishUsingBlock(NoLockingNecessary, this);
 }
 
 void MarkedBlock::Handle::lastChanceToFinalize()
@@ -311,8 +318,9 @@ void MarkedBlock::Handle::didConsumeFreeList()
     if (MarkedBlockInternal::verbose)
         dataLog(RawPointer(this), ": MarkedBlock::Handle::didConsumeFreeList!\n");
     ASSERT(isFreeListed());
-    m_isFreeListed = false;
+    ASSERT(m_cachedFreeList.isClear());
     Locker bitLocker(m_directory->bitvectorLock());
+    m_directory->setIsFreeListed(this, false);
     m_directory->setIsAllocated(this, true);
     m_directory->didFinishUsingBlock(bitLocker, this);
 }
@@ -419,7 +427,7 @@ void MarkedBlock::Handle::sweep(FreeList* freeList)
     ASSERT(m_directory->isInUse(this));
 
     SweepMode sweepMode = freeList ? SweepToFreeList : SweepOnly;
-    bool needsDestruction = m_attributes.destruction == NeedsDestruction
+    bool needsDestruction = m_attributes.destruction != DoesNotNeedDestruction
         && m_directory->isDestructible(this);
 
     // // TODO: Is this the right spot for this?
@@ -438,13 +446,18 @@ void MarkedBlock::Handle::sweep(FreeList* freeList)
         return;
     }
 
-    if (m_isFreeListed) {
+    if (isFreeListed()) {
         dataLog("FATAL: ", RawPointer(this), "->sweep: block is free-listed.\n");
         RELEASE_ASSERT_NOT_REACHED();
     }
     
     if (isAllocated()) {
-        dataLog("FATAL: ", RawPointer(this), "->sweep: block is allocated.\n");
+        WTF::dataFile().atomically([&] (PrintStream& out) {
+            out.println("FATAL: ", RawPointer(this), "->sweep: block is allocated.");
+            dumpState(out);
+            out.println();
+        });
+
         RELEASE_ASSERT_NOT_REACHED();
     }
     
@@ -509,31 +522,41 @@ void MarkedBlock::Handle::sweep(FreeList* freeList)
 
 void MarkedBlock::Handle::sweepConcurrently()
 {
+#if ASSERT_ENABLED
     {
-        // We need this lock here because the mutator could be resizing the bit vectors as we check.
         Locker locker(m_directory->bitvectorLock());
-        ASSERT(m_attributes.destruction == NeedsDestruction);
+        ASSERT(m_attributes.destruction != NeedsMainThreadDestruction);
         ASSERT(m_directory->isInUse(this));
-
-        if (!m_directory->isDestructible(this)) {
-            m_directory->setIsUnswept(this, false);
-            m_directory->didFinishUsingBlock(locker, this);
-            return;
-        }
     }
+#endif
+
+    m_weakSet.sweep();
 
     if (space()->isMarking())
         blockHeader().m_lock.lock();
 
     subspace()->didBeginSweepingToFreeListConcurrently(this);
     subspace()->finishSweepConcurrently(*this);
-    m_directory->didFinishUsingBlock(this);
+    if (m_cachedFreeList.allocationWillFail()) {
+        m_cachedFreeList.clear();
+        unsweepWithNoNewlyAllocated();
+    } else {
+        ASSERT(!m_cachedFreeList.isClear());
+        m_directory->didFinishUsingBlock(this);
+    }
 }
 
-bool MarkedBlock::Handle::isFreeListedCell(const void* target) const
+void MarkedBlock::Handle::stealFreeListOrSweep(FreeList& freeList)
 {
-    ASSERT(isFreeListed());
-    return m_directory->isFreeListedCell(target);
+    m_directory->assertIsMutatorOrMutatorIsStopped();
+    ASSERT(m_directory->isInUse(this));
+    if (isFreeListed()) {
+        ASSERT(!m_directory->isUnswept(this));
+        freeList.stealFrom(cachedFreeList());
+        return;
+    }
+
+    sweep(&freeList);
 }
 
 } // namespace JSC

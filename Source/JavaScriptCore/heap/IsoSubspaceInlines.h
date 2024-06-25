@@ -45,9 +45,9 @@ inline void IsoSubspace::clearIsoCellSetBit(PreciseAllocation* preciseAllocation
         });
 }
 
-inline void IsoSubspace::sweep()
+inline void IsoSubspace::sweepSynchronously()
 {
-    Subspace::sweepBlocks();
+    Subspace::sweepBlocksSynchronously();
     // We sweep precise-allocations eagerly, but we do not free it immediately.
     // This part should be done by MarkedSpace::sweepPreciseAllocations.
     m_preciseAllocations.forEach([&](PreciseAllocation* allocation) {

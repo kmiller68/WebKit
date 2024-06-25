@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Apple Inc. All rights reserved.
+ * Copyright (C) 2016-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,6 +32,12 @@
 namespace JSC {
 
 class HeapCell;
+
+// The free list looks like (without scrambling):
+//                 |------------------------------ offset * 16 (sizeof(FreeCell)) -------------------v                                              v sentinel
+// [ live cell | { preserved, preserved, length (3 * 16), offset (5) } | dead | dead | live cell | { preserved, preserved, length (1 * 16), offset (1) } ]
+//
+//
 
 struct FreeCell {
     static ALWAYS_INLINE uint64_t scramble(int32_t offsetToNext, uint32_t lengthInBytes, uint64_t secret)
@@ -78,13 +84,15 @@ struct FreeCell {
 
 class FreeList {
 public:
-    FreeList(unsigned cellSize);
-    ~FreeList();
+    FreeList() = default;
+    ~FreeList() = default;
     
     void clear();
+    void stealFrom(FreeList& other);
     
     JS_EXPORT_PRIVATE void initialize(FreeCell* head, uint64_t secret, unsigned bytes);
     
+    bool isClear() const { return !m_intervalStart; }
     bool allocationWillFail() const { return m_intervalStart >= m_intervalEnd && isSentinel(nextInterval()); }
     bool allocationWillSucceed() const { return !allocationWillFail(); }
     
@@ -93,8 +101,7 @@ public:
     
     bool contains(HeapCell*) const;
     
-    template<typename Func>
-    void forEach(const Func&) const;
+    void forEach(const std::invocable<HeapCell*> auto& func, size_t cellSize) const;
     
     unsigned originalSize() const { return m_originalSize; }
 
@@ -104,12 +111,9 @@ public:
     static constexpr ptrdiff_t offsetOfIntervalStart() { return OBJECT_OFFSETOF(FreeList, m_intervalStart); }
     static constexpr ptrdiff_t offsetOfIntervalEnd() { return OBJECT_OFFSETOF(FreeList, m_intervalEnd); }
     static constexpr ptrdiff_t offsetOfOriginalSize() { return OBJECT_OFFSETOF(FreeList, m_originalSize); }
-    static constexpr ptrdiff_t offsetOfCellSize() { return OBJECT_OFFSETOF(FreeList, m_cellSize); }
     
     JS_EXPORT_PRIVATE void dump(PrintStream&) const;
 
-    unsigned cellSize() const { return m_cellSize; }
-    
 private:
     FreeCell* nextInterval() const { return m_nextInterval; }
     
@@ -118,7 +122,6 @@ private:
     FreeCell* m_nextInterval { bitwise_cast<FreeCell*>(static_cast<uintptr_t>(1)) };
     uint64_t m_secret { 0 };
     unsigned m_originalSize { 0 };
-    unsigned m_cellSize { 0 };
 };
 
 } // namespace JSC

@@ -23,6 +23,7 @@
 
 #include "CellAttributes.h"
 #include "DestructionMode.h"
+#include "FreeList.h"
 #include "HeapCell.h"
 #include "WeakSet.h"
 #include <algorithm>
@@ -38,7 +39,6 @@
 namespace JSC {
 
 class AlignedMemoryAllocator;    
-class FreeList;
 class Heap;
 class JSCell;
 class BlockDirectory;
@@ -144,11 +144,12 @@ public:
         //
         // Note that you need to make sure that the empty bit reflects reality. If it's not set
         // and the block is freshly created, then we'll make the mistake of running destructors in
-        // the block. If it's not set and the block has nothing marked, then we'll make the
-        // mistake of making a pop freelist rather than a bump freelist.
+        // the block.
         void sweep(FreeList*);
         void sweepConcurrently();
         
+        void stealFreeListOrSweep(FreeList&);
+
         // This is to be called by Subspace.
         template<typename DestroyFunc>
         void finishSweepKnowingHeapCellType(FreeList*, const DestroyFunc&);
@@ -185,7 +186,6 @@ public:
         bool isLive(const HeapCell*);
         bool isLiveCell(const void*);
 
-        bool isFreeListedCell(const void* target) const;
 
         template <typename Functor> IterationStatus forEachCell(const Functor&);
         template <typename Functor> inline IterationStatus forEachLiveCell(const Functor&);
@@ -197,7 +197,10 @@ public:
         
         void assertMarksNotStale();
             
-        bool isFreeListed() const { return m_isFreeListed; }
+        inline bool isFreeListed() const;
+        inline bool isFreeListedOnLocalAllocator() const;
+
+        FreeList& cachedFreeList() { return m_cachedFreeList; }
         
         unsigned index() const { return m_index; }
         
@@ -236,7 +239,6 @@ public:
         unsigned m_startAtom { std::numeric_limits<unsigned>::max() }; // Exact location of the first allocatable atom.
             
         CellAttributes m_attributes;
-        bool m_isFreeListed { false };
         unsigned m_index { std::numeric_limits<unsigned>::max() };
 
         AlignedMemoryAllocator* m_alignedMemoryAllocator { nullptr };
@@ -244,6 +246,8 @@ public:
         WeakSet m_weakSet;
         
         MarkedBlock* const m_block { nullptr };
+
+        FreeList m_cachedFreeList;
     };
 
 private:    
@@ -539,7 +543,7 @@ inline CellAttributes MarkedBlock::attributes() const
 
 inline bool MarkedBlock::Handle::needsDestruction() const
 {
-    return m_attributes.destruction == NeedsDestruction;
+    return m_attributes.destruction != DoesNotNeedDestruction;
 }
 
 inline DestructionMode MarkedBlock::Handle::destruction() const
