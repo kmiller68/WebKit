@@ -54,7 +54,7 @@ public:
     void* tryAllocatePreciseOrLowerTierPrecise(size_t cellSize);
     void destroyLowerTierPreciseFreeList();
 
-    void sweep();
+    void sweepSynchronously();
 
     template<typename Func> void forEachLowerTierPreciseFreeListedPreciseAllocation(const Func&);
 

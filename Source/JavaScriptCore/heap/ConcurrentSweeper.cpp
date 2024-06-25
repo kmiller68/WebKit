@@ -42,9 +42,10 @@ static constexpr bool verbose = false;
 
 static Atomic<size_t> numBlocksSwept;
 
-ConcurrentSweeper::ConcurrentSweeper(const AbstractLocker& locker, VM&, Box<Lock> lock, Ref<AutomaticThreadCondition>&& condition)
+ConcurrentSweeper::ConcurrentSweeper(const AbstractLocker& locker, VM& vm, Box<Lock> lock, Ref<AutomaticThreadCondition>&& condition)
     : AutomaticThread(locker, WTFMove(lock), WTFMove(condition), ThreadType::GarbageCollection)
     , m_stringImplsBuffer(std::make_unique<StringImplBag::Node>(StringImplBag::Node::Data { }))
+    , m_vm(vm)
 {
 }
 
@@ -61,12 +62,16 @@ Ref<ConcurrentSweeper> ConcurrentSweeper::create(VM& vm)
 
 auto ConcurrentSweeper::poll(const AbstractLocker&) -> PollResult
 {
+    m_isWorking = true;
     if (m_shouldStop)
         return PollResult::Stop;
 
+    if (!m_priorityDirectoriesToSweep.isEmpty())
+        return PollResult::Work;
+
     if (!m_currentDirectory && (m_hasNewWork || Options::collectContinuously())) {
         m_hasNewWork = false;
-        m_currentDirectory = m_directoriesToSweep.head();
+        m_currentDirectory = m_vm.heap.objectSpace().firstDirectory();
     }
 
     if (m_currentDirectory)
@@ -74,6 +79,7 @@ auto ConcurrentSweeper::poll(const AbstractLocker&) -> PollResult
 
     // We're about to stop, make sure the mutator can see any strings.
     flushStringImplsToMainThreadDeref();
+    m_isWorking = false;
     return PollResult::Wait;
 }
 
@@ -81,12 +87,27 @@ auto ConcurrentSweeper::work() -> WorkResult
 {
     Locker locker(m_rightToSweep);
 
-    MarkedBlock::Handle* handle = m_currentDirectory->data.findBlockToSweep(m_currentMarkedBlockIndex);
-
-    if (!handle) {
-        m_currentDirectory = m_currentDirectory->next;
-        m_currentMarkedBlockIndex = 0;
-        return WorkResult::Continue;
+    MarkedBlock::Handle* handle;
+    if (m_priorityDirectoriesToSweep.peek()) {
+        // TODO: Should this remember anything?
+        unsigned unusedMarkedBlockIndex = 0;
+        handle = m_priorityDirectoriesToSweep.peek()->data.findBlockToEagerlySweep(unusedMarkedBlockIndex);
+        if (!handle) {
+            m_priorityDirectoriesToSweep.dequeue();
+            return WorkResult::Continue;
+        }
+    }
+    else {
+        handle = m_currentDirectory->findBlockToEagerlySweep(m_currentMarkedBlockIndex);
+        if (!handle) {
+            m_currentMarkedBlockIndex = 0;
+            while (true) {
+                m_currentDirectory = m_currentDirectory->nextDirectory();
+                if (m_currentDirectory && m_currentDirectory->destruction() == NeedsMainThreadDestruction)
+                    continue;
+                return WorkResult::Continue;
+            }
+        }
     }
 
     handle->sweepConcurrently();
@@ -104,25 +125,27 @@ void ConcurrentSweeper::threadIsStopping(const AbstractLocker&)
 
 void ConcurrentSweeper::maybeNotify()
 {
-    ASSERT(isSuspended());
+    Locker locker(lock());
+    m_hasNewWork = true;
+    condition().notifyAll(locker);
 
-    size_t unsweptCount = 0;
-    unsigned threshold = Options::concurrentSweeperThreshold();
-    for (auto* node = m_directoriesToSweep.head(); node; node = node->next) {
-        unsweptCount += node->data.unsweptCount();
-        if (unsweptCount >= threshold) {
-            if constexpr (ConcurrentSweeperInternal::verbose) {
-                dataLogLn("Hit threshold of ", threshold, " posting work: ", unsweptCount);
-                size_t count = numBlocksSwept.exchange(0, std::memory_order_relaxed);
-                dataLogLn("Swept ", count, " marked blocks since last posting");
-            }
-            Locker locker(lock());
-            m_hasNewWork = true;
-            condition().notifyAll(locker);
-            return;
-        }
-    }
-    dataLogLnIf(ConcurrentSweeperInternal::verbose, "Didn't hit threshold of ", threshold, " no work posted: ", unsweptCount);
+    // size_t unsweptCount = 0;
+    // unsigned threshold = Options::concurrentSweeperThreshold();
+    // for (auto* node = m_directoriesToSweep.head(); node; node = node->next) {
+    //     unsweptCount += node->data.unsweptCount();
+    //     if (unsweptCount >= threshold) {
+    //         if constexpr (ConcurrentSweeperInternal::verbose) {
+    //             dataLogLn("Hit threshold of ", threshold, " posting work: ", unsweptCount);
+    //             size_t count = numBlocksSwept.exchange(0, std::memory_order_relaxed);
+    //             dataLogLn("Swept ", count, " marked blocks since last posting");
+    //         }
+    //         Locker locker(lock());
+    //         m_hasNewWork = true;
+    //         condition().notifyAll(locker);
+    //         return;
+    //     }
+    // }
+    // dataLogLnIf(ConcurrentSweeperInternal::verbose, "Didn't hit threshold of ", threshold, " no work posted: ", unsweptCount);
 }
 
 void ConcurrentSweeper::clearStringImplsToMainThreadDerefSlow()

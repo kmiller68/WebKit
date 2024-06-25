@@ -151,6 +151,7 @@ template<typename Functor> inline void Heap::forEachProtectedCell(const Functor&
 template <typename T>
 inline void Heap::releaseSoon(RetainPtr<T>&& object)
 {
+    Locker locker(m_delayedReleaseObjectsLock);
     m_delayedReleaseObjects.append(WTFMove(object));
 }
 #endif

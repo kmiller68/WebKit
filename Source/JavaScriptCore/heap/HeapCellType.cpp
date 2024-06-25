@@ -61,7 +61,7 @@ void HeapCellType::finishSweep(MarkedBlock::Handle& block, FreeList* freeList) c
 
 void HeapCellType::finishSweepConcurrently(MarkedBlock::Handle& block) const
 {
-    block.finishSweepKnowingHeapCellType(nullptr, [] (VM& vm, JSCell* cell) ALWAYS_INLINE_LAMBDA {
+    block.finishSweepKnowingHeapCellType(&block.cachedFreeList(), [] (VM& vm, JSCell* cell) ALWAYS_INLINE_LAMBDA {
         ASSERT(cell->structureID());
         Structure* structure = cell->structure();
         ASSERT(structure->typeInfo().structureIsImmortal());

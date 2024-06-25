@@ -37,7 +37,7 @@ namespace JSC {
 
 LocalAllocator::LocalAllocator(BlockDirectory* directory)
     : m_directory(directory)
-    , m_freeList(directory->m_cellSize)
+    , m_cellSize(directory->m_cellSize)
 {
     Locker locker { directory->m_localAllocatorsLock };
     directory->m_localAllocators.append(this);
@@ -233,16 +233,16 @@ void* LocalAllocator::allocateIn(MarkedBlock::Handle* block, size_t cellSize)
 void* LocalAllocator::tryAllocateIn(MarkedBlock::Handle* block, size_t cellSize)
 {
     ASSERT(block);
-    ASSERT(!block->isFreeListed());
     m_directory->assertIsMutatorOrMutatorIsStopped();
     ASSERT(m_directory->isInUse(block));
-    
-    block->sweep(&m_freeList);
-    
+
+    block->stealFreeListOrSweep(m_freeList);
+
+    ASSERT(block->cachedFreeList().isClear());
+    ASSERT(block->isFreeListed());
     // It's possible to stumble on a completely full block. Marking tries to retire these, but
     // that algorithm is racy and may forget to do it sometimes.
     if (m_freeList.allocationWillFail()) {
-        ASSERT(block->isFreeListed());
         block->unsweepWithNoNewlyAllocated();
         ASSERT(!block->isFreeListed());
         ASSERT(!m_directory->isEmpty(block));

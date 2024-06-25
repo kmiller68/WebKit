@@ -24,6 +24,7 @@
 #include "CellAttributes.h"
 #include "CellContainer.h"
 #include "DestructionMode.h"
+#include "FreeList.h"
 #include "HeapCell.h"
 #include "WeakSet.h"
 #include <algorithm>
@@ -41,7 +42,6 @@ WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
 namespace JSC {
 
 class AlignedMemoryAllocator;    
-class FreeList;
 class Heap;
 class JSCell;
 class BlockDirectory;
@@ -149,11 +149,12 @@ public:
         //
         // Note that you need to make sure that the empty bit reflects reality. If it's not set
         // and the block is freshly created, then we'll make the mistake of running destructors in
-        // the block. If it's not set and the block has nothing marked, then we'll make the
-        // mistake of making a pop freelist rather than a bump freelist.
+        // the block.
         void sweep(FreeList*);
         void sweepConcurrently();
         
+        void stealFreeListOrSweep(FreeList&);
+
         // This is to be called by Subspace.
         // Note: We can't use std::optional because apparently it's non-structural.
         template<bool hasSizeData = false, unsigned atomsPerCell = 0, unsigned startAtom = 0>
@@ -206,8 +207,11 @@ public:
         };
         using enum FreeListStatus;
 
-        bool isFreeListed() const { return m_freeListStatus != NotFreeListed; }
-        FreeListStatus freeListStatus() const { return m_freeListStatus; }
+        inline FreeListStatus freeListStatus() const;
+        inline bool isFreeListed() const { freeListStatus() != NotFreeListed; }
+        inline bool isAllocating() const { freeListStatus() == FreeListedAndAllocating || freeListStatus() == FreeListedRecordedAndAllocating; }
+
+        FreeList& cachedFreeList() { return m_cachedFreeList; }
         
         unsigned index() const { return m_index; }
         
@@ -278,6 +282,8 @@ public:
         WeakSet m_weakSet;
         
         MarkedBlock* const m_block { nullptr };
+
+        FreeList m_cachedFreeList;
     };
 
 private:    
@@ -593,7 +599,7 @@ inline CellAttributes MarkedBlock::attributes() const
 
 inline bool MarkedBlock::Handle::needsDestruction() const
 {
-    return m_attributes.destruction == NeedsDestruction;
+    return m_attributes.destruction != DoesNotNeedDestruction;
 }
 
 inline DestructionMode MarkedBlock::Handle::destruction() const

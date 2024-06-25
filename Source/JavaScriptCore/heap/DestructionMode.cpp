@@ -38,6 +38,9 @@ void printInternal(PrintStream& out, DestructionMode mode)
     case NeedsDestruction:
         out.print("NeedsDestruction");
         return;
+    case NeedsMainThreadDestruction:
+        out.print("NeedsMainThreadDestruction");
+        return;
     case DoesNotNeedDestruction:
         out.print("DoesNotNeedDestruction");
         return;

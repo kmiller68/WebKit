@@ -99,7 +99,9 @@ class JSCell : public HeapCell {
 public:
     static constexpr unsigned StructureFlags = 0;
 
+    // FIXME: We should just make this `static constexpr DestructionMode destructionMode`.
     static constexpr bool needsDestruction = false;
+    static constexpr bool allowsConcurrentDestruction = false;
 
     static constexpr bool usePreciseAllocationsOnly = false;
     static constexpr uint8_t numberOfLowerTierPreciseCells = 8;

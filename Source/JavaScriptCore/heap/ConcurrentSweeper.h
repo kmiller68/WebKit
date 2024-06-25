@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Apple Inc. All rights reserved.
+ * Copyright (C) 2023-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -61,7 +61,11 @@ public:
 
     void pushDirectoryToSweep(BlockDirectory& directory)
     {
-        m_directoriesToSweep.add(directory);
+        m_priorityDirectoriesToSweep.queue(directory);
+        if (!m_isWorking) {
+            Locker locker(lock());
+            condition().notifyAll(locker);
+        }
     }
 
 
@@ -95,14 +99,15 @@ private:
 
     std::unique_ptr<StringImplBag::Node> m_stringImplsBuffer;
 
-    // If we ever decide this is too inefficient then we could do LocklessBag<std::array<BlockDirectory*, X>>
-    using DirectoryBag = LocklessBag<BlockDirectory&>;
-    DirectoryBag m_directoriesToSweep;
+    VM& m_vm;
+    LocklessQueue<BlockDirectory&, DequeueOrdering::Any> m_priorityDirectoriesToSweep;
 
-    const DirectoryBag::Node* m_currentDirectory { nullptr };
+    BlockDirectory* m_currentDirectory { nullptr };
     unsigned m_currentMarkedBlockIndex { 0 };
 
-    bool m_hasNewWork { true };
+    bool m_prepareForAllocation { false };
+    bool m_hasNewWork { false };
+    bool m_isWorking { false };
     bool m_isSuspended { false };
     bool m_shouldStop { false };
 };

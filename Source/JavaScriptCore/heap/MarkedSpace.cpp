@@ -222,7 +222,7 @@ void MarkedSpace::sweepBlocks()
     heap().sweeper().stopSweeping();
     forEachDirectory(
         [&] (BlockDirectory& directory) -> IterationStatus {
-            directory.sweep();
+            directory.sweepSynchronously();
             return IterationStatus::Continue;
         });
 }
@@ -436,7 +436,7 @@ void MarkedSpace::beginMarking()
             [&] (MarkedBlock::Handle* block) {
                 if (block->areMarksStale())
                     return;
-                ASSERT(!block->isFreeListed());
+                ASSERT(!block->isAllocating());
             });
     }
     

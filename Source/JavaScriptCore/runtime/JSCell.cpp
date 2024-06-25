@@ -354,7 +354,7 @@ NEVER_INLINE NO_RETURN_DUE_TO_CRASH NOT_TAIL_CALLED void reportZappedCellAndCras
 
             variousState |= static_cast<uint64_t>(isFreeListed) << 0;
             variousState |= static_cast<uint64_t>(!isFreeListed) << 1;
-            variousState |= static_cast<uint64_t>(foundPreciseAllocation->subspace()->attributes().destruction == NeedsDestruction) << 3;
+            variousState |= static_cast<uint64_t>(foundPreciseAllocation->subspace()->attributes().destruction != DoesNotNeedDestruction) << 3;
             if (!isFreeListed) {
                 variousState |= static_cast<uint64_t>(foundPreciseAllocation->isEmpty()) << 2;
                 variousState |= static_cast<uint64_t>(foundPreciseAllocation->isNewlyAllocated()) << 4;

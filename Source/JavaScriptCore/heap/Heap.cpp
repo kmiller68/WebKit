@@ -331,7 +331,7 @@ Heap::Heap(VM& vm, HeapType heapType)
     , auxiliaryHeapCellType(CellAttributes(DoesNotNeedDestruction, HeapCell::Auxiliary))
     , immutableButterflyHeapCellType(CellAttributes(DoesNotNeedDestruction, HeapCell::JSCellWithIndexingHeader))
     , cellHeapCellType(CellAttributes(DoesNotNeedDestruction, HeapCell::JSCell))
-    , destructibleCellHeapCellType(CellAttributes(NeedsDestruction, HeapCell::JSCell))
+    , destructibleCellHeapCellType(CellAttributes(NeedsMainThreadDestruction, HeapCell::JSCell))
     , apiGlobalObjectHeapCellType(IsoHeapCellType::Args<JSAPIGlobalObject>())
     , callbackConstructorHeapCellType(IsoHeapCellType::Args<JSCallbackConstructor>())
     , callbackGlobalObjectHeapCellType(IsoHeapCellType::Args<JSCallbackObject<JSGlobalObject>>())
@@ -610,6 +610,7 @@ void Heap::releaseDelayedReleasedObjects()
     // This also means that we need to loop until there are no objects in m_delayedReleaseObjects
     // and use a temp Vector for the actual releasing.
     if (!m_delayedReleaseRecursionCount++) {
+        Locker locker(m_delayedReleaseObjectsLock);
         while (!m_delayedReleaseObjects.isEmpty()) {
             ASSERT(vm().currentThreadIsHoldingAPILock());
 
@@ -618,7 +619,7 @@ void Heap::releaseDelayedReleasedObjects()
             {
                 // We need to drop locks before calling out to arbitrary code.
                 JSLock::DropAllLocks dropAllLocks(vm());
-
+                DropLockForScope drop(locker);
 #if USE(FOUNDATION)
                 void* context = objc_autoreleasePoolPush();
 #endif
@@ -2342,7 +2343,7 @@ void Heap::sweepInFinalize()
 #if ENABLE(WEBASSEMBLY)
     // We hold onto a lot of memory, so it makes a lot of sense to be swept eagerly.
     if (m_webAssemblyMemorySpace)
-        m_webAssemblyMemorySpace->sweep();
+        m_webAssemblyMemorySpace->sweepSynchronously();
 #endif
 }
 

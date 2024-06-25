@@ -34,7 +34,7 @@ namespace WTF {
 // This a simple single consumer, multiple producer or multiple reader/producer (no-consumer) Bag data structure.
 
 template<typename T>
-class LocklessBag final {
+class LocklessBag {
     WTF_MAKE_FAST_ALLOCATED;
     WTF_MAKE_NONCOPYABLE(LocklessBag);
 public:
@@ -48,10 +48,7 @@ public:
         Data data;
     };
 
-    LocklessBag()
-        : m_head(nullptr)
-    {
-    }
+    LocklessBag() = default;
 
     enum PushResult { Empty, NonEmpty };
     PushResult add(T&& element)
@@ -100,7 +97,7 @@ public:
 
     void consumeAllWithNode(NOESCAPE const Invocable<void(T&&, Node*)> auto& func)
     {
-        Node* node = m_head.exchange(nullptr, std::memory_order_acquire);
+        Node* node = takeBag();
         while (node) {
             Node* oldNode = node;
             node = node->next;
@@ -114,10 +111,84 @@ public:
         consumeAll([] (T&&) { });
     }
 
+    Node* takeBag() { return m_head.exchange(nullptr, std::memory_order_acquire); }
+
 private:
-    Atomic<Node*> m_head;
+    Atomic<Node*> m_head { nullptr };
 };
-    
+
+// This a simple lock-free, single consumer, multiple producer queue data structure.
+
+enum class DequeueOrdering { FIFO, Any };
+template<typename T, DequeueOrdering dequeueOrdering = DequeueOrdering::FIFO>
+class LocklessQueue : private LocklessBag<T> {
+    WTF_MAKE_FAST_ALLOCATED;
+    WTF_MAKE_NONCOPYABLE(LocklessQueue);
+    using Base = LocklessBag<T>;
+public:
+    using Node = Base::Node;
+    using QueueResult = Base::PushResult;
+
+    LocklessQueue() = default;
+
+    QueueResult queue(T&& data) { return Base::add(std::forward<T>(data)); }
+    QueueResult queue(std::unique_ptr<Node>&& node) { return Base::add(WTFMove(node)); }
+
+    // CONSUMER FUNCTIONS: Everything below here is only safe to call from the consumer thread.
+
+    bool isEmpty() const { return !m_head && Base::isEmpty(); }
+    // std::optional<U&> is "ill-formed" for some reason. This is practically std::optional<T>
+    using DequeueResultType = std::optional<std::conditional_t<std::is_reference_v<T>, std::reference_wrapper<std::remove_reference_t<T>>, T>>;
+    DequeueResultType dequeue()
+    {
+        refillIfNeeded();
+        if (m_head) {
+            Node* node = m_head;
+            m_head = m_head->next;
+            T result = std::forward<T>(node->data);
+            delete node;
+            return result;
+        }
+        return { };
+    }
+
+    const Node* peek()
+    {
+        refillIfNeeded();
+        return m_head;
+    }
+
+    ~LocklessQueue()
+    {
+        while(!isEmpty())
+            dequeue();
+    }
+
+private:
+    void refillIfNeeded()
+    {
+        if (m_head)
+            return;
+
+        Node* newHead = Base::takeBag();
+        if constexpr (dequeueOrdering == DequeueOrdering::FIFO) {
+            Node* previous = nullptr;
+            while (newHead) {
+                Node* next = newHead->next;
+                newHead->next = previous;
+                previous = newHead;
+                newHead = next;
+            }
+            newHead = previous;
+        }
+        m_head = newHead;
+    }
+
+    Node* m_head { nullptr };
+};
+
 } // namespace WTF
 
 using WTF::LocklessBag;
+using WTF::DequeueOrdering;
+using WTF::LocklessQueue;

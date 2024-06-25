@@ -45,7 +45,7 @@ public:
     
     void* allocate(Heap&, size_t cellSize, GCDeferralContext*, AllocationFailureMode);
     
-    unsigned cellSize() const { return m_freeList.cellSize(); }
+    unsigned cellSize() const { return m_cellSize; }
 
     void stopAllocating();
     void prepareForAllocation();
@@ -56,6 +56,7 @@ public:
     static constexpr ptrdiff_t offsetOfCellSize();
 
     BlockDirectory& directory() const { return *m_directory; }
+    MarkedBlock::Handle* currentBlock() const { return m_currentBlock; }
 
 private:
     friend class BlockDirectory;
@@ -69,10 +70,11 @@ private:
     ALWAYS_INLINE void doTestCollectionsIfNeeded(Heap&, GCDeferralContext*);
 
     BlockDirectory* m_directory;
-    FreeList m_freeList;
 
     MarkedBlock::Handle* m_currentBlock { nullptr };
     MarkedBlock::Handle* m_lastActiveBlock { nullptr };
+    FreeList m_freeList;
+    unsigned m_cellSize { 0 };
     
     // After you do something to a block based on one of these cursors, you clear the bit in the
     // corresponding bitvector and leave the cursor where it was.
@@ -86,7 +88,7 @@ inline constexpr ptrdiff_t LocalAllocator::offsetOfFreeList()
 
 inline constexpr ptrdiff_t LocalAllocator::offsetOfCellSize()
 {
-    return OBJECT_OFFSETOF(LocalAllocator, m_freeList) + FreeList::offsetOfCellSize();
+    return OBJECT_OFFSETOF(LocalAllocator, m_cellSize);
 }
 
 } // namespace JSC

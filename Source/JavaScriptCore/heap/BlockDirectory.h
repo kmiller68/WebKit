@@ -70,13 +70,13 @@ public:
     void endMarking();
     void snapshotUnsweptForEdenCollection();
     void snapshotUnsweptForFullCollection();
-    void sweep();
+    void sweepSynchronously();
     void shrink();
     void assertNoUnswept();
     size_t unsweptCount() const;
     size_t cellSize() const { return m_cellSize; }
     CellAttributes attributes() const { return m_attributes; }
-    bool needsDestruction() const { return m_attributes.destruction == NeedsDestruction; }
+    bool needsDestruction() const { return m_attributes.destruction != DoesNotNeedDestruction; }
     DestructionMode destruction() const { return m_attributes.destruction; }
     HeapCell::Kind cellKind() const { return m_attributes.cellKind; }
 
@@ -107,11 +107,11 @@ public:
 
 #define BLOCK_DIRECTORY_BIT_ACCESSORS(lowerBitName, capitalBitName)     \
     bool is ## capitalBitName(size_t index) const WTF_REQUIRES_SHARED_LOCK(m_bitvectorLock) { return m_bits.is ## capitalBitName(index); } \
-    bool is ## capitalBitName(MarkedBlock::Handle* block) const WTF_REQUIRES_SHARED_LOCK(m_bitvectorLock) { return is ## capitalBitName(block->index()); } \
+    bool is ## capitalBitName(const MarkedBlock::Handle* block) const WTF_REQUIRES_SHARED_LOCK(m_bitvectorLock) { return is ## capitalBitName(block->index()); } \
     BlockDirectoryBits::BlockDirectoryBitVectorView<BlockDirectoryBits::Kind::capitalBitName> lowerBitName ## BitsView() const WTF_REQUIRES_SHARED_LOCK(m_bitvectorLock) { return m_bits.lowerBitName(); } \
     \
     void setIs ## capitalBitName(size_t index, bool value) WTF_REQUIRES_LOCK(m_bitvectorLock) { m_bits.setIs ## capitalBitName(index, value); } \
-    void setIs ## capitalBitName(MarkedBlock::Handle* block, bool value) WTF_REQUIRES_LOCK(m_bitvectorLock) { setIs ## capitalBitName(block->index(), value); } \
+    void setIs ## capitalBitName(const MarkedBlock::Handle* block, bool value) WTF_REQUIRES_LOCK(m_bitvectorLock) { setIs ## capitalBitName(block->index(), value); } \
     BlockDirectoryBits::BlockDirectoryBitVectorRef<BlockDirectoryBits::Kind::capitalBitName> lowerBitName ## Bits() WTF_REQUIRES_LOCK(m_bitvectorLock) { return m_bits.lowerBitName(); }
 
     FOR_EACH_BLOCK_DIRECTORY_BIT(BLOCK_DIRECTORY_BIT_ACCESSORS)
@@ -147,12 +147,17 @@ public:
     
     MarkedBlock::Handle* findBlockToSweep() { return findBlockToSweep(m_unsweptCursor); }
     MarkedBlock::Handle* findBlockToSweep(unsigned& unsweptCursor);
+<<<<<<< HEAD
 
     // FIXME: rdar://139998916
     MarkedBlock::Handle* findMarkedBlockHandleDebug(MarkedBlock*);
+=======
+    
+    MarkedBlock::Handle* findBlockToEagerlySweep(unsigned& unsweptCursor);
+>>>>>>> ab32521cec66 (lets see if it works)
 
     void didFinishUsingBlock(MarkedBlock::Handle*);
-    void didFinishUsingBlock(AbstractLocker&, MarkedBlock::Handle*) WTF_REQUIRES_LOCK(m_bitvectorLock);
+    void didFinishUsingBlock(const AbstractLocker&, MarkedBlock::Handle*) WTF_REQUIRES_LOCK(m_bitvectorLock);
 
     Subspace* subspace() const { return m_subspace; }
     MarkedSpace& markedSpace() const;

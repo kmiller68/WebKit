@@ -42,7 +42,7 @@ public:
     template<typename CellType>
     struct Args {
         Args()
-            : mode(CellType::needsDestruction ? NeedsDestruction : DoesNotNeedDestruction)
+            : mode(destructionModeForCellType<CellType>())
             , destroyPtr(&CellType::destroy)
             , destroyConcurrentlyPtr(&CellType::destroyConcurrently)
         { }

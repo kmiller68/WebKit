@@ -892,11 +892,13 @@ private:
     std::unique_ptr<HeapVerifier> m_verifier;
 
 #if USE(FOUNDATION)
-    Vector<RetainPtr<CFTypeRef>> m_delayedReleaseObjects;
+    Vector<RetainPtr<CFTypeRef>> m_delayedReleaseObjects WTF_GUARDED_BY_LOCK(m_delayedReleaseObjectsLock);
+    Lock m_delayedReleaseObjectsLock;
     unsigned m_delayedReleaseRecursionCount { 0 };
 #endif
 #ifdef JSC_GLIB_API_ENABLED
-    Vector<std::unique_ptr<JSCGLibWrapperObject>> m_delayedReleaseObjects;
+    Vector<std::unique_ptr<JSCGLibWrapperObject>> m_delayedReleaseObjects WTF_GUARDED_BY_LOCK(m_delayedReleaseObjectsLock);
+    Lock m_delayedReleaseObjectsLock;
     unsigned m_delayedReleaseRecursionCount { 0 };
 #endif
     unsigned m_deferralDepth { 0 };

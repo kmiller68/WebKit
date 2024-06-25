@@ -45,7 +45,7 @@ public:
 };
 
 JSDestructibleObjectHeapCellType::JSDestructibleObjectHeapCellType()
-    : HeapCellType(CellAttributes(NeedsDestruction, HeapCell::JSCell))
+    : HeapCellType(CellAttributes(NeedsMainThreadDestruction, HeapCell::JSCell))
 {
 }
 

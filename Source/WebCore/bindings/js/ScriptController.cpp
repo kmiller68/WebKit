@@ -792,7 +792,7 @@ void ScriptController::executeAsynchronousUserAgentScriptInWorld(DOMWrapperWorld
         return JSValue::encode(jsUndefined());
     });
 
-    auto finalizeCount = makeUniqueWithoutFastMallocCheck<unsigned>(0);
+    auto finalizeCount = makeUniqueWithoutFastMallocCheck<Atomic<unsigned>>(0);
     auto finalizeGuard = createSharedTask<void()>([sharedResolveFunction = WTFMove(sharedResolveFunction), finalizeCount = WTFMove(finalizeCount)]() {
         if (++(*finalizeCount) == 2)
             sharedResolveFunction->run(makeUnexpected(ExceptionDetails { "Completion handler for function call is no longer reachable"_s }));

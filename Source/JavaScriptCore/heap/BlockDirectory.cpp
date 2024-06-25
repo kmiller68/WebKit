@@ -110,19 +110,32 @@ MarkedBlock::Handle* BlockDirectory::findEmptyBlockToSteal()
 
 MarkedBlock::Handle* BlockDirectory::findBlockForAllocation(LocalAllocator& allocator)
 {
+    ConcurrentSweeper* sweeper = markedSpace().heap().concurrentSweeper();
+    // TODO: We should probably have a better metric for when this is needed.
+    if (destruction() != NeedsMainThreadDestruction && sweeper)
+        sweeper->pushDirectoryToSweep(*this);
+
     Locker locker(bitvectorLock());
-    for (;;) {
-        allocator.m_allocationCursor = ((canAllocateButNotEmptyBits() | emptyBits()) & ~inUseBits()).findBit(allocator.m_allocationCursor, true);
-        if (allocator.m_allocationCursor >= m_blocks.size())
-            return nullptr;
-        
-        unsigned blockIndex = allocator.m_allocationCursor++;
-        MarkedBlock::Handle* result = m_blocks[blockIndex];
-        setIsCanAllocateButNotEmpty(blockIndex, false);
-        dataLogLnIf(BlockDirectoryInternal::verbose, "Setting block ", blockIndex, " in use (findBlockForAllocation) for ", *this);
-        setIsInUse(blockIndex, true);
+    // TODO: Does this need a cursor?
+    unsigned index = (freeListedBits() & ~inUseBits()).findBit(0, true);
+    if (index < m_blocks.size()) {
+        MarkedBlock::Handle* result = m_blocks[index];
+        setIsCanAllocateButNotEmpty(index, false);
+        dataLogLnIf(BlockDirectoryInternal::verbose, "Stealing free list from cache on ", index, " for ", *this);
+        setIsInUse(index, true);
         return result;
     }
+
+    allocator.m_allocationCursor = ((canAllocateButNotEmptyBits() | emptyBits()) & ~inUseBits()).findBit(allocator.m_allocationCursor, true);
+    if (allocator.m_allocationCursor >= m_blocks.size())
+        return nullptr;
+
+    unsigned blockIndex = allocator.m_allocationCursor++;
+    MarkedBlock::Handle* result = m_blocks[blockIndex];
+    setIsCanAllocateButNotEmpty(blockIndex, false);
+    dataLogLnIf(BlockDirectoryInternal::verbose, "Setting block ", blockIndex, " in use (findBlockForAllocation) for ", *this);
+    setIsInUse(blockIndex, true);
+    return result;
 }
 
 MarkedBlock::Handle* BlockDirectory::tryAllocateBlock(JSC::Heap& heap)
@@ -202,8 +215,11 @@ void BlockDirectory::stopAllocating()
     m_localAllocators.forEach(
         [&] (LocalAllocator* allocator) {
             allocator->stopAllocating();
+            ASSERT(allocator->m_freeList.isClear());
+            ASSERT(!allocator->m_lastActiveBlock || !allocator->m_lastActiveBlock->isFreeListed());
         });
 
+    assertSweeperIsSuspended();
 #if ASSERT_ENABLED
     if (UNLIKELY(!inUseBitsView().isEmpty())) {
         dataLogLn("Not all inUse bits are clear at stopAllocating");
@@ -212,6 +228,22 @@ void BlockDirectory::stopAllocating()
         RELEASE_ASSERT_NOT_REACHED();
     }
 #endif
+
+    for (size_t index = 0; index < m_blocks.size(); ++index) {
+        index = freeListedBitsView().findBit(index, true);
+        if (index >= m_blocks.size())
+            break;
+        // stopAllocating expects the block to be in use.
+        setIsInUse(index, true);
+        MarkedBlock::Handle* block = m_blocks[index];
+        ASSERT(!block->cachedFreeList().isClear());
+        // TODO: Make a better name for this...
+        block->stopAllocating(block->cachedFreeList());
+        // Restore the isFreeListed bit for later use.
+        ASSERT(!isFreeListed(index));
+        // setIsFreeListed(index, true);
+        block->cachedFreeList().clear();
+    }
 }
 
 void BlockDirectory::prepareForAllocation()
@@ -242,6 +274,28 @@ void BlockDirectory::stopAllocatingForGood()
         [&] (LocalAllocator* allocator) {
             allocator->stopAllocatingForGood();
         });
+
+    assertSweeperIsSuspended();
+#if ASSERT_ENABLED
+    if (UNLIKELY(!inUseBitsView().isEmpty())) {
+        dataLogLn("Not all inUse bits are clear at stopAllocatingForGood");
+        dataLogLn(*this);
+        dumpBits();
+        RELEASE_ASSERT_NOT_REACHED();
+    }
+#endif
+
+    freeListedBits().forEachSetBit([&] (size_t index) {
+        // stopAllocating expects the block to be in use.
+        assertSweeperIsSuspended();
+        setIsInUse(index, true);
+        MarkedBlock::Handle* block = m_blocks[index];
+        // TODO: Make a better name for this...
+        block->stopAllocating(block->cachedFreeList());
+        block->cachedFreeList().clear();
+    });
+
+    ASSERT(freeListedBitsView().isEmpty());
 
     Locker locker { m_localAllocatorsLock };
     while (!m_localAllocators.isEmpty())
@@ -336,7 +390,21 @@ MarkedBlock::Handle* BlockDirectory::findBlockToSweep(unsigned& unsweptCursor)
     return m_blocks[unsweptCursor];
 }
 
-void BlockDirectory::sweep()
+MarkedBlock::Handle* BlockDirectory::findBlockToEagerlySweep(unsigned& unsweptCursor)
+{
+    Locker locker(bitvectorLock());
+    if ((freeListedBits() & ~inUseBits()).bitCount() >= Options::concurrentSweeperThreshold())
+        return nullptr;
+
+    unsweptCursor = (unsweptBits() & ~inUseBits()).findBit(unsweptCursor, true);
+    if (unsweptCursor >= m_blocks.size())
+        return nullptr;
+    dataLogLnIf(BlockDirectoryInternal::verbose, "Setting block ", unsweptCursor, " in use (findBlockToSweep) for ", *this);
+    setIsInUse(unsweptCursor, true);
+    return m_blocks[unsweptCursor];
+}
+
+void BlockDirectory::sweepSynchronously()
 {
     // We need to be careful of a weird race where while we are sweeping a block
     // the concurrent sweeper comes along and takes the inUse bit for a block
@@ -344,7 +412,10 @@ void BlockDirectory::sweep()
     // refresh our view into the word we could see stale data and try to scan
     // a block already in use.
 
+    // FIXME: Maybe we should just suspend the concurrent sweeper when doing a synchronous GC?
+
     Locker locker(bitvectorLock());
+
     for (size_t index = 0; index < m_blocks.size(); ++index) {
         index = (unsweptBits() & ~inUseBits()).findBit(index, true);
         if (index >= m_blocks.size())
@@ -354,6 +425,10 @@ void BlockDirectory::sweep()
         ASSERT(!isInUse(index));
         dataLogLnIf(BlockDirectoryInternal::verbose, "Setting block ", index, " in use (sweep) for ", *this);
         setIsInUse(index, true);
+
+        // If the block is unswept then it shouldn't have any cached free list.
+        ASSERT(!isFreeListed(index));
+        ASSERT(block->cachedFreeList().isClear());
         {
             DropLockForScope scope(locker);
             block->sweep(nullptr);
@@ -420,7 +495,7 @@ void BlockDirectory::didFinishUsingBlock(MarkedBlock::Handle* handle)
     didFinishUsingBlock(locker, handle);
 }
 
-void BlockDirectory::didFinishUsingBlock(AbstractLocker&, MarkedBlock::Handle* handle)
+void BlockDirectory::didFinishUsingBlock(const AbstractLocker&, MarkedBlock::Handle* handle)
 {
     if (UNLIKELY(!isInUse(handle))) {
         dataLogLn("Finish using on a block that's not in use: ", handle->index());

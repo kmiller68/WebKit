@@ -91,7 +91,7 @@ public:
     template<typename Func>
     void forEachLiveCell(const Func&);
     
-    void sweepBlocks();
+    void sweepBlocksSynchronously();
     
     Subspace* nextSubspaceInAlignedMemoryAllocator() const { return m_nextSubspaceInAlignedMemoryAllocator; }
     void setNextSubspaceInAlignedMemoryAllocator(Subspace* subspace) { m_nextSubspaceInAlignedMemoryAllocator = subspace; }

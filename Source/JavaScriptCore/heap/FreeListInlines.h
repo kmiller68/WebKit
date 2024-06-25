@@ -66,7 +66,7 @@ ALWAYS_INLINE HeapCell* FreeList::allocateWithCellSize(const Invocable<HeapCell*
     return allocate();
 }
 
-void FreeList::forEach(const Invocable<void(HeapCell*)> auto& func) const
+void FreeList::forEach(const Invocable<void(HeapCell*)> auto& func, size_t cellSize) const
 {
     FreeCell* cell = nextInterval();
     char* intervalStart = m_intervalStart;
@@ -74,7 +74,7 @@ void FreeList::forEach(const Invocable<void(HeapCell*)> auto& func) const
     ASSERT(intervalEnd - intervalStart < (ptrdiff_t)(16 * KB));
 
     while (true) {
-        for (; intervalStart < intervalEnd; intervalStart += m_cellSize)
+        for (; intervalStart < intervalEnd; intervalStart += cellSize)
             func(reinterpret_cast<HeapCell*>(intervalStart));
 
         // If we explore the whole interval and the cell is the sentinel value, though, we should

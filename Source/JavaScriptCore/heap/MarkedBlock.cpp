@@ -116,7 +116,11 @@ void MarkedBlock::Handle::unsweepWithNoNewlyAllocated()
     // TODO: Re-cache the free list.
     m_freeListStatus = NotFreeListed;
     blockHeader().m_recordedFreeListVersion = nullHeapVersion;
-    m_directory->didFinishUsingBlock(this);
+    // TODO: Should this retire the block?
+    Locker locker(m_directory->bitvectorLock());
+    ASSERT(m_directory->isFreeListed(this));
+    m_directory->setIsFreeListed(this, false);
+    m_directory->didFinishUsingBlock(locker, this);
 }
 
 void MarkedBlock::Handle::stopAllocating(const FreeList& freeList)
@@ -145,7 +149,7 @@ void MarkedBlock::Handle::stopAllocating(const FreeList& freeList)
             block().dumpBits(out);
         });
     }
-    
+
     // Roll back to a coherent state for heap introspection.
     HeapVersion newlyAllocatedVersion = space()->newlyAllocatedVersion();
 
@@ -158,13 +162,6 @@ void MarkedBlock::Handle::stopAllocating(const FreeList& freeList)
         ASSERT(blockHeader().m_recordedFreeListVersion == nullHeapVersion);
         blockHeader().m_newlyAllocated.clearAll();
         blockHeader().m_newlyAllocated.setEachNthBit(m_atomsPerCell, true, m_startAtom);
-
-#if ASSERT_ENABLED
-        forEachCell([&] (size_t, HeapCell* cell, HeapCell::Kind) -> IterationStatus {
-            ASSERT(block().isNewlyAllocated(cell));
-            return IterationStatus::Continue;
-        });
-#endif
     } else {
         ASSERT(m_freeListStatus == FreeListedRecordedAndAllocating);
         ASSERT(blockHeader().m_recordedFreeListVersion != nullHeapVersion);
@@ -208,6 +205,7 @@ void MarkedBlock::Handle::stopAllocating(const FreeList& freeList)
     // ASSERT(marksMode() == MarksStale || blockHeader().m_newlyAllocated.subsumes(blockHeader().m_marks));
 
     m_freeListStatus = NotFreeListed;
+    m_directory->setIsFreeListed(this, false);
     directory()->didFinishUsingBlock(this);
 }
 
@@ -469,8 +467,10 @@ void MarkedBlock::Handle::didConsumeFreeList()
 
     Locker bitLocker(m_directory->bitvectorLock());
 
+    ASSERT(m_cachedFreeList.isClear());
     ASSERT(!m_directory->isAllocated(this));
     m_directory->setIsAllocated(this, isAllocated);
+    m_directory->setIsFreeListed(this, false);
     m_directory->didFinishUsingBlock(bitLocker, this);
 }
 
@@ -582,7 +582,7 @@ void MarkedBlock::Handle::sweep(FreeList* freeList)
     ASSERT(m_directory->isInUse(this));
 
     SweepMode sweepMode = freeList ? SweepToFreeList : SweepOnly;
-    bool needsDestruction = m_attributes.destruction == NeedsDestruction
+    bool needsDestruction = m_attributes.destruction != DoesNotNeedDestruction
         && m_directory->isDestructible(this);
 
     // // TODO: Is this the right spot for this?
@@ -606,7 +606,12 @@ void MarkedBlock::Handle::sweep(FreeList* freeList)
     }
     
     if (isAllocated()) {
-        dataLog("FATAL: ", RawPointer(this), "->sweep: block is allocated.\n");
+        WTF::dataFile().atomically([&] (PrintStream& out) {
+            out.println("FATAL: ", RawPointer(this), "->sweep: block is allocated.");
+            dumpState(out);
+            out.println();
+        });
+
         RELEASE_ASSERT_NOT_REACHED();
     }
 
@@ -696,25 +701,28 @@ void MarkedBlock::Handle::sweep(FreeList* freeList)
 
 void MarkedBlock::Handle::sweepConcurrently()
 {
+#if ASSERT_ENABLED
     {
-        // We need this lock here because the mutator could be resizing the bit vectors as we check.
         Locker locker(m_directory->bitvectorLock());
-        ASSERT(m_attributes.destruction == NeedsDestruction);
+        ASSERT(m_attributes.destruction != NeedsMainThreadDestruction);
         ASSERT(m_directory->isInUse(this));
-
-        if (!m_directory->isDestructible(this)) {
-            m_directory->setIsUnswept(this, false);
-            m_directory->didFinishUsingBlock(locker, this);
-            return;
-        }
     }
+#endif
+
+    m_weakSet.sweep();
 
     if (space()->isMarking())
         blockHeader().m_lock.lock();
 
     subspace()->didBeginSweepingToFreeListConcurrently(this);
     subspace()->finishSweepConcurrently(*this);
-    m_directory->didFinishUsingBlock(this);
+    if (m_cachedFreeList.allocationWillFail()) {
+        m_cachedFreeList.clear();
+        unsweepWithNoNewlyAllocated();
+    } else {
+        ASSERT(!m_cachedFreeList.isClear());
+        m_directory->didFinishUsingBlock(this);
+    }
 }
 
 NO_RETURN_DUE_TO_CRASH NEVER_INLINE void MarkedBlock::dumpInfoAndCrashForInvalidHandleV2(AbstractLocker&, HeapCell* heapCell)
@@ -823,6 +831,19 @@ NO_RETURN_DUE_TO_CRASH NEVER_INLINE void MarkedBlock::dumpInfoAndCrashForInvalid
     uint64_t zeroCounts = contiguousZeroBytesHeadOfBlock | (static_cast<uint64_t>(totalZeroBytesInBlock) << 32);
 
     CRASH_WITH_INFO(heapCell, cellFirst8Bytes, zeroCounts, bitfield, subspaceHash, blockVM, actualVM);
+}
+
+void MarkedBlock::Handle::stealFreeListOrSweep(FreeList& freeList)
+{
+    m_directory->assertIsMutatorOrMutatorIsStopped();
+    ASSERT(m_directory->isInUse(this));
+    if (isFreeListed()) {
+        ASSERT(!m_directory->isUnswept(this));
+        freeList.stealFrom(cachedFreeList());
+        return;
+    }
+
+    sweep(&freeList);
 }
 
 } // namespace JSC

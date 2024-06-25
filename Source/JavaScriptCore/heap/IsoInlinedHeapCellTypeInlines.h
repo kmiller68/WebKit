@@ -33,7 +33,7 @@ namespace JSC {
 
 template<typename CellType>
 inline IsoInlinedHeapCellType<CellType>::IsoInlinedHeapCellType()
-    : HeapCellType(CellAttributes(CellType::needsDestruction ? NeedsDestruction : DoesNotNeedDestruction, HeapCell::JSCell))
+    : HeapCellType(CellAttributes(destructionModeForCellType<CellType>(), HeapCell::JSCell))
 {
 }
 
@@ -53,7 +53,7 @@ inline void IsoInlinedHeapCellType<CellType>::finishSweep(MarkedBlock::Handle& h
 template<typename CellType>
 inline void IsoInlinedHeapCellType<CellType>::finishSweepConcurrently(MarkedBlock::Handle& handle) const
 {
-    handle.finishSweepKnowingHeapCellType(nullptr, [] (VM& vm, JSCell* cell) ALWAYS_INLINE_LAMBDA {
+    handle.finishSweepKnowingHeapCellType(&handle.cachedFreeList(), [] (VM& vm, JSCell* cell) ALWAYS_INLINE_LAMBDA {
         CellType::destroyConcurrently(vm, cell);
     });
 }

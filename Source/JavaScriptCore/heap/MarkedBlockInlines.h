@@ -169,7 +169,7 @@ ALWAYS_INLINE bool MarkedBlock::Handle::isLive(HeapVersion markingVersion, HeapV
         MarkedBlock::Header& fencedHeader = fencedBlock.header();
         MarkedBlock::Handle* fencedThis = fenceBefore.consume(this);
 
-        ASSERT_UNUSED(fencedThis, !fencedThis->isFreeListed());
+        ASSERT_UNUSED(fencedThis, !fencedThis->isAllocating());
 
         HeapVersion myNewlyAllocatedVersion = fencedHeader.m_newlyAllocatedVersion;
         if (myNewlyAllocatedVersion == newlyAllocatedVersion) {
@@ -195,7 +195,7 @@ ALWAYS_INLINE bool MarkedBlock::Handle::isLive(HeapVersion markingVersion, HeapV
 
     Locker locker { header.m_lock };
 
-    ASSERT(!isFreeListed());
+    ASSERT(!isAllocating());
 
     HeapVersion myNewlyAllocatedVersion = header.m_newlyAllocatedVersion;
     if (myNewlyAllocatedVersion == newlyAllocatedVersion && header.m_newlyAllocated.get(atomNumber))
@@ -267,7 +267,7 @@ inline bool MarkedBlock::Handle::areMarksStaleForSweep()
 //     destructionMode = DoesNotNeedDestruction
 //         marksMode = MarksNotStale (3)
 //         marksMode = MarksStale (4)
-//     destructionMode = NeedsDestruction
+//     destructionMode = NeedsDestruction || NeedsMainThreadDestruction
 //         marksMode = MarksNotStale (5)
 //         marksMode = MarksStale (6)
 //
@@ -345,7 +345,7 @@ void MarkedBlock::Handle::specializedSweep(FreeList* freeList, MarkedBlock::Hand
     };
 
     auto setBits = [&] (bool isEmpty) ALWAYS_INLINE_LAMBDA {
-//         // TODO: Probably not useful in general
+        // TODO: Probably not useful in general
 // #if ASSERT_ENABLED
 //         if (sweepMode != SweepOnly) {
 //             freeList->forEach([&] (HeapCell* cell) {
@@ -360,6 +360,8 @@ void MarkedBlock::Handle::specializedSweep(FreeList* freeList, MarkedBlock::Hand
         Locker locker { m_directory->bitvectorLock() };
         m_directory->setIsUnswept(this, false);
         m_directory->setIsDestructible(this, false);
+        if (sweepMode != SweepOnly)
+            m_directory->setIsFreeListed(this, true);
         m_directory->setIsEmpty(this, sweepMode == SweepOnly && isEmpty);
     };
 
@@ -659,7 +661,7 @@ void MarkedBlock::Handle::finishSweepKnowingHeapCellType(FreeList* freeList, con
 
 inline MarkedBlock::Handle::SweepDestructionMode MarkedBlock::Handle::sweepDestructionMode()
 {
-    if (m_attributes.destruction == NeedsDestruction) {
+    if (m_attributes.destruction != DoesNotNeedDestruction) {
         if (space()->isMarking())
             return BlockHasDestructorsAndCollectorIsRunning;
         return BlockHasDestructors;
