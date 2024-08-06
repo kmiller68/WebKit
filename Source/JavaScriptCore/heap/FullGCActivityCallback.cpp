@@ -43,6 +43,9 @@ void FullGCActivityCallback::doCollection(VM& vm)
     JSC::Heap& heap = vm.heap;
     setDidGCRecently(false);
 
+    if (vm.deferredWorkTimer->hasImminentlyScheduledWork())
+        return;
+
 #if !PLATFORM(IOS_FAMILY) || PLATFORM(MACCATALYST)
     MonotonicTime startTime = MonotonicTime::now();
     if (MemoryPressureHandler::singleton().isUnderMemoryPressure() && heap.isPagedOut()) {

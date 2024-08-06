@@ -1696,8 +1696,8 @@ void VM::performOpportunisticallyScheduledTasks(MonotonicTime deadline, OptionSe
 
     dataLogLnIf(verbose, "[OPPORTUNISTIC TASK] QUERY", " signpost:(", JSC::activeJSGlobalObjectSignpostIntervalCount.load(), ")");
     JSLockHolder locker { *this };
-    if (deferredWorkTimer->hasAnyPendingWork()) {
-        dataLogLnIf(verbose, "[OPPORTUNISTIC TASK] GaveUp: No pending tasks", " signpost:(", JSC::activeJSGlobalObjectSignpostIntervalCount.load(), ")");
+    if (deferredWorkTimer->hasImminentlyScheduledWork()) {
+        dataLogLnIf(verbose, "[OPPORTUNISTIC TASK] GaveUp: DeferredWorkTimer hasImminentlyScheduledWork signpost:(", JSC::activeJSGlobalObjectSignpostIntervalCount.load(), ")");
         return;
     }
 
