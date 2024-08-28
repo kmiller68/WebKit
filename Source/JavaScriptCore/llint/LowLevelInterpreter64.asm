@@ -74,6 +74,9 @@ end
 macro makeReturn(get, dispatch, fn)
     fn(macro (value)
         move value, t2
+        bpneq t2, 0xbadbeef0, .ok
+        break
+    .ok:
         get(m_dst, t1)
         storeq t2, [cfr, t1, 8]
         dispatch()
@@ -83,6 +86,9 @@ end
 macro makeReturnProfiled(size, opcodeStruct, get, metadata, dispatch, fn)
     fn(macro (value)
         move value, t3
+        bpneq t3, 0xbadbeef0, .ok
+        break
+    .ok:
         valueProfile(size, opcodeStruct, m_valueProfile, t3, t1)
         get(m_dst, t1)
         storeq t3, [cfr, t1, 8]

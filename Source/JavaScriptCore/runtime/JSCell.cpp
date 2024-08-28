@@ -274,9 +274,9 @@ void JSCellLock::unlockSlow()
     IndexingTypeLockAlgorithm::unlockSlow(*lock);
 }
 
-#if CPU(X86_64)
 NEVER_INLINE NO_RETURN_DUE_TO_CRASH NOT_TAIL_CALLED void reportZappedCellAndCrash(Heap& heap, const JSCell* cell)
 {
+    dataLogLn("here");
     MarkedBlock::Handle* foundBlockHandle = nullptr;
     uint64_t* cellWords = bitwise_cast<uint64_t*>(cell);
 
@@ -298,14 +298,22 @@ NEVER_INLINE NO_RETURN_DUE_TO_CRASH NOT_TAIL_CALLED void reportZappedCellAndCras
     MarkedBlock* foundBlock = nullptr;
     if (foundBlockHandle) {
         foundBlock = &foundBlockHandle->block();
-        subspaceHash = SuperFastHash::computeHash(foundBlockHandle->subspace()->name());
+        WTF::dataFile().atomically([&] (PrintStream& out) {
+            out.println("Found zapped cell: ", RawPointer(cell), " type: ", cell->type(), " atom: ", foundBlock->atomNumber(cell));
+            foundBlockHandle->dumpState(out);
+            out.println();
+            foundBlock->dumpBits(out);
+            out.println();
+        });
+
+        subspaceHash = SuperFastHash::computeHash(foundBlockHandle->subspace()->name().data());
         cellSize = foundBlockHandle->cellSize();
 
-        variousState |= static_cast<uint64_t>(foundBlockHandle->isFreeListed()) << 0;
-        variousState |= static_cast<uint64_t>(foundBlockHandle->isAllocated()) << 1;
-        variousState |= static_cast<uint64_t>(foundBlockHandle->isEmpty()) << 2;
-        variousState |= static_cast<uint64_t>(foundBlockHandle->needsDestruction()) << 3;
-        variousState |= static_cast<uint64_t>(foundBlock->isNewlyAllocated(cell)) << 4;
+        // variousState |= static_cast<uint64_t>(foundBlockHandle->isFreeListed()) << 0;
+        // variousState |= static_cast<uint64_t>(foundBlockHandle->isAllocated()) << 1;
+        // variousState |= static_cast<uint64_t>(foundBlockHandle->isEmpty()) << 2;
+        // variousState |= static_cast<uint64_t>(foundBlockHandle->needsDestruction()) << 3;
+        // variousState |= static_cast<uint64_t>(foundBlock->isNewlyAllocated(cell)) << 4;
 
         ptrdiff_t cellOffset = cellAddress - bitwise_cast<uintptr_t>(foundBlockHandle->start());
         bool cellIsProperlyAligned = !(cellOffset % cellSize);
@@ -334,7 +342,7 @@ NEVER_INLINE NO_RETURN_DUE_TO_CRASH NOT_TAIL_CALLED void reportZappedCellAndCras
             return IterationStatus::Continue;
         });
         if (foundPreciseAllocation) {
-            subspaceHash = SuperFastHash::computeHash(foundPreciseAllocation->subspace()->name());
+            subspaceHash = SuperFastHash::computeHash(foundPreciseAllocation->subspace()->name().data());
             cellSize = foundPreciseAllocation->cellSize();
 
             variousState |= static_cast<uint64_t>(isFreeListed) << 0;
@@ -351,6 +359,5 @@ NEVER_INLINE NO_RETURN_DUE_TO_CRASH NOT_TAIL_CALLED void reportZappedCellAndCras
 
     CRASH_WITH_INFO(cellAddress, headerWord, zapReasonAndMore, subspaceHash, cellSize, foundBlock, variousState);
 }
-#endif // CPU(X86_64)
 
 } // namespace JSC

@@ -1511,7 +1511,7 @@ NEVER_INLINE bool Heap::runFixpointPhase(GCConductor conn)
             },
             ":"_s, " "_s);
         
-        dataLog("v=", bytesVisited() / 1024, "kb (", perVisitorDump, ") o=", m_opaqueRoots.size(), " b=", m_barriersExecuted, " ");
+        dataLogLn("FIXPOINT v=", bytesVisited() / 1024, "kb (", perVisitorDump, ") o=", m_opaqueRoots.size(), " b=", m_barriersExecuted);
     }
         
     if (visitor.didReachTermination()) {
@@ -1583,6 +1583,7 @@ NEVER_INLINE bool Heap::runConcurrentPhase(GCConductor conn)
 {
     SlotVisitor& visitor = *m_collectorSlotVisitor;
 
+    dataLogLnIf(Options::logGC(), "CONCURRENT conn:", conn);
     switch (conn) {
     case GCConductor::Mutator: {
         // When the mutator has the conn, we poll runConcurrentPhase() on every time someone says
@@ -1701,10 +1702,11 @@ NEVER_INLINE bool Heap::runEndPhase(GCConductor conn)
         dataLog("Heap state after GC:\n");
         m_objectSpace.dumpBits();
     }
-    
+
     if (UNLIKELY(Options::logGC())) {
         double thisPauseMS = (m_afterGC - m_stopTime).milliseconds();
         dataLog("p=", thisPauseMS, "ms (max ", maxPauseMS(thisPauseMS), "), cycle ", (m_afterGC - m_beforeGC).milliseconds(), "ms END]\n");
+        dataLogLn("Heap versions at end GC END: (marking: ", m_objectSpace.markingVersion(), ") (newlyAllocated: ", m_objectSpace.newlyAllocatedVersion(), ")");
     }
     
     {
@@ -1825,7 +1827,7 @@ NEVER_INLINE void Heap::resumeThePeriphery()
     
     m_barriersExecuted = 0;
     
-    if (!m_worldIsStopped) {
+    if (UNLIKELY(!m_worldIsStopped)) {
         dataLog("Fatal: collector does not believe that the world is stopped.\n");
         RELEASE_ASSERT_NOT_REACHED();
     }
@@ -1871,6 +1873,7 @@ NEVER_INLINE void Heap::resumeThePeriphery()
 
 bool Heap::stopTheMutator()
 {
+    dataLogLnIf(Options::logGC(), "Stopping the mutator.");
     for (;;) {
         unsigned oldState = m_worldState.load();
         if (oldState & stoppedBit) {
@@ -1911,8 +1914,7 @@ bool Heap::stopTheMutator()
 
 NEVER_INLINE void Heap::resumeTheMutator()
 {
-    if (false)
-        dataLog("Resuming the mutator.\n");
+    dataLogLnIf(Options::logGC(), "Resuming the mutator.");
     for (;;) {
         unsigned oldState = m_worldState.load();
         if (!!(oldState & hasAccessBit) != !(oldState & stoppedBit)) {

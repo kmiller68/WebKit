@@ -90,6 +90,8 @@ public:
     
     template<typename Func>
     HeapCell* allocateWithCellSize(const Func& slowPath, size_t cellSize);
+
+    HeapCell* peekNext() const;
     
     bool contains(HeapCell*) const;
     
@@ -109,7 +111,8 @@ public:
     JS_EXPORT_PRIVATE void dump(PrintStream&) const;
 
     unsigned cellSize() const { return m_cellSize; }
-    
+    bool hasOneInterval() const { return isSentinel(nextInterval()); }
+
 private:
     FreeCell* nextInterval() const { return m_nextInterval; }
     

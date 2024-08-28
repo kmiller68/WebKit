@@ -33,6 +33,9 @@ namespace JSC {
 ALWAYS_INLINE void* LocalAllocator::allocate(JSC::Heap& heap, size_t cellSize, GCDeferralContext* deferralContext, AllocationFailureMode failureMode)
 {
     VM& vm = heap.vm();
+#if ENABLE(GC_VALIDATION)
+    RELEASE_ASSERT(!m_currentBlock || heap.objectSpace().blocks().set().contains(&m_currentBlock->block()));
+#endif
     if constexpr (validateDFGDoesGC)
         vm.verifyCanGC();
     return m_freeList.allocateWithCellSize(

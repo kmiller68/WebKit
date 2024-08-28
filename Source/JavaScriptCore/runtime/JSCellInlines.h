@@ -42,7 +42,7 @@
 #include "JSObject.h"
 #include "JSString.h"
 #include "LocalAllocatorInlines.h"
-#include "MarkedBlock.h"
+#include "MarkedBlockInlines.h"
 #include "SlotVisitorInlines.h"
 #include "Structure.h"
 #include "Symbol.h"
@@ -102,6 +102,7 @@ inline void JSCell::finishCreation(VM& vm)
 #if ENABLE(GC_VALIDATION)
     ASSERT(vm.isInitializingObject());
     vm.setInitializingObjectClass(0);
+    ASSERT(isLive());
 #else
     UNUSED_PARAM(vm);
 #endif

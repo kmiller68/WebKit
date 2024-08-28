@@ -21,11 +21,12 @@
 
 #include <array>
 #include <wtf/Atomics.h>
+#include <wtf/CommaPrinter.h>
 #include <wtf/HashFunctions.h>
 #include <wtf/IterationStatus.h>
 #include <wtf/MathExtras.h>
-#include <wtf/PrintStream.h>
 #include <wtf/StdIntExtras.h>
+#include <span>
 #include <string.h>
 #include <type_traits>
 
@@ -124,7 +125,7 @@ public:
     constexpr void mergeAndClear(BitSet&);
     constexpr void setAndClear(BitSet&);
 
-    void setEachNthBit(size_t n, size_t start = 0, size_t end = bitSetSize);
+    void setEachNthBit(size_t n, bool value, size_t start = 0, size_t end = bitSetSize);
 
     constexpr bool operator==(const BitSet&) const;
 
@@ -135,7 +136,9 @@ public:
     constexpr unsigned hash() const;
 
     void dump(PrintStream& out) const;
+    void dumpHex(PrintStream& out) const;
 
+    // FIXME: These should return std::span<WordType>.
     WordType* storage() { return bits.data(); }
     const WordType* storage() const { return bits.data(); }
 
@@ -529,29 +532,38 @@ inline constexpr void BitSet<bitSetSize, WordType>::setAndClear(BitSet& other)
     }
 }
 
+// FIXME: This seems like it should have a fast path case for when n would update every word with the same "mask".
+// e.g. n == 2, value == true, would be bits[wordIndex] |= 0xaaaaaaaaaaaaaaaa
 template<size_t bitSetSize, typename WordType>
-inline void BitSet<bitSetSize, WordType>::setEachNthBit(size_t n, size_t start, size_t end)
+inline void BitSet<bitSetSize, WordType>::setEachNthBit(size_t n, bool value, size_t start, size_t end)
 {
     ASSERT(start <= end);
     ASSERT(end <= bitSetSize);
 
-    size_t wordIndex = start / wordSize;
-    size_t endWordIndex = end / wordSize;
-    size_t index = start - wordIndex * wordSize;
-    while (wordIndex < endWordIndex) {
-        while (index < wordSize) {
-            bits[wordIndex] |= (one << index);
+    auto updateWords = [&] (auto updateFunc) {
+        size_t wordIndex = start / wordSize;
+        size_t endWordIndex = end / wordSize;
+        size_t index = start - wordIndex * wordSize;
+        while (wordIndex < endWordIndex) {
+            while (index < wordSize) {
+                updateFunc(wordIndex, index);
+                index += n;
+            }
+            index -= wordSize;
+            wordIndex++;
+        }
+
+        size_t endIndex = end - endWordIndex * wordSize;
+        while (index < endIndex) {
+            updateFunc(wordIndex, index);
             index += n;
         }
-        index -= wordSize;
-        wordIndex++;
-    }
+    };
 
-    size_t endIndex = end - endWordIndex * wordSize;
-    while (index < endIndex) {
-        bits[wordIndex] |= (one << index);
-        index += n;
-    }
+    if (value)
+        updateWords([&] (size_t wordIndex, size_t index) ALWAYS_INLINE_LAMBDA { bits[wordIndex] |= (one << index); });
+    else
+        updateWords([&] (size_t wordIndex, size_t index) ALWAYS_INLINE_LAMBDA { bits[wordIndex] &= ~(one << index); });
 
     cleanseLastWord();
 }
@@ -601,6 +613,14 @@ inline void BitSet<bitSetSize, WordType>::dump(PrintStream& out) const
 {
     for (size_t i = 0; i < size(); ++i)
         out.print(get(i) ? "1" : "-");
+}
+
+template<size_t bitSetSize, typename WordType>
+inline void BitSet<bitSetSize, WordType>::dumpHex(PrintStream& out) const
+{
+    CommaPrinter comma;
+    for (size_t i = 0; i < words; ++i)
+        out.print(comma, RawHex::withLeadingZeros(bits[i]));
 }
 
 } // namespace WTF

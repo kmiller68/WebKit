@@ -14,6 +14,8 @@ function mac_process_jsc_entitlements()
     plistbuddy Add :com.apple.security.cs.allow-jit bool YES
     plistbuddy Add :com.apple.security.fatal-exceptions array
     plistbuddy Add :com.apple.security.fatal-exceptions:0 string jit
+    # allow core dumps
+    plistbuddy Add :com.apple.security.get-task-allow bool YES
     if [[ "${WK_USE_RESTRICTED_ENTITLEMENTS}" == YES ]]
     then
         plistbuddy Add :com.apple.private.pac.exception bool YES

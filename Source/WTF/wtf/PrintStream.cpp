@@ -197,13 +197,10 @@ void printInternal(PrintStream& out, double value)
 
 void printInternal(PrintStream& out, RawHex value)
 {
-#if !CPU(ADDRESS64)
-    if (value.is64Bit()) {
-        out.printf("0x%" PRIx64, value.u64());
-        return;
-    }
-#endif
-    out.printf("%p", value.ptr());
+    if (value.printLeadingZeros()) {
+        out.printf("0x%0*llx", 16, value.value());
+    } else
+        out.printf("0x%llx", value.value());
 }
 
 void printInternal(PrintStream& out, RawPointer value)

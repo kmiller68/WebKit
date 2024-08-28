@@ -107,12 +107,15 @@ void IsoCellSet::didRemoveBlock(unsigned blockIndex)
         Locker locker { m_subspace.m_directory.m_bitvectorLock };
         m_blocksWithBits[blockIndex] = false;
     }
+    // TODO: Doesn't this need to be inside the lock? didRemoveBlock to here -> addSlow -> this line
     m_bits[blockIndex] = nullptr;
 }
 
 void IsoCellSet::sweepToFreeList(MarkedBlock::Handle* block)
 {
-    RELEASE_ASSERT(!block->isAllocated());
+    block->directory()->assertIsMutatorOrMutatorIsStopped();
+
+    block->blockHeader().m_lock.assertIsHeldWhen(block->space()->isMarking());
     
     if (!m_blocksWithBits[block->index()])
         return;
@@ -125,14 +128,12 @@ void IsoCellSet::sweepToFreeList(MarkedBlock::Handle* block)
         dataLog("Bits says: ", RawPointer(m_bits[block->index()].get()), "\n");
         RELEASE_ASSERT_NOT_REACHED();
     }
-    
-    if (block->block().hasAnyNewlyAllocated()) {
-        // The newlyAllocated() bits are a superset of the marks() bits.
-        m_bits[block->index()]->concurrentFilter(block->block().newlyAllocated());
-        return;
-    }
 
-    if (block->isEmpty() || block->areMarksStaleForSweep()) {
+    bool useMarks = block->areMarksStaleForSweep();
+    bool useNewlyAllocated = block->block().hasAnyNewlyAllocated();
+
+    // TODO: Can this use hasAnyMarked?
+    if (block->isEmpty() || (!useMarks && !useNewlyAllocated)) {
         {
             // Holding the bitvector lock happens to be enough because that's what we also hold in
             // other places where we manipulate this bitvector.
@@ -142,8 +143,20 @@ void IsoCellSet::sweepToFreeList(MarkedBlock::Handle* block)
         m_bits[block->index()] = nullptr;
         return;
     }
-    
-    m_bits[block->index()]->concurrentFilter(block->block().marks());
+
+    if (useMarks && useNewlyAllocated) {
+        // TODO: Make this more efficient:
+        WTF::BitSet<MarkedBlock::atomsPerBlock> combined;
+        combined.merge(block->blockHeader().m_newlyAllocated);
+        combined.merge(block->blockHeader().m_marks);
+        m_bits[block->index()]->concurrentFilter(combined);
+        return;
+    }
+
+    if (useNewlyAllocated)
+        m_bits[block->index()]->concurrentFilter(block->blockHeader().m_newlyAllocated);
+    else
+        m_bits[block->index()]->concurrentFilter(block->blockHeader().m_marks);
 }
 
 } // namespace JSC

@@ -30,14 +30,41 @@
 
 namespace JSC {
 
+ALWAYS_INLINE HeapCell* FreeList::peekNext() const
+{
+    ASSERT(allocationWillSucceed());
+    if (m_intervalStart < m_intervalEnd)
+        return reinterpret_cast<HeapCell*>(m_intervalStart);
+
+    // It's an invariant of our allocator that we don't create empty intervals, so there
+    // should always be enough space remaining to allocate a cell.
+    return reinterpret_cast<HeapCell*>(nextInterval());
+}
+
 template<typename Func>
 ALWAYS_INLINE HeapCell* FreeList::allocateWithCellSize(const Func& slowPath, size_t cellSize)
 {
-    if (LIKELY(m_intervalStart < m_intervalEnd)) {
-        char* result = m_intervalStart;
+    auto allocate = [&] ALWAYS_INLINE_LAMBDA {
+        ASSERT(m_intervalStart + cellSize <= m_intervalEnd);
+        HeapCell* result = reinterpret_cast<HeapCell*>(m_intervalStart);
+#if ASSERT_ENABLED
+        auto& handle = result->markedBlock().handle();
+        BlockDirectory* directory = handle.directory();
+        directory->assertIsMutatorOrMutatorIsStopped();
+        ASSERT(directory->isEdenOnly(&handle) || result->markedBlock().isNewlyAllocated(result));
+        // auto& name = result->markedBlock().subspace()->name();
+        // dataLogLn("Allocating in ", name, ": ", RawPointer(&result->markedBlock()), "/", RawPointer(result));
+#endif
         m_intervalStart += cellSize;
-        return bitwise_cast<HeapCell*>(result);
-    }
+        // auto& name = result->markedBlock().subspace()->name();
+        // if (name == "IsoSpace CodeBlock")
+        //     dataLogLn("Allocating in ", name, ": ", RawPointer(&result->markedBlock()), "/", RawPointer(result));
+
+        return result;
+    };
+
+    if (LIKELY(m_intervalStart < m_intervalEnd))
+        return allocate();
     
     FreeCell* cell = nextInterval();
     if (UNLIKELY(isSentinel(cell)))
@@ -47,9 +74,7 @@ ALWAYS_INLINE HeapCell* FreeList::allocateWithCellSize(const Func& slowPath, siz
     
     // It's an invariant of our allocator that we don't create empty intervals, so there 
     // should always be enough space remaining to allocate a cell.
-    char* result = m_intervalStart;
-    m_intervalStart += cellSize;
-    return bitwise_cast<HeapCell*>(result);
+    return allocate();
 }
 
 template<typename Func>

@@ -1038,6 +1038,6 @@
 #define ENABLE_QUICKLOOK_SANDBOX_RESTRICTIONS 1
 #endif
 
-#if __has_include(<os/lock.h>) && !defined(ENABLE_UNFAIR_LOCK)
-#define ENABLE_UNFAIR_LOCK 1
+#if __has_include(<os/lock.h>) && !defined(ENABLE_OS_UNFAIR_LOCK)
+#define ENABLE_OS_UNFAIR_LOCK 1
 #endif

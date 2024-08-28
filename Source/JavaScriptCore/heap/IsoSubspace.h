@@ -61,6 +61,7 @@ public:
 private:
     friend class IsoCellSet;
     friend class GCClient::IsoSubspace;
+    friend class MarkedBlock::Handle;
     
     void didResizeBits(unsigned newSize) override;
     void didRemoveBlock(unsigned blockIndex) override;

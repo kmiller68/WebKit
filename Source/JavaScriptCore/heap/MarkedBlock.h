@@ -118,8 +118,8 @@ public:
             
         ~Handle();
             
-        MarkedBlock& block();
-        MarkedBlock::Header& blockHeader();
+        MarkedBlock& block() const;
+        MarkedBlock::Header& blockHeader() const;
             
         void* cellAlign(void*);
             
@@ -149,8 +149,9 @@ public:
         void sweep(FreeList*);
         
         // This is to be called by Subspace.
-        template<typename DestroyFunc>
-        void finishSweepKnowingHeapCellType(FreeList*, const DestroyFunc&);
+        // Note: We can't use std::optional because apparently it's non-structural.
+        template<bool hasSizeData = false, unsigned atomsPerCell = 0, unsigned startAtom = 0>
+        void finishSweepKnowingHeapCellType(FreeList*, const auto&);
         
         void unsweepWithNoNewlyAllocated();
         
@@ -163,8 +164,8 @@ public:
         void stopAllocating(const FreeList&);
         void resumeAllocating(FreeList&); // Call this if you canonicalized a block for some non-collection related purpose.
             
-        size_t cellSize();
-        inline unsigned cellsPerBlock();
+        size_t cellSize() const;
+        inline unsigned cellsPerBlock() const;
 
         CellAttributes attributes() const;
         DestructionMode destruction() const;
@@ -176,13 +177,9 @@ public:
 
         size_t backingStorageSize() { return bitwise_cast<uintptr_t>(end()) - bitwise_cast<uintptr_t>(pageStart()); }
         
-        bool isAllocated();
-        
-        bool isLive(HeapVersion markingVersion, HeapVersion newlyAllocatedVersion, bool isMarking, const HeapCell*);
-        inline bool isLiveCell(HeapVersion markingVersion, HeapVersion newlyAllocatedVersion, bool isMarking, const void*);
-
         bool isLive(const HeapCell*);
-        bool isLiveCell(const void*);
+
+        bool isLiveForConservativeRoots(HeapVersion markingVersion, HeapVersion newlyAllocatedVersion, const void*);
 
         bool isFreeListedCell(const void* target) const;
 
@@ -194,8 +191,6 @@ public:
         JS_EXPORT_PRIVATE bool areMarksStale();
         bool areMarksStaleForSweep();
         
-        void assertMarksNotStale();
-            
         bool isFreeListed() const { return m_isFreeListed; }
         
         unsigned index() const { return m_index; }
@@ -211,9 +206,13 @@ public:
         bool contains(void* p) const { return start() <= p && p < end(); }
         void* pageStart() const { return &m_block->atoms()[0]; }
 
-        void dumpState(PrintStream&);
+        void dumpState(PrintStream&) const;
         
+        static constexpr std::pair<unsigned, unsigned> atomsPerCellAndStartAtom(size_t cellSize);
+
     private:
+        template<TriState worldIsStopped>
+        bool isLive(HeapVersion markingVersion, HeapVersion newlyAllocatedVersion, bool isMarking, const HeapCell*);
         Handle(Heap&, AlignedMemoryAllocator*, void*);
         
         enum SweepDestructionMode { BlockHasNoDestructors, BlockHasDestructors, BlockHasDestructorsAndCollectorIsRunning };
@@ -221,15 +220,27 @@ public:
         enum EmptyMode { IsEmpty, NotEmpty };
         enum NewlyAllocatedMode { HasNewlyAllocated, DoesNotHaveNewlyAllocated };
         enum MarksMode { MarksStale, MarksNotStale };
-        
+
         SweepDestructionMode sweepDestructionMode();
         EmptyMode emptyMode();
         ScribbleMode scribbleMode();
         NewlyAllocatedMode newlyAllocatedMode();
         MarksMode marksMode();
+
+        struct SpecializedSweepData {
+            EmptyMode emptyMode { IsEmpty };
+            SweepMode sweepMode { SweepToFreeList };
+            SweepDestructionMode destructionMode { BlockHasNoDestructors };
+            ScribbleMode scribbleMode { DontScribble };
+            NewlyAllocatedMode newlyAllocatedMode { HasNewlyAllocated };
+            MarksMode marksMode { MarksStale };
+            bool hasAtomSizeData { false };
+            unsigned atomsPerCell { 0 };
+            unsigned startAtom { 0 };
+        };
         
-        template<bool, EmptyMode, SweepMode, SweepDestructionMode, ScribbleMode, NewlyAllocatedMode, MarksMode, typename DestroyFunc>
-        void specializedSweep(FreeList*, EmptyMode, SweepMode, SweepDestructionMode, ScribbleMode, NewlyAllocatedMode, MarksMode, const DestroyFunc&);
+        template<bool, SpecializedSweepData>
+        void specializedSweep(FreeList*, EmptyMode, SweepMode, SweepDestructionMode, ScribbleMode, NewlyAllocatedMode, MarksMode, const auto&);
         
         unsigned m_atomsPerCell { std::numeric_limits<unsigned>::max() };
         unsigned m_startAtom { std::numeric_limits<unsigned>::max() }; // Exact location of the first allocatable atom.
@@ -251,6 +262,7 @@ private:
     typedef char Atom[atomSize];
 
 public:
+    // FIXME: We should get rid of this class now that it's not no longer a Footer.
     class Header {
     public:
         Header(VM&, Handle&);
@@ -261,6 +273,15 @@ public:
     private:
         friend class LLIntOffsetsExtractor;
         friend class MarkedBlock;
+        friend class BlockDirectory;
+        friend class IsoCellSet;
+
+#if ASSERT_ENABLED
+        void assertConcurrentWriteAccess() const WTF_ASSERTS_ACQUIRED_LOCK(m_lock);
+#else
+        ALWAYS_INLINE void assertConcurrentWriteAccess() const WTF_ASSERTS_ACQUIRED_LOCK(m_lock) { }
+#endif
+        ALWAYS_INLINE void assertConcurrentReadAccess() const WTF_ASSERTS_ACQUIRED_SHARED_LOCK(m_lock) { }
         
         Handle& m_handle;
         // m_vm must remain a pointer (instead of a reference) because JSCLLIntOffsetsExtractor
@@ -268,7 +289,7 @@ public:
         VM* const m_vm;
         Subspace* m_subspace;
 
-        CountingLock m_lock;
+        mutable CountingLock m_lock;
     
         // The actual mark count can be computed by doing: m_biasedMarkCount - m_markCountBias. Note
         // that this count is racy. It will accurately detect whether or not exactly zero things were
@@ -297,11 +318,11 @@ public:
         //     m_biasedMarkCount != m_markCountBias
         int16_t m_markCountBias;
 
-        HeapVersion m_markingVersion;
-        HeapVersion m_newlyAllocatedVersion;
+        HeapVersion m_markingVersion WTF_GUARDED_BY_LOCK(m_lock);
+        HeapVersion m_newlyAllocatedVersion WTF_GUARDED_BY_LOCK(m_lock);
 
-        WTF::BitSet<atomsPerBlock> m_marks;
-        WTF::BitSet<atomsPerBlock> m_newlyAllocated;
+        WTF::BitSet<atomsPerBlock> m_marks WTF_GUARDED_BY_LOCK(m_lock);
+        WTF::BitSet<atomsPerBlock> m_newlyAllocated WTF_GUARDED_BY_LOCK(m_lock);
         void* m_verifierMemo { nullptr };
     };
     
@@ -339,32 +360,29 @@ public:
 
     static bool isAtomAligned(const void*);
     static MarkedBlock* blockFor(const void*);
-    unsigned atomNumber(const void*);
-    size_t candidateAtomNumber(const void*);
-        
+    unsigned atomNumber(const void*) const;
+    size_t candidateAtomNumber(const void*) const;
+
     size_t markCount();
 
-    bool isMarked(const void*);
-    bool isMarked(HeapVersion markingVersion, const void*);
-    bool isMarked(const void*, Dependency);
+    bool isMarked(const void*) const;
+    bool isMarked(HeapVersion markingVersion, const void*) const;
+    bool isMarked(const void*, Dependency) const;
     bool testAndSetMarked(const void*, Dependency);
         
     bool isAtom(const void*);
     void clearMarked(const void*);
     
-    bool isNewlyAllocated(const void*);
-    void setNewlyAllocated(const void*);
-    void clearNewlyAllocated(const void*);
-    const WTF::BitSet<atomsPerBlock>& newlyAllocated() const;
-    
-    HeapVersion newlyAllocatedVersion() const { return header().m_newlyAllocatedVersion; }
+    bool isNewlyAllocated(const void*) const;
+
+    HeapVersion newlyAllocatedVersion() const WTF_IGNORES_THREAD_SAFETY_ANALYSIS { return header().m_newlyAllocatedVersion; }
     
     inline bool isNewlyAllocatedStale() const;
     
     inline bool hasAnyNewlyAllocated();
     void resetAllocated();
         
-    size_t cellSize();
+    size_t cellSize() const;
     CellAttributes attributes() const;
 
     bool hasAnyMarked() const;
@@ -381,21 +399,17 @@ public:
     bool areMarksStale(HeapVersion markingVersion);
     
     Dependency aboutToMark(HeapVersion markingVersion);
-        
+
 #if ASSERT_ENABLED
-    JS_EXPORT_PRIVATE void assertMarksNotStale();
+    JS_EXPORT_PRIVATE void assertMarksNotStale() const;
 #else
-    void assertMarksNotStale() { }
+    ALWAYS_INLINE void assertMarksNotStale() const { }
 #endif
-        
+
     void resetMarks();
     
-    bool isMarkedRaw(const void* p);
-    HeapVersion markingVersion() const { return header().m_markingVersion; }
-    
-    const WTF::BitSet<atomsPerBlock>& marks() const;
-    
-    CountingLock& lock() { return header().m_lock; }
+    bool isMarkedRaw(const void* p) const;
+    HeapVersion markingVersion() const WTF_IGNORES_THREAD_SAFETY_ANALYSIS { return header().m_markingVersion; }
     
     Subspace* subspace() const { return header().m_subspace; }
 
@@ -407,6 +421,8 @@ public:
     void setVerifierMemo(void*);
     template<typename T> T verifierMemo() const;
 
+    void dumpBits(PrintStream&) const;
+
 private:
     MarkedBlock(VM&, Handle&);
     ~MarkedBlock();
@@ -417,8 +433,8 @@ private:
     
     void noteMarkedSlow();
     
-    inline bool marksConveyLivenessDuringMarking(HeapVersion markingVersion);
-    inline bool marksConveyLivenessDuringMarking(HeapVersion myMarkingVersion, HeapVersion markingVersion);
+    inline bool marksPreserveLivenessDuringMarking(HeapVersion markingVersion);
+    inline bool marksPreserveLivenessDuringMarking(HeapVersion myMarkingVersion, HeapVersion markingVersion);
 };
 
 inline MarkedBlock::Header& MarkedBlock::header()
@@ -441,12 +457,12 @@ inline const MarkedBlock::Handle& MarkedBlock::handle() const
     return const_cast<MarkedBlock*>(this)->handle();
 }
 
-inline MarkedBlock& MarkedBlock::Handle::block()
+inline MarkedBlock& MarkedBlock::Handle::block() const
 {
     return *m_block;
 }
 
-inline MarkedBlock::Header& MarkedBlock::Handle::blockHeader()
+inline MarkedBlock::Header& MarkedBlock::Handle::blockHeader() const
 {
     return block().header();
 }
@@ -516,12 +532,12 @@ inline void MarkedBlock::Handle::shrink()
     m_weakSet.shrink();
 }
 
-inline size_t MarkedBlock::Handle::cellSize()
+inline size_t MarkedBlock::Handle::cellSize() const
 {
     return m_atomsPerCell * atomSize;
 }
 
-inline size_t MarkedBlock::cellSize()
+inline size_t MarkedBlock::cellSize() const
 {
     return handle().cellSize();
 }
@@ -561,14 +577,14 @@ inline size_t MarkedBlock::Handle::size()
     return markCount() * cellSize();
 }
 
-inline size_t MarkedBlock::candidateAtomNumber(const void* p)
+inline size_t MarkedBlock::candidateAtomNumber(const void* p) const
 {
     // This function must return size_t instead of unsigned since pointer |p| is not guaranteed that this is within MarkedBlock.
     // See MarkedBlock::isAtom which can accept out-of-bound pointers.
     return (reinterpret_cast<uintptr_t>(p) - reinterpret_cast<uintptr_t>(this)) / atomSize;
 }
 
-inline unsigned MarkedBlock::atomNumber(const void* p)
+inline unsigned MarkedBlock::atomNumber(const void* p) const
 {
     size_t atomNumber = candidateAtomNumber(p);
     ASSERT(atomNumber >= handle().m_startAtom);
@@ -578,11 +594,13 @@ inline unsigned MarkedBlock::atomNumber(const void* p)
 
 inline bool MarkedBlock::areMarksStale(HeapVersion markingVersion)
 {
+    header().assertConcurrentReadAccess();
     return markingVersion != header().m_markingVersion;
 }
 
 inline Dependency MarkedBlock::aboutToMark(HeapVersion markingVersion)
 {
+    header().assertConcurrentReadAccess();
     HeapVersion version;
     Dependency dependency = Dependency::loadAndFence(&header().m_markingVersion, version);
     if (UNLIKELY(version != markingVersion))
@@ -590,18 +608,15 @@ inline Dependency MarkedBlock::aboutToMark(HeapVersion markingVersion)
     return dependency;
 }
 
-inline void MarkedBlock::Handle::assertMarksNotStale()
+inline bool MarkedBlock::isMarkedRaw(const void* p) const
 {
-    block().assertMarksNotStale();
-}
-
-inline bool MarkedBlock::isMarkedRaw(const void* p)
-{
+    header().assertConcurrentReadAccess();
     return header().m_marks.get(atomNumber(p));
 }
 
-inline bool MarkedBlock::isMarked(HeapVersion markingVersion, const void* p)
+inline bool MarkedBlock::isMarked(HeapVersion markingVersion, const void* p) const
 {
+    header().assertConcurrentReadAccess();
     HeapVersion version;
     Dependency dependency = Dependency::loadAndFence(&header().m_markingVersion, version);
     if (UNLIKELY(version != markingVersion))
@@ -609,8 +624,9 @@ inline bool MarkedBlock::isMarked(HeapVersion markingVersion, const void* p)
     return header().m_marks.get(atomNumber(p), dependency);
 }
 
-inline bool MarkedBlock::isMarked(const void* p, Dependency dependency)
+inline bool MarkedBlock::isMarked(const void* p, Dependency dependency) const
 {
+    header().assertConcurrentReadAccess();
     assertMarksNotStale();
     return header().m_marks.get(atomNumber(p), dependency);
 }
@@ -618,32 +634,15 @@ inline bool MarkedBlock::isMarked(const void* p, Dependency dependency)
 inline bool MarkedBlock::testAndSetMarked(const void* p, Dependency dependency)
 {
     assertMarksNotStale();
+    header().assertConcurrentWriteAccess();
+    // dataLogLn(RawPointer(this), ": MarkedBlock::testAndSetMarked! (", atomNumber(p), ")");
     return header().m_marks.concurrentTestAndSet(atomNumber(p), dependency);
 }
 
-inline const WTF::BitSet<MarkedBlock::atomsPerBlock>& MarkedBlock::marks() const
+inline bool MarkedBlock::isNewlyAllocated(const void* p) const
 {
-    return header().m_marks;
-}
-
-inline bool MarkedBlock::isNewlyAllocated(const void* p)
-{
+    header().assertConcurrentReadAccess();
     return header().m_newlyAllocated.get(atomNumber(p));
-}
-
-inline void MarkedBlock::setNewlyAllocated(const void* p)
-{
-    header().m_newlyAllocated.set(atomNumber(p));
-}
-
-inline void MarkedBlock::clearNewlyAllocated(const void* p)
-{
-    header().m_newlyAllocated.clear(atomNumber(p));
-}
-
-inline const WTF::BitSet<MarkedBlock::atomsPerBlock>& MarkedBlock::newlyAllocated() const
-{
-    return header().m_newlyAllocated;
 }
 
 inline bool MarkedBlock::isAtom(const void* p)

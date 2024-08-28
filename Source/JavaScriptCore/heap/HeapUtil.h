@@ -52,8 +52,6 @@ public:
         const HashSet<MarkedBlock*>& set = heap.objectSpace().blocks().set();
         
         ASSERT(heap.objectSpace().isMarking());
-        static constexpr bool isMarking = true;
-        
         char* pointer = static_cast<char*>(passedPointer);
         
         // It could point to a large allocation.
@@ -90,7 +88,7 @@ public:
                 && set.contains(previousCandidate)
                 && mayHaveIndexingHeader(previousCandidate->handle().cellKind())) {
                 previousPointer = static_cast<char*>(previousCandidate->handle().cellAlign(previousPointer));
-                if (previousCandidate->handle().isLiveCell(markingVersion, newlyAllocatedVersion, isMarking, previousPointer))
+                if (previousCandidate->handle().isLiveForConservativeRoots(markingVersion, newlyAllocatedVersion, previousPointer))
                     func(previousPointer, previousCandidate->handle().cellKind());
             }
         }
@@ -106,9 +104,13 @@ public:
         HeapCell::Kind cellKind = candidate->handle().cellKind();
         
         auto tryPointer = [&] (void* pointer) {
-            bool isLive = candidate->handle().isLiveCell(markingVersion, newlyAllocatedVersion, isMarking, pointer);
+            bool isLive = candidate->handle().isLiveForConservativeRoots(markingVersion, newlyAllocatedVersion, pointer);
             if (isLive)
                 func(pointer, cellKind);
+
+            // if (candidate->subspace()->name() == "IsoSpace CodeBlock")
+            //     dataLogLn("Non-live CodeBlock: ", RawPointer(candidate), "/", RawPointer(pointer), " #: ", candidate->atomNumber(pointer));
+
             // Only return early if we are marking a non-butterfly, since butterflies without indexed properties could point past the end of their allocation.
             // If we do, and there is another live butterfly immediately following the first, we will mark the latter one here but we still need to
             // mark the former.
@@ -168,7 +170,7 @@ public:
         if (candidate->handle().cellKind() != HeapCell::JSCell)
             return false;
         
-        if (!candidate->handle().isLiveCell(pointer))
+        if (!candidate->handle().isLive(pointer))
             return false;
         
         return true;
