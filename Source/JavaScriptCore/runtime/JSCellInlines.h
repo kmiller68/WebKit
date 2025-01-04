@@ -46,7 +46,7 @@ WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
 #include "JSObject.h"
 #include "JSString.h"
 #include "LocalAllocatorInlines.h"
-#include "MarkedBlock.h"
+#include "MarkedBlockInlines.h"
 #include "SlotVisitorInlines.h"
 #include "Structure.h"
 #include "Symbol.h"

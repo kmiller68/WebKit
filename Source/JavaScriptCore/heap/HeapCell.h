@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Apple Inc. All rights reserved.
+ * Copyright (C) 2016-2025 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -52,7 +52,7 @@ public:
     
     // We're intentionally only zapping the bits for the structureID and leaving
     // the rest of the cell header bits intact for crash analysis uses.
-    enum ZapReason : int8_t { Unspecified, Destruction, StopAllocating };
+    enum ZapReason : int8_t { Unspecified, FreeListed, Destruction, StopAllocating };
     void zap(ZapReason reason)
     {
         uint32_t* cellWords = std::bit_cast<uint32_t*>(this);
@@ -62,8 +62,10 @@ public:
     }
     bool isZapped() const { return !*std::bit_cast<const uint32_t*>(this); }
 
-    // isPendingDestruction returns true iff the cell is no longer alive but has not yet
-    // been swept and therefore its destructor (if it has one) has not yet run.
+    // isPendingDestruction returns true when the cell is no longer alive but has not yet
+    // been swept and therefore its destructor (if it has one) has not yet run. This must
+    // not be called on an already swept/destructed HeapCell since the backing MarkedBlock
+    //  may have been freed too or its cell could have been reallocated.
     bool isPendingDestruction();
 
     bool isPreciseAllocation() const;

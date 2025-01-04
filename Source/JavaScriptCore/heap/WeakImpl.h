@@ -50,11 +50,11 @@ public:
     WeakImpl();
     WeakImpl(JSValue, WeakHandleOwner*, void* context);
 
-    State state();
+    State state() const;
     void setState(State);
     void clear();
 
-    const JSValue& jsValue();
+    const JSValue& jsValue() const;
     static constexpr ptrdiff_t offsetOfJSValue() { return OBJECT_OFFSETOF(WeakImpl, m_jsValue); }
     WeakHandleOwner* weakHandleOwner();
     static constexpr ptrdiff_t offsetOfWeakHandleOwner() { return OBJECT_OFFSETOF(WeakImpl, m_weakHandleOwner); }
@@ -88,7 +88,7 @@ inline WeakImpl::WeakImpl(JSValue jsValue, WeakHandleOwner* weakHandleOwner, voi
     ASSERT(m_jsValue && m_jsValue.isCell());
 }
 
-inline WeakImpl::State WeakImpl::state()
+inline WeakImpl::State WeakImpl::state() const
 {
     return static_cast<State>(reinterpret_cast<uintptr_t>(m_weakHandleOwner) & StateMask);
 }
@@ -99,7 +99,7 @@ inline void WeakImpl::setState(WeakImpl::State state)
     m_weakHandleOwner = reinterpret_cast<WeakHandleOwner*>((reinterpret_cast<uintptr_t>(m_weakHandleOwner) & ~StateMask) | state);
 }
 
-inline const JSValue& WeakImpl::jsValue()
+inline const JSValue& WeakImpl::jsValue() const
 {
     return m_jsValue;
 }

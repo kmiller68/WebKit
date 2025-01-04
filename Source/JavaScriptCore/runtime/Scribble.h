@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Apple Inc. All rights reserved.
+ * Copyright (C) 2019-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,18 +38,19 @@ inline bool scribbleFreeCells()
     return ASSERT_ENABLED || Options::scribbleFreeCells();
 }
 
-#define SCRIBBLE_WORD static_cast<intptr_t>(0xbadbeef0)
+// We set the high bits because we want to preserve the zapped bits (i.e. StructureID) of the cell.
+#define SCRIBBLE_WORD static_cast<EncodedJSValue>(0xbadbeef000000000)
 
 inline bool isScribbledValue(JSValue value)
 {
-    return JSValue::encode(value) == JSValue::encode(std::bit_cast<JSCell*>(SCRIBBLE_WORD));
+    return JSValue::encode(value) == SCRIBBLE_WORD;
 }
 
 inline void scribble(void* base, size_t size)
 {
     for (size_t i = size / sizeof(EncodedJSValue); i--;) {
         // Use a 16-byte aligned value to ensure that it passes the cell check.
-        static_cast<EncodedJSValue*>(base)[i] = JSValue::encode(std::bit_cast<JSCell*>(SCRIBBLE_WORD));
+        static_cast<EncodedJSValue*>(base)[i] = SCRIBBLE_WORD;
     }
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2020 Apple Inc. All rights reserved.
+ * Copyright (C) 2008-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,6 +38,8 @@ WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
 #include <wtf/Compiler.h>
 #include <wtf/ForbidHeapAllocation.h>
 #include <wtf/Noncopyable.h>
+#include <wtf/StdLibExtras.h>
+#include <wtf/ThreadSafetyAnalysis.h>
 #include <wtf/ThreadSanitizerSupport.h>
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_END
@@ -64,7 +66,7 @@ template<typename T> class DropLockForScope;
 using AdoptLockTag = std::adopt_lock_t;
 constexpr AdoptLockTag AdoptLock;
 
-template<typename T, typename = void>
+template<typename T>
 class [[nodiscard]] Locker : public AbstractLocker { // NOLINT
 public:
     explicit Locker(T& lockable) : m_lockable(&lockable) { lock(); }
@@ -165,6 +167,78 @@ public:
 private:
     Locker<LockType>& m_lock;
 };
+
+class Lock;
+class OSLock;
+class CountingLock;
+
+// Locker specialization to use with Lock and UnfairLock that integrates with thread safety analysis.
+// Non-movable simple scoped lock holder.
+// Example: Locker locker { m_lock };
+template <AnyOfType<Lock, OSLock, CountingLock> T>
+class WTF_CAPABILITY_SCOPED_LOCK Locker<T> : public AbstractLocker {
+public:
+    explicit Locker(T& lock) WTF_ACQUIRES_LOCK(lock)
+        : m_lock(lock)
+        , m_isLocked(true)
+    {
+        m_lock.lock();
+    }
+    Locker(AdoptLockTag, T& lock) WTF_REQUIRES_LOCK(lock)
+        : m_lock(lock)
+        , m_isLocked(true)
+    {
+    }
+    ~Locker() WTF_RELEASES_LOCK()
+    {
+        if (m_isLocked)
+            m_lock.unlock();
+    }
+    void unlockEarly() WTF_RELEASES_LOCK()
+    {
+        ASSERT(m_isLocked);
+        m_isLocked = false;
+        m_lock.unlock();
+    }
+    Locker(const Locker<T>&) = delete;
+    Locker& operator=(const Locker<T>&) = delete;
+
+    ALWAYS_INLINE void assertIsHolding(T& lock) WTF_ASSERTS_ACQUIRED_LOCK(lock)
+    {
+        ASSERT(m_isLocked);
+        ASSERT(&lock == &m_lock);
+        lock.assertIsOwner();
+    }
+
+private:
+    // Support DropLockForScope even though it doesn't support thread safety analysis.
+    template<typename>
+    friend class DropLockForScope;
+
+    void lock() WTF_ACQUIRES_LOCK(m_lock)
+    {
+        m_lock.lock();
+        compilerFence();
+    }
+
+    void unlock() WTF_RELEASES_LOCK(m_lock)
+    {
+        compilerFence();
+        m_lock.unlock();
+    }
+
+    T& m_lock;
+    bool m_isLocked { false };
+};
+
+Locker(Lock&) -> Locker<Lock>;
+Locker(AdoptLockTag, Lock&) -> Locker<Lock>;
+
+Locker(OSLock&) -> Locker<OSLock>;
+Locker(AdoptLockTag, OSLock&) -> Locker<OSLock>;
+
+Locker(CountingLock&) -> Locker<CountingLock>;
+Locker(AdoptLockTag, CountingLock&) -> Locker<CountingLock>;
 
 // This is a close replica of Locker, but for generic lock/unlock functions.
 template<typename T, void (lockFunction)(T*), void (*unlockFunction)(T*)>

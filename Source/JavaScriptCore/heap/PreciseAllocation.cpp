@@ -278,6 +278,8 @@ void PreciseAllocation::sweep()
         // since PreciseAllocation's destruction can be delayed until its WeakSet is cleared.
         if (isLowerTierPrecise())
             static_cast<IsoSubspace*>(m_subspace)->clearIsoCellSetBit(this);
+        if (UNLIKELY(scribbleFreeCells()))
+            scribble(cell(), cellSize());
         m_hasValidCell = false;
     }
 }

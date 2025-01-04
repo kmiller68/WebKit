@@ -196,6 +196,7 @@ void BlockDirectory::removeBlock(MarkedBlock::Handle* block, WillDeleteBlock wil
 
 void BlockDirectory::stopAllocating()
 {
+    assertIsMutatorOrMutatorIsStopped();
     dataLogLnIf(BlockDirectoryInternal::verbose, RawPointer(this), ": BlockDirectory::stopAllocating!");
     m_localAllocators.forEach(
         [&] (LocalAllocator* allocator) {
@@ -203,7 +204,6 @@ void BlockDirectory::stopAllocating()
         });
 
 #if ASSERT_ENABLED
-    assertIsMutatorOrMutatorIsStopped();
     if (UNLIKELY(!inUseBitsView().isEmpty())) {
         dataLogLn("Not all inUse bits are clear at stopAllocating");
         dataLogLn(*this);
@@ -294,7 +294,6 @@ void BlockDirectory::endMarking()
     // know what kind of collection it is. That knowledge is already encoded in the m_markingXYZ
     // vectors.
     
-    // Sweeper is suspended so we don't need the lock here.
     emptyBits() = liveBits() & ~markingNotEmptyBits();
     canAllocateButNotEmptyBits() = liveBits() & markingNotEmptyBits() & ~markingRetiredBits();
 

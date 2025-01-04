@@ -83,6 +83,8 @@ void LocalAllocator::stopAllocating()
     }
     
     m_currentBlock->stopAllocating(m_freeList);
+    m_directory->assertIsMutatorOrMutatorIsStopped();
+    ASSERT(!m_directory->isInUse(m_currentBlock));
     m_lastActiveBlock = m_currentBlock;
     m_currentBlock = nullptr;
     m_freeList.clear();
@@ -93,9 +95,12 @@ void LocalAllocator::resumeAllocating()
     if (!m_lastActiveBlock)
         return;
 
+    m_directory->assertIsMutatorOrMutatorIsStopped();
+    ASSERT(!m_directory->isInUse(m_lastActiveBlock));
     m_lastActiveBlock->resumeAllocating(m_freeList);
     m_currentBlock = m_lastActiveBlock;
     m_lastActiveBlock = nullptr;
+    ASSERT(m_directory->isInUse(m_currentBlock));
 }
 
 void LocalAllocator::prepareForAllocation()
@@ -159,8 +164,11 @@ void* LocalAllocator::allocateSlowCase(JSC::Heap& heap, size_t cellSize, GCDefer
 
 void LocalAllocator::didConsumeFreeList()
 {
-    if (m_currentBlock)
+    if (m_currentBlock) {
         m_currentBlock->didConsumeFreeList();
+        m_directory->assertIsMutatorOrMutatorIsStopped();
+        ASSERT(!m_directory->isInUse(m_currentBlock));
+    }
     
     m_freeList.clear();
     m_currentBlock = nullptr;
@@ -239,6 +247,7 @@ void* LocalAllocator::tryAllocateIn(MarkedBlock::Handle* block, size_t cellSize)
         ASSERT(!block->isFreeListed());
         ASSERT(!m_directory->isEmpty(block));
         ASSERT(!m_directory->isCanAllocateButNotEmpty(block));
+        ASSERT(!m_directory->isInUse(block));
         return nullptr;
     }
     

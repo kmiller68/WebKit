@@ -29,6 +29,8 @@
 #include "JSScope.h"
 #include "Register.h"
 
+#include "Scribble.h"
+
 namespace JSC {
 
 ALWAYS_INLINE CallFrame* Register::callFrame() const
@@ -59,24 +61,28 @@ ALWAYS_INLINE Register& Register::operator=(CallFrame* callFrame)
 
 ALWAYS_INLINE Register& Register::operator=(CodeBlock* codeBlock)
 {
+    ASSERT(codeBlock != std::bit_cast<JSValue>(SCRIBBLE_WORD));
     u.codeBlock = codeBlock;
     return *this;
 }
 
 ALWAYS_INLINE Register& Register::operator=(JSCell* object)
 {
+    ASSERT(object != std::bit_cast<JSValue>(SCRIBBLE_WORD));
     u.value = JSValue::encode(JSValue(object));
     return *this;
 }
 
 ALWAYS_INLINE Register& Register::operator=(JSScope* scope)
 {
+    ASSERT(scope != std::bit_cast<JSValue>(SCRIBBLE_WORD));
     *this = JSValue(scope);
     return *this;
 }
 
 ALWAYS_INLINE Register& Register::operator=(EncodedJSValue encodedJSValue)
 {
+    ASSERT(encodedJSValue != std::bit_cast<EncodedJSValue>(SCRIBBLE_WORD));
     u.value = encodedJSValue;
     return *this;
 }

@@ -69,11 +69,7 @@ std::atomic<unsigned> UnboundedSynchronousIPCScope::unboundedSynchronousIPCCount
 enum class MessageIdentifierType { };
 using MessageIdentifier = AtomicObjectIdentifier<MessageIdentifierType>;
 
-#if ENABLE(UNFAIR_LOCK)
-static UnfairLock s_connectionMapLock;
-#else
-static Lock s_connectionMapLock;
-#endif
+static OSLock s_connectionMapLock;
 
 struct Connection::WaitForMessageState {
     WaitForMessageState(MessageName messageName, uint64_t destinationID, OptionSet<WaitForOption> waitForOptions)

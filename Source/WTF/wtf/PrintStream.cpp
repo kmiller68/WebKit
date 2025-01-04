@@ -197,6 +197,12 @@ void printInternal(PrintStream& out, double value)
     out.printf("%lf", value);
 }
 
+#if OS(WINDOWS)
+#define HEX_PREFIX "0x"
+#else
+#define HEX_PREFIX
+#endif
+
 void printInternal(PrintStream& out, RawHex value)
 {
 #if !CPU(ADDRESS64)
@@ -205,20 +211,16 @@ void printInternal(PrintStream& out, RawHex value)
         return;
     }
 #endif
-#if OS(WINDOWS)
-    out.printf("0x%p", value.ptr());
-#else
-    out.printf("%p", value.ptr());
-#endif
+
+    if (value.printLeadingZeros()) {
+        out.printf(HEX_PREFIX "%0*llx", 16, value.value());
+    } else
+        out.printf(HEX_PREFIX "%llx", value.value());
 }
 
 void printInternal(PrintStream& out, RawPointer value)
 {
-#if OS(WINDOWS)
-    out.printf("0x%p", value.value());
-#else
-    out.printf("%p", value.value());
-#endif
+    out.printf(HEX_PREFIX "%p", value.value());
 }
 
 void printInternal(PrintStream& out, FixedWidthDouble value)

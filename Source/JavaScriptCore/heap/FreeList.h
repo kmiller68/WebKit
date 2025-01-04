@@ -90,11 +90,12 @@ public:
     bool allocationWillFail() const { return m_intervalStart >= m_intervalEnd && isSentinel(nextInterval()); }
     bool allocationWillSucceed() const { return !allocationWillFail(); }
     
-    template<typename Func>
-    HeapCell* allocateWithCellSize(const Func& slowPath, size_t cellSize);
+    HeapCell* allocateWithCellSize(const Invocable<HeapCell*()> auto& slowPath, size_t cellSize);
+
+    HeapCell* peekNext() const;
     
-    template<typename Func>
-    void forEach(const Func&) const;
+    void forEach(const Invocable<void(HeapCell*)> auto&) const;
+    void forEachInterval(const Invocable<void(char* start, char* end)> auto&) const;
     
     unsigned originalSize() const { return m_originalSize; }
 
@@ -109,7 +110,8 @@ public:
     JS_EXPORT_PRIVATE void dump(PrintStream&) const;
 
     unsigned cellSize() const { return m_cellSize; }
-    
+    bool hasOneInterval() const { return isSentinel(nextInterval()); }
+
 private:
     FreeCell* nextInterval() const { return m_nextInterval; }
     

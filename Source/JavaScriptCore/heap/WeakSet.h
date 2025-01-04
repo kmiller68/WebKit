@@ -65,8 +65,7 @@ public:
 
     WeakBlock* head() { return m_blocks.head(); }
 
-    template<typename Functor>
-    void forEachBlock(const Functor& functor)
+    void forEachBlock(const Invocable<void(WeakBlock&)> auto& functor)
     {
         for (WeakBlock* block = m_blocks.head(); block; block = block->next())
             functor(*block);

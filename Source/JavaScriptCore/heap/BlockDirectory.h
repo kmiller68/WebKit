@@ -92,8 +92,8 @@ public:
     void updatePercentageOfPagedOutPages(WTF::SimpleStats&);
     
 #if ASSERT_ENABLED
-    void assertIsMutatorOrMutatorIsStopped() const WTF_ASSERTS_ACQUIRED_SHARED_LOCK(m_bitvectorLock);
-    void assertSweeperIsSuspended() const WTF_ASSERTS_ACQUIRED_LOCK(m_bitvectorLock);
+    JS_EXPORT_PRIVATE void assertIsMutatorOrMutatorIsStopped() const WTF_ASSERTS_ACQUIRED_SHARED_LOCK(m_bitvectorLock);
+    JS_EXPORT_PRIVATE void assertSweeperIsSuspended() const WTF_ASSERTS_ACQUIRED_LOCK(m_bitvectorLock);
 #else
     ALWAYS_INLINE void assertIsMutatorOrMutatorIsStopped() const WTF_ASSERTS_ACQUIRED_SHARED_LOCK(m_bitvectorLock) { }
     ALWAYS_INLINE void assertSweeperIsSuspended() const WTF_ASSERTS_ACQUIRED_LOCK(m_bitvectorLock) { }

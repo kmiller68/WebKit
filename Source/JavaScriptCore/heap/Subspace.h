@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2023 Apple Inc. All rights reserved.
+ * Copyright (C) 2017-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -47,7 +47,7 @@ class Subspace {
 public:
     JS_EXPORT_PRIVATE virtual ~Subspace();
 
-    const char* name() const { return m_name.data(); }
+    const CString& name() const { return m_name; }
     unsigned nameHash() const { return m_name.hash(); } // FIXME: rdar://139998916
     MarkedSpace& space() const { return m_space; }
 

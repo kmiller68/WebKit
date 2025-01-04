@@ -32,7 +32,7 @@
 #include <wtf/Seconds.h>
 #include <wtf/ThreadSafetyAnalysis.h>
 
-#if ENABLE(UNFAIR_LOCK)
+#if ENABLE(OS_UNFAIR_LOCK)
 #include <os/lock.h>
 #endif
 
@@ -150,13 +150,14 @@ private:
 };
 
 // Asserts that the lock is held.
-// This can be used in cases where the annotations cannot be added to the function
-// declaration.
+// This can be used in cases where the annotations cannot be added to the function declaration.
+// It's preferrable to use `Locker::assertIsHeld` over this when possible as that function makes it clear
+// you're the holder of the lock and not some other thread.
 inline void assertIsHeld(const Lock& lock) WTF_ASSERTS_ACQUIRED_LOCK(lock) { ASSERT_UNUSED(lock, lock.isHeld()); }
 
-#if ENABLE(UNFAIR_LOCK)
-class WTF_CAPABILITY_LOCK UnfairLock {
-    WTF_MAKE_NONCOPYABLE(UnfairLock);
+#if ENABLE(OS_UNFAIR_LOCK)
+class WTF_CAPABILITY_LOCK OSLock {
+    WTF_MAKE_NONCOPYABLE(OSLock);
 public:
     void lock() WTF_ACQUIRES_LOCK()
     {
@@ -171,90 +172,17 @@ public:
         os_unfair_lock_assert_owner(&m_lock);
     }
 
-    UnfairLock() = default;
+    OSLock() = default;
 
 private:
     os_unfair_lock m_lock = OS_UNFAIR_LOCK_INIT;
 };
 
-inline void assertIsHeld(const UnfairLock& lock) WTF_ASSERTS_ACQUIRED_LOCK(lock) { lock.assertIsOwner(); }
-#endif // ENABLE(UNFAIR_LOCK)
+inline void assertIsHeld(const OSLock& lock) WTF_ASSERTS_ACQUIRED_LOCK(lock) { lock.assertIsOwner(); }
+#endif // ENABLE(OS_UNFAIR_LOCK)
 
-// Locker specialization to use with Lock and UnfairLock that integrates with thread safety analysis.
-// Non-movable simple scoped lock holder.
-// Example: Locker locker { m_lock };
-template <typename T>
-#if ENABLE(UNFAIR_LOCK)
-class WTF_CAPABILITY_SCOPED_LOCK Locker<T, std::enable_if_t<std::is_same_v<T, Lock> || std::is_same_v<T, UnfairLock>>> : public AbstractLocker {
-#else
-class WTF_CAPABILITY_SCOPED_LOCK Locker<T, std::enable_if_t<std::is_same_v<T, Lock>>> : public AbstractLocker {
-#endif
-public:
-    explicit Locker(T& lock) WTF_ACQUIRES_LOCK(lock)
-        : m_lock(lock)
-        , m_isLocked(true)
-    {
-        m_lock.lock();
-    }
-    Locker(AdoptLockTag, T& lock) WTF_REQUIRES_LOCK(lock)
-        : m_lock(lock)
-        , m_isLocked(true)
-    {
-    }
-    ~Locker() WTF_RELEASES_LOCK()
-    {
-        if (m_isLocked)
-            m_lock.unlock();
-    }
-    void unlockEarly() WTF_RELEASES_LOCK()
-    {
-        ASSERT(m_isLocked);
-        m_isLocked = false;
-        m_lock.unlock();
-    }
-    Locker(const Locker<T>&) = delete;
-    Locker& operator=(const Locker<T>&) = delete;
-
-    void assertIsHolding(T& lock) WTF_ASSERTS_ACQUIRED_LOCK(lock)
-    {
-        ASSERT(m_isLocked);
-        ASSERT(&lock == &m_lock);
-        lock.assertIsOwner();
-    }
-
-private:
-    // Support DropLockForScope even though it doesn't support thread safety analysis.
-    template<typename>
-    friend class DropLockForScope;
-
-    void lock() WTF_ACQUIRES_LOCK(m_lock)
-    {
-        m_lock.lock();
-        compilerFence();
-    }
-
-    void unlock() WTF_RELEASES_LOCK(m_lock)
-    {
-        compilerFence();
-        m_lock.unlock();
-    }
-
-    T& m_lock;
-    bool m_isLocked { false };
-};
-
-Locker(Lock&) -> Locker<Lock>;
-Locker(AdoptLockTag, Lock&) -> Locker<Lock>;
-
-#if ENABLE(UNFAIR_LOCK)
-Locker(UnfairLock&) -> Locker<UnfairLock>;
-Locker(AdoptLockTag, UnfairLock&) -> Locker<UnfairLock>;
-#endif // ENABLE(UNFAIR_LOCK)
 
 } // namespace WTF
 
 using WTF::Lock;
-
-#if ENABLE(UNFAIR_LOCK)
-using WTF::UnfairLock;
-#endif
+using WTF::OSLock;

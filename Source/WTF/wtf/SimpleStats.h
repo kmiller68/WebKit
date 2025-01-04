@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include <wtf/Atomics.h>
 #include <wtf/MathExtras.h>
 #include <wtf/StdLibExtras.h>
 
@@ -32,46 +33,44 @@ namespace WTF {
 
 // Simple and cheap way of tracking statistics if you're not worried about chopping on
 // the sum of squares (i.e. the sum of squares is unlikely to exceed 2^52).
+//
+// This class is thread-safe in the sense it's safe to `add` concurrently but any computation
+// could have inconsistent results if another thread is adding concurrently.
 class SimpleStats {
     WTF_MAKE_FAST_ALLOCATED;
 public:
-    SimpleStats()
-        : m_count(0)
-        , m_sum(0)
-        , m_sumOfSquares(0)
-    {
-    }
-    
+    SimpleStats() = default;
+
     void add(double value)
     {
-        m_count++;
-        m_sum += value;
-        m_sumOfSquares += value * value;
+        m_count.exchangeAdd(1, std::memory_order_relaxed);
+        m_sum.exchangeAdd(value, std::memory_order_relaxed);
+        m_sumOfSquares.exchangeAdd(value * value, std::memory_order_relaxed);
     }
     
     explicit operator bool() const
     {
-        return !!m_count;
+        return !!m_count.loadRelaxed();
     }
     
     double count() const
     {
-        return m_count;
+        return m_count.loadRelaxed();
     }
     
     double sum() const
     {
-        return m_sum;
+        return m_sum.loadRelaxed();
     }
     
     double sumOfSquares() const
     {
-        return m_sumOfSquares;
+        return m_sumOfSquares.loadRelaxed();
     }
     
     double mean() const
     {
-        return m_sum / m_count;
+        return m_sum.loadRelaxed() / m_count.loadRelaxed();
     }
     
     // NB. This gives a biased variance as it divides by the number of samples rather
@@ -79,12 +78,13 @@ public:
     // our case will happen rather quickly.
     double variance() const
     {
-        if (m_count < 2)
+        double count = this->count();
+        if (count < 2)
             return 0;
         
         // Compute <x^2> - <x>^2
-        double secondMoment = m_sumOfSquares / m_count;
-        double firstMoment = m_sum / m_count;
+        double secondMoment = m_sumOfSquares.loadRelaxed() / count;
+        double firstMoment = m_sum.loadRelaxed() / count;
         
         double result = secondMoment - firstMoment * firstMoment;
         
@@ -101,11 +101,24 @@ public:
     {
         return sqrt(variance());
     }
+
+    SimpleStats(const SimpleStats& other)
+    {
+        *this = other;
+    }
+
+    SimpleStats& operator=(const SimpleStats& other)
+    {
+        m_count.storeRelaxed(other.m_count.loadRelaxed());
+        m_sum.storeRelaxed(other.m_sum.loadRelaxed());
+        m_sumOfSquares.storeRelaxed(other.m_sumOfSquares.loadRelaxed());
+        return *this;
+    }
     
 private:
-    double m_count;
-    double m_sum;
-    double m_sumOfSquares;
+    Atomic<uint64_t> m_count { 0 };
+    Atomic<double> m_sum { 0 };
+    Atomic<double> m_sumOfSquares { 0 };
 };
 
 } // namespace WTF

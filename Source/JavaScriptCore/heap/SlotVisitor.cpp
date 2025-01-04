@@ -51,9 +51,13 @@ namespace JSC {
 WTF_MAKE_TZONE_ALLOCATED_IMPL(SlotVisitor);
 
 #if ENABLE(GC_VALIDATION)
-static void validate(JSCell* cell)
+static void validate(VM& vm, JSCell* cell)
 {
     RELEASE_ASSERT(cell);
+    // FIXME: This would be a lot more powerful if we could check even when the mutator was running but since we don't have a lock
+    // on MarkedBlockSet the mutator could be resizing as we check here.
+    if (vm.heap.worldIsStopped() && !cell->isPreciseAllocation())
+        RELEASE_ASSERT(vm.heap.objectSpace().blocks().set().contains(&cell->markedBlock()));
 
     if (!cell->structure()) {
         dataLogF("cell at %p has a null structure\n" , cell);
@@ -243,7 +247,7 @@ ALWAYS_INLINE void SlotVisitor::appendHiddenSlowImpl(JSCell* cell, Dependency de
     ASSERT(!m_isCheckingForDefaultMarkViolation);
 
 #if ENABLE(GC_VALIDATION)
-    validate(cell);
+    validate(vm(), cell);
 #endif
     
     if (cell->isPreciseAllocation())
@@ -347,18 +351,18 @@ private:
     SlotVisitor& m_visitor;
 };
 
-ALWAYS_INLINE void SlotVisitor::visitChildren(const JSCell* cell)
+__attribute__((optnone)) void SlotVisitor::visitChildren(const JSCell* cell) WTF_IGNORES_THREAD_SAFETY_ANALYSIS
 {
     ASSERT(m_heap.isMarked(cell));
     
     SetCurrentCellScope currentCellScope(*this, cell);
     
-    if (false) {
-        dataLog("Visiting ", RawPointer(cell));
-        if (!m_isFirstVisit)
-            dataLog(" (subsequent)");
-        dataLog("\n");
-    }
+    // if (!cell->isPreciseAllocation() && cell->markedBlock().subspace()->name() == "IsoSpace CodeBlock") {
+    //     WTF::dataFile().atomically([&] (PrintStream& out) {
+    //         out.println("Visiting ", RawPointer(&cell->markedBlock()), "/", RawPointer(cell));
+    //         cell->markedBlock().dumpBits(out);
+    //     });
+    // }
     
     // Funny story: it's possible for the object to be black already, if we barrier the object at
     // about the same time that it's marked. That's fine. It's a gnarly and super-rare race. It's
@@ -385,11 +389,14 @@ ALWAYS_INLINE void SlotVisitor::visitChildren(const JSCell* cell)
     default:
         // FIXME: This could be so much better.
         // https://bugs.webkit.org/show_bug.cgi?id=162462
-#if CPU(X86_64)
+#if ASSERT_ENABLED
         if (UNLIKELY(Options::dumpZappedCellCrashData())) {
-            Structure* structure = cell->structure();
-            if (LIKELY(structure)) {
-                const MethodTable* methodTable = &structure->classInfoForCells()->methodTable;
+            MarkedBlock::Handle& handle = cell->markedBlock().handle();
+            ASSERT(handle.directory()->isLive(&handle));
+            ASSERT(!handle.directory()->isEmpty(&handle));
+            StructureID structureID = cell->structureID();
+            if (LIKELY(structureID && !structureID.isNuked())) {
+                const MethodTable* methodTable = &structureID.decode()->classInfoForCells()->methodTable;
                 methodTable->visitChildren(const_cast<JSCell*>(cell), *this);
                 break;
             }

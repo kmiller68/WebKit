@@ -27,6 +27,8 @@
 
 #include <wtf/DataLog.h>
 #include <wtf/LockAlgorithm.h>
+#include <wtf/Locker.h>
+#include <wtf/ThreadSafetyAnalysis.h>
 
 namespace WTF {
 
@@ -53,8 +55,11 @@ namespace WTF {
 //   x86 and ARM.
 //
 // The latter is important for us because some GC paths are known to be sensitive to fences on ARM.
-
-class CountingLock final {
+//
+// This lock type partially supports thread safety analysis.
+// To annotate a member variable or a global variable with thread ownership information,
+// use lock capability annotations defined in ThreadSafetyAnalysis.h.
+class WTF_CAPABILITY_LOCK CountingLock final {
     WTF_MAKE_NONCOPYABLE(CountingLock);
     WTF_MAKE_FAST_ALLOCATED;
 
@@ -81,23 +86,26 @@ class CountingLock final {
     
 public:
     CountingLock() = default;
-    
-    bool tryLock()
-    {
-        return ExclusiveAlgorithm::tryLock(m_word);
-    }
 
-    void lock()
+    void lockWithoutAnalysis()
     {
         if (UNLIKELY(!ExclusiveAlgorithm::lockFast(m_word)))
             lockSlow();
     }
-    
-    void unlock()
+
+    void unlockWithoutAnalysis()
     {
         if (UNLIKELY(!ExclusiveAlgorithm::unlockFast(m_word)))
             unlockSlow();
     }
+
+    bool tryLock() WTF_ACQUIRES_LOCK_IF(true)
+    {
+        return ExclusiveAlgorithm::tryLock(m_word);
+    }
+
+    void lock() WTF_ACQUIRES_LOCK() { lockWithoutAnalysis(); }
+    void unlock() WTF_RELEASES_LOCK() { unlockWithoutAnalysis(); }
     
     bool isHeld() const
     {
@@ -108,7 +116,10 @@ public:
     {
         return isHeld();
     }
-    
+
+    ALWAYS_INLINE void assertIsHeldWhen(bool isNeeded) const WTF_ASSERTS_ACQUIRED_LOCK() { ASSERT_UNUSED(isNeeded, !isNeeded || isHeld()); }
+    ALWAYS_INLINE void assertIsOwner() const { assertIsHeldWhen(true); }
+
     // The only thing you're allowed to infer from this value is that if it's zero, then you didn't get
     // a real count.
     class Count {
@@ -234,7 +245,7 @@ public:
     }
     
     template<typename OptimisticFunc, typename Func>
-    auto doOptimizedFencelessRead(const OptimisticFunc& optimisticFunc, const Func& func)
+    auto doOptimisticFencelessRead(const OptimisticFunc& optimisticFunc, const Func& func)
     {
         auto count = tryOptimisticFencelessRead();
         if (count.value) {

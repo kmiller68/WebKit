@@ -116,7 +116,6 @@ inline void ConservativeRoots::genericAddPointer(char* pointer, HeapVersion mark
     const UncheckedKeyHashSet<MarkedBlock*>& set = m_heap.objectSpace().blocks().set();
 
     ASSERT(m_heap.objectSpace().isMarking());
-    static constexpr bool isMarking = true;
 
 #if ENABLE(WEBASSEMBLY) && USE(JSVALUE64)
     if constexpr (lookForWasmCallees) {
@@ -171,7 +170,7 @@ inline void ConservativeRoots::genericAddPointer(char* pointer, HeapVersion mark
             && set.contains(previousCandidate)
             && mayHaveIndexingHeader(previousCandidate->handle().cellKind())) {
             previousPointer = static_cast<char*>(previousCandidate->handle().cellAlign(previousPointer));
-            if (previousCandidate->handle().isLiveCell(markingVersion, newlyAllocatedVersion, isMarking, previousPointer))
+            if (previousCandidate->handle().isLiveForConservativeRoots(markingVersion, newlyAllocatedVersion, previousPointer))
                 markFoundGCPointer(previousPointer, previousCandidate->handle().cellKind());
         }
     }
@@ -187,7 +186,7 @@ inline void ConservativeRoots::genericAddPointer(char* pointer, HeapVersion mark
     HeapCell::Kind cellKind = candidate->handle().cellKind();
 
     auto tryPointer = [&] (void* pointer) {
-        bool isLive = candidate->handle().isLiveCell(markingVersion, newlyAllocatedVersion, isMarking, pointer);
+        bool isLive = candidate->handle().isLiveForConservativeRoots(markingVersion, newlyAllocatedVersion, pointer);
         if (isLive)
             markFoundGCPointer(pointer, cellKind);
         // Only return early if we are marking a non-butterfly, since butterflies without indexed properties could point past the end of their allocation.

@@ -108,44 +108,98 @@ void IsoCellSet::didRemoveBlock(unsigned blockIndex)
         Locker locker { m_subspace.m_directory.m_bitvectorLock };
         m_blocksWithBits[blockIndex] = false;
     }
+    // TODO: Doesn't this need to be inside the lock? didRemoveBlock to here -> addSlow -> this line
     m_bits[blockIndex] = nullptr;
 }
 
-void IsoCellSet::sweepToFreeList(MarkedBlock::Handle* block)
+// void IsoCellSet::sweepToFreeList(MarkedBlock::Handle* handle)
+// {
+//     handle->directory()->assertIsMutatorOrMutatorIsStopped();
+//     handle->blockHeader().m_lock.assertIsHeldWhen(handle->space()->isMarking());
+
+//     RELEASE_ASSERT(!handle->isAllocated());
+    
+//     if (!m_blocksWithBits[handle->index()])
+//         return;
+    
+//     WTF::loadLoadFence();
+    
+//     if (!m_bits[handle->index()]) {
+//         dataLog("FATAL: for block index ", handle->index(), ":\n");
+//         dataLog("Blocks with bits says: ", !!m_blocksWithBits[handle->index()], "\n");
+//         dataLog("Bits says: ", RawPointer(m_bits[handle->index()].get()), "\n");
+//         RELEASE_ASSERT_NOT_REACHED();
+//     }
+    
+//     if (handle->block().hasAnyNewlyAllocated()) {
+//         // The newlyAllocated bits are a superset of the marks bits.
+//         m_bits[handle->index()]->concurrentFilter(handle->blockHeader().m_newlyAllocated);
+//         return;
+//     }
+
+//     if (handle->isEmpty() || handle->areMarksStaleForSweep()) {
+//         {
+//             // Holding the bitvector lock happens to be enough because that's what we also hold in
+//             // other places where we manipulate this bitvector.
+//             Locker locker { m_subspace.m_directory.m_bitvectorLock };
+//             m_blocksWithBits[handle->index()] = false;
+//         }
+//         m_bits[handle->index()] = nullptr;
+//         return;
+//     }
+
+//     m_bits[handle->index()]->concurrentFilter(handle->blockHeader().m_marks);
+// }
+
+void IsoCellSet::sweepToFreeList(MarkedBlock::Handle* handle)
 {
-    RELEASE_ASSERT(!block->isAllocated());
-    
-    if (!m_blocksWithBits[block->index()])
+    handle->directory()->assertIsMutatorOrMutatorIsStopped();
+
+    handle->blockHeader().m_lock.assertIsHeldWhen(handle->space()->isMarking());
+    RELEASE_ASSERT(!handle->isAllocated());
+
+    if (!m_blocksWithBits[handle->index()])
         return;
-    
+
     WTF::loadLoadFence();
-    
-    if (!m_bits[block->index()]) {
-        dataLog("FATAL: for block index ", block->index(), ":\n");
-        dataLog("Blocks with bits says: ", !!m_blocksWithBits[block->index()], "\n");
-        dataLog("Bits says: ", RawPointer(m_bits[block->index()].get()), "\n");
+
+    if (!m_bits[handle->index()]) {
+        dataLog("FATAL: for block index ", handle->index(), ":\n");
+        dataLog("Blocks with bits says: ", !!m_blocksWithBits[handle->index()], "\n");
+        dataLog("Bits says: ", RawPointer(m_bits[handle->index()].get()), "\n");
         RELEASE_ASSERT_NOT_REACHED();
     }
-    
-    if (block->block().hasAnyNewlyAllocated()) {
-        // The newlyAllocated() bits are a superset of the marks() bits.
-        m_bits[block->index()]->concurrentFilter(block->block().newlyAllocated());
-        return;
-    }
 
-    if (block->isEmpty() || block->areMarksStaleForSweep()) {
+    bool useMarks = !handle->areMarksStaleForSweep();
+    bool useNewlyAllocated = handle->block().hasAnyNewlyAllocated();
+
+    // TODO: Can this use hasAnyMarked?
+    if (handle->isEmpty() || (!useMarks && !useNewlyAllocated)) {
         {
             // Holding the bitvector lock happens to be enough because that's what we also hold in
             // other places where we manipulate this bitvector.
             Locker locker { m_subspace.m_directory.m_bitvectorLock };
-            m_blocksWithBits[block->index()] = false;
+            m_blocksWithBits[handle->index()] = false;
         }
-        m_bits[block->index()] = nullptr;
+        m_bits[handle->index()] = nullptr;
         return;
     }
-    
-    m_bits[block->index()]->concurrentFilter(block->block().marks());
+
+    if (useMarks && useNewlyAllocated) {
+        // TODO: Make this more efficient:
+        WTF::BitSet<MarkedBlock::atomsPerBlock> combined;
+        combined.merge(handle->blockHeader().m_newlyAllocated);
+        combined.merge(handle->blockHeader().m_marks);
+        m_bits[handle->index()]->concurrentFilter(combined);
+        return;
+    }
+
+    if (useNewlyAllocated)
+        m_bits[handle->index()]->concurrentFilter(handle->blockHeader().m_newlyAllocated);
+    else
+        m_bits[handle->index()]->concurrentFilter(handle->blockHeader().m_marks);
 }
+
 
 } // namespace JSC
 

@@ -100,6 +100,34 @@ void WeakBlock::sweep()
     ASSERT(!m_sweepResult.isNull());
 }
 
+void WeakBlock::validate(FreeList* freeList) const
+{
+    if (isEmpty())
+        return;
+
+    // TODO... maybe?
+    if (m_container.isPreciseAllocation())
+        return;
+
+    MarkedBlock& block = m_container.markedBlock();
+    for (size_t i = 0; i < weakImplCount(); ++i) {
+        const WeakImpl* weakImpl = &weakImpls()[i];
+        if (weakImpl->state() == WeakImpl::Live) {
+            HeapCell* cell = weakImpl->jsValue().asCell();
+            if (freeList) {
+                freeList->forEachInterval([&](void* start, void* end) {
+                    ASSERT(cell < start || end <= cell);
+                });
+            }
+
+            if (block.hasAnyNewlyAllocated())
+                ASSERT(block.isNewlyAllocated(cell));
+            else
+                ASSERT(block.isMarkedRaw(cell));
+        }
+    }
+}
+
 template<typename ContainerType, typename Visitor>
 void WeakBlock::specializedVisit(ContainerType& container, Visitor& visitor)
 {

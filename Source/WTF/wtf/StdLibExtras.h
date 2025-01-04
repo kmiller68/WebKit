@@ -1160,21 +1160,27 @@ template<ByteType T, typename U> constexpr auto byteCast(const U& value)
 }
 
 // This is like std::invocable but it takes the expected signature rather than just the arguments.
-template<typename Functor, typename Signature> concept Invocable = requires(std::decay_t<Functor>&& f, std::function<Signature> expected) {
+template<typename Functor, typename Signature>
+concept Invocable = requires(std::decay_t<Functor>&& f, std::function<Signature> expected) {
     { expected = std::move(f) };
 };
+
+template<typename Type, typename... Expected>
+concept AnyOfType = (std::is_same_v<Type, Expected> || ...);
 
 // Concept for constraining to user-defined "Tuple-like" types.
 //
 // Based on exposition-only text in https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2021/p2165r3.pdf
 // and https://stackoverflow.com/questions/68443804/c20-concept-to-check-tuple-like-types.
 
-template<class T, std::size_t N> concept HasTupleElement = requires(T t) {
+template<class T, std::size_t N>
+concept HasTupleElement = requires(T t) {
     typename std::tuple_element_t<N, std::remove_const_t<T>>;
     { get<N>(t) } -> std::convertible_to<std::tuple_element_t<N, T>&>;
 };
 
-template<class T> concept TupleLike = !std::is_reference_v<T>
+template<class T>
+concept TupleLike = !std::is_reference_v<T>
     && requires(T t) {
         typename std::tuple_size<T>::type;
         requires std::derived_from<

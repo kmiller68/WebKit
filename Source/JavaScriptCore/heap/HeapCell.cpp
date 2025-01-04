@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Apple Inc. All rights reserved.
+ * Copyright (C) 2016-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,21 +32,11 @@
 
 namespace JSC {
 
-// isPendingDestruction must not be called on a freed (i.e. already destructed) HeapCell
-// since the backing MarkedBlock may have been freed too.
 bool HeapCell::isPendingDestruction()
 {
     if (isPreciseAllocation())
         return !preciseAllocation().isLive();
-    auto& markedBlockHandle = markedBlock().handle();
-    // If the block is freelisted then either:
-    // (1) The cell is not on the FreeList, in which case it is newly allocated or
-    // (2) The cell is on the FreeList, in which case it is free.
-    // In either case, the destructor is not pending.
-    // (And as indicated above, it's not legal to call this method in state #2).
-    if (markedBlockHandle.isFreeListed())
-        return false;
-    return !markedBlockHandle.isLive(this);
+    return markedBlock().handle().isPendingDestruction(this);
 }
 
 } // namespace JSC

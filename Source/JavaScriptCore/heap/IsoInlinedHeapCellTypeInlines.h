@@ -46,7 +46,8 @@ ALWAYS_INLINE void IsoInlinedHeapCellType<CellType>::DestroyFunc::operator()(VM&
 template<typename CellType>
 inline void IsoInlinedHeapCellType<CellType>::finishSweep(MarkedBlock::Handle& handle, FreeList* freeList) const
 {
-    handle.finishSweepKnowingHeapCellType(freeList, DestroyFunc());
+    constexpr std::pair<unsigned, unsigned> atomsPerCellAndStartAtom = MarkedBlock::Handle::atomsPerCellAndStartAtom(WTF::roundUpToMultipleOf<MarkedBlock::atomSize>(sizeof(CellType)));
+    handle.finishSweepKnowingHeapCellType<true, atomsPerCellAndStartAtom.first, atomsPerCellAndStartAtom.second>(freeList, DestroyFunc());
 }
 
 template<typename CellType>

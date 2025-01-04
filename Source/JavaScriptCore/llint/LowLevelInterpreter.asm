@@ -1424,7 +1424,7 @@ macro checkSwitchToJIT(increment, action)
     loadp CodeBlock::m_unlinkedCode[t0], t0
     baddis increment, (UnlinkedCodeBlock::m_llintExecuteCounter + BaselineExecutionCounter::m_counter)[t0], .continue
     action()
-    .continue:
+.continue:
 end
 
 macro checkSwitchToJITForEpilogue()

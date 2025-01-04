@@ -574,6 +574,8 @@ public:
         runTaskInParallel(createSharedTask<void(SlotVisitor&)>(func));
     }
 
+    bool isParallelMarking() const { return m_numberOfActiveParallelMarkers; }
+
     template<typename Func>
     void forEachSlotVisitor(const Func&);
     

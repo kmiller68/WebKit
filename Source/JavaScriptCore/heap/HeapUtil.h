@@ -76,7 +76,7 @@ public:
         if (candidate->handle().cellKind() != HeapCell::JSCell)
             return false;
         
-        if (!candidate->handle().isLiveCell(pointer))
+        if (!candidate->handle().isLive(pointer))
             return false;
         
         return true;

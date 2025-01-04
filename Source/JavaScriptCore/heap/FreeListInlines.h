@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Apple Inc. All rights reserved.
+ * Copyright (C) 2017-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,14 +32,28 @@ WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
 
 namespace JSC {
 
-template<typename Func>
-ALWAYS_INLINE HeapCell* FreeList::allocateWithCellSize(const Func& slowPath, size_t cellSize)
+ALWAYS_INLINE HeapCell* FreeList::peekNext() const
 {
-    if (LIKELY(m_intervalStart < m_intervalEnd)) {
-        char* result = m_intervalStart;
+    ASSERT(allocationWillSucceed());
+    if (m_intervalStart < m_intervalEnd)
+        return reinterpret_cast<HeapCell*>(m_intervalStart);
+
+    // It's an invariant of our allocator that we don't create empty intervals, so there
+    // should always be enough space remaining to allocate a cell.
+    return reinterpret_cast<HeapCell*>(nextInterval());
+}
+
+ALWAYS_INLINE HeapCell* FreeList::allocateWithCellSize(const Invocable<HeapCell*()> auto& slowPath, size_t cellSize)
+{
+    auto allocate = [&] ALWAYS_INLINE_LAMBDA {
+        ASSERT(m_intervalStart + cellSize <= m_intervalEnd);
+        HeapCell* result = reinterpret_cast<HeapCell*>(m_intervalStart);
         m_intervalStart += cellSize;
-        return std::bit_cast<HeapCell*>(result);
-    }
+        return result;
+    };
+
+    if (LIKELY(m_intervalStart < m_intervalEnd))
+        return allocate();
     
     FreeCell* cell = nextInterval();
     if (UNLIKELY(isSentinel(cell)))
@@ -49,13 +63,10 @@ ALWAYS_INLINE HeapCell* FreeList::allocateWithCellSize(const Func& slowPath, siz
     
     // It's an invariant of our allocator that we don't create empty intervals, so there 
     // should always be enough space remaining to allocate a cell.
-    char* result = m_intervalStart;
-    m_intervalStart += cellSize;
-    return std::bit_cast<HeapCell*>(result);
+    return allocate();
 }
 
-template<typename Func>
-void FreeList::forEach(const Func& func) const
+void FreeList::forEach(const Invocable<void(HeapCell*)> auto& func) const
 {
     FreeCell* cell = nextInterval();
     char* intervalStart = m_intervalStart;
@@ -64,7 +75,7 @@ void FreeList::forEach(const Func& func) const
 
     while (true) {
         for (; intervalStart < intervalEnd; intervalStart += m_cellSize)
-            func(std::bit_cast<HeapCell*>(intervalStart));
+            func(reinterpret_cast<HeapCell*>(intervalStart));
 
         // If we explore the whole interval and the cell is the sentinel value, though, we should
         // immediately exit so we don't decode anything out of bounds.
@@ -72,6 +83,24 @@ void FreeList::forEach(const Func& func) const
             break;
 
         FreeCell::advance(m_secret, cell, intervalStart, intervalEnd);
+    }
+}
+
+void FreeList::forEachInterval(const Invocable<void(char* start, char* end)> auto& func) const
+{
+    FreeCell* cell = nextInterval();
+    char* intervalStart = m_intervalStart;
+    char* intervalEnd = m_intervalEnd;
+    ASSERT(intervalEnd - intervalStart < (ptrdiff_t)(16 * KB));
+
+    if (intervalStart < intervalEnd)
+        func(intervalStart, intervalEnd);
+
+    while (!isSentinel(cell)) {
+        FreeCell::advance(m_secret, cell, intervalStart, intervalEnd);
+
+        ASSERT(intervalStart < intervalEnd);
+        func(intervalStart, intervalEnd);
     }
 }
 

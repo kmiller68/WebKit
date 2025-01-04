@@ -296,7 +296,7 @@ private:
     , name ISO_SUBSPACE_INIT(*this, heapCellType, type)
 
 #define INIT_SERVER_STRUCTURE_ISO_SUBSPACE(name, heapCellType, type) \
-    , name("IsoSubspace" #name, *this, heapCellType, WTF::roundUpToMultipleOf<type::atomSize>(sizeof(type)), type::usePreciseAllocationsOnly, type::numberOfLowerTierPreciseCells, makeUnique<StructureAlignedMemoryAllocator>("Structure"))
+    , name("IsoSubspace " #name, *this, heapCellType, WTF::roundUpToMultipleOf<type::atomSize>(sizeof(type)), type::usePreciseAllocationsOnly, type::numberOfLowerTierPreciseCells, makeUnique<StructureAlignedMemoryAllocator>("Structure"))
 
 Heap::Heap(VM& vm, HeapType heapType)
     : m_heapType(heapType)
@@ -1367,6 +1367,7 @@ auto Heap::runCurrentPhase(GCConductor conn, CurrentThreadState* currentThreadSt
     }
     
     bool result = false;
+    // dataLogLn("Running phase: ", m_currentPhase);
     switch (m_currentPhase) {
     case CollectorPhase::NotRunning:
         result = runNotRunningPhase(conn);
@@ -1535,7 +1536,7 @@ WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
             ":"_s, " "_s);
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_END
         
-        dataLog("v=", bytesVisited() / 1024, "kb (", perVisitorDump, ") o=", m_opaqueRoots.size(), " b=", m_barriersExecuted, " ");
+        dataLogLn("FIXPOINT v=", bytesVisited() / 1024, "kb (", perVisitorDump, ") o=", m_opaqueRoots.size(), " b=", m_barriersExecuted);
     }
         
     if (visitor.didReachTermination()) {
@@ -1607,6 +1608,7 @@ NEVER_INLINE bool Heap::runConcurrentPhase(GCConductor conn)
 {
     SlotVisitor& visitor = *m_collectorSlotVisitor;
 
+    dataLogLnIf(Options::logGC(), "CONCURRENT conn:", conn);
     switch (conn) {
     case GCConductor::Mutator: {
         // When the mutator has the conn, we poll runConcurrentPhase() on every time someone says
@@ -1726,10 +1728,11 @@ NEVER_INLINE bool Heap::runEndPhase(GCConductor conn)
         dataLogLn(HeapInternal::verbose, "Heap state after GC:");
         m_objectSpace.dumpBits();
     }
-    
+
     if (UNLIKELY(Options::logGC())) {
         double thisPauseMS = (m_afterGC - m_stopTime).milliseconds();
         dataLog("p=", thisPauseMS, "ms (max ", maxPauseMS(thisPauseMS), "), cycle ", (m_afterGC - m_beforeGC).milliseconds(), "ms END]\n");
+        dataLogLn("Heap versions at end GC END: (marking: ", m_objectSpace.markingVersion(), ") (newlyAllocated: ", m_objectSpace.newlyAllocatedVersion(), ")");
     }
     
     {
@@ -1848,7 +1851,7 @@ NEVER_INLINE void Heap::resumeThePeriphery()
     
     m_barriersExecuted = 0;
     
-    if (!m_worldIsStopped) {
+    if (UNLIKELY(!m_worldIsStopped)) {
         dataLog("Fatal: collector does not believe that the world is stopped.\n");
         RELEASE_ASSERT_NOT_REACHED();
     }
@@ -1895,6 +1898,7 @@ NEVER_INLINE void Heap::resumeThePeriphery()
 
 bool Heap::stopTheMutator()
 {
+    dataLogLnIf(Options::logGC(), "Stopping the mutator.");
     for (;;) {
         unsigned oldState = m_worldState.load();
         if (oldState & stoppedBit) {
@@ -2342,7 +2346,7 @@ void Heap::willStartCollection()
         m_collectionScope = CollectionScope::Eden;
         dataLogIf(Options::logGC(), "EdenCollection, ");
     }
-    if (m_collectionScope && m_collectionScope.value() == CollectionScope::Full) {
+    if (m_collectionScope.value() == CollectionScope::Full) {
         m_sizeBeforeLastFullCollect = m_sizeAfterLastCollect + totalBytesAllocatedThisCycle();
         m_extraMemorySize = 0;
         m_deprecatedExtraMemorySize = 0;
@@ -2353,7 +2357,7 @@ void Heap::willStartCollection()
         if (m_fullActivityCallback)
             m_fullActivityCallback->willCollect();
     } else {
-        ASSERT(m_collectionScope && m_collectionScope.value() == CollectionScope::Eden);
+        ASSERT(m_collectionScope.value() == CollectionScope::Eden);
         m_sizeBeforeLastEdenCollect = m_sizeAfterLastCollect + totalBytesAllocatedThisCycle();
     }
 
@@ -3131,7 +3135,7 @@ void Heap::notifyIsSafeToCollect()
     MonotonicTime before;
     if (UNLIKELY(Options::logGC())) {
         before = MonotonicTime::now();
-        dataLog("[GC<", RawPointer(this), ">: starting ");
+        dataLog("[GC<", RawPointer(this), ">: starting (safe to collect) ");
     }
     
     addCoreConstraints();

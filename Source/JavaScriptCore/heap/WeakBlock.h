@@ -37,9 +37,11 @@ namespace JSC {
 class AbstractSlotVisitor;
 class Heap;
 class SlotVisitor;
+class FreeList;
 
 DECLARE_ALLOCATOR_WITH_HEAP_IDENTIFIER(WeakBlock);
 
+// FIXME: use TrailingArray.
 class WeakBlock : public DoublyLinkedListNode<WeakBlock> {
 public:
     friend class WTF::DoublyLinkedListNode<WeakBlock>;
@@ -62,7 +64,7 @@ public:
 
     static WeakImpl* asWeakImpl(FreeCell*);
 
-    bool isEmpty();
+    bool isEmpty() const;
     bool isLogicallyEmptyButNotFree() const;
 
     void sweep();
@@ -76,6 +78,8 @@ public:
     void lastChanceToFinalize();
     void disconnectContainer() { m_container = CellContainer(); }
 
+    void validate(FreeList*) const;
+
 private:
     template<typename Visitor> void visitImpl(Visitor&);
 
@@ -87,7 +91,8 @@ private:
     explicit WeakBlock(CellContainer);
     void finalize(WeakImpl*);
     WeakImpl* weakImpls();
-    size_t weakImplCount();
+    const WeakImpl* weakImpls() const;
+    size_t weakImplCount() const;
     void addToFreeList(FreeCell**, WeakImpl*);
 
     CellContainer m_container;
@@ -124,7 +129,13 @@ inline WeakImpl* WeakBlock::weakImpls()
     return reinterpret_cast_ptr<WeakImpl*>(this) + ((sizeof(WeakBlock) + sizeof(WeakImpl) - 1) / sizeof(WeakImpl));
 }
 
-inline size_t WeakBlock::weakImplCount()
+inline const WeakImpl* WeakBlock::weakImpls() const
+{
+    return reinterpret_cast_ptr<const WeakImpl*>(this) + ((sizeof(WeakBlock) + sizeof(WeakImpl) - 1) / sizeof(WeakImpl));
+}
+
+
+inline size_t WeakBlock::weakImplCount() const
 {
     return (blockSize / sizeof(WeakImpl)) - ((sizeof(WeakBlock) + sizeof(WeakImpl) - 1) / sizeof(WeakImpl));
 }
@@ -139,7 +150,7 @@ inline void WeakBlock::addToFreeList(FreeCell** freeList, WeakImpl* weakImpl)
     *freeList = freeCell;
 }
 
-inline bool WeakBlock::isEmpty()
+inline bool WeakBlock::isEmpty() const
 {
     return !m_sweepResult.isNull() && m_sweepResult.blockIsFree;
 }
