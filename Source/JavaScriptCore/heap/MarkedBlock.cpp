@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2011-2024 Apple Inc. All rights reserved.
+ * Copyright (C) 2011-2025 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -104,9 +104,6 @@ MarkedBlock::~MarkedBlock()
 MarkedBlock::Header::Header(VM& vm, Handle& handle)
     : m_handle(handle)
     , m_vm(&vm)
-    , m_markingVersion(MarkedSpace::nullVersion)
-    , m_newlyAllocatedVersion(MarkedSpace::nullVersion)
-    , m_recordedFreeListVersion(MarkedSpace::nullVersion)
 {
 }
 
@@ -116,9 +113,9 @@ void MarkedBlock::Handle::unsweepWithNoNewlyAllocated()
 {
     Locker locker { blockHeader().m_lock };
     RELEASE_ASSERT(isFreeListed());
+    // TODO: Re-cache the free list.
     m_freeListStatus = NotFreeListed;
-    blockHeader().m_recordedFreeListVersion = MarkedSpace::nullVersion;
-    // ASSERT(blockHeader().m_newlyAllocatedVersion != space()->newlyAllocatedVersion());
+    blockHeader().m_recordedFreeListVersion = nullHeapVersion;
     m_directory->didFinishUsingBlock(this);
 }
 
@@ -150,6 +147,7 @@ void MarkedBlock::Handle::stopAllocating(const FreeList& freeList)
     }
     
     // Roll back to a coherent state for heap introspection.
+    HeapVersion newlyAllocatedVersion = space()->newlyAllocatedVersion();
 
     if (m_freeListStatus == FreeListedAndAllocating) {
         // Cells newly allocated from our free list are not currently marked, so we need another
@@ -157,7 +155,7 @@ void MarkedBlock::Handle::stopAllocating(const FreeList& freeList)
         // this block not on the free list is live so we just update that information.
 
         // TODO: Do this in one pass. Maybe we can just fill with all 1s?
-        ASSERT(blockHeader().m_recordedFreeListVersion == MarkedSpace::nullVersion);
+        ASSERT(blockHeader().m_recordedFreeListVersion == nullHeapVersion);
         blockHeader().m_newlyAllocated.clearAll();
         blockHeader().m_newlyAllocated.setEachNthBit(m_atomsPerCell, true, m_startAtom);
 
@@ -169,19 +167,25 @@ void MarkedBlock::Handle::stopAllocating(const FreeList& freeList)
 #endif
     } else {
         ASSERT(m_freeListStatus == FreeListedRecordedAndAllocating);
-        ASSERT(blockHeader().m_recordedFreeListVersion != MarkedSpace::nullVersion);
-        blockHeader().m_recordedFreeListVersion = MarkedSpace::nullVersion;
+        ASSERT(blockHeader().m_recordedFreeListVersion != nullHeapVersion);
+
+        if (blockHeader().m_newlyAllocatedVersion == newlyAllocatedVersion)
+            blockHeader().m_newlyAllocated.merge(blockHeader().m_recordedFreeList);
+        else
+            blockHeader().m_newlyAllocated = blockHeader().m_recordedFreeList;
+
+        // TODO: Re-cache the free list here rather than destroying it.
+        // blockHeader().m_recordedFreeList.clearRange(0, block().atomNumber(freeList.peekNext()));
 
         // TODO: Maybe this should do an aboutToMarkSlow for full GCs since we're looking at marks anyway?
         // TODO: Remove this when we fix IsoSubSets
-        if (marksMode() == MarksNotStale)
-            blockHeader().m_newlyAllocated.merge(blockHeader().m_marks);
+        // if (marksMode() == MarksNotStale)
+        //     blockHeader().m_newlyAllocated.merge(blockHeader().m_marks);
 
-        // The newly allocated bits subsume the free list when we started allocating from it but could contain extra bits merged in from
-        // aboutToMarkSlow.
         // FIXME: We could have specializedSweep zap every cell on the free list and isLive could
         // tell if an isNewlyAllocated cell is on the free list in constant time by checking if
         // the cell is zapped. Probably need to fix IsoCellSet::sweepToFreeList in that case.
+        blockHeader().m_recordedFreeListVersion = nullHeapVersion;
     }
 
     // TODO: This could do freeList.forEachInterval
@@ -192,7 +196,7 @@ void MarkedBlock::Handle::stopAllocating(const FreeList& freeList)
         locker.assertIsHolding(block().header().m_lock);
         block().clearNewlyAllocated(cell);
     });
-    blockHeader().m_newlyAllocatedVersion = space()->newlyAllocatedVersion();
+    blockHeader().m_newlyAllocatedVersion = newlyAllocatedVersion;
 
     if constexpr (MarkedBlockInternal::verbose) {
         WTF::dataFile().atomically([&] (PrintStream& out) {
@@ -201,7 +205,7 @@ void MarkedBlock::Handle::stopAllocating(const FreeList& freeList)
         });
     }
 
-    ASSERT(marksMode() == MarksStale || blockHeader().m_newlyAllocated.subsumes(blockHeader().m_marks));
+    // ASSERT(marksMode() == MarksStale || blockHeader().m_newlyAllocated.subsumes(blockHeader().m_marks));
 
     m_freeListStatus = NotFreeListed;
     directory()->didFinishUsingBlock(this);
@@ -220,7 +224,7 @@ void MarkedBlock::Handle::lastChanceToFinalize()
     m_weakSet.lastChanceToFinalize();
     blockHeader().m_newlyAllocated.clearAll();
     blockHeader().m_newlyAllocatedVersion = heap()->objectSpace().newlyAllocatedVersion();
-    blockHeader().m_recordedFreeListVersion = MarkedSpace::nullVersion;
+    blockHeader().m_recordedFreeListVersion = nullHeapVersion;
     m_directory->setIsInUse(this, true);
     sweep(nullptr);
 }
@@ -316,7 +320,7 @@ void MarkedBlock::aboutToMarkSlow(HeapVersion markingVersion, HeapCell* cell)
         isAllocated = directory->isAllocated(handle);
     }
 
-    if (isAllocated || !marksConveyLivenessDuringMarking(markingVersion)) {
+    if (isAllocated || !staleMarksConveyLivenessDuringMarking(markingVersion)) {
         dataLogLnIf(MarkedBlockInternal::verbose, RawPointer(handle), "/", RawPointer(this), ": MarkedBlock::aboutToMarkSlow! Clearing marks without doing anything else.");
         // We already know that the block is full and is already recognized as such, or that the
         // block did not survive the previous GC (since the marks are stale). So, we can clear
@@ -328,13 +332,13 @@ void MarkedBlock::aboutToMarkSlow(HeapVersion markingVersion, HeapCell* cell)
     } else {
         ASSERT(heap()->collectionScope() == CollectionScope::Full);
         HeapVersion newlyAllocatedVersion = space()->newlyAllocatedVersion();
-        if (header().m_newlyAllocatedVersion == newlyAllocatedVersion || header().m_recordedFreeListVersion != MarkedSpace::nullVersion) {
+        if (header().m_newlyAllocatedVersion == newlyAllocatedVersion) {
             // TODO: Correct this comment.
             // When do we get here? The block could not have been filled up. The newlyAllocated bits would
             // have had to be created since the end of the last collection. The only things that create
-            // them are aboutToMarkSlow, lastChanceToFinalize, stopAllocating, and specializedSweep. If it had
+            // them are aboutToMarkSlow, lastChanceToFinalize, stopAllocating, and didConsumeFreeList. If it had
             // been aboutToMarkSlow, then we shouldn't be here since the marks wouldn't be stale anymore. It
-            // cannot be lastChanceToFinalize. So it must be stopAllocating or specializedSweep. That means that
+            // cannot be lastChanceToFinalize. So it must be stopAllocating or didConsumeFreeList. That means that
             // we just computed the newlyAllocated bits just before the start of an increment. In the former case
             // it seems as if newlyAllocated should subsume marks however in the latter it wouldn't.
 
@@ -346,10 +350,10 @@ void MarkedBlock::aboutToMarkSlow(HeapVersion markingVersion, HeapCell* cell)
                     out.println();
                 });
             }
-            ASSERT(header().m_recordedFreeListVersion == MarkedSpace::nullVersion || header().m_recordedFreeListVersion == newlyAllocatedVersion);
+            // TODO: Remove this once we start caching free lists.
+            ASSERT(header().m_recordedFreeListVersion == nullHeapVersion || header().m_recordedFreeListVersion == newlyAllocatedVersion);
             header().m_newlyAllocated.mergeAndClear(header().m_marks);
         } else {
-            ASSERT(handle->freeListStatus() == Handle::NotFreeListed || handle->freeListStatus() == Handle::FreeListedAndAllocating);
             if constexpr (MarkedBlockInternal::verbose) {
                 WTF::dataFile().atomically([&] (PrintStream& out) {
                     locker.assertIsHolding(header().m_lock);
@@ -377,8 +381,11 @@ void MarkedBlock::resetAllocated()
 {
     header().assertConcurrentWriteAccess();
     header().m_newlyAllocated.clearAll();
-    header().m_newlyAllocatedVersion = MarkedSpace::nullVersion;
-    header().m_recordedFreeListVersion = MarkedSpace::nullVersion;
+    header().m_recordedFreeList.clearAll();
+    header().m_newlyAllocatedVersion = nullHeapVersion;
+    header().m_recordedFreeListVersion = nullHeapVersion;
+    ASSERT(handle().freeListStatus() == Handle::NotFreeListed || handle().freeListStatus() == Handle::FreeListedWithRecording);
+    handle().m_freeListStatus = Handle::NotFreeListed;
     // TODO: Clear cached free list.
 }
 
@@ -393,7 +400,7 @@ void MarkedBlock::resetMarks()
     header().assertConcurrentWriteAccess();
     if (areMarksStale())
         header().m_marks.clearAll();
-    header().m_markingVersion = MarkedSpace::nullVersion;
+    header().m_markingVersion = nullHeapVersion;
 }
 
 #if ASSERT_ENABLED
@@ -437,21 +444,13 @@ void MarkedBlock::Handle::didConsumeFreeList()
     // Thus we need to preserve the existing newlyAllocated because they would have
     // come from the current GC.
     ASSERT(isFreeListed());
-    ASSERT(m_freeListStatus != FreeListedAndAllocating || blockHeader().m_recordedFreeListVersion == MarkedSpace::nullVersion);
+    ASSERT_IMPLIES(m_freeListStatus == FreeListedAndAllocating, blockHeader().m_recordedFreeListVersion == nullHeapVersion);
     bool isAllocated = m_freeListStatus == FreeListedAndAllocating || blockHeader().m_recordedFreeListVersion == space()->newlyAllocatedVersion();
     m_freeListStatus = NotFreeListed;
-    blockHeader().m_recordedFreeListVersion = MarkedSpace::nullVersion;
+    blockHeader().m_recordedFreeListVersion = nullHeapVersion;
 
 #if ASSERT_ENABLED
     if (space()->isMarking() && !isAllocated) {
-        // This better be true because we did stopAllocating when we starting marking.
-        if (blockHeader().m_newlyAllocatedVersion != space()->newlyAllocatedVersion()) {
-            dataLogLn("blockHeader().m_newlyAllocatedVersion: ", blockHeader().m_newlyAllocatedVersion, " space()->newlyAllocatedVersion(): ", space()->newlyAllocatedVersion());
-            RELEASE_ASSERT_NOT_REACHED();
-        }
-
-        // If we had somehow finished consuming the free list right when we did stopAllocating then resumeAllocating would have TODO
-        ASSERT(!blockHeader().m_newlyAllocated.isEmpty());
         // If we have marked anything it should either be from an old generation (thus copied into newlyAllocated when we did stopAllocating) or actually new
         if (marksMode() == MarksNotStale && !blockHeader().m_newlyAllocated.subsumes(blockHeader().m_marks)) {
             block().dumpBits(WTF::dataFile());
@@ -460,7 +459,13 @@ void MarkedBlock::Handle::didConsumeFreeList()
     }
 #endif
 
-    // We don't need to update m_newlyAllocatedVersion even when !isAllocated since aboutToMarkSlow knows how to handle those bits if they're needed.
+    if (!isAllocated) {
+        if (newlyAllocatedMode() == DoesNotHaveNewlyAllocated)
+            blockHeader().m_newlyAllocated = blockHeader().m_recordedFreeList;
+        else
+            blockHeader().m_newlyAllocated.merge(blockHeader().m_recordedFreeList);
+        blockHeader().m_newlyAllocatedVersion = space()->newlyAllocatedVersion();
+    }
 
     Locker bitLocker(m_directory->bitvectorLock());
 
@@ -636,7 +641,7 @@ void MarkedBlock::Handle::sweep(FreeList* freeList)
     ScribbleMode scribbleMode = this->scribbleMode();
     NewlyAllocatedMode newlyAllocatedMode = this->newlyAllocatedMode();
     MarksMode marksMode = this->marksMode();
-    if (newlyAllocatedMode == DoesNotHaveNewlyAllocated && sweepMode == SweepToFreeList)
+    if (Options::mainThreadRecordsFreeList() && freeList && newlyAllocatedMode == DoesNotHaveNewlyAllocated)
         sweepMode = SweepToFreeListAndRecord;
 
     auto trySpecialized = [&] () -> bool {

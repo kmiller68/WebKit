@@ -91,7 +91,7 @@ void FreeList::forEachInterval(const Invocable<void(char* start, char* end)> aut
     FreeCell* cell = nextInterval();
     char* intervalStart = m_intervalStart;
     char* intervalEnd = m_intervalEnd;
-    ASSERT(intervalEnd - intervalStart < (ptrdiff_t)(16 * KB));
+    ASSERT(intervalEnd - intervalStart < static_cast<ptrdiff_t>(16 * KB));
 
     if (intervalStart < intervalEnd)
         func(intervalStart, intervalEnd);

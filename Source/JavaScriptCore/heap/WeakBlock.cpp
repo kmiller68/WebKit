@@ -27,6 +27,7 @@
 #include "WeakBlock.h"
 
 #include "CellContainerInlines.h"
+#include "FreeListInlines.h"
 #include "Heap.h"
 #include "HeapAnalyzer.h"
 #include "JSCInlines.h"
@@ -120,10 +121,7 @@ void WeakBlock::validate(FreeList* freeList) const
                 });
             }
 
-            if (block.hasAnyNewlyAllocated())
-                ASSERT(block.isNewlyAllocated(cell));
-            else
-                ASSERT(block.isMarkedRaw(cell));
+            ASSERT(block.isNewlyAllocated(cell) || block.isMarkedRaw(cell));
         }
     }
 }

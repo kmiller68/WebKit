@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Apple Inc. All rights reserved.
+ * Copyright (C) 2016-2025 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,11 +29,60 @@
 #include <wtf/PrintStream.h>
 #include <wtf/StdLibExtras.h>
 
+#include "MarkedBlock.h"
+
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
 
 namespace JSC {
 
 class HeapCell;
+
+
+// class FreeList {
+// public:
+//     FreeList() = default;
+//     ~FreeList();
+
+//     MarkedBlock& markedBlock() const { ASSERT(m_wordStartInMarkedBlock); return *MarkedBlock::blockFor(m_wordStartInMarkedBlock); }
+
+//     void clear();
+//     void initialize(MarkedBlock& block, unsigned bytes)
+//     {
+//         // TODO: maybe we should find the first block now? It also seems like specialized sweep already knows this.
+//         m_currentFreeListWordCopy = block.header().m_freeList.storage()[0];
+//         m_wordStartInMarkedBlock = reinterpret_cast<char*>(&block);
+//         m_originalSize = bytes;
+//     }
+
+
+//     bool allocationWillFail() const { return !m_currentFreeListWordCopy && !markedBlock().header().m_freeList.findBit(markedBlock().atomNumber(m_wordStartInMarkedBlock)); }
+//     bool allocationWillSucceed() const { return !allocationWillFail(); }
+
+//     HeapCell* allocateWithCellSize(const Invocable<HeapCell*()> auto& slowPath, size_t cellSize);
+
+//     void forEach(const Invocable<void(HeapCell*)> auto&) const;
+
+//     JS_EXPORT_PRIVATE void dump(PrintStream&) const;
+
+//     static constexpr ptrdiff_t offsetOfCurrentFreeListWordCopy() { return OBJECT_OFFSETOF(FreeList, m_currentFreeListWordCopy); }
+//     static constexpr ptrdiff_t offsetOfWordStartInMarkedBlock() { return OBJECT_OFFSETOF(FreeList, m_wordStartInMarkedBlock); }
+
+// private:
+//     UCPURegister nextFreeListWord()
+//     {
+//         size_t currentWordIndex = markedBlock().atomNumber(m_wordStartInMarkedBlock) / sizeof(UCPURegister);
+//         return block.header().m_freeList.storage()[currentWordIndex + 1];
+//     }
+
+//     char* nextWordStartInMarkedBlock()
+//     {
+//         return m_wordStartInMarkedBlock +
+//     }
+
+//     UCPURegister m_currentFreeListWordCopy { 0 };
+//     char* m_wordStartInMarkedBlock { nullptr };
+//     unsigned m_originalSize { 0 };
+// };
 
 struct FreeCell {
     static ALWAYS_INLINE uint64_t scramble(int32_t offsetToNext, uint32_t lengthInBytes, uint64_t secret)
@@ -82,21 +131,21 @@ class FreeList {
 public:
     FreeList(unsigned cellSize);
     ~FreeList();
-    
+
     void clear();
-    
+
     JS_EXPORT_PRIVATE void initialize(FreeCell* head, uint64_t secret, unsigned bytes);
-    
+
     bool allocationWillFail() const { return m_intervalStart >= m_intervalEnd && isSentinel(nextInterval()); }
     bool allocationWillSucceed() const { return !allocationWillFail(); }
-    
+
     HeapCell* allocateWithCellSize(const Invocable<HeapCell*()> auto& slowPath, size_t cellSize);
 
     HeapCell* peekNext() const;
-    
+
     void forEach(const Invocable<void(HeapCell*)> auto&) const;
     void forEachInterval(const Invocable<void(char* start, char* end)> auto&) const;
-    
+
     unsigned originalSize() const { return m_originalSize; }
 
     static bool isSentinel(FreeCell* cell) { return std::bit_cast<uintptr_t>(cell) & 1; }
@@ -106,7 +155,7 @@ public:
     static constexpr ptrdiff_t offsetOfIntervalEnd() { return OBJECT_OFFSETOF(FreeList, m_intervalEnd); }
     static constexpr ptrdiff_t offsetOfOriginalSize() { return OBJECT_OFFSETOF(FreeList, m_originalSize); }
     static constexpr ptrdiff_t offsetOfCellSize() { return OBJECT_OFFSETOF(FreeList, m_cellSize); }
-    
+
     JS_EXPORT_PRIVATE void dump(PrintStream&) const;
 
     unsigned cellSize() const { return m_cellSize; }
@@ -114,7 +163,7 @@ public:
 
 private:
     FreeCell* nextInterval() const { return m_nextInterval; }
-    
+
     char* m_intervalStart { nullptr };
     char* m_intervalEnd { nullptr };
     FreeCell* m_nextInterval { std::bit_cast<FreeCell*>(static_cast<uintptr_t>(1)) };

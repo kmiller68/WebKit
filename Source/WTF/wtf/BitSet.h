@@ -77,6 +77,9 @@ public:
     constexpr void concurrentFilter(const BitSet&);
     
     constexpr bool subsumes(const BitSet&) const;
+
+    constexpr void setRange(size_t start, size_t end, bool = true);
+    constexpr void clearRange(size_t start, size_t end);
     
     // If the lambda returns an IterationStatus, we use it. The lambda can also return
     // void, in which case, we'll iterate every set bit.
@@ -141,7 +144,6 @@ public:
     void dump(PrintStream& out) const;
     void dumpHex(PrintStream& out) const;
 
-    // FIXME: These should return std::span<WordType>.
     WordType* storage() { return bits.data(); }
     const WordType* storage() const { return bits.data(); }
 
@@ -404,6 +406,22 @@ inline constexpr bool BitSet<bitSetSize, WordType>::subsumes(const BitSet& other
             return false;
     }
     return true;
+}
+
+template<size_t bitSetSize, typename WordType>
+inline constexpr void BitSet<bitSetSize, WordType>::setRange(size_t start, size_t end, bool value)
+{
+    for (; (start % wordSize); ++start)
+        set(start, value);
+    memset(bits.data(), value ? 0xFF : 0, (end / wordSize) - start);
+    for (; (end % wordSize); ++end)
+        set(end, value);
+}
+
+template<size_t bitSetSize, typename WordType>
+inline constexpr void BitSet<bitSetSize, WordType>::clearRange(size_t start, size_t end)
+{
+    setRange(start, end, false);
 }
 
 template<size_t bitSetSize, typename WordType>

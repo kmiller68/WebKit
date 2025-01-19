@@ -118,21 +118,21 @@ void IsoCellSet::didRemoveBlock(unsigned blockIndex)
 //     handle->blockHeader().m_lock.assertIsHeldWhen(handle->space()->isMarking());
 
 //     RELEASE_ASSERT(!handle->isAllocated());
-    
+
 //     if (!m_blocksWithBits[handle->index()])
 //         return;
-    
+
 //     WTF::loadLoadFence();
-    
+
 //     if (!m_bits[handle->index()]) {
 //         dataLog("FATAL: for block index ", handle->index(), ":\n");
 //         dataLog("Blocks with bits says: ", !!m_blocksWithBits[handle->index()], "\n");
 //         dataLog("Bits says: ", RawPointer(m_bits[handle->index()].get()), "\n");
 //         RELEASE_ASSERT_NOT_REACHED();
 //     }
-    
+
 //     if (handle->block().hasAnyNewlyAllocated()) {
-//         // The newlyAllocated bits are a superset of the marks bits.
+//         ASSERT(handle->blockHeader().m_newlyAllocated.subsumes(handle->blockHeader().m_marks));
 //         m_bits[handle->index()]->concurrentFilter(handle->blockHeader().m_newlyAllocated);
 //         return;
 //     }
@@ -185,19 +185,15 @@ void IsoCellSet::sweepToFreeList(MarkedBlock::Handle* handle)
         return;
     }
 
-    if (useMarks && useNewlyAllocated) {
-        // TODO: Make this more efficient:
-        WTF::BitSet<MarkedBlock::atomsPerBlock> combined;
-        combined.merge(handle->blockHeader().m_newlyAllocated);
-        combined.merge(handle->blockHeader().m_marks);
-        m_bits[handle->index()]->concurrentFilter(combined);
-        return;
-    }
+    WTF::BitSet<MarkedBlock::atomsPerBlock> combined;
 
     if (useNewlyAllocated)
-        m_bits[handle->index()]->concurrentFilter(handle->blockHeader().m_newlyAllocated);
-    else
-        m_bits[handle->index()]->concurrentFilter(handle->blockHeader().m_marks);
+        combined.merge(handle->blockHeader().m_newlyAllocated);
+
+    if (useMarks)
+        combined.merge(handle->blockHeader().m_marks);
+
+    m_bits[handle->index()]->concurrentFilter(combined);
 }
 
 

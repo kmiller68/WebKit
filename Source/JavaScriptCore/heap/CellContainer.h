@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Apple Inc. All rights reserved.
+ * Copyright (C) 2016-2025 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -36,7 +36,8 @@ class MarkedBlock;
 class WeakSet;
 class VM;
 
-typedef uint32_t HeapVersion;
+using HeapVersion = uint32_t;
+static constexpr HeapVersion nullHeapVersion = 0;
 
 // This is how we abstract over either MarkedBlock& or PreciseAllocation&. Put things in here as you
 // find need for them.

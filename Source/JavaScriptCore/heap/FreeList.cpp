@@ -28,6 +28,24 @@
 
 namespace JSC {
 
+// FreeList::~FreeList()
+// {
+// }
+
+// void FreeList::clear()
+// {
+//     m_currentWordCopy = 0;
+//     m_wordStartInMarkedBlock = nullptr;
+//     m_originalSize = 0;
+// }
+
+// void FreeList::dump(PrintStream& out) const
+// {
+//     out.print("{ currentWord = ", RawHex::withLeadingZeros(m_currentWordCopy), ", wordStartInMarkedBlock = ", RawPointer(m_wordStartInMarkedBlock), ", originalSize = ", m_originalSize, "}");
+//     // out.print("{nextInterval = ", RawPointer(nextInterval()), ", secret = ", m_secret, ", intervalStart = ", RawPointer(m_intervalStart), ", intervalEnd = ", RawPointer(m_intervalEnd), ", originalSize = ", m_originalSize, "}");
+// }
+
+
 FreeList::FreeList(unsigned cellSize)
     : m_cellSize(cellSize)
 {

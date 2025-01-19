@@ -1,7 +1,7 @@
 /*
  *  Copyright (C) 1999-2000 Harri Porten (porten@kde.org)
  *  Copyright (C) 2001 Peter Kelly (pmk@post.com)
- *  Copyright (C) 2003-2023 Apple Inc. All rights reserved.
+ *  Copyright (C) 2003-2025 Apple Inc. All rights reserved.
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -22,6 +22,7 @@
 #pragma once
 
 #include "CellAttributes.h"
+#include "CellContainer.h"
 #include "DestructionMode.h"
 #include "HeapCell.h"
 #include "WeakSet.h"
@@ -47,8 +48,6 @@ class BlockDirectory;
 class MarkedSpace;
 class SlotVisitor;
 class Subspace;
-
-typedef uint32_t HeapVersion;
 
 // A marked block is a page-aligned container for heap-allocated objects.
 // Objects are allocated within cells of the marked block. For a given
@@ -304,6 +303,7 @@ public:
         friend class MarkedBlock;
         friend class BlockDirectory;
         friend class IsoCellSet;
+        friend class FreeList;
 
         // TODO: Figure this part out.
 #if ASSERT_ENABLED
@@ -317,7 +317,7 @@ public:
         // m_vm must remain a pointer (instead of a reference) because JSCLLIntOffsetsExtractor
         // will fail otherwise.
         VM* const m_vm;
-        Subspace* m_subspace;
+        Subspace* m_subspace; // TODO: Why put this on the MarkedBlock and not the Handle? If anything it seems like it'd be more useful to have the BlockDirectory here.
 
         mutable CountingLock m_lock;
     
@@ -348,13 +348,14 @@ public:
         //     m_biasedMarkCount != m_markCountBias
         MarkCountBiasType m_markCountBias;
 
-        HeapVersion m_markingVersion WTF_GUARDED_BY_LOCK(m_lock);
-        HeapVersion m_newlyAllocatedVersion WTF_GUARDED_BY_LOCK(m_lock);
-        HeapVersion m_recordedFreeListVersion WTF_GUARDED_BY_LOCK(m_lock);
+        HeapVersion m_markingVersion WTF_GUARDED_BY_LOCK(m_lock) { nullHeapVersion };
+        HeapVersion m_newlyAllocatedVersion WTF_GUARDED_BY_LOCK(m_lock) { nullHeapVersion };
+        HeapVersion m_recordedFreeListVersion WTF_GUARDED_BY_LOCK(m_lock) { nullHeapVersion };
 
         WTF::BitSet<atomsPerBlock> m_marks WTF_GUARDED_BY_LOCK(m_lock);
         WTF::BitSet<atomsPerBlock> m_newlyAllocated WTF_GUARDED_BY_LOCK(m_lock);
-        void* m_verifierMemo { nullptr };
+        WTF::BitSet<atomsPerBlock> m_recordedFreeList; // TODO: add locking rules. This is ok to touch as long as you're isUse holder.
+        void* m_verifierMemo { nullptr }; // TODO: Make this smaller or remove it if needed.
     };
     
 private:
@@ -466,8 +467,8 @@ private:
     
     void noteMarkedSlow();
     
-    inline bool marksConveyLivenessDuringMarking(HeapVersion markingVersion);
-    inline bool marksConveyLivenessDuringMarking(HeapVersion myMarkingVersion, HeapVersion markingVersion);
+    inline bool staleMarksConveyLivenessDuringMarking(HeapVersion markingVersion);
+    inline bool staleMarksConveyLivenessDuringMarking(HeapVersion myMarkingVersion, HeapVersion markingVersion);
 
     // FIXME: rdar://139998916
     NO_RETURN_DUE_TO_CRASH NEVER_INLINE void dumpInfoAndCrashForInvalidHandleV2(AbstractLocker&, HeapCell*);

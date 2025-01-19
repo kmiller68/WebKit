@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2024 Apple Inc. All rights reserved.
+ * Copyright (C) 2016-2025 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -68,15 +68,16 @@ inline MarkedSpace* MarkedBlock::Handle::space() const
     return &heap()->objectSpace();
 }
 
-inline bool MarkedBlock::marksConveyLivenessDuringMarking(HeapVersion markingVersion)
+inline bool MarkedBlock::staleMarksConveyLivenessDuringMarking(HeapVersion markingVersion)
 {
     header().assertConcurrentReadAccess();
-    return marksConveyLivenessDuringMarking(header().m_markingVersion, markingVersion);
+    return staleMarksConveyLivenessDuringMarking(header().m_markingVersion, markingVersion);
 }
 
-inline bool MarkedBlock::marksConveyLivenessDuringMarking(HeapVersion myMarkingVersion, HeapVersion markingVersion)
+inline bool MarkedBlock::staleMarksConveyLivenessDuringMarking(HeapVersion myMarkingVersion, HeapVersion markingVersion)
 {
-    // This function tells you if an object should be considered "live" even though it may not survive this GC.
+    // This function tells you if an old generation object should be considered "live" even though it
+    // may not survive this GC.
     // This returns true if any of these is true:
     // - We just created the block and so the bits are clear already.
     // - This block has objects marked during the last GC, and so its version was up-to-date just
@@ -90,9 +91,11 @@ inline bool MarkedBlock::marksConveyLivenessDuringMarking(HeapVersion myMarkingV
     // back" state only makes sense when we're in a concurrent collection and have to be
     // conservative.
     ASSERT(space()->isMarking());
+    // This method makes no sense if the marking version is not stale.
+    ASSERT(myMarkingVersion != markingVersion);
     if (heap()->collectionScope() == CollectionScope::Eden)
         return false;
-    return myMarkingVersion == MarkedSpace::nullVersion
+    return myMarkingVersion == nullHeapVersion
         || MarkedSpace::nextVersion(myMarkingVersion) == markingVersion;
 }
 
@@ -106,6 +109,7 @@ ALWAYS_INLINE bool MarkedBlock::Handle::isLive(HeapVersion markingVersion, HeapV
 {
     ASSERT(!isFreeListed());
     m_directory->assertIsMutatorOrMutatorIsStopped();
+    ASSERT(!m_directory->isInUse(this));
     if (m_directory->isAllocated(this))
         return true;
 
@@ -157,6 +161,7 @@ ALWAYS_INLINE bool MarkedBlock::Handle::isLive(HeapVersion markingVersion, HeapV
 
     MarkedBlock& block = this->block();
     MarkedBlock::Header& header = block.header();
+    size_t atomNumber = block.atomNumber(cell);
     auto count = header.m_lock.tryOptimisticFencelessRead();
     if (count.value) {
         Dependency fenceBefore = Dependency::fence(count.input);
@@ -168,14 +173,14 @@ ALWAYS_INLINE bool MarkedBlock::Handle::isLive(HeapVersion markingVersion, HeapV
 
         HeapVersion myNewlyAllocatedVersion = fencedHeader.m_newlyAllocatedVersion;
         if (myNewlyAllocatedVersion == newlyAllocatedVersion) {
-            bool result = fencedBlock.isNewlyAllocated(cell);
+            bool result = fencedHeader.m_newlyAllocated.get(atomNumber);
+            // TODO: If the validate fails maybe we should just go straight to locking path.
             if (result && header.m_lock.fencelessValidate(count.value, Dependency::fence(result)))
                 return result;
         }
 
         HeapVersion myMarkingVersion = fencedHeader.m_markingVersion;
-        if (myMarkingVersion != markingVersion
-            && (!isMarking || !fencedBlock.marksConveyLivenessDuringMarking(myMarkingVersion, markingVersion))) {
+        if (myMarkingVersion != markingVersion && (!isMarking || !fencedBlock.staleMarksConveyLivenessDuringMarking(myMarkingVersion, markingVersion))) {
             if (header.m_lock.fencelessValidate(count.value, Dependency::fence(myMarkingVersion)))
                 return false;
         } else {
@@ -193,17 +198,17 @@ ALWAYS_INLINE bool MarkedBlock::Handle::isLive(HeapVersion markingVersion, HeapV
     ASSERT(!isFreeListed());
 
     HeapVersion myNewlyAllocatedVersion = header.m_newlyAllocatedVersion;
-    if (myNewlyAllocatedVersion == newlyAllocatedVersion && block.isNewlyAllocated(cell))
+    if (myNewlyAllocatedVersion == newlyAllocatedVersion && header.m_newlyAllocated.get(atomNumber))
         return true;
 
     if (block.areMarksStale(markingVersion)) {
         if (!isMarking)
             return false;
-        if (!block.marksConveyLivenessDuringMarking(markingVersion))
+        if (!block.staleMarksConveyLivenessDuringMarking(markingVersion))
             return false;
     }
 
-    return header.m_marks.get(block.atomNumber(cell));
+    return header.m_marks.get(atomNumber);
 }
 
 inline bool MarkedBlock::Handle::isLive(const HeapCell* cell)
@@ -340,18 +345,18 @@ void MarkedBlock::Handle::specializedSweep(FreeList* freeList, MarkedBlock::Hand
     };
 
     auto setBits = [&] (bool isEmpty) ALWAYS_INLINE_LAMBDA {
-        // TODO: Probably not useful in general
-#if ASSERT_ENABLED
-        if (sweepMode != SweepOnly) {
-            freeList->forEach([&] (HeapCell* cell) {
-                ASSERT(block.isAtom(cell));
-                if (destructionMode == BlockHasDestructors)
-                    ASSERT(cell->isZapped());
-                if (sweepMode == SweepToFreeListAndRecord)
-                    ASSERT(block.isNewlyAllocated(cell));
-            });
-        }
-#endif
+//         // TODO: Probably not useful in general
+// #if ASSERT_ENABLED
+//         if (sweepMode != SweepOnly) {
+//             freeList->forEach([&] (HeapCell* cell) {
+//                 ASSERT(block.isAtom(cell));
+//                 if (destructionMode == BlockHasDestructors)
+//                     ASSERT(cell->isZapped());
+//                 if (sweepMode == SweepToFreeListAndRecord)
+//                     ASSERT(header.m_freeList.get(block.atomNumber(cell)));
+//             });
+//         }
+// #endif
         Locker locker { m_directory->bitvectorLock() };
         m_directory->setIsUnswept(this, false);
         m_directory->setIsDestructible(this, false);
@@ -362,20 +367,32 @@ void MarkedBlock::Handle::specializedSweep(FreeList* freeList, MarkedBlock::Hand
 
     switch (sweepMode) {
     case SweepOnly:
-        header.m_recordedFreeListVersion = MarkedSpace::nullVersion;
+        header.m_recordedFreeListVersion = nullHeapVersion;
         break;
     case SweepToFreeListAndRecord:
+        ASSERT_WITH_MESSAGE(newlyAllocatedMode == DoesNotHaveNewlyAllocated, "Sweep to free list and record can't be used when there are already newly allocated, yet.");
         m_freeListStatus = FreeListedRecordedAndAllocating;
         header.m_recordedFreeListVersion = space()->newlyAllocatedVersion();
         break;
     case SweepToFreeList:
         m_freeListStatus = FreeListedAndAllocating;
-        header.m_recordedFreeListVersion = MarkedSpace::nullVersion;
+        header.m_recordedFreeListVersion = nullHeapVersion;
         break;
     }
 
-    // TODO: How does an empty block have newly allocated?
-    if (emptyMode == IsEmpty && newlyAllocatedMode == DoesNotHaveNewlyAllocated) {
+    if (emptyMode == IsEmpty) {
+#if ASSERT_ENABLED
+        if (UNLIKELY(newlyAllocatedMode == HasNewlyAllocated && !header.m_newlyAllocated.isEmpty())) {
+            WTF::dataFile().atomically(
+                [&] (PrintStream& out) {
+                    header.assertConcurrentReadAccess();
+                    out.print("Block ", RawPointer(&block), ": newly allocated not empty!\n");
+                    out.print("Block lock is held: ", header.m_lock.isHeld(), "\n");
+                    block.dumpBits(out);
+                    UNREACHABLE_FOR_PLATFORM();
+                });
+        }
+
         // This is an incredibly powerful assertion that checks the sanity of our block bits.
         if (UNLIKELY(marksMode == MarksNotStale && !header.m_marks.isEmpty())) {
             WTF::dataFile().atomically(
@@ -383,29 +400,28 @@ void MarkedBlock::Handle::specializedSweep(FreeList* freeList, MarkedBlock::Hand
                     header.assertConcurrentReadAccess();
                     out.print("Block ", RawPointer(&block), ": marks not empty!\n");
                     out.print("Block lock is held: ", header.m_lock.isHeld(), "\n");
-                    out.print("Marking version of block: ", header.m_markingVersion, "\n");
-                    out.print("Marking version of heap: ", space()->markingVersion(), "\n");
+                    block.dumpBits(out);
                     UNREACHABLE_FOR_PLATFORM();
                 });
         }
+#endif
 
         char* payloadEnd = std::bit_cast<char*>(block.atoms() + numberOfAtoms);
         char* payloadBegin = std::bit_cast<char*>(block.atoms() + startAtom);
         RELEASE_ASSERT(static_cast<size_t>(payloadEnd - payloadBegin) <= payloadSize, payloadBegin, payloadEnd, &block, cellSize, startAtom);
-
-        // TODO: Could we do this after releasing the lock? The block is empty so I don't think anyone's looking at the newlyAllocated bits.
-        if (sweepMode == SweepToFreeListAndRecord) {
-            ASSERT_WITH_MESSAGE(newlyAllocatedMode == DoesNotHaveNewlyAllocated, "Sweep to free list and record can't be used when there are already newly allocated yet.");
-            // TODO: Do this in one pass.
-            header.m_newlyAllocated.clearAll();
-            header.m_newlyAllocated.setEachNthBit(atomsPerCell, true, startAtom);
-        }
 
         if (isMarking)
             header.m_lock.unlockWithoutAnalysis();
         if (destructionMode != BlockHasNoDestructors) {
             for (char* cell = payloadBegin; cell < payloadEnd; cell += cellSize)
                 destroy(cell);
+        }
+
+        // TODO: Could we do this after releasing the lock? The block is empty so I don't think anyone's looking at the newlyAllocated bits. But that also means no one wants the lock.
+        if (sweepMode == SweepToFreeListAndRecord) {
+            // TODO: Do these in one pass.
+            header.m_recordedFreeList.clearAll();
+            header.m_recordedFreeList.setEachNthBit(atomsPerCell, true, startAtom);
         }
         if (sweepMode != SweepOnly) {
             if (UNLIKELY(scribbleMode == Scribble))
@@ -453,6 +469,9 @@ void MarkedBlock::Handle::specializedSweep(FreeList* freeList, MarkedBlock::Hand
             if (UNLIKELY(scribbleMode == Scribble))
                 scribble(cell, cellSize);
 
+            if (sweepMode == SweepToFreeListAndRecord)
+                header.m_recordedFreeList.set(i, true);
+
             // The following check passing implies there was at least one live cell
             // between us and the last dead cell, meaning that the previous dead
             // cell is the start of its interval.
@@ -497,10 +516,8 @@ void MarkedBlock::Handle::specializedSweep(FreeList* freeList, MarkedBlock::Hand
     //     ASSERT((newlyAllocatedMode == HasNewlyAllocated) == (header.m_newlyAllocatedVersion == space()->newlyAllocatedVersion()));
 
     // Note: we don't want to update the newly allocated version since that would confuse isLive.
-    if (sweepMode == SweepToFreeListAndRecord) {
-        ASSERT_WITH_MESSAGE(newlyAllocatedMode == DoesNotHaveNewlyAllocated, "Sweep to free list and record can't be used when there are already newly allocated yet.");
-        header.m_newlyAllocated.clearAll();
-    }
+    if (sweepMode == SweepToFreeListAndRecord)
+        header.m_recordedFreeList.clearAll();
 
     for (int i = endAtom - atomsPerCell; i >= static_cast<int>(startAtom); i -= atomsPerCell) {
         if (emptyMode == NotEmpty
@@ -509,9 +526,6 @@ void MarkedBlock::Handle::specializedSweep(FreeList* freeList, MarkedBlock::Hand
             isEmpty = false;
             continue;
         }
-
-        if (sweepMode == SweepToFreeListAndRecord)
-            header.m_newlyAllocated.set(i, true);
 
         if (destructionMode == BlockHasDestructorsAndCollectorIsRunning)
             deadCells.append(i);
@@ -532,8 +546,6 @@ void MarkedBlock::Handle::specializedSweep(FreeList* freeList, MarkedBlock::Hand
 
     if (sweepMode != SweepOnly)
         freeList->initialize(head, secret, freedBytes);
-    if (emptyMode == IsEmpty)
-        ASSERT(isEmpty);
     setBits(isEmpty);
 
     if constexpr (verbose) {
@@ -552,7 +564,10 @@ void MarkedBlock::Handle::finishSweepKnowingHeapCellType(FreeList* freeList, con
     ScribbleMode scribbleMode = this->scribbleMode();
     NewlyAllocatedMode newlyAllocatedMode = this->newlyAllocatedMode();
     MarksMode marksMode = this->marksMode();
-    SweepMode sweepMode = freeList ? (newlyAllocatedMode == HasNewlyAllocated ? SweepToFreeList : SweepToFreeListAndRecord) : SweepOnly;
+    SweepMode sweepMode = freeList ? SweepToFreeList : SweepOnly;
+
+    if (Options::mainThreadRecordsFreeList() && freeList && newlyAllocatedMode == DoesNotHaveNewlyAllocated)
+        sweepMode = SweepToFreeListAndRecord;
 
     ASSERT(newlyAllocatedMode == HasNewlyAllocated || marksMode == MarksNotStale || emptyMode == IsEmpty);
 
@@ -682,8 +697,8 @@ inline MarkedBlock::Handle::MarksMode MarkedBlock::Handle::marksMode()
 {
     HeapVersion markingVersion = space()->markingVersion();
     bool marksAreUseful = !block().areMarksStale(markingVersion);
-    if (space()->isMarking())
-        marksAreUseful |= block().marksConveyLivenessDuringMarking(markingVersion);
+    if (!marksAreUseful && space()->isMarking())
+        marksAreUseful = block().staleMarksConveyLivenessDuringMarking(markingVersion);
     return marksAreUseful ? MarksNotStale : MarksStale;
 }
 
