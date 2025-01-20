@@ -90,8 +90,7 @@ private:
     void clearStringImplsToMainThreadDerefSlow();
     void flushStringImplsToMainThreadDeref();
 
-    // Use an UnfairLock since it can boost the priority of the ConcurrentSweeper thread if needed.
-    UnfairLock m_rightToSweep;
+    OSLock m_rightToSweep;
 
     using StringImplBag = LocklessBag<Vector<Ref<StringImpl>, 5>>;
     static_assert(!is64Bit() || hasOneBitSet(sizeof(StringImplBag::Node)));

@@ -211,6 +211,7 @@ void BlockDirectory::removeBlock(MarkedBlock::Handle* block, WillDeleteBlock wil
 void BlockDirectory::stopAllocating()
 {
     assertIsMutatorOrMutatorIsStopped();
+    assertSweeperIsSuspended();
     dataLogLnIf(BlockDirectoryInternal::verbose, RawPointer(this), ": BlockDirectory::stopAllocating!");
     m_localAllocators.forEach(
         [&] (LocalAllocator* allocator) {
@@ -219,7 +220,6 @@ void BlockDirectory::stopAllocating()
             ASSERT(!allocator->m_lastActiveBlock || !allocator->m_lastActiveBlock->isFreeListed());
         });
 
-    assertSweeperIsSuspended();
 #if ASSERT_ENABLED
     if (UNLIKELY(!inUseBitsView().isEmpty())) {
         dataLogLn("Not all inUse bits are clear at stopAllocating");
@@ -227,23 +227,31 @@ void BlockDirectory::stopAllocating()
         dumpBits();
         RELEASE_ASSERT_NOT_REACHED();
     }
-#endif
 
     for (size_t index = 0; index < m_blocks.size(); ++index) {
-        index = freeListedBitsView().findBit(index, true);
-        if (index >= m_blocks.size())
-            break;
-        // stopAllocating expects the block to be in use.
-        setIsInUse(index, true);
-        MarkedBlock::Handle* block = m_blocks[index];
-        ASSERT(!block->cachedFreeList().isClear());
-        // TODO: Make a better name for this...
-        block->stopAllocating(block->cachedFreeList());
-        // Restore the isFreeListed bit for later use.
-        ASSERT(!isFreeListed(index));
-        // setIsFreeListed(index, true);
-        block->cachedFreeList().clear();
+        if (!isLive(index))
+            continue;
+
+        ASSERT(isFreeListed(index) == m_blocks[index]->isFreeListed());
+        ASSERT(!m_blocks[index]->isAllocating());
     }
+#endif
+
+    // for (size_t index = 0; index < m_blocks.size(); ++index) {
+    //     index = freeListedBitsView().findBit(index, true);
+    //     if (index >= m_blocks.size())
+    //         break;
+    //     // stopAllocating expects the block to be in use.
+    //     setIsInUse(NoLockingNecessary, index, true);
+    //     MarkedBlock::Handle* block = m_blocks[index];
+    //     ASSERT(!block->cachedFreeList().isClear());
+    //     // TODO: Make a better name for this...
+    //     block->stopAllocating(block->cachedFreeList());
+    //     // Restore the isFreeListed bit for later use.
+    //     ASSERT(!isFreeListed(index));
+    //     setIsFreeListed(index, true);
+    //     block->cachedFreeList().clear();
+    // }
 }
 
 void BlockDirectory::prepareForAllocation()
@@ -412,7 +420,7 @@ void BlockDirectory::sweepSynchronously()
     // refresh our view into the word we could see stale data and try to scan
     // a block already in use.
 
-    // FIXME: Maybe we should just suspend the concurrent sweeper when doing a synchronous GC?
+    // TODO: Maybe we should just suspend the concurrent sweeper when doing a synchronous GC?
 
     Locker locker(bitvectorLock());
 
@@ -426,9 +434,6 @@ void BlockDirectory::sweepSynchronously()
         dataLogLnIf(BlockDirectoryInternal::verbose, "Setting block ", index, " in use (sweep) for ", *this);
         setIsInUse(index, true);
 
-        // If the block is unswept then it shouldn't have any cached free list.
-        ASSERT(!isFreeListed(index));
-        ASSERT(block->cachedFreeList().isClear());
         {
             DropLockForScope scope(locker);
             block->sweep(nullptr);

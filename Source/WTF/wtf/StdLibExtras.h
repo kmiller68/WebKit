@@ -200,7 +200,7 @@ template<std::integral BitType>
 inline size_t bitCount(BitType bits)
 {
     using UnsignedType = std::make_unsigned_t<BitType>;
-    return std::popcount(bitwise_cast<UnsignedType>(bits));
+    return std::popcount(std::bit_cast<UnsignedType>(bits));
 }
 
 inline constexpr bool isPowerOfTwo(size_t size) { return !(size & (size - 1)); }

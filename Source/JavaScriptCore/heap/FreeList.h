@@ -1,9 +1,5 @@
 /*
-<<<<<<< HEAD
  * Copyright (C) 2016-2025 Apple Inc. All rights reserved.
-=======
- * Copyright (C) 2016-2024 Apple Inc. All rights reserved.
->>>>>>> e0e4350b6123 (lets see if it works)
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -32,8 +28,6 @@
 #include <wtf/Noncopyable.h>
 #include <wtf/PrintStream.h>
 #include <wtf/StdLibExtras.h>
-
-#include "MarkedBlock.h"
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
 
@@ -89,6 +83,9 @@ struct FreeCell {
     uint64_t scrambledBits;
 };
 
+WTF_ALLOW_UNSAFE_BUFFER_USAGE_END
+
+
 class FreeList {
 public:
     FreeList() = default;
@@ -107,8 +104,10 @@ public:
 
     HeapCell* peekNext() const;
 
-    void forEach(const Invocable<void(HeapCell*)> auto&) const;
+    void forEach(const Invocable<void(HeapCell*)> auto& func, size_t cellSize) const;
     void forEachInterval(const Invocable<void(char* start, char* end)> auto&) const;
+
+    unsigned originalSize() const { return m_originalSize; }
 
     static bool isSentinel(FreeCell* cell) { return std::bit_cast<uintptr_t>(cell) & 1; }
     static constexpr ptrdiff_t offsetOfNextInterval() { return OBJECT_OFFSETOF(FreeList, m_nextInterval); }
@@ -116,8 +115,6 @@ public:
     static constexpr ptrdiff_t offsetOfIntervalStart() { return OBJECT_OFFSETOF(FreeList, m_intervalStart); }
     static constexpr ptrdiff_t offsetOfIntervalEnd() { return OBJECT_OFFSETOF(FreeList, m_intervalEnd); }
     static constexpr ptrdiff_t offsetOfOriginalSize() { return OBJECT_OFFSETOF(FreeList, m_originalSize); }
-
-    JS_EXPORT_PRIVATE void dump(PrintStream&) const;
 
     bool hasOneInterval() const { return isSentinel(nextInterval()); }
 
@@ -133,5 +130,3 @@ private:
 };
 
 } // namespace JSC
-
-WTF_ALLOW_UNSAFE_BUFFER_USAGE_END

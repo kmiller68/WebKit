@@ -112,6 +112,9 @@ public:
     \
     void setIs ## capitalBitName(size_t index, bool value) WTF_REQUIRES_LOCK(m_bitvectorLock) { m_bits.setIs ## capitalBitName(index, value); } \
     void setIs ## capitalBitName(const MarkedBlock::Handle* block, bool value) WTF_REQUIRES_LOCK(m_bitvectorLock) { setIs ## capitalBitName(block->index(), value); } \
+    void setIs ## capitalBitName(NoLockingNecessaryTag, size_t index, bool value) WTF_IGNORES_THREAD_SAFETY_ANALYSIS { m_bits.setIs ## capitalBitName(index, value); } \
+    void setIs ## capitalBitName(NoLockingNecessaryTag, const MarkedBlock::Handle* block, bool value) WTF_IGNORES_THREAD_SAFETY_ANALYSIS { setIs ## capitalBitName(block->index(), value); } \
+    \
     BlockDirectoryBits::BlockDirectoryBitVectorRef<BlockDirectoryBits::Kind::capitalBitName> lowerBitName ## Bits() WTF_REQUIRES_LOCK(m_bitvectorLock) { return m_bits.lowerBitName(); }
 
     FOR_EACH_BLOCK_DIRECTORY_BIT(BLOCK_DIRECTORY_BIT_ACCESSORS)
@@ -147,14 +150,11 @@ public:
     
     MarkedBlock::Handle* findBlockToSweep() { return findBlockToSweep(m_unsweptCursor); }
     MarkedBlock::Handle* findBlockToSweep(unsigned& unsweptCursor);
-<<<<<<< HEAD
+    MarkedBlock::Handle* findBlockToEagerlySweep(unsigned& unsweptCursor);
 
     // FIXME: rdar://139998916
     MarkedBlock::Handle* findMarkedBlockHandleDebug(MarkedBlock*);
-=======
-    
-    MarkedBlock::Handle* findBlockToEagerlySweep(unsigned& unsweptCursor);
->>>>>>> ab32521cec66 (lets see if it works)
+
 
     void didFinishUsingBlock(MarkedBlock::Handle*);
     void didFinishUsingBlock(const AbstractLocker&, MarkedBlock::Handle*) WTF_REQUIRES_LOCK(m_bitvectorLock);

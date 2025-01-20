@@ -27,7 +27,7 @@
 #include "MarkedBlock.h"
 
 #include "AlignedMemoryAllocator.h"
-#include "FreeListInlines.h"
+#include "FreeList.h"
 #include "IsoCellSetInlines.h"
 #include "JSCJSValueInlines.h"
 #include "MarkedBlockInlines.h"
@@ -117,7 +117,7 @@ void MarkedBlock::Handle::unsweepWithNoNewlyAllocated()
     m_freeListStatus = NotFreeListed;
     blockHeader().m_recordedFreeListVersion = nullHeapVersion;
     // TODO: Should this retire the block?
-    Locker locker(m_directory->bitvectorLock());
+    Locker bitLocker { m_directory->bitvectorLock() };
     ASSERT(m_directory->isFreeListed(this));
     m_directory->setIsFreeListed(this, false);
     m_directory->didFinishUsingBlock(locker, this);
@@ -192,7 +192,7 @@ void MarkedBlock::Handle::stopAllocating(const FreeList& freeList)
         //     cell->zap(HeapCell::StopAllocating);
         locker.assertIsHolding(block().header().m_lock);
         block().clearNewlyAllocated(cell);
-    });
+    }, cellSize());
     blockHeader().m_newlyAllocatedVersion = newlyAllocatedVersion;
 
     if constexpr (MarkedBlockInternal::verbose) {
@@ -205,7 +205,7 @@ void MarkedBlock::Handle::stopAllocating(const FreeList& freeList)
     // ASSERT(marksMode() == MarksStale || blockHeader().m_newlyAllocated.subsumes(blockHeader().m_marks));
 
     m_freeListStatus = NotFreeListed;
-    m_directory->setIsFreeListed(this, false);
+    m_directory->setIsFreeListed(NoLockingNecessary, this, false);
     directory()->didFinishUsingBlock(this);
 }
 
@@ -582,6 +582,9 @@ void MarkedBlock::Handle::sweep(FreeList* freeList)
     ASSERT(m_directory->isInUse(this));
 
     SweepMode sweepMode = freeList ? SweepToFreeList : SweepOnly;
+    if (Options::mainThreadRecordsFreeList() && freeList && newlyAllocatedMode == DoesNotHaveNewlyAllocated)
+        sweepMode = SweepToFreeListAndRecord;
+
     bool needsDestruction = m_attributes.destruction != DoesNotNeedDestruction
         && m_directory->isDestructible(this);
 
@@ -626,7 +629,7 @@ void MarkedBlock::Handle::sweep(FreeList* freeList)
             reinterpret_cast<IsoSubspace*>(subspace())->m_cellSets.forEach([&] (IsoCellSet* set) {
                 freeList->forEach([&] (HeapCell* cell) {
                     ASSERT(!set->contains(cell));
-                });
+                }, cellSize());
             });
         }
 
@@ -651,8 +654,6 @@ void MarkedBlock::Handle::sweep(FreeList* freeList)
     ScribbleMode scribbleMode = this->scribbleMode();
     NewlyAllocatedMode newlyAllocatedMode = this->newlyAllocatedMode();
     MarksMode marksMode = this->marksMode();
-    if (Options::mainThreadRecordsFreeList() && freeList && newlyAllocatedMode == DoesNotHaveNewlyAllocated)
-        sweepMode = SweepToFreeListAndRecord;
 
     auto trySpecialized = [&] () -> bool {
         if (sweepMode != SweepToFreeList)
@@ -712,7 +713,7 @@ void MarkedBlock::Handle::sweepConcurrently()
     m_weakSet.sweep();
 
     if (space()->isMarking())
-        blockHeader().m_lock.lock();
+        blockHeader().m_lock.lockWithoutAnalysis();
 
     subspace()->didBeginSweepingToFreeListConcurrently(this);
     subspace()->finishSweepConcurrently(*this);
@@ -837,9 +838,11 @@ void MarkedBlock::Handle::stealFreeListOrSweep(FreeList& freeList)
 {
     m_directory->assertIsMutatorOrMutatorIsStopped();
     ASSERT(m_directory->isInUse(this));
-    if (isFreeListed()) {
-        ASSERT(!m_directory->isUnswept(this));
+    ASSERT(!isAllocating());
+    if (freeListStatus() == FreeListedWithRecording) {
         freeList.stealFrom(cachedFreeList());
+        m_directory->setIsFreeListed(NoLockingNecessary, this, true);
+        m_freeListStatus = FreeListedRecordedAndAllocating;
         return;
     }
 

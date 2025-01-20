@@ -207,9 +207,9 @@ public:
         };
         using enum FreeListStatus;
 
-        inline FreeListStatus freeListStatus() const;
-        inline bool isFreeListed() const { freeListStatus() != NotFreeListed; }
-        inline bool isAllocating() const { freeListStatus() == FreeListedAndAllocating || freeListStatus() == FreeListedRecordedAndAllocating; }
+        inline FreeListStatus freeListStatus() const { return m_freeListStatus; }
+        inline bool isFreeListed() const { return freeListStatus() != NotFreeListed; }
+        inline bool isAllocating() const { return freeListStatus() == FreeListedAndAllocating || freeListStatus() == FreeListedRecordedAndAllocating; }
 
         FreeList& cachedFreeList() { return m_cachedFreeList; }
         
