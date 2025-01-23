@@ -117,11 +117,11 @@ void WeakBlock::validate(FreeList* freeList) const
             HeapCell* cell = weakImpl->jsValue().asCell();
             if (freeList) {
                 freeList->forEachInterval([&](void* start, void* end) {
-                    ASSERT(cell < start || end <= cell);
+                    RELEASE_ASSERT(cell < start || end <= cell);
                 });
             }
 
-            ASSERT(block.isNewlyAllocated(cell) || block.isMarkedRaw(cell));
+            RELEASE_ASSERT(block.isNewlyAllocated(cell) || block.isMarkedRaw(cell));
         }
     }
 }

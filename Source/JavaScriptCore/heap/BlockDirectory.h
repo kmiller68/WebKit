@@ -155,6 +155,8 @@ public:
     // FIXME: rdar://139998916
     MarkedBlock::Handle* findMarkedBlockHandleDebug(MarkedBlock*);
 
+    void startUsingBlock(MarkedBlock::Handle*);
+    void startUsingBlock(const AbstractLocker&, MarkedBlock::Handle*) WTF_REQUIRES_LOCK(m_bitvectorLock);
 
     void didFinishUsingBlock(MarkedBlock::Handle*);
     void didFinishUsingBlock(const AbstractLocker&, MarkedBlock::Handle*) WTF_REQUIRES_LOCK(m_bitvectorLock);

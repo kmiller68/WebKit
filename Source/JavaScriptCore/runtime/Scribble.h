@@ -35,7 +35,7 @@ namespace JSC {
 
 inline bool scribbleFreeCells()
 {
-    return ASSERT_ENABLED || Options::scribbleFreeCells();
+    return Options::scribbleFreeCells();
 }
 
 // We set the high bits because we want to preserve the zapped bits (i.e. StructureID) of the cell.

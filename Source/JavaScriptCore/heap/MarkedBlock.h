@@ -139,9 +139,6 @@ public:
         VM& vm() const;
         WeakSet& weakSet();
             
-        enum class SweepMode { SweepOnly, SweepToFreeList, SweepToFreeListAndRecord };
-        using enum SweepMode;
-
         // Sweeping ensures that destructors get called and removes the block from the unswept
         // set. Sweeping to free list also removes the block from the empty set, if it was in that
         // set. Sweeping with SweepOnly may add this block to the empty set, if the block is found
@@ -199,7 +196,7 @@ public:
         
         void assertMarksNotStale();
 
-        enum class FreeListStatus {
+        enum class FreeListStatus : uint8_t {
             NotFreeListed,
             FreeListedAndAllocating,
             FreeListedWithRecording,
@@ -212,6 +209,7 @@ public:
         inline bool isAllocating() const { return freeListStatus() == FreeListedAndAllocating || freeListStatus() == FreeListedRecordedAndAllocating; }
 
         FreeList& cachedFreeList() { return m_cachedFreeList; }
+        void clearCachedFreeList();
         
         unsigned index() const { return m_index; }
         
@@ -219,6 +217,8 @@ public:
         
         void didAddToDirectory(BlockDirectory*, unsigned index);
         void didRemoveFromDirectory();
+
+        void setInUseHolder(uint32_t threadUID) { m_inUseHolderThreadUID = threadUID; }
         
         void* start() const { return &m_block->atoms()[m_startAtom]; }
         void* end() const { return &m_block->atoms()[endAtom]; }
@@ -237,7 +237,9 @@ public:
         inline bool isLive(HeapVersion markingVersion, HeapVersion newlyAllocatedVersion, bool isMarking, const HeapCell*);
 
         Handle(Heap&, AlignedMemoryAllocator*, void*);
-        
+
+        enum class SweepMode { SweepOnly, SweepToFreeList, SweepToFreeListAndRecord };
+        using enum SweepMode;
         enum class SweepDestructionMode { BlockHasNoDestructors, BlockHasDestructors, BlockHasDestructorsAndCollectorIsRunning };
         using enum SweepDestructionMode;
         enum class ScribbleMode { DontScribble, Scribble };
@@ -249,6 +251,7 @@ public:
         enum class MarksMode { MarksStale, MarksNotStale };
         using enum MarksMode;
 
+        SweepMode sweepMode(FreeList*);
         SweepDestructionMode sweepDestructionMode();
         EmptyMode emptyMode();
         ScribbleMode scribbleMode();
@@ -284,6 +287,7 @@ public:
         MarkedBlock* const m_block { nullptr };
 
         FreeList m_cachedFreeList;
+        uint32_t m_inUseHolderThreadUID { 0 };
     };
 
 private:    
@@ -358,6 +362,9 @@ public:
         HeapVersion m_markingVersion WTF_GUARDED_BY_LOCK(m_lock) { nullHeapVersion };
         HeapVersion m_newlyAllocatedVersion WTF_GUARDED_BY_LOCK(m_lock) { nullHeapVersion };
         HeapVersion m_recordedFreeListVersion WTF_GUARDED_BY_LOCK(m_lock) { nullHeapVersion };
+        enum class AboutToMarkSlowCase { Initial, AllocatedOrAllDead, NewlyAllocatedUpToDate, NewlyAllocatedStaleMarksEmpty, NewlyAllocatedStaleMarksNonEmpty };
+        using enum AboutToMarkSlowCase;
+        AboutToMarkSlowCase m_aboutToMarkSlowCase { Initial };
 
         WTF::BitSet<atomsPerBlock> m_marks WTF_GUARDED_BY_LOCK(m_lock);
         WTF::BitSet<atomsPerBlock> m_newlyAllocated WTF_GUARDED_BY_LOCK(m_lock);

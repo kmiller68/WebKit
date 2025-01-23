@@ -33,6 +33,7 @@ enum DestructionMode : int8_t {
     NeedsDestruction,
 };
 
+// FIXME: We should provide the destruction info directly via the enum in JSCell rather than have two bools...
 template<typename CellType>
 constexpr DestructionMode destructionModeForCellType()
 {

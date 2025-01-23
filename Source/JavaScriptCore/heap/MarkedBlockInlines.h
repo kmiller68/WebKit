@@ -107,7 +107,7 @@ inline bool MarkedBlock::Handle::isAllocated()
 
 ALWAYS_INLINE bool MarkedBlock::Handle::isLive(HeapVersion markingVersion, HeapVersion newlyAllocatedVersion, bool isMarking, const HeapCell* cell)
 {
-    ASSERT(!isFreeListed());
+    ASSERT(!isAllocating());
     m_directory->assertIsMutatorOrMutatorIsStopped();
     ASSERT(!m_directory->isInUse(this));
     if (m_directory->isAllocated(this))
@@ -297,7 +297,11 @@ private:
 template<bool specialize, MarkedBlock::Handle::SpecializedSweepData specializedSweepData>
 void MarkedBlock::Handle::specializedSweep(FreeList* freeList, MarkedBlock::Handle::EmptyMode emptyMode, MarkedBlock::Handle::SweepMode sweepMode, MarkedBlock::Handle::SweepDestructionMode destructionMode, MarkedBlock::Handle::ScribbleMode scribbleMode, MarkedBlock::Handle::NewlyAllocatedMode newlyAllocatedMode, MarkedBlock::Handle::MarksMode marksMode, const auto& destroyFunc)
 {
+#ifndef NDEBUG
+    constexpr bool verbose = true;
+#else
     constexpr bool verbose = false;
+#endif
     size_t atomsPerCell = m_atomsPerCell;
     size_t startAtom = m_startAtom;
 
@@ -338,7 +342,6 @@ void MarkedBlock::Handle::specializedSweep(FreeList* freeList, MarkedBlock::Hand
     auto destroy = [&] (void* cell) ALWAYS_INLINE_LAMBDA {
         JSCell* jsCell = static_cast<JSCell*>(cell);
         if (!jsCell->isZapped()) {
-            dataLogLnIf(verbose, RawPointer(this), "/", RawPointer(&block), ": called destructor on ", RawPointer(jsCell), " (", block.atomNumber(jsCell), ")");
             destroyFunc(vm, jsCell);
             jsCell->zap(HeapCell::Destruction);
         }
@@ -360,25 +363,28 @@ void MarkedBlock::Handle::specializedSweep(FreeList* freeList, MarkedBlock::Hand
         Locker locker { m_directory->bitvectorLock() };
         m_directory->setIsUnswept(this, false);
         m_directory->setIsDestructible(this, false);
-        if (sweepMode != SweepOnly)
-            m_directory->setIsFreeListed(this, true);
+        m_directory->setIsFreeListed(this, sweepMode != SweepOnly);
         m_directory->setIsEmpty(this, sweepMode == SweepOnly && isEmpty);
+        ASSERT(m_directory->isFreeListed(this) == isFreeListed());
     };
 
-    ASSERT(!isFreeListed());
+    ASSERT(!isAllocating());
 
     switch (sweepMode) {
     case SweepOnly:
+        m_freeListStatus = NotFreeListed;
         header.m_recordedFreeListVersion = nullHeapVersion;
+        m_cachedFreeList.clear();
         break;
     case SweepToFreeListAndRecord:
-        ASSERT_WITH_MESSAGE(newlyAllocatedMode == DoesNotHaveNewlyAllocated, "Sweep to free list and record can't be used when there are already newly allocated, yet.");
-        m_freeListStatus = FreeListedRecordedAndAllocating;
+        m_freeListStatus = FreeListedWithRecording;
         header.m_recordedFreeListVersion = space()->newlyAllocatedVersion();
+        ASSERT(freeList == &m_cachedFreeList);
         break;
     case SweepToFreeList:
         m_freeListStatus = FreeListedAndAllocating;
         header.m_recordedFreeListVersion = nullHeapVersion;
+        m_cachedFreeList.clear();
         break;
     }
 
@@ -388,7 +394,7 @@ void MarkedBlock::Handle::specializedSweep(FreeList* freeList, MarkedBlock::Hand
             WTF::dataFile().atomically(
                 [&] (PrintStream& out) {
                     header.assertConcurrentReadAccess();
-                    out.print("Block ", RawPointer(&block), ": newly allocated not empty!\n");
+                    out.print(RawPointer(this), "/", RawPointer(&block), ": newly allocated not empty!\n");
                     out.print("Block lock is held: ", header.m_lock.isHeld(), "\n");
                     block.dumpBits(out);
                     UNREACHABLE_FOR_PLATFORM();
@@ -400,7 +406,7 @@ void MarkedBlock::Handle::specializedSweep(FreeList* freeList, MarkedBlock::Hand
             WTF::dataFile().atomically(
                 [&] (PrintStream& out) {
                     header.assertConcurrentReadAccess();
-                    out.print("Block ", RawPointer(&block), ": marks not empty!\n");
+                    out.print(RawPointer(this), "/", RawPointer(&block), ": marks not empty!\n");
                     out.print("Block lock is held: ", header.m_lock.isHeld(), "\n");
                     block.dumpBits(out);
                     UNREACHABLE_FOR_PLATFORM();
@@ -566,10 +572,7 @@ void MarkedBlock::Handle::finishSweepKnowingHeapCellType(FreeList* freeList, con
     ScribbleMode scribbleMode = this->scribbleMode();
     NewlyAllocatedMode newlyAllocatedMode = this->newlyAllocatedMode();
     MarksMode marksMode = this->marksMode();
-    SweepMode sweepMode = freeList ? SweepToFreeList : SweepOnly;
-
-    if (Options::mainThreadRecordsFreeList() && freeList && newlyAllocatedMode == DoesNotHaveNewlyAllocated)
-        sweepMode = SweepToFreeListAndRecord;
+    SweepMode sweepMode = this->sweepMode(freeList);
 
     ASSERT(newlyAllocatedMode == HasNewlyAllocated || marksMode == MarksNotStale || emptyMode == IsEmpty);
 
@@ -657,6 +660,13 @@ void MarkedBlock::Handle::finishSweepKnowingHeapCellType(FreeList* freeList, con
 
     // The template arguments don't matter because the first one is false.
     specializedSweep<false, SpecializedSweepData { }>(freeList, emptyMode, sweepMode, destructionMode, scribbleMode, newlyAllocatedMode, marksMode, destroyFunc);
+}
+
+inline MarkedBlock::Handle::SweepMode MarkedBlock::Handle::sweepMode(FreeList* freeList)
+{
+    if (!freeList)
+        return SweepOnly;
+    return freeList == &m_cachedFreeList ? SweepToFreeListAndRecord : SweepToFreeList;
 }
 
 inline MarkedBlock::Handle::SweepDestructionMode MarkedBlock::Handle::sweepDestructionMode()
@@ -786,6 +796,15 @@ constexpr std::pair<unsigned, unsigned> MarkedBlock::Handle::atomsPerCellAndStar
     return { atomsPerCell, startAtom };
 }
 
+// TODO: Fix WTF_IGNORES_THREAD_SAFETY_ANALYSIS
+inline void MarkedBlock::Handle::clearCachedFreeList() WTF_IGNORES_THREAD_SAFETY_ANALYSIS
+{
+    ASSERT(isFreeListed());
+    m_freeListStatus = NotFreeListed;
+    // TODO: Not sure if this is needed.
+    blockHeader().m_recordedFreeListVersion = nullHeapVersion;
+    m_cachedFreeList.clear();
+}
 
 inline bool MarkedBlock::testAndSetMarked(const void* p, Dependency dependency)
 {

@@ -164,11 +164,8 @@ void* LocalAllocator::allocateSlowCase(JSC::Heap& heap, size_t cellSize, GCDefer
 
 void LocalAllocator::didConsumeFreeList()
 {
-    if (m_currentBlock) {
+    if (m_currentBlock)
         m_currentBlock->didConsumeFreeList();
-        m_directory->assertIsMutatorOrMutatorIsStopped();
-        ASSERT(!m_directory->isInUse(m_currentBlock));
-    }
     
     m_freeList.clear();
     m_currentBlock = nullptr;
@@ -240,11 +237,13 @@ void* LocalAllocator::tryAllocateIn(MarkedBlock::Handle* block, size_t cellSize)
 
     ASSERT(block->cachedFreeList().isClear());
     ASSERT(block->isFreeListed());
+    ASSERT(m_directory->isFreeListed(block));
     // It's possible to stumble on a completely full block. Marking tries to retire these, but
     // that algorithm is racy and may forget to do it sometimes.
     if (m_freeList.allocationWillFail()) {
         block->unsweepWithNoNewlyAllocated();
         ASSERT(!block->isFreeListed());
+        ASSERT(!m_directory->isFreeListed(block));
         ASSERT(!m_directory->isEmpty(block));
         ASSERT(!m_directory->isCanAllocateButNotEmpty(block));
         ASSERT(!m_directory->isInUse(block));

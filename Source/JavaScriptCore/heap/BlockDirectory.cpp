@@ -104,7 +104,9 @@ MarkedBlock::Handle* BlockDirectory::findEmptyBlockToSteal()
     if (m_emptyCursor >= m_blocks.size())
         return nullptr;
     dataLogLnIf(BlockDirectoryInternal::verbose, "Setting block ", m_emptyCursor, " in use (findEmptyBlockToSteal) for ", *this);
-    setIsInUse(m_emptyCursor, true);
+    startUsingBlock(locker, m_blocks[m_emptyCursor]);
+    if (isFreeListed(m_emptyCursor))
+        m_blocks[m_emptyCursor]->clearCachedFreeList();
     return m_blocks[m_emptyCursor];
 }
 
@@ -120,9 +122,11 @@ MarkedBlock::Handle* BlockDirectory::findBlockForAllocation(LocalAllocator& allo
     unsigned index = (freeListedBits() & ~inUseBits()).findBit(0, true);
     if (index < m_blocks.size()) {
         MarkedBlock::Handle* result = m_blocks[index];
-        setIsCanAllocateButNotEmpty(index, false);
         dataLogLnIf(BlockDirectoryInternal::verbose, "Stealing free list from cache on ", index, " for ", *this);
-        setIsInUse(index, true);
+        startUsingBlock(locker, result);
+        setIsCanAllocateButNotEmpty(index, false);
+        // We need to set non-empty otherwise if we swept this block again this cycle we'd purge live objects.
+        setIsEmpty(index, false);
         return result;
     }
 
@@ -134,7 +138,7 @@ MarkedBlock::Handle* BlockDirectory::findBlockForAllocation(LocalAllocator& allo
     MarkedBlock::Handle* result = m_blocks[blockIndex];
     setIsCanAllocateButNotEmpty(blockIndex, false);
     dataLogLnIf(BlockDirectoryInternal::verbose, "Setting block ", blockIndex, " in use (findBlockForAllocation) for ", *this);
-    setIsInUse(blockIndex, true);
+    startUsingBlock(locker, result);
     return result;
 }
 
@@ -181,8 +185,7 @@ void BlockDirectory::addBlock(MarkedBlock::Handle* block)
     
     setIsLive(index, true);
     setIsEmpty(index, true);
-    dataLogLnIf(BlockDirectoryInternal::verbose, "Setting block ", index, " in use (addBlock) for ", *this);
-    setIsInUse(index, true);
+    startUsingBlock(locker, block);
 }
 
 void BlockDirectory::removeBlock(MarkedBlock::Handle* block, WillDeleteBlock willDelete)
@@ -293,18 +296,6 @@ void BlockDirectory::stopAllocatingForGood()
     }
 #endif
 
-    freeListedBits().forEachSetBit([&] (size_t index) {
-        // stopAllocating expects the block to be in use.
-        assertSweeperIsSuspended();
-        setIsInUse(index, true);
-        MarkedBlock::Handle* block = m_blocks[index];
-        // TODO: Make a better name for this...
-        block->stopAllocating(block->cachedFreeList());
-        block->cachedFreeList().clear();
-    });
-
-    ASSERT(freeListedBitsView().isEmpty());
-
     Locker locker { m_localAllocatorsLock };
     while (!m_localAllocators.isEmpty())
         m_localAllocators.begin()->remove();
@@ -394,7 +385,7 @@ MarkedBlock::Handle* BlockDirectory::findBlockToSweep(unsigned& unsweptCursor)
     if (unsweptCursor >= m_blocks.size())
         return nullptr;
     dataLogLnIf(BlockDirectoryInternal::verbose, "Setting block ", unsweptCursor, " in use (findBlockToSweep) for ", *this);
-    setIsInUse(unsweptCursor, true);
+    startUsingBlock(locker, m_blocks[unsweptCursor]);
     return m_blocks[unsweptCursor];
 }
 
@@ -407,8 +398,8 @@ MarkedBlock::Handle* BlockDirectory::findBlockToEagerlySweep(unsigned& unsweptCu
     unsweptCursor = (unsweptBits() & ~inUseBits()).findBit(unsweptCursor, true);
     if (unsweptCursor >= m_blocks.size())
         return nullptr;
-    dataLogLnIf(BlockDirectoryInternal::verbose, "Setting block ", unsweptCursor, " in use (findBlockToSweep) for ", *this);
-    setIsInUse(unsweptCursor, true);
+    dataLogLnIf(BlockDirectoryInternal::verbose, "Setting block ", unsweptCursor, ", ", RawPointer(m_blocks[unsweptCursor]), " in use (findBlockToSweep) for ", *this);
+    startUsingBlock(locker, m_blocks[unsweptCursor]);
     return m_blocks[unsweptCursor];
 }
 
@@ -432,14 +423,14 @@ void BlockDirectory::sweepSynchronously()
         MarkedBlock::Handle* block = m_blocks[index];
         ASSERT(!isInUse(index));
         dataLogLnIf(BlockDirectoryInternal::verbose, "Setting block ", index, " in use (sweep) for ", *this);
-        setIsInUse(index, true);
+        startUsingBlock(locker, block);
 
         {
             DropLockForScope scope(locker);
             block->sweep(nullptr);
         }
         ASSERT(!isUnswept(index));
-        setIsInUse(index, false);
+        didFinishUsingBlock(locker, block);
     }
 }
 
@@ -457,14 +448,17 @@ void BlockDirectory::shrink()
         if (index >= m_blocks.size())
             break;
 
+        MarkedBlock::Handle* block = m_blocks[index];
         ASSERT(!isInUse(index));
         dataLogLnIf(BlockDirectoryInternal::verbose, "Setting block ", index, " in use (shrink) for ", *this);
-        setIsInUse(index, true);
+        startUsingBlock(locker, block);
+
         {
             DropLockForScope scope(locker);
             markedSpace().freeBlock(m_blocks[index]);
         }
-        setIsInUse(index, false);
+        // No need for didFinishUsingBlock here since its dead.
+        ASSERT(!isLive(index));
     }
 }
 
@@ -494,6 +488,25 @@ void BlockDirectory::assertNoUnswept()
     ASSERT_NOT_REACHED();
 }
 
+void BlockDirectory::startUsingBlock(MarkedBlock::Handle* handle)
+{
+    Locker locker(bitvectorLock());
+    startUsingBlock(locker, handle);
+}
+
+void BlockDirectory::startUsingBlock(const AbstractLocker&, MarkedBlock::Handle* handle)
+{
+    if (UNLIKELY(isInUse(handle))) {
+        dataLogLn("Start using on a block that's in use: ", handle->index());
+        dumpBits();
+        RELEASE_ASSERT_NOT_REACHED();
+    }
+
+    dataLogLnIf(BlockDirectoryInternal::verbose, "Setting block ", handle->index(), " in use (startUsingBlock) for ", *this);
+    setIsInUse(handle, true);
+    handle->setInUseHolder(Thread::current().uid());
+}
+
 void BlockDirectory::didFinishUsingBlock(MarkedBlock::Handle* handle)
 {
     Locker locker(bitvectorLock());
@@ -510,6 +523,7 @@ void BlockDirectory::didFinishUsingBlock(const AbstractLocker&, MarkedBlock::Han
 
     dataLogLnIf(BlockDirectoryInternal::verbose, "Setting block ", handle->index(), " not in use (didFinishUsingBlock) for ", *this);
     setIsInUse(handle, false);
+    handle->setInUseHolder(0);
 }
 
 RefPtr<SharedTask<MarkedBlock::Handle*()>> BlockDirectory::parallelNotEmptyBlockSource()

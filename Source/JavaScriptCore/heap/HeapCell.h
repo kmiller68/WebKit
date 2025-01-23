@@ -52,7 +52,7 @@ public:
     
     // We're intentionally only zapping the bits for the structureID and leaving
     // the rest of the cell header bits intact for crash analysis uses.
-    enum ZapReason : int8_t { Unspecified, FreeListed, Destruction, StopAllocating };
+    enum ZapReason : int8_t { Unspecified, Destruction, StopAllocating, LastChanceToFinalize };
     void zap(ZapReason reason)
     {
         uint32_t* cellWords = std::bit_cast<uint32_t*>(this);
