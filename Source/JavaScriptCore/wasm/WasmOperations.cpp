@@ -952,6 +952,7 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationWasmTriggerTierUpNow, void, (CallFram
     OMGCallee* replacement;
     {
         Locker locker { calleeGroup.m_lock };
+        ASSERT_IMPLIES(calleeGroup.mode() == MemoryMode::BoundsChecking, calleeGroup.isBBQCalleeForIndex(callee));
         replacement = calleeGroup.omgCallee(locker, functionIndex);
     }
     dataLogLnIf(Options::verboseOSR(), callee, ": Consider OMGPlan for functionCodeIndex=", functionIndex, " with executeCounter = ", tierUp, " ", RawPointer(replacement));

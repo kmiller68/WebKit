@@ -172,21 +172,21 @@ ALWAYS_INLINE bool MarkedBlock::Handle::isLive(HeapVersion markingVersion, HeapV
         ASSERT_UNUSED(fencedThis, !fencedThis->isAllocating());
 
         HeapVersion myNewlyAllocatedVersion = fencedHeader.m_newlyAllocatedVersion;
-        if (myNewlyAllocatedVersion == newlyAllocatedVersion) {
-            bool result = fencedHeader.m_newlyAllocated.get(atomNumber);
-            // TODO: If the validate fails maybe we should just go straight to locking path.
-            if (result && header.m_lock.fencelessValidate(count.value, Dependency::fence(result)))
-                return result;
-        }
-
-        HeapVersion myMarkingVersion = fencedHeader.m_markingVersion;
-        if (myMarkingVersion != markingVersion && (!isMarking || !fencedBlock.staleMarksConveyLivenessDuringMarking(myMarkingVersion, markingVersion))) {
-            if (header.m_lock.fencelessValidate(count.value, Dependency::fence(myMarkingVersion)))
-                return false;
-        } else {
-            bool result = fencedHeader.m_marks.get(block.atomNumber(cell));
+        // TODO: Gross clean up...
+        bool result;
+        if (myNewlyAllocatedVersion == newlyAllocatedVersion && (result = fencedHeader.m_newlyAllocated.get(atomNumber))) {
             if (header.m_lock.fencelessValidate(count.value, Dependency::fence(result)))
                 return result;
+        } else {
+            HeapVersion myMarkingVersion = fencedHeader.m_markingVersion;
+            if (myMarkingVersion != markingVersion && (!isMarking || !fencedBlock.staleMarksConveyLivenessDuringMarking(myMarkingVersion, markingVersion))) {
+                if (header.m_lock.fencelessValidate(count.value, Dependency::fence(myMarkingVersion)))
+                    return false;
+            } else {
+                bool result = fencedHeader.m_marks.get(block.atomNumber(cell));
+                if (header.m_lock.fencelessValidate(count.value, Dependency::fence(result)))
+                    return result;
+            }
         }
     }
 #if defined(__clang__)

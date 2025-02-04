@@ -59,13 +59,17 @@ public:
     void maybeNotify();
     void shouldStop();
 
-    void pushDirectoryToSweep(BlockDirectory& directory)
+    bool pushDirectoryToSweep(BlockDirectory& directory)
     {
         m_priorityDirectoriesToSweep.queue(directory);
         if (!m_isWorking) {
+            ASSERT(!isSuspended());
             Locker locker(lock());
+            bool result = isWaiting(locker);
             condition().notifyAll(locker);
+            return result;
         }
+        return false;
     }
 
 
@@ -90,7 +94,7 @@ private:
     void clearStringImplsToMainThreadDerefSlow();
     void flushStringImplsToMainThreadDeref();
 
-    OSLock m_rightToSweep;
+    Lock m_rightToSweep;
 
     using StringImplBag = LocklessBag<Vector<Ref<StringImpl>, 5>>;
     static_assert(!is64Bit() || hasOneBitSet(sizeof(StringImplBag::Node)));

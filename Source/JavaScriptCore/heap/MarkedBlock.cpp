@@ -39,6 +39,8 @@
 #include <wtf/cocoa/CrashReporter.h>
 #endif
 
+#include <wtf/SimpleStats.h>
+
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
 
 namespace JSC {
@@ -127,6 +129,9 @@ void MarkedBlock::Handle::unsweepWithNoNewlyAllocated()
     m_directory->didFinishUsingBlock(locker, this);
 }
 
+JS_EXPORT_PRIVATE extern SimpleStats stopAllocatingStats;
+SimpleStats stopAllocatingStats { };
+
 void MarkedBlock::Handle::stopAllocating(const FreeList& freeList)
 {
     Locker locker { blockHeader().m_lock };
@@ -162,6 +167,7 @@ void MarkedBlock::Handle::stopAllocating(const FreeList& freeList)
 
     FreeListStatus originalFreeListStatus = m_freeListStatus;
     if (originalFreeListStatus == FreeListedAndAllocating) {
+        // stopAllocatingStats.add(0);
         // Cells newly allocated from our free list are not currently marked, so we need another
         // way to tell what's live vs dead. Since we sweept this cycle we know every cell in
         // this block not on the free list is live so we just update that information.
@@ -171,6 +177,7 @@ void MarkedBlock::Handle::stopAllocating(const FreeList& freeList)
         blockHeader().m_newlyAllocated.clearAll();
         blockHeader().m_newlyAllocated.setEachNthBit(m_atomsPerCell, true, m_startAtom);
     } else {
+        // stopAllocatingStats.add(1);
         ASSERT(originalFreeListStatus == FreeListedRecordedAndAllocating);
         ASSERT(blockHeader().m_recordedFreeListVersion != nullHeapVersion);
 
@@ -467,6 +474,9 @@ bool MarkedBlock::isMarked(const void* p) const
     return isMarked(vm().heap.objectSpace().markingVersion(), p);
 }
 
+JS_EXPORT_PRIVATE extern SimpleStats didConsumeFreeListStats;
+SimpleStats didConsumeFreeListStats { };
+
 void MarkedBlock::Handle::didConsumeFreeList()
 {
     Locker locker { blockHeader().m_lock };
@@ -481,6 +491,7 @@ void MarkedBlock::Handle::didConsumeFreeList()
     ASSERT_IMPLIES(m_freeListStatus == FreeListedAndAllocating, blockHeader().m_recordedFreeListVersion == nullHeapVersion);
     bool isAllocated = m_freeListStatus == FreeListedAndAllocating || blockHeader().m_recordedFreeListVersion == space()->newlyAllocatedVersion();
 
+    // didConsumeFreeListStats.add(!isAllocated);
     if (!isAllocated) {
         if (newlyAllocatedMode() == DoesNotHaveNewlyAllocated)
             blockHeader().m_newlyAllocated = blockHeader().m_recordedFreeList;
@@ -906,17 +917,22 @@ NO_RETURN_DUE_TO_CRASH NEVER_INLINE void MarkedBlock::dumpInfoAndCrashForInvalid
     CRASH_WITH_INFO(heapCell, cellFirst8Bytes, zeroCounts, bitfield, subspaceHash, blockVM, actualVM);
 }
 
+JS_EXPORT_PRIVATE extern SimpleStats stealFreeListOrSweepStats;
+SimpleStats stealFreeListOrSweepStats { };
+
 void MarkedBlock::Handle::stealFreeListOrSweep(FreeList& freeList)
 {
     m_directory->assertIsMutatorOrMutatorIsStopped();
     ASSERT(m_directory->isInUse(this));
     ASSERT(!isAllocating());
-    if (!isFreeListed() && Options::mainThreadRecordsFreeList()) {
+    if (UNLIKELY(Options::mainThreadRecordsFreeList()) && !isFreeListed()) {
         sweep(&m_cachedFreeList);
         ASSERT(freeListStatus() == FreeListedWithRecording);
         ASSERT(m_directory->isFreeListed(this));
     }
 
+    // if (m_attributes.destruction != NeedsMainThreadDestruction)
+    //     stealFreeListOrSweepStats.add(freeListStatus() == FreeListedWithRecording);
     if (freeListStatus() == FreeListedWithRecording) {
         freeList.stealFrom(cachedFreeList());
         ASSERT(cachedFreeList().isClear());

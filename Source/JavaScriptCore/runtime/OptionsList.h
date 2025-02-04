@@ -226,6 +226,7 @@ bool hasCapacityToUseLargeGigacage();
     v(Double, gcIncrementMaxBytes, 100000, Normal, nullptr) \
     v(Double, gcIncrementScale, 0, Normal, nullptr) \
     v(Unsigned, concurrentSweeperThreshold, 10, Normal, "The number of cached free lists the concurrent sweeper tries to maintain"_s) \
+    v(Unsigned, concurrentSweeperUnsweptThreshold, 100, Normal, "The number of unswept concurrently sweepable MarkedBlocks to activate the concurrent sweeper at GC end."_s) \
     v(Bool, scribbleFreeCells, false, Normal, nullptr) \
     v(Double, sizeClassProgression, 1.4, Normal, nullptr) \
     v(Unsigned, preciseAllocationCutoff, 100000, Normal, nullptr) \

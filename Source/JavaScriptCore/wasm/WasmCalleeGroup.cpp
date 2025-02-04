@@ -227,7 +227,7 @@ void CalleeGroup::releaseBBQCallee(const AbstractLocker&, FunctionCodeIndex func
     else if (m_llintCallees)
         m_llintCallees->at(functionIndex)->tierUpCounter().resetAndOptimizeSoon(m_mode);
 
-    // We could have triggered a tier up from a BBQCallee has MemoryMode::BoundsChecking
+    // We could have triggered a tier up from a BBQCallee with MemoryMode::BoundsChecking
     // but is currently running a MemoryMode::Signaling memory. In that case there may
     // be nothing to release.
     if (LIKELY(!m_bbqCallees.isEmpty())) {

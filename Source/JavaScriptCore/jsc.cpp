@@ -111,6 +111,7 @@
 #include <wtf/text/StringBuilder.h>
 #include <wtf/threads/BinarySemaphore.h>
 #include <wtf/threads/Signals.h>
+#include <wtf/SimpleStats.h>
 
 #if OS(WINDOWS)
 #include <direct.h>
@@ -3508,6 +3509,13 @@ static void startTimeoutThreadIfNeeded(VM& vm)
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
 
+namespace JSC {
+extern SimpleStats stopAllocatingStats;
+extern SimpleStats didConsumeFreeListStats;
+extern SimpleStats stealFreeListOrSweepStats;
+extern SimpleStats findBlockForAllocationStats;
+}
+
 int main(int argc, char** argv)
 {
 #if OS(DARWIN)
@@ -3587,6 +3595,10 @@ int main(int argc, char** argv)
         getc(stdin);
     }
 
+    // dataLogLn("stopAllocatingStats: ", stopAllocatingStats.count(), " number of recorded free list paths: ", stopAllocatingStats.sum(), " % ", stopAllocatingStats.mean());
+    // dataLogLn("didConsumeFreeListStats: ", didConsumeFreeListStats.count(), " number of stale, recorded free list paths: ", didConsumeFreeListStats.sum(), " % ", didConsumeFreeListStats.mean());
+    // dataLogLn("stealFreeListOrSweepStats: ", stealFreeListOrSweepStats.count(), " number of recorded free list paths: ", stealFreeListOrSweepStats.sum(), " % ", stealFreeListOrSweepStats.mean());
+    dataLogLn("findBlockForAllocationStats: ", findBlockForAllocationStats.count(), " number of notifies: ", findBlockForAllocationStats.sum(), " % ", findBlockForAllocationStats.mean());
 #if OS(UNIX)
     if (getenv("JS_SHELL_WAIT_FOR_SIGUSR2_TO_EXIT")) {
         WTF::fastDisableScavenger();

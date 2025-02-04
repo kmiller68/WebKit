@@ -60,27 +60,39 @@ Ref<ConcurrentSweeper> ConcurrentSweeper::create(VM& vm)
     return adoptRef(*new ConcurrentSweeper(locker, vm, lock, AutomaticThreadCondition::create()));
 }
 
+static inline bool shouldConcurrentlySweep(BlockDirectory* directory)
+{
+    return directory->destruction() == NeedsDestruction;
+}
+
 auto ConcurrentSweeper::poll(const AbstractLocker&) -> PollResult
 {
-    m_isWorking = true;
     if (m_shouldStop)
         return PollResult::Stop;
 
+    auto wait = [&] {
+        // We're about to stop, make sure the mutator can see any strings.
+        flushStringImplsToMainThreadDeref();
+        m_isWorking = false;
+        return PollResult::Wait;
+    };
+
+    if (auto* worklist = JITWorklist::existingGlobalWorklistOrNull()) {
+        if (worklist->numberOfActiveThreads() >= 3)
+            return wait();
+    }
+
+    m_isWorking = true;
     if (!m_priorityDirectoriesToSweep.isEmpty())
         return PollResult::Work;
 
-    if (!m_currentDirectory && (m_hasNewWork || Options::collectContinuously())) {
-        m_hasNewWork = false;
+    if (!m_currentDirectory && Options::collectContinuously())
         m_currentDirectory = m_vm.heap.objectSpace().firstDirectory();
-    }
 
     if (m_currentDirectory)
         return PollResult::Work;
 
-    // We're about to stop, make sure the mutator can see any strings.
-    flushStringImplsToMainThreadDeref();
-    m_isWorking = false;
-    return PollResult::Wait;
+    return wait();
 }
 
 auto ConcurrentSweeper::work() -> WorkResult
@@ -120,32 +132,35 @@ void ConcurrentSweeper::threadIsStopping(const AbstractLocker&)
 {
     // This is unnecesssary but it doesn't hurt to be conservative.
     flushStringImplsToMainThreadDeref();
-    dataLogLnIf(ConcurrentSweeperInternal::verbose, "Shutting down concurrent sweeper thread");
+    dataLogLnIf(ConcurrentSweeperInternal::verbose, "Shutting down concurrent sweeper thread.");
 }
 
 void ConcurrentSweeper::maybeNotify()
 {
-    Locker locker(lock());
-    m_hasNewWork = true;
-    condition().notifyAll(locker);
+    // Locker locker(lock());
+    // m_hasNewWork = true;
+    // condition().notifyAll(locker);
 
-    // size_t unsweptCount = 0;
-    // unsigned threshold = Options::concurrentSweeperThreshold();
-    // for (auto* node = m_directoriesToSweep.head(); node; node = node->next) {
-    //     unsweptCount += node->data.unsweptCount();
-    //     if (unsweptCount >= threshold) {
-    //         if constexpr (ConcurrentSweeperInternal::verbose) {
-    //             dataLogLn("Hit threshold of ", threshold, " posting work: ", unsweptCount);
-    //             size_t count = numBlocksSwept.exchange(0, std::memory_order_relaxed);
-    //             dataLogLn("Swept ", count, " marked blocks since last posting");
-    //         }
-    //         Locker locker(lock());
-    //         m_hasNewWork = true;
-    //         condition().notifyAll(locker);
-    //         return;
-    //     }
-    // }
-    // dataLogLnIf(ConcurrentSweeperInternal::verbose, "Didn't hit threshold of ", threshold, " no work posted: ", unsweptCount);
+    size_t unsweptCount = 0;
+    unsigned threshold = Options::concurrentSweeperUnsweptThreshold();
+    for (auto* directory = m_vm.heap.objectSpace().firstDirectory(); directory; directory = directory->nextDirectory()) {
+        if (directory->destruction() == NeedsMainThreadDestruction)
+            continue;
+        directory->assertIsMutatorOrMutatorIsStopped();
+        unsweptCount += std::min(directory->unsweptBitsView().bitCount(), static_cast<size_t>(Options::concurrentSweeperThreshold()));
+        if (unsweptCount >= threshold) {
+            if constexpr (ConcurrentSweeperInternal::verbose) {
+                dataLogLn("Hit threshold of ", threshold, " posting work: ", unsweptCount);
+                size_t count = numBlocksSwept.exchange(0, std::memory_order_relaxed);
+                dataLogLn("Swept ", count, " MarkedBlocks since last posting");
+            }
+            Locker locker(lock());
+            m_currentDirectory = m_vm.heap.objectSpace().firstDirectory();
+            condition().notifyAll(locker);
+            return;
+        }
+    }
+    dataLogLnIf(ConcurrentSweeperInternal::verbose, "Didn't hit threshold of ", threshold, " no work posted: ", unsweptCount);
 }
 
 void ConcurrentSweeper::clearStringImplsToMainThreadDerefSlow()

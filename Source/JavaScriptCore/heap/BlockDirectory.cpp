@@ -110,12 +110,18 @@ MarkedBlock::Handle* BlockDirectory::findEmptyBlockToSteal()
     return m_blocks[m_emptyCursor];
 }
 
+JS_EXPORT_PRIVATE extern SimpleStats findBlockForAllocationStats;
+SimpleStats findBlockForAllocationStats { };
+
 MarkedBlock::Handle* BlockDirectory::findBlockForAllocation(LocalAllocator& allocator)
 {
-    ConcurrentSweeper* sweeper = markedSpace().heap().concurrentSweeper();
     // TODO: We should probably have a better metric for when this is needed.
-    if (destruction() != NeedsMainThreadDestruction && sweeper)
-        sweeper->pushDirectoryToSweep(*this);
+    auto notifyConcurrentSweeper = [&] {
+        ConcurrentSweeper* sweeper = markedSpace().heap().concurrentSweeper();
+        if (sweeper && destruction() != NeedsMainThreadDestruction)
+            return sweeper->pushDirectoryToSweep(*this);
+        return false;
+    };
 
     Locker locker(bitvectorLock());
     // TODO: Does this need a cursor?
@@ -127,9 +133,13 @@ MarkedBlock::Handle* BlockDirectory::findBlockForAllocation(LocalAllocator& allo
         setIsCanAllocateButNotEmpty(index, false);
         // We need to set non-empty otherwise if we swept this block again this cycle we'd purge live objects.
         setIsEmpty(index, false);
+        findBlockForAllocationStats.add(0);
         return result;
     }
 
+
+    bool notified = notifyConcurrentSweeper();
+    findBlockForAllocationStats.add(notified);
     allocator.m_allocationCursor = ((canAllocateButNotEmptyBits() | emptyBits()) & ~inUseBits()).findBit(allocator.m_allocationCursor, true);
     if (allocator.m_allocationCursor >= m_blocks.size())
         return nullptr;

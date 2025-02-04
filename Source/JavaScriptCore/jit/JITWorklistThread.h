@@ -68,6 +68,7 @@ private:
     JITWorklist& m_worklist;
     RefPtr<JITPlan> m_plan { nullptr };
     Safepoint* m_safepoint { nullptr };
+    MarkedBlock* m_block { nullptr };
 };
 
 } // namespace JSC

@@ -85,6 +85,8 @@ public:
 
     void dump(PrintStream&) const;
 
+    unsigned numberOfActiveThreads() const { return m_numberOfActiveThreads; }
+
 private:
     JITWorklist();
 
