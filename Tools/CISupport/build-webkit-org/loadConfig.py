@@ -40,7 +40,7 @@ main_filter = ChangeFilter(branch=["main", None])
 
 BUILDER_NAME_LENGTH_LIMIT = 70
 STEP_NAME_LENGTH_LIMIT = 50
-
+VALID_CONFIGURATIONS = ['debug', 'production', 'release', 'release-and-assert']
 
 def pickLatestBuild(builder, requests):
     return max(requests, key=operator.attrgetter("submittedAt"))
@@ -170,7 +170,7 @@ def checkValidBuilder(config, builder):
     if len(builder['name']) > BUILDER_NAME_LENGTH_LIMIT:
         raise Exception(f"Builder name {builder['name']} is longer than maximum allowed by Buildbot ({BUILDER_NAME_LENGTH_LIMIT} characters).")
 
-    if 'configuration' in builder and builder['configuration'] not in ['debug', 'production', 'release']:
+    if 'configuration' in builder and builder['configuration'] not in VALID_CONFIGURATIONS:
         raise Exception(f"Invalid configuration: {builder.get('configuration')} for builder: {builder.get('name')}")
 
     if not builder.get('factory'):

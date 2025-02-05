@@ -47,7 +47,7 @@ custom_suffix = get_custom_suffix()
 
 BUILDER_NAME_LENGTH_LIMIT = 70
 STEP_NAME_LENGTH_LIMIT = 50
-
+VALID_CONFIGURATIONS = ['debug', 'production', 'release', 'release-and-assert']
 
 def loadBuilderConfig(c, is_test_mode_enabled=False, setup_main_schedulers=True, setup_force_schedulers=True, master_prefix_path=os.path.dirname(os.path.abspath(__file__))):
     with open(os.path.join(master_prefix_path, 'config.json')) as config_json:
@@ -184,7 +184,7 @@ def checkValidBuilder(config, builder):
     if len(builder['name']) > BUILDER_NAME_LENGTH_LIMIT:
         raise Exception('Builder name {} is longer than maximum allowed by Buildbot ({} characters).'.format(builder['name'], BUILDER_NAME_LENGTH_LIMIT))
 
-    if 'configuration' in builder and builder['configuration'] not in ['debug', 'production', 'release']:
+    if 'configuration' in builder and builder['configuration'] not in VALID_CONFIGURATIONS:
         raise Exception('Invalid configuration: {} for builder: {}'.format(builder.get('configuration'), builder.get('name')))
 
     if not builder.get('factory'):

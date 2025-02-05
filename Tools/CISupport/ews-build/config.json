@@ -401,13 +401,13 @@
     {
       "name": "JSC-Tests-EWS", "shortname": "jsc", "icon": "buildAndTest",
       "factory": "JSCBuildAndTestsFactory", "platform": "mac-ventura",
-      "configuration": "release", "runTests": "true",
+      "configuration": "release-and-assert", "runTests": "true",
       "workernames": ["ews127", "ews128", "ews251", "ews252"]
     },
     {
       "name": "JSC-Tests-arm64-EWS", "shortname": "jsc-arm64", "icon": "buildAndTest",
       "factory": "JSCBuildAndTestsFactory", "platform": "mac-ventura",
-      "configuration": "release", "runTests": "true",
+      "configuration": "release-and-assert", "runTests": "true",
       "workernames": ["ews136", "ews137"]
     },
     {

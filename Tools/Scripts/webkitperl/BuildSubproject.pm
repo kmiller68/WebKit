@@ -260,7 +260,7 @@ sub buildUpToProject
             push @extraCommands, $arg;
         }
 
-        my $command = "make SCHEME=\"$schemeName\" " . (lc configuration()) . " GCC_PREPROCESSOR_ADDITIONS=\"@compilerFlags\" @extraCommands";
+        my $command = "make SCHEME=\"$schemeName\" " . "release+assert" . " GCC_PREPROCESSOR_ADDITIONS=\"@compilerFlags\" @extraCommands";
 
         print "\n";
         print "building ", $projectName, "\n";

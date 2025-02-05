@@ -118,7 +118,7 @@ void JSAPIWrapperObject::finishCreation(VM& vm)
     Base::finishCreation(vm);
     WeakSet::allocate(this, jsAPIWrapperObjectHandleOwner(), 0); // Balanced in JSAPIWrapperObjectHandleOwner::finalize.
 }
-    
+
 void JSAPIWrapperObject::setWrappedObject(void* wrappedObject)
 {
     ASSERT(!m_wrappedObject);
