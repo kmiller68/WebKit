@@ -34,14 +34,15 @@
 #include "DFGJITCompiler.h"
 #include "DFGOSRExit.h"
 #include "DFGOSRExitJumpPlaceholder.h"
-#include "DFGRegisterBank.h"
 #include "DFGSilentRegisterSavePlan.h"
 #include "JITMathIC.h"
 #include "JITOperations.h"
+#include "SimpleRegisterAllocator.h"
 #include "SpillRegistersMode.h"
 #include "StructureStubInfo.h"
 #include "ValueRecovery.h"
 #include "VirtualRegister.h"
+
 #include <wtf/TZoneMalloc.h>
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
@@ -86,7 +87,7 @@ private:
     // These constants are used to set priorities for spill order for
     // the register allocator.
 #if USE(JSVALUE64)
-    enum SpillOrder {
+    enum SpillOrder : uint8_t {
         SpillOrderConstant = 1, // no spill, and cheap fill
         SpillOrderSpilled  = 2, // no spill
         SpillOrderJS       = 4, // needs spill
@@ -97,7 +98,7 @@ private:
         SpillOrderDouble   = 6, // needs spill and convert
     };
 #elif USE(JSVALUE32_64)
-    enum SpillOrder {
+    enum SpillOrder : uint8_t {
         SpillOrderConstant = 1, // no spill, and cheap fill
         SpillOrderSpilled  = 2, // no spill
         SpillOrderJS       = 4, // needs spill
@@ -229,16 +230,8 @@ public:
 #if ENABLE(DFG_REGISTER_ALLOCATION_VALIDATION)
         addRegisterAllocationAtOffset(debugOffset());
 #endif
-        VirtualRegister spillMe;
-        GPRReg gpr = m_gprs.allocate(spillMe);
-        if (spillMe.isValid()) {
-#if USE(JSVALUE32_64)
-            GenerationInfo& info = generationInfoFromVirtualRegister(spillMe);
-            if ((info.registerFormat() & DataFormatJS))
-                m_gprs.release(info.tagGPR() == gpr ? info.payloadGPR() : info.tagGPR());
-#endif
-            spill(spillMe);
-        }
+        GPRReg gpr = m_gprs.allocate(*this, VirtualRegister(), 0);
+        m_gprs.lock(gpr);
         return gpr;
     }
     GPRReg allocate(GPRReg specific)
@@ -247,31 +240,19 @@ public:
 #if ENABLE(DFG_REGISTER_ALLOCATION_VALIDATION)
         addRegisterAllocationAtOffset(debugOffset());
 #endif
-        VirtualRegister spillMe = m_gprs.allocateSpecific(specific);
-        if (spillMe.isValid()) {
-#if USE(JSVALUE32_64)
-            GenerationInfo& info = generationInfoFromVirtualRegister(spillMe);
-            RELEASE_ASSERT(info.registerFormat() != DataFormatJSDouble);
-            if ((info.registerFormat() & DataFormatJS))
-                m_gprs.release(info.tagGPR() == specific ? info.payloadGPR() : info.tagGPR());
-#endif
-            spill(spillMe);
-        }
+        m_gprs.clobber(*this, specific);
+        m_gprs.bind(specific, VirtualRegister(), std::nullopt);
+        m_gprs.lock(specific);
         return specific;
     }
-    GPRReg tryAllocate()
-    {
-        return m_gprs.tryAllocate();
-    }
+
     FPRReg fprAllocate()
     {
 #if ENABLE(DFG_REGISTER_ALLOCATION_VALIDATION)
         addRegisterAllocationAtOffset(debugOffset());
 #endif
-        VirtualRegister spillMe;
-        FPRReg fpr = m_fprs.allocate(spillMe);
-        if (spillMe.isValid())
-            spill(spillMe);
+        FPRReg fpr = m_fprs.allocate(*this, VirtualRegister(), 0);
+        m_fprs.lock(fpr);
         return fpr;
     }
 
@@ -305,17 +286,17 @@ public:
         DataFormat registerFormat = info.registerFormat();
 #if USE(JSVALUE64)
         if (registerFormat == DataFormatDouble)
-            m_fprs.release(info.fpr());
+            m_fprs.unbind(info.fpr());
         else if (registerFormat != DataFormatNone)
-            m_gprs.release(info.gpr());
+            m_gprs.unbind(info.gpr());
 #elif USE(JSVALUE32_64)
         if (registerFormat == DataFormatDouble)
-            m_fprs.release(info.fpr());
+            m_fprs.unbind(info.fpr());
         else if (registerFormat & DataFormatJS) {
-            m_gprs.release(info.tagGPR());
-            m_gprs.release(info.payloadGPR());
+            m_gprs.unbind(info.tagGPR());
+            m_gprs.unbind(info.payloadGPR());
         } else if (registerFormat != DataFormatNone)
-            m_gprs.release(info.gpr());
+            m_gprs.unbind(info.gpr());
 #endif
     }
     void use(Edge nodeUse)
@@ -366,8 +347,8 @@ public:
     // they spill all live values to the appropriate
     // slots in the JSStack without changing any state
     // in the GenerationInfo.
-    SilentRegisterSavePlan silentSavePlanForGPR(VirtualRegister spillMe, GPRReg source);
-    SilentRegisterSavePlan silentSavePlanForFPR(VirtualRegister spillMe, FPRReg source);
+    SilentRegisterSavePlan silentSavePlanFor(VirtualRegister spillMe, GPRReg source);
+    SilentRegisterSavePlan silentSavePlanFor(VirtualRegister spillMe, FPRReg source);
     void silentSpillImpl(const SilentRegisterSavePlan&);
     void silentFillImpl(const SilentRegisterSavePlan&);
 
@@ -404,22 +385,28 @@ public:
         ASSERT(!m_underSilentSpill);
         if (doSpill)
             m_underSilentSpill = true;
-        for (gpr_iterator iter = m_gprs.begin(); iter != m_gprs.end(); ++iter) {
-            GPRReg gpr = iter.regID();
-            if (iter.name().isValid() && gpr != exclude && gpr != exclude2) {
-                SilentRegisterSavePlan plan = silentSavePlanForGPR(iter.name(), gpr);
+
+        auto handleSpill = [&](VirtualRegister name, auto reg) {
+            if (name.isValid()) {
+                SilentRegisterSavePlan plan = silentSavePlanFor(name, reg);
                 if (doSpill)
                     silentSpillImpl(plan);
                 plans.append(plan);
             }
+        };
+
+        for (Reg reg : m_gprs.validRegisters()) {
+            GPRReg gpr = reg.gpr();
+            if (gpr == exclude || gpr == exclude2)
+                continue;
+            handleSpill(m_gprs.bindingFor(gpr), gpr);
         }
-        for (fpr_iterator iter = m_fprs.begin(); iter != m_fprs.end(); ++iter) {
-            if (iter.name().isValid() && iter.regID() != fprExclude) {
-                SilentRegisterSavePlan plan = silentSavePlanForFPR(iter.name(), iter.regID());
-                if (doSpill)
-                    silentSpillImpl(plan);
-                plans.append(plan);
-            }
+
+        for (Reg reg : m_fprs.validRegisters()) {
+            FPRReg fpr = reg.fpr();
+            if (fpr == fprExclude)
+                continue;
+            handleSpill(m_fprs.bindingFor(fpr), fpr);
         }
     }
     template<typename CollectionType>
@@ -581,30 +568,20 @@ public:
     // Spill all VirtualRegisters back to the JSStack.
     void flushRegisters()
     {
-        for (gpr_iterator iter = m_gprs.begin(); iter != m_gprs.end(); ++iter) {
-            if (iter.name().isValid()) {
-                spill(iter.name());
-                iter.release();
-            }
-        }
-        for (fpr_iterator iter = m_fprs.begin(); iter != m_fprs.end(); ++iter) {
-            if (iter.name().isValid()) {
-                spill(iter.name());
-                iter.release();
-            }
-        }
+        m_gprs.flushAllRegisters(*this);
+        m_fprs.flushAllRegisters(*this);
     }
 
     // Used to ASSERT flushRegisters() has been called prior to
     // calling out from JIT code to a C helper function.
     bool isFlushed()
     {
-        for (gpr_iterator iter = m_gprs.begin(); iter != m_gprs.end(); ++iter) {
-            if (iter.name().isValid())
+        for (auto reg : m_gprs.validRegisters()) {
+            if (m_gprs.bindingFor(reg.gpr()).isValid())
                 return false;
         }
-        for (fpr_iterator iter = m_fprs.begin(); iter != m_fprs.end(); ++iter) {
-            if (iter.name().isValid())
+        for (auto reg : m_fprs.validRegisters()) {
+            if (m_fprs.bindingFor(reg.fpr()).isValid())
                 return false;
         }
         return true;
@@ -783,13 +760,13 @@ public:
 
         if (format == DataFormatInt32) {
             jitAssertIsInt32(reg);
-            m_gprs.retain(reg, virtualRegister, SpillOrderInteger);
+            m_gprs.bind(reg, virtualRegister, SpillOrderInteger);
             info.initInt32(node, node->refCount(), reg);
         } else {
 #if USE(JSVALUE64)
             RELEASE_ASSERT(format == DataFormatJSInt32);
             jitAssertIsJSInt32(reg);
-            m_gprs.retain(reg, virtualRegister, SpillOrderJS);
+            m_gprs.bind(reg, virtualRegister, SpillOrderJS);
             info.initJSValue(node, node->refCount(), reg, format);
 #elif USE(JSVALUE32_64)
             RELEASE_ASSERT_NOT_REACHED();
@@ -808,7 +785,7 @@ public:
         VirtualRegister virtualRegister = node->virtualRegister();
         GenerationInfo& info = generationInfoFromVirtualRegister(virtualRegister);
 
-        m_gprs.retain(reg, virtualRegister, SpillOrderJS);
+        m_gprs.bind(reg, virtualRegister, SpillOrderJS);
         info.initInt52(node, node->refCount(), reg, format);
     }
     void int52Result(GPRReg reg, Node* node, UseChildrenMode mode = CallUseChildren)
@@ -831,7 +808,7 @@ public:
             useChildren(node);
 
         VirtualRegister virtualRegister = node->virtualRegister();
-        m_gprs.retain(reg, virtualRegister, SpillOrderCell);
+        m_gprs.bind(reg, virtualRegister, SpillOrderCell);
         GenerationInfo& info = generationInfoFromVirtualRegister(virtualRegister);
         info.initCell(node, node->refCount(), reg);
     }
@@ -860,7 +837,7 @@ public:
             useChildren(node);
 
         VirtualRegister virtualRegister = node->virtualRegister();
-        m_gprs.retain(reg, virtualRegister, SpillOrderJS);
+        m_gprs.bind(reg, virtualRegister, SpillOrderJS);
         GenerationInfo& info = generationInfoFromVirtualRegister(virtualRegister);
         info.initJSValue(node, node->refCount(), reg, format);
     }
@@ -875,7 +852,7 @@ public:
             useChildren(node);
 
         VirtualRegister virtualRegister = node->virtualRegister();
-        m_gprs.retain(reg, virtualRegister, SpillOrderBoolean);
+        m_gprs.bind(reg, virtualRegister, SpillOrderBoolean);
         GenerationInfo& info = generationInfoFromVirtualRegister(virtualRegister);
         info.initBoolean(node, node->refCount(), reg);
     }
@@ -885,8 +862,8 @@ public:
             useChildren(node);
 
         VirtualRegister virtualRegister = node->virtualRegister();
-        m_gprs.retain(tag, virtualRegister, SpillOrderJS);
-        m_gprs.retain(payload, virtualRegister, SpillOrderJS);
+        m_gprs.bind(tag, virtualRegister, SpillOrderJS);
+        m_gprs.bind(payload, virtualRegister, SpillOrderJS);
         GenerationInfo& info = generationInfoFromVirtualRegister(virtualRegister);
         info.initJSValue(node, node->refCount(), tag, payload, format);
     }
@@ -909,7 +886,7 @@ public:
             useChildren(node);
         
         VirtualRegister virtualRegister = node->virtualRegister();
-        m_gprs.retain(reg, virtualRegister, SpillOrderStorage);
+        m_gprs.bind(reg, virtualRegister, SpillOrderStorage);
         GenerationInfo& info = generationInfoFromVirtualRegister(virtualRegister);
         info.initStorage(node, node->refCount(), reg);
     }
@@ -919,7 +896,7 @@ public:
             useChildren(node);
 
         VirtualRegister virtualRegister = node->virtualRegister();
-        m_fprs.retain(reg, virtualRegister, SpillOrderDouble);
+        m_fprs.bind(reg, virtualRegister, SpillOrderDouble);
         GenerationInfo& info = generationInfoFromVirtualRegister(virtualRegister);
         info.initDouble(node, node->refCount(), reg);
     }
@@ -941,13 +918,13 @@ public:
 
         if (format == DataFormatInt32) {
             jitAssertIsInt32(reg);
-            m_gprs.retain(reg, virtualRegister, SpillOrderInteger);
+            m_gprs.bind(reg, virtualRegister, SpillOrderInteger);
             info.initInt32(node, refCount, reg);
         } else {
 #if USE(JSVALUE64)
             RELEASE_ASSERT(format == DataFormatJSInt32);
             jitAssertIsJSInt32(reg);
-            m_gprs.retain(reg, virtualRegister, SpillOrderJS);
+            m_gprs.bind(reg, virtualRegister, SpillOrderJS);
             info.initJSValue(node, refCount, reg, format);
 #elif USE(JSVALUE32_64)
             RELEASE_ASSERT_NOT_REACHED();
@@ -1101,9 +1078,7 @@ public:
             if (spilledRegs.buildAndValidate().contains(exceptionReg, IgnoreVectors)) {
                 // It would be nice if we could do m_gprs.tryAllocate() but we're possibly on a slow path and register allocation state is
                 // probably garbage.
-                constexpr RegisterSetBuilder registersInBank = decltype(m_gprs)::registersInBank();
-                // Move to a non-constexpr local so we can call exclude.
-                RegisterSetBuilder possibleRegisters = registersInBank;
+                RegisterSetBuilder possibleRegisters = m_gprs.validRegisters();
                 RegisterSet freeRegs = possibleRegisters.exclude(spilledRegs).buildAndValidate();
                 auto iter = freeRegs.begin();
                 if (iter != freeRegs.end()) {
@@ -2037,8 +2012,48 @@ public:
 
     // Virtual and physical register maps.
     Vector<GenerationInfo, 32> m_generationInfo;
-    RegisterBank<GPRInfo> m_gprs;
-    RegisterBank<FPRInfo> m_fprs;
+
+    // Register bank types for SimpleRegisterAllocator
+    struct GPRBank {
+        using Register = GPRReg;
+        using JITBackend = SpeculativeJIT;
+        static constexpr Register invalidRegister = InvalidGPRReg;
+        static constexpr unsigned numberOfRegisters = 32;
+        static constexpr Width defaultWidth = WidthPtr;
+    };
+
+    struct FPRBank {
+        using Register = FPRReg;
+        using JITBackend = SpeculativeJIT;
+        static constexpr Register invalidRegister = InvalidFPRReg;
+        static constexpr unsigned numberOfRegisters = 32;
+        static constexpr Width defaultWidth = WidthPtr;
+    };
+
+    //  SimpleRegisterAllocator Interface:
+    using SpillHint = std::underlying_type_t<SpillOrder>;
+    using RegisterBinding = VirtualRegister;
+
+    VirtualRegister bindingFor(Reg reg) { return reg.isGPR() ? m_gprs.bindingFor(reg.gpr()) : m_fprs.bindingFor(reg.fpr()); }
+    void flush(GPRReg, VirtualRegister spillMe)
+    {
+        if (!spillMe.isValid())
+            return;
+#if USE(JSVALUE32_64)
+        GenerationInfo& info = generationInfoFromVirtualRegister(spillMe);
+        if ((info.registerFormat() & DataFormatJS))
+            m_gprs.unbind(info.tagGPR() == gpr ? info.payloadGPR() : info.tagGPR());
+#endif
+        spill(spillMe);
+    }
+    void flush(FPRReg, VirtualRegister spillMe)
+    {
+        if (spillMe.isValid())
+            spill(spillMe);
+    }
+
+    SimpleRegisterAllocator<GPRBank> m_gprs;
+    SimpleRegisterAllocator<FPRBank> m_fprs;
 
     // It is possible, during speculative generation, to reach a situation in which we
     // can statically determine a speculation will fail (for example, when two nodes
@@ -2373,8 +2388,12 @@ public:
 
     ~GPRTemporary()
     {
-        if (m_jit && m_gpr != InvalidGPRReg)
+        if (m_jit && m_gpr != InvalidGPRReg) {
             m_jit->unlock(gpr());
+            // We didn't save this as a result for this node.
+            if (!m_jit->m_gprs.bindingFor(gpr()).isValid())
+                m_jit->m_gprs.unbind(gpr());
+        }
     }
 
     GPRReg gpr()
@@ -2445,8 +2464,12 @@ public:
 
     ~FPRTemporary()
     {
-        if (m_jit) [[likely]]
+        if (m_jit) [[likely]] {
             m_jit->unlock(fpr());
+            // We didn't save this as a result for this node.
+            if (!m_jit->m_fprs.bindingFor(fpr()).isValid())
+                m_jit->m_fprs.unbind(fpr());
+        }
     }
 
     FPRReg fpr() const

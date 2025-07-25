@@ -91,10 +91,10 @@ GPRReg SpeculativeJIT::fillJSValue(Edge edge)
             JSValue jsValue = edge->asJSValue();
             move(TrustedImm64(JSValue::encode(jsValue)), gpr);
             info.fillJSValue(m_stream, gpr, DataFormatJS);
-            m_gprs.retain(gpr, virtualRegister, SpillOrderConstant);
+            m_gprs.bind(gpr, virtualRegister, SpillOrderConstant);
         } else {
             DataFormat spillFormat = info.spillFormat();
-            m_gprs.retain(gpr, virtualRegister, SpillOrderSpilled);
+            m_gprs.bind(gpr, virtualRegister, SpillOrderSpilled);
             switch (spillFormat) {
             case DataFormatInt32: {
                 load32(addressFor(virtualRegister), gpr);
@@ -1162,7 +1162,7 @@ GPRReg SpeculativeJIT::fillSpeculateInt32Internal(Edge edge, DataFormat& returnF
         GPRReg gpr = allocate();
 
         if (edge->hasConstant()) {
-            m_gprs.retain(gpr, virtualRegister, SpillOrderConstant);
+            m_gprs.bind(gpr, virtualRegister, SpillOrderConstant);
             ASSERT(edge->isInt32Constant());
             move(Imm32(edge->asInt32()), gpr);
             info.fillInt32(m_stream, gpr);
@@ -1174,7 +1174,7 @@ GPRReg SpeculativeJIT::fillSpeculateInt32Internal(Edge edge, DataFormat& returnF
         
         DFG_ASSERT(m_graph, m_currentNode, (spillFormat & DataFormatJS) || spillFormat == DataFormatInt32, spillFormat);
         
-        m_gprs.retain(gpr, virtualRegister, SpillOrderSpilled);
+        m_gprs.bind(gpr, virtualRegister, SpillOrderSpilled);
         
         if (spillFormat == DataFormatJSInt32 || spillFormat == DataFormatInt32) {
             // If we know this was spilled as an integer we can fill without checking.
@@ -1311,7 +1311,7 @@ GPRReg SpeculativeJIT::fillSpeculateInt52(Edge edge, DataFormat desiredFormat)
         if (edge->hasConstant()) {
             JSValue jsValue = edge->asJSValue();
             ASSERT(jsValue.isAnyInt());
-            m_gprs.retain(gpr, virtualRegister, SpillOrderConstant);
+            m_gprs.bind(gpr, virtualRegister, SpillOrderConstant);
             int64_t value = jsValue.asAnyInt();
             if (desiredFormat == DataFormatInt52)
                 value = value << JSValue::int52ShiftAmount;
@@ -1324,7 +1324,7 @@ GPRReg SpeculativeJIT::fillSpeculateInt52(Edge edge, DataFormat desiredFormat)
         
         DFG_ASSERT(m_graph, m_currentNode, spillFormat == DataFormatInt52 || spillFormat == DataFormatStrictInt52, spillFormat);
         
-        m_gprs.retain(gpr, virtualRegister, SpillOrderSpilled);
+        m_gprs.bind(gpr, virtualRegister, SpillOrderSpilled);
         
         load64(addressFor(virtualRegister), gpr);
         if (desiredFormat == DataFormatStrictInt52) {
@@ -1400,7 +1400,7 @@ FPRReg SpeculativeJIT::fillSpeculateDouble(Edge edge)
                     unlock(gpr);
                 }
 
-                m_fprs.retain(fpr, virtualRegister, SpillOrderDouble);
+                m_fprs.bind(fpr, virtualRegister, SpillOrderDouble);
                 info.fillDouble(m_stream, fpr);
                 return fpr;
             }
@@ -1419,7 +1419,7 @@ FPRReg SpeculativeJIT::fillSpeculateDouble(Edge edge)
         DFG_ASSERT(m_graph, m_currentNode, spillFormat == DataFormatDouble, spillFormat);
         FPRReg fpr = fprAllocate();
         loadDouble(addressFor(virtualRegister), fpr);
-        m_fprs.retain(fpr, virtualRegister, SpillOrderDouble);
+        m_fprs.bind(fpr, virtualRegister, SpillOrderDouble);
         info.fillDouble(m_stream, fpr);
         return fpr;
     }
@@ -1456,13 +1456,13 @@ GPRReg SpeculativeJIT::fillSpeculateCell(Edge edge)
 
         if (edge->hasConstant()) {
             JSValue jsValue = edge->asJSValue();
-            m_gprs.retain(gpr, virtualRegister, SpillOrderConstant);
+            m_gprs.bind(gpr, virtualRegister, SpillOrderConstant);
             move(TrustedImm64(JSValue::encode(jsValue)), gpr);
             info.fillJSValue(m_stream, gpr, DataFormatJSCell);
             return gpr;
         }
 
-        m_gprs.retain(gpr, virtualRegister, SpillOrderSpilled);
+        m_gprs.bind(gpr, virtualRegister, SpillOrderSpilled);
         load64(addressFor(virtualRegister), gpr);
 
         info.fillJSValue(m_stream, gpr, DataFormatJS);
@@ -1536,13 +1536,13 @@ GPRReg SpeculativeJIT::fillSpeculateBoolean(Edge edge)
 
         if (edge->hasConstant()) {
             JSValue jsValue = edge->asJSValue();
-            m_gprs.retain(gpr, virtualRegister, SpillOrderConstant);
+            m_gprs.bind(gpr, virtualRegister, SpillOrderConstant);
             move(TrustedImm64(JSValue::encode(jsValue)), gpr);
             info.fillJSValue(m_stream, gpr, DataFormatJSBoolean);
             return gpr;
         }
         DFG_ASSERT(m_graph, m_currentNode, info.spillFormat() & DataFormatJS, info.spillFormat());
-        m_gprs.retain(gpr, virtualRegister, SpillOrderSpilled);
+        m_gprs.bind(gpr, virtualRegister, SpillOrderSpilled);
         load64(addressFor(virtualRegister), gpr);
 
         info.fillJSValue(m_stream, gpr, DataFormatJS);
@@ -1644,7 +1644,7 @@ GPRReg SpeculativeJIT::fillSpeculateBigInt32(Edge edge)
 
         if (edge->hasConstant()) {
             JSValue jsValue = edge->asJSValue();
-            m_gprs.retain(gpr, virtualRegister, SpillOrderConstant);
+            m_gprs.bind(gpr, virtualRegister, SpillOrderConstant);
             ASSERT(jsValue.isBigInt32());
             move(TrustedImm64(JSValue::encode(jsValue)), gpr);
             info.fillJSValue(m_stream, gpr, DataFormatJSBigInt32);
@@ -1654,7 +1654,7 @@ GPRReg SpeculativeJIT::fillSpeculateBigInt32(Edge edge)
         DataFormat spillFormat = info.spillFormat();
         DFG_ASSERT(m_graph, m_currentNode, (spillFormat & DataFormatJS) || spillFormat == DataFormatBigInt32, spillFormat);
 
-        m_gprs.retain(gpr, virtualRegister, SpillOrderSpilled);
+        m_gprs.bind(gpr, virtualRegister, SpillOrderSpilled);
 
         if (spillFormat == DataFormatBigInt32) {
             // We have not yet implemented this
@@ -3313,7 +3313,7 @@ void SpeculativeJIT::compile(Node* node)
             FPRTemporary result(this);
             loadDouble(addressFor(node->machineLocal()), result.fpr());
             VirtualRegister virtualRegister = node->virtualRegister();
-            m_fprs.retain(result.fpr(), virtualRegister, SpillOrderDouble);
+            m_fprs.bind(result.fpr(), virtualRegister, SpillOrderDouble);
             generationInfoFromVirtualRegister(virtualRegister).initDouble(node, node->refCount(), result.fpr());
             break;
         }
@@ -3325,7 +3325,7 @@ void SpeculativeJIT::compile(Node* node)
             // Like strictInt32Result, but don't useChildren - our children are phi nodes,
             // and don't represent values within this dataflow with virtual registers.
             VirtualRegister virtualRegister = node->virtualRegister();
-            m_gprs.retain(result.gpr(), virtualRegister, SpillOrderInteger);
+            m_gprs.bind(result.gpr(), virtualRegister, SpillOrderInteger);
             generationInfoFromVirtualRegister(virtualRegister).initInt32(node, node->refCount(), result.gpr());
             break;
         }
@@ -3335,7 +3335,7 @@ void SpeculativeJIT::compile(Node* node)
             load64(addressFor(node->machineLocal()), result.gpr());
             
             VirtualRegister virtualRegister = node->virtualRegister();
-            m_gprs.retain(result.gpr(), virtualRegister, SpillOrderJS);
+            m_gprs.bind(result.gpr(), virtualRegister, SpillOrderJS);
             generationInfoFromVirtualRegister(virtualRegister).initInt52(node, node->refCount(), result.gpr());
             break;
         }
@@ -3347,7 +3347,7 @@ void SpeculativeJIT::compile(Node* node)
             // Like jsValueResult, but don't useChildren - our children are phi nodes,
             // and don't represent values within this dataflow with virtual registers.
             VirtualRegister virtualRegister = node->virtualRegister();
-            m_gprs.retain(result.gpr(), virtualRegister, SpillOrderJS);
+            m_gprs.bind(result.gpr(), virtualRegister, SpillOrderJS);
             
             DataFormat format;
             if (isCellSpeculation(value.m_type))

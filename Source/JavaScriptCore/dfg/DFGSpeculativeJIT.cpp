@@ -118,6 +118,15 @@ SpeculativeJIT::SpeculativeJIT(Graph& dfg)
     , m_interpreter(m_graph, m_state)
     , m_minifiedGraph(&jitCode()->minifiedDFG)
 {
+    ASCIILiteral logPrefix = Options::verboseBBQJITAllocation() ? "DFG"_s : ASCIILiteral();
+    RegisterSetBuilder gprs;
+    for (unsigned i = 0; i < GPRInfo::numberOfRegisters; ++i)
+        gprs.add(GPRInfo::toRegister(i), IgnoreVectors);
+    m_gprs.initialize(gprs.buildAndValidate(), logPrefix);
+    RegisterSetBuilder fprs;
+    for (unsigned i = 0; i < FPRInfo::numberOfRegisters; ++i)
+        fprs.add(FPRInfo::toRegister(i), IgnoreVectors);
+    m_fprs.initialize(fprs.buildAndValidate(), logPrefix);
 }
 
 SpeculativeJIT::~SpeculativeJIT() = default;
@@ -728,12 +737,20 @@ void SpeculativeJIT::runSlowPathGenerators(PCToCodeOriginMapBuilder& pcToCodeOri
 void SpeculativeJIT::clearGenerationInfo()
 {
     for (unsigned i = 0; i < m_generationInfo.size(); ++i)
-        m_generationInfo[i] = GenerationInfo();
-    m_gprs = RegisterBank<GPRInfo>();
-    m_fprs = RegisterBank<FPRInfo>();
+        m_generationInfo[i] = GenerationInfo();\
+
+    for (auto reg : m_gprs.validRegisters()) {
+        if (VirtualRegister binding = bindingFor(reg.gpr()); binding.isValid())
+            m_gprs.unbind(reg.gpr(), "Unbinding (bailing)"_s);
+    }
+
+    for (auto reg : m_fprs.validRegisters()) {
+        if (VirtualRegister binding = bindingFor(reg.fpr()); binding.isValid())
+            m_fprs.unbind(reg.fpr(), "Unbinding (bailing)"_s);
+    }
 }
 
-SilentRegisterSavePlan SpeculativeJIT::silentSavePlanForGPR(VirtualRegister spillMe, GPRReg source)
+SilentRegisterSavePlan SpeculativeJIT::silentSavePlanFor(VirtualRegister spillMe, GPRReg source)
 {
     GenerationInfo& info = generationInfoFromVirtualRegister(spillMe);
     Node* node = info.node();
@@ -883,7 +900,7 @@ SilentRegisterSavePlan SpeculativeJIT::silentSavePlanForGPR(VirtualRegister spil
     return SilentRegisterSavePlan(spillAction, fillAction, node, source);
 }
     
-SilentRegisterSavePlan SpeculativeJIT::silentSavePlanForFPR(VirtualRegister spillMe, FPRReg source)
+SilentRegisterSavePlan SpeculativeJIT::silentSavePlanFor(VirtualRegister spillMe, FPRReg source)
 {
     GenerationInfo& info = generationInfoFromVirtualRegister(spillMe);
     Node* node = info.node();
@@ -1279,7 +1296,7 @@ GPRReg SpeculativeJIT::fillStorage(Edge edge)
     case DataFormatNone: {
         if (info.spillFormat() == DataFormatStorage) {
             GPRReg gpr = allocate();
-            m_gprs.retain(gpr, virtualRegister, SpillOrderSpilled);
+            m_gprs.bind(gpr, virtualRegister, SpillOrderSpilled);
             loadPtr(addressFor(virtualRegister), gpr);
             info.fillStorage(m_stream, gpr);
             return gpr;
@@ -1409,9 +1426,23 @@ void SpeculativeJIT::dump(const char* label)
         dataLogF("<%s>\n", label);
 
     dataLogF("  gprs:\n");
-    m_gprs.dump();
+    {
+        CommaPrinter comma;
+        for (Reg reg : m_gprs.validRegisters()) {
+            VirtualRegister name = m_gprs.bindingFor(reg.gpr());
+            if (name.isValid())
+                dataLog(comma, reg.gpr(), ": ", name);
+        }
+    }
     dataLogF("  fprs:\n");
-    m_fprs.dump();
+    {
+        CommaPrinter comma;
+        for (Reg reg : m_fprs.validRegisters()) {
+            VirtualRegister name = m_fprs.bindingFor(reg.fpr());
+            if (name.isValid())
+                dataLog(comma, reg.fpr(), ": ", name);
+        }
+    }
     dataLogF("  VirtualRegisters:\n");
     for (unsigned i = 0; i < m_generationInfo.size(); ++i) {
         GenerationInfo& info = m_generationInfo[i];

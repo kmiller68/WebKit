@@ -66,15 +66,16 @@ public:
         Register result = hintReg;
         if (result == invalidRegister || !m_freeRegisters.contains(result, registerWidth))
             result = m_freeRegisters.isEmpty() ? evictRegister(backend) : nextFreeRegister();
+        ASSERT(m_freeRegisters.contains(result, registerWidth));
         bind(result, WTFMove(binding), hint);
         return result;
     }
 
     // Pass nullopt as the hint if you don't want to touch the spill order.
-    void bind(Register reg, RegisterBinding&& binding, std::optional<SpillHint> hint)
+    void bind(Register reg, RegisterBinding binding, std::optional<SpillHint> hint)
     {
         ASSERT(m_validRegisters.contains(reg, registerWidth));
-        ASSERT(m_freeRegisters.contains(reg, registerWidth));
+        // This can also be used to rebind temporaries to a concrete bindings.
         ASSERT(m_bindings[reg] == RegisterBinding());
         dataLogLnIf(!m_logPrefix.isNull(), m_logPrefix, "\tBinding ", reg, " to ", binding);
         m_freeRegisters.remove(reg);
@@ -86,7 +87,7 @@ public:
     void unbind(Register reg, ASCIILiteral reason = "Unbinding"_s)
     {
         ASSERT(m_validRegisters.contains(reg, registerWidth));
-        ASSERT(!m_spiller.isLocked(reg));
+        // Ideally we'd `ASSERT(!m_spiller.isLocked(reg));` here but DFG doesn't support that.
         dataLogLnIf(!m_logPrefix.isNull(), m_logPrefix, "\t", reason, " ", reg, " currently bound to ", m_bindings[reg]);
         m_freeRegisters.add(reg, registerWidth);
         m_bindings[reg] = RegisterBinding();
@@ -124,6 +125,7 @@ public:
 
     RegisterSet validRegisters() const { return m_validRegisters; }
     RegisterSet freeRegisters() const { return m_freeRegisters; }
+    bool isInUse(Register reg) const { ASSERT(m_validRegisters.contains(reg, registerWidth)); return !m_freeRegisters.contains(reg, registerWidth); }
     const RegisterBinding& bindingFor(Register reg) { return m_bindings[reg]; }
     // FIXME: We should really compress this since it's copied by slow paths to know how to restore the correct state.
     RegisterBindings copyBindings() const { return m_bindings; }
@@ -142,8 +144,16 @@ public:
         m_spiller.setHint(reg, hint);
     }
 
-    void lock(Register reg) { m_spiller.lock(reg); }
-    void unlock(Register reg) { m_spiller.unlock(reg); }
+    void lock(Register reg)
+    {
+        m_spiller.lock(reg);
+        dataLogLnIf(!m_logPrefix.isNull(), m_logPrefix, "\tLocking ", reg, " count: ", m_spiller.m_lockCounts[reg]);
+    }
+    void unlock(Register reg)
+    {
+        m_spiller.unlock(reg);
+        dataLogLnIf(!m_logPrefix.isNull(), m_logPrefix, "\tUnlocking ", reg, " new count: ", m_spiller.m_lockCounts[reg]);
+    }
     bool isLocked(Register reg) const { return m_spiller.isLocked(reg); }
 
     void initialize(RegisterSet registers, ASCIILiteral logPrefix = ASCIILiteral())
