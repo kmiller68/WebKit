@@ -31,4 +31,6 @@ AtomStringTable::~AtomStringTable()
         string->setIsAtom(false);
 }
 
+Lock AtomStringTable::s_lock;
+
 }

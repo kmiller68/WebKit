@@ -4357,7 +4357,7 @@ private:
             jit.loadPtr(CCallHelpers::Address(subscriptGPR, JSString::offsetOfValue()), scratch4GPR);
             if (needsRopeCase)
                 slowCases.append(jit.branchIfRopeStringImpl(scratch4GPR));
-            slowCases.append(jit.branchTest32(CCallHelpers::Zero, CCallHelpers::Address(scratch4GPR, StringImpl::flagsOffset()), CCallHelpers::TrustedImm32(StringImpl::flagIsAtom())));
+            slowCases.append(jit.branchTest32(CCallHelpers::Zero, CCallHelpers::Address(scratch4GPR, StringImpl::refCountAndKindOffset()), CCallHelpers::TrustedImm32(StringImpl::refCountFlagIsAtom())));
 
             slowCases.append(jit.loadMegamorphicProperty(state->vm(), baseGPR, scratch4GPR, nullptr, resultGPR, scratch1GPR, scratch2GPR, scratch3GPR));
             CCallHelpers::Label doneForSlow = jit.label();
@@ -4630,7 +4630,7 @@ private:
             jit.loadPtr(CCallHelpers::Address(subscriptGPR, JSString::offsetOfValue()), scratch4GPR);
             if (needsRopeCase)
                 slowCases.append(jit.branchIfRopeStringImpl(scratch4GPR));
-            slowCases.append(jit.branchTest32(CCallHelpers::Zero, CCallHelpers::Address(scratch4GPR, StringImpl::flagsOffset()), CCallHelpers::TrustedImm32(StringImpl::flagIsAtom())));
+            slowCases.append(jit.branchTest32(CCallHelpers::Zero, CCallHelpers::Address(scratch4GPR, StringImpl::refCountAndKindOffset()), CCallHelpers::TrustedImm32(StringImpl::refCountFlagIsAtom())));
 
             slowCases.append(jit.loadMegamorphicProperty(state->vm(), baseGPR, scratch4GPR, nullptr, resultGPR, scratch1GPR, scratch2GPR, scratch3GPR));
             CCallHelpers::Label doneForSlow = jit.label();
@@ -4967,7 +4967,7 @@ private:
             jit.loadPtr(CCallHelpers::Address(subscriptGPR, JSString::offsetOfValue()), scratch4GPR);
             if (needsRopeCase)
                 slowCases.append(jit.branchIfRopeStringImpl(scratch4GPR));
-            slowCases.append(jit.branchTest32(CCallHelpers::Zero, CCallHelpers::Address(scratch4GPR, StringImpl::flagsOffset()), CCallHelpers::TrustedImm32(StringImpl::flagIsAtom())));
+            slowCases.append(jit.branchTest32(CCallHelpers::Zero, CCallHelpers::Address(scratch4GPR, StringImpl::refCountAndKindOffset()), CCallHelpers::TrustedImm32(StringImpl::refCountFlagIsAtom())));
 
             CCallHelpers::JumpList slow, reallocating;
             std::tie(slow, reallocating) = jit.storeMegamorphicProperty(state->vm(), baseGPR, scratch4GPR, nullptr, valueGPR, scratch1GPR, scratch2GPR, scratch3GPR);
@@ -15964,7 +15964,7 @@ IGNORE_CLANG_WARNINGS_END
             jit.loadPtr(CCallHelpers::Address(subscriptGPR, JSString::offsetOfValue()), scratch4GPR);
             if (needsRopeCase)
                 slowCases.append(jit.branchIfRopeStringImpl(scratch4GPR));
-            slowCases.append(jit.branchTest32(CCallHelpers::Zero, CCallHelpers::Address(scratch4GPR, StringImpl::flagsOffset()), CCallHelpers::TrustedImm32(StringImpl::flagIsAtom())));
+            slowCases.append(jit.branchTest32(CCallHelpers::Zero, CCallHelpers::Address(scratch4GPR, StringImpl::refCountAndKindOffset()), CCallHelpers::TrustedImm32(StringImpl::refCountFlagIsAtom())));
 
             slowCases.append(jit.hasMegamorphicProperty(state->vm(), baseGPR, scratch4GPR, nullptr, resultGPR, scratch1GPR, scratch2GPR, scratch3GPR));
             CCallHelpers::Label doneForSlow = jit.label();
@@ -16014,7 +16014,7 @@ IGNORE_CLANG_WARNINGS_END
 
             lastNext = m_out.appendTo(isNonEmptyString, isAtomString);
             uniquedStringImpl = m_out.loadPtr(keyAsValue, m_heaps.JSString_value);
-            LValue isNotAtomic = m_out.testIsZero32(m_out.load32(uniquedStringImpl, m_heaps.StringImpl_hashAndFlags), m_out.constInt32(StringImpl::flagIsAtom()));
+            LValue isNotAtomic = m_out.testIsZero32(m_out.load32(uniquedStringImpl, m_heaps.StringImpl_refCountAndKind), m_out.constInt32(StringImpl::refCountFlagIsAtom()));
             m_out.branch(isNotAtomic, rarely(slowCase), usually(isAtomString));
 
             m_out.appendTo(isAtomString, slowCase);
@@ -16046,7 +16046,7 @@ IGNORE_CLANG_WARNINGS_END
             m_out.appendTo(isNonEmptyString, notStringCase);
             LValue implFromString = m_out.loadPtr(keyAsValue, m_heaps.JSString_value);
             ValueFromBlock stringResult = m_out.anchor(implFromString);
-            LValue isNotAtomic = m_out.testIsZero32(m_out.load32(implFromString, m_heaps.StringImpl_hashAndFlags), m_out.constInt32(StringImpl::flagIsAtom()));
+            LValue isNotAtomic = m_out.testIsZero32(m_out.load32(implFromString, m_heaps.StringImpl_refCountAndKind), m_out.constInt32(StringImpl::refCountFlagIsAtom()));
             m_out.branch(isNotAtomic, rarely(slowCase), usually(hasUniquedStringImpl));
 
             m_out.appendTo(notStringCase, isSymbolCase);
@@ -23837,8 +23837,8 @@ IGNORE_CLANG_WARNINGS_END
         speculate(
             BadStringType, jsValueValue(string), edge.node(),
             m_out.testIsZero32(
-                m_out.load32(stringImpl, m_heaps.StringImpl_hashAndFlags),
-                m_out.constInt32(StringImpl::flagIsAtom())));
+                m_out.load32(stringImpl, m_heaps.StringImpl_refCountAndKind),
+                m_out.constInt32(StringImpl::refCountFlagIsAtom())));
         m_interpreter.filter(edge, SpecStringIdent | ~SpecString);
     }
 

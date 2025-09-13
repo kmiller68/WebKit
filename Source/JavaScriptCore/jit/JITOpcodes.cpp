@@ -830,7 +830,7 @@ void JIT::compileOpStrictEq(const JSInstruction* currentInstruction)
         fallThrough.append(branchIfNotString(stringGPR));
         loadPtr(Address(stringGPR, JSString::offsetOfValue()), regT5);
         addSlowCase(branchIfRopeStringImpl(regT5));
-        addSlowCase(branchTest32(Zero, Address(regT5, StringImpl::flagsOffset()), TrustedImm32(StringImpl::flagIsAtom())));
+        addSlowCase(branchTest32(Zero, Address(regT5, StringImpl::refCountAndKindOffset()), TrustedImm32(StringImpl::refCountFlagIsAtom())));
         fallThrough.append(branchPtr(NotEqual, regT5, TrustedImmPtr(string->tryGetValueImpl())));
 
         equals.link(this);
@@ -995,7 +995,7 @@ void JIT::compileOpStrictEqJump(const JSInstruction* currentInstruction)
             fallThrough.append(branchIfNotString(stringGPR));
             loadPtr(Address(stringGPR, JSString::offsetOfValue()), regT2);
             addSlowCase(branchIfRopeStringImpl(regT2));
-            addSlowCase(branchTest32(Zero, Address(regT2, StringImpl::flagsOffset()), TrustedImm32(StringImpl::flagIsAtom())));
+            addSlowCase(branchTest32(Zero, Address(regT2, StringImpl::refCountAndKindOffset()), TrustedImm32(StringImpl::refCountFlagIsAtom())));
             addJump(branchPtr(Equal, regT2, TrustedImmPtr(string->tryGetValueImpl())), target);
         } else {
             fallThrough.append(branch64(Equal, stringGPR, knownStringGPR));
@@ -1004,7 +1004,7 @@ void JIT::compileOpStrictEqJump(const JSInstruction* currentInstruction)
             addJump(branchIfNotString(stringGPR), target);
             loadPtr(Address(stringGPR, JSString::offsetOfValue()), regT2);
             addSlowCase(branchIfRopeStringImpl(regT2));
-            addSlowCase(branchTest32(Zero, Address(regT2, StringImpl::flagsOffset()), TrustedImm32(StringImpl::flagIsAtom())));
+            addSlowCase(branchTest32(Zero, Address(regT2, StringImpl::refCountAndKindOffset()), TrustedImm32(StringImpl::refCountFlagIsAtom())));
             addJump(branchPtr(NotEqual, regT2, TrustedImmPtr(string->tryGetValueImpl())), target);
         }
         fallThrough.link(this);

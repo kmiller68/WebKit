@@ -1889,6 +1889,12 @@ JSC_DEFINE_HOST_FUNCTION(functionAddressOf, (JSGlobalObject*, CallFrame* callFra
     return returnValue;
 }
 
+__attribute__((used)) static int stringImplDeref(StringImpl* impl)
+{
+    impl->deref();
+    return 0;
+}
+
 JSC_DEFINE_HOST_FUNCTION(functionVersion, (JSGlobalObject*, CallFrame*))
 {
     // We need this function for compatibility with the Mozilla JS tests but for now

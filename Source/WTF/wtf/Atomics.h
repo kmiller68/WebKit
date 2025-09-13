@@ -434,7 +434,9 @@ public:
         return dependency;
 #endif
     }
+
     
+
     // On TSO architectures, this just returns the pointer you pass it. On ARM, this produces a new
     // pointer that is dependent on this dependency and the input pointer.
     template<typename T>

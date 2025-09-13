@@ -112,26 +112,16 @@ void StringStats::printStats()
 
 DEFINE_ALLOCATOR_WITH_HEAP_IDENTIFIER(StringImpl);
 
-StringImpl::StaticStringImpl StringImpl::s_emptyAtomString("", StringImpl::StringAtom);
+StringImpl::StaticStringImpl StringImpl::s_emptyAtomString("", StringKind::Atom);
 
 StringImpl::~StringImpl()
 {
     ASSERT(!isStatic());
+    ASSERT(!isUniqued());
 
     StringView::invalidate(*this);
 
     STRING_STATS_REMOVE_STRING(*this);
-
-    if (isAtom()) {
-        ASSERT(!isSymbol());
-        if (length())
-            AtomStringImpl::remove(static_cast<AtomStringImpl*>(this));
-    } else if (isSymbol()) {
-        auto& symbol = static_cast<SymbolImpl&>(*this);
-        auto* symbolRegistry = symbol.symbolRegistry();
-        if (symbolRegistry)
-            SUPPRESS_UNCOUNTED_ARG symbolRegistry->remove(*symbol.asRegisteredSymbolImpl());
-    }
 
     switch (bufferOwnership()) {
     case BufferInternal:
@@ -154,10 +144,46 @@ StringImpl::~StringImpl()
     }
 }
 
-void StringImpl::destroy(StringImpl* stringImpl)
+void StringImpl::destroyNonUniqued(StringImpl* stringImpl)
 {
+    ASSERT(!stringImpl->refCount());
     stringImpl->~StringImpl();
     StringImplMalloc::free(stringImpl);
+}
+
+void StringImpl::finishDerefSlow(unsigned oldRefCount)
+{
+    ASSERT(!(oldRefCount - s_refCountIncrement) || hasOneBitSet(oldRefCount - s_refCountIncrement));
+    ASSERT(!(oldRefCount & s_refCountFlagIsStaticString));
+    StringKind kind = StringImpl::kind(oldRefCount);
+    if (kind == StringKind::Normal) {
+        destroyNonUniqued(this);
+        return;
+    }
+
+    ASSERT(oldRefCount == s_refCountIncrement + s_refCountFlagStringKindIsAtom || oldRefCount == s_refCountIncrement + s_refCountFlagStringKindIsSymbol);
+
+    // static Lock atomStringTable;
+    // Locker locker { atomStringTable };
+
+    if (kind == StringKind::Atom) {
+        ASSERT(length());
+        AtomStringImpl::remove(static_cast<AtomStringImpl*>(this));
+#if ASSERT_ENABLED
+        m_refCountAndKind.exchangeAnd(~s_refCountFlagStringKindIsAtom, std::memory_order_relaxed);
+#endif
+    } else {
+        ASSERT(kind == StringKind::Symbol);
+        auto& symbol = static_cast<SymbolImpl&>(*this);
+        auto* symbolRegistry = symbol.symbolRegistry();
+        if (symbolRegistry)
+            SUPPRESS_UNCOUNTED_ARG symbolRegistry->remove(*symbol.asRegisteredSymbolImpl());
+#if ASSERT_ENABLED
+        m_refCountAndKind.exchangeAnd(~s_refCountFlagStringKindIsSymbol, std::memory_order_relaxed);
+#endif
+    }
+
+    destroyNonUniqued(this);
 }
 
 Ref<StringImpl> StringImpl::createWithoutCopyingNonEmpty(std::span<const char16_t> characters)
@@ -213,6 +239,7 @@ template<typename CharacterType> inline Expected<Ref<StringImpl>, UTF8Conversion
 {
     ASSERT(originalString->hasOneRef());
     ASSERT(originalString->bufferOwnership() == BufferInternal);
+    ASSERT(!originalString->isUniqued());
 
     if (!length) {
         data = nullptr;
@@ -284,7 +311,7 @@ Ref<StringImpl> StringImpl::createStaticStringImpl(std::span<const LChar> charac
         return *empty();
     Ref<StringImpl> result = createInternal(characters);
     result->hash();
-    result->m_refCount |= s_refCountFlagIsStaticString;
+    result->m_refCountAndKind.exchangeOr(s_refCountFlagIsStaticString, std::memory_order_relaxed);
     return result;
 }
 
@@ -294,7 +321,7 @@ Ref<StringImpl> StringImpl::createStaticStringImpl(std::span<const char16_t> cha
         return *empty();
     Ref<StringImpl> result = create8BitIfPossible(characters);
     result->hash();
-    result->m_refCount |= s_refCountFlagIsStaticString;
+    result->m_refCountAndKind.exchangeOr(s_refCountFlagIsStaticString, std::memory_order_relaxed);
     return result;
 }
 

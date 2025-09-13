@@ -4137,8 +4137,8 @@ void SpeculativeJIT::compile(Node* node)
             loadPtr(Address(keyRegs.payloadGPR(), JSString::offsetOfValue()), implGPR);
             slowPath.append(branchIfRopeStringImpl(implGPR));
             slowPath.append(branchTest32(
-                Zero, Address(implGPR, StringImpl::flagsOffset()),
-                TrustedImm32(StringImpl::flagIsAtom())));
+                Zero, Address(implGPR, StringImpl::refCountAndKindOffset()),
+                TrustedImm32(StringImpl::refCountFlagIsAtom())));
             break;
         }
         case UntypedUse: {
@@ -4147,8 +4147,8 @@ void SpeculativeJIT::compile(Node* node)
             loadPtr(Address(keyRegs.payloadGPR(), JSString::offsetOfValue()), implGPR);
             slowPath.append(branchIfRopeStringImpl(implGPR));
             slowPath.append(branchTest32(
-                Zero, Address(implGPR, StringImpl::flagsOffset()),
-                TrustedImm32(StringImpl::flagIsAtom())));
+                Zero, Address(implGPR, StringImpl::refCountAndKindOffset()),
+                TrustedImm32(StringImpl::refCountFlagIsAtom())));
             auto hasUniquedImpl = jump();
 
             isNotString.link(this);

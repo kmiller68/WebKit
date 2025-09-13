@@ -159,6 +159,7 @@ namespace JSC { namespace FTL {
     macro(ScopedArgumentsTable_arguments, ScopedArgumentsTable::offsetOfArguments()) \
     macro(ScopedArgumentsTable_length, ScopedArgumentsTable::offsetOfLength()) \
     macro(StringImpl_data, StringImpl::dataOffset()) \
+    macro(StringImpl_refCountAndKind, StringImpl::refCountAndKindOffset()) \
     macro(StringImpl_hashAndFlags, StringImpl::flagsOffset()) \
     macro(StringImpl_length, StringImpl::lengthMemoryOffset()) \
     macro(Structure_bitField, Structure::bitFieldOffset()) \

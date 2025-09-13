@@ -41,11 +41,12 @@ public:
     using StringTableImpl = UncheckedKeyHashSet<StringEntry>;
 
     WTF_EXPORT_PRIVATE ~AtomStringTable();
+    WTF_EXPORT_PRIVATE static Lock s_lock;
 
-    StringTableImpl& table() { return m_table; }
+    StringTableImpl& table() WTF_REQUIRES_LOCK(s_lock) { return m_table; }
 
 private:
-    StringTableImpl m_table;
+    StringTableImpl m_table WTF_GUARDED_BY_LOCK(s_lock);
 };
 
 }

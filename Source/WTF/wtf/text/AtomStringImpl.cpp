@@ -37,40 +37,15 @@ namespace WTF {
 
 using namespace Unicode;
 
-#if USE(WEB_THREAD)
-
-class AtomStringTableLocker : public Locker<Lock> {
-    WTF_MAKE_NONCOPYABLE(AtomStringTableLocker);
-
-    static Lock s_stringTableLock;
-public:
-    AtomStringTableLocker()
-        : Locker<Lock>(s_stringTableLock)
-    {
-    }
-};
-
-Lock AtomStringTableLocker::s_stringTableLock;
-
-#else
-
-class AtomStringTableLocker {
-    WTF_MAKE_NONCOPYABLE(AtomStringTableLocker);
-public:
-    AtomStringTableLocker() { }
-};
-
-#endif // USE(WEB_THREAD)
-
 using StringTableImpl = AtomStringTable::StringTableImpl;
 
-static ALWAYS_INLINE StringTableImpl& stringTable()
+static ALWAYS_INLINE StringTableImpl& stringTable() WTF_REQUIRES_LOCK(AtomStringTable::s_lock)
 {
     return Thread::currentSingleton().atomStringTable()->table();
 }
 
 template<typename T, typename HashTranslator>
-static inline Ref<AtomStringImpl> addToStringTable(AtomStringTableLocker&, StringTableImpl& atomStringTable, const T& value)
+static inline Ref<AtomStringImpl> addToStringTable(StringTableImpl& atomStringTable, const T& value) WTF_REQUIRES_LOCK(AtomStringTable::s_lock)
 {
     auto addResult = atomStringTable.add<HashTranslator>(value);
 
@@ -84,8 +59,8 @@ static inline Ref<AtomStringImpl> addToStringTable(AtomStringTableLocker&, Strin
 template<typename T, typename HashTranslator>
 static inline Ref<AtomStringImpl> addToStringTable(const T& value)
 {
-    AtomStringTableLocker locker;
-    return addToStringTable<T, HashTranslator>(locker, stringTable(), value);
+    Locker locker { AtomStringTable::s_lock };
+    return addToStringTable<T, HashTranslator>(stringTable(), value);
 }
 
 using UCharBuffer = HashTranslatorCharBuffer<char16_t>;
@@ -316,40 +291,40 @@ Ref<AtomStringImpl> AtomStringImpl::addLiteral(std::span<const LChar> characters
     return addToStringTable<LCharBuffer, BufferFromStaticDataTranslator<LChar>>(buffer);
 }
 
-static Ref<AtomStringImpl> addSymbol(AtomStringTableLocker& locker, StringTableImpl& atomStringTable, StringImpl& base)
+static Ref<AtomStringImpl> addSymbol(StringTableImpl& atomStringTable, StringImpl& base) WTF_REQUIRES_LOCK(AtomStringTable::s_lock)
 {
     ASSERT(base.length());
     ASSERT(base.isSymbol());
 
     SubstringLocation buffer = { &base, 0, base.length() };
     if (base.is8Bit())
-        return addToStringTable<SubstringLocation, SubstringTranslator8>(locker, atomStringTable, buffer);
-    return addToStringTable<SubstringLocation, SubstringTranslator16>(locker, atomStringTable, buffer);
+        return addToStringTable<SubstringLocation, SubstringTranslator8>(atomStringTable, buffer);
+    return addToStringTable<SubstringLocation, SubstringTranslator16>(atomStringTable, buffer);
 }
 
 static inline Ref<AtomStringImpl> addSymbol(StringImpl& base)
 {
-    AtomStringTableLocker locker;
-    return addSymbol(locker, stringTable(), base);
+    Locker locker { AtomStringTable::s_lock };
+    return addSymbol(stringTable(), base);
 }
 
-static Ref<AtomStringImpl> addStatic(AtomStringTableLocker& locker, StringTableImpl& atomStringTable, const StringImpl& base)
+static Ref<AtomStringImpl> addStatic(StringTableImpl& atomStringTable, const StringImpl& base) WTF_REQUIRES_LOCK(AtomStringTable::s_lock)
 {
     ASSERT(base.length());
     ASSERT(base.isStatic());
 
     if (base.is8Bit()) {
         LCharBuffer buffer { base.span8(), base.hash() };
-        return addToStringTable<LCharBuffer, BufferFromStaticDataTranslator<LChar>>(locker, atomStringTable, buffer);
+        return addToStringTable<LCharBuffer, BufferFromStaticDataTranslator<LChar>>(atomStringTable, buffer);
     }
     UCharBuffer buffer { base.span16(), base.hash() };
-    return addToStringTable<UCharBuffer, BufferFromStaticDataTranslator<char16_t>>(locker, atomStringTable, buffer);
+    return addToStringTable<UCharBuffer, BufferFromStaticDataTranslator<char16_t>>(atomStringTable, buffer);
 }
 
 static inline Ref<AtomStringImpl> addStatic(const StringImpl& base)
 {
-    AtomStringTableLocker locker;
-    return addStatic(locker, stringTable(), base);
+    Locker locker { AtomStringTable::s_lock };
+    return addStatic(stringTable(), base);
 }
 
 RefPtr<AtomStringImpl> AtomStringImpl::add(const StaticStringImpl* string)
@@ -374,7 +349,7 @@ Ref<AtomStringImpl> AtomStringImpl::addSlowCase(StringImpl& string)
 
     ASSERT_WITH_MESSAGE(!string.isAtom(), "AtomStringImpl should not hit the slow case if the string is already an atom.");
 
-    AtomStringTableLocker locker;
+    Locker locker { AtomStringTable::s_lock };
     auto addResult = stringTable().add(&string);
 
     if (addResult.isNewEntry) {
@@ -400,7 +375,7 @@ Ref<AtomStringImpl> AtomStringImpl::addSlowCase(Ref<StringImpl>&& string)
 
     ASSERT_WITH_MESSAGE(!string->isAtom(), "AtomStringImpl should not hit the slow case if the string is already an atom.");
 
-    AtomStringTableLocker locker;
+    Locker locker { AtomStringTable::s_lock };
     auto addResult = stringTable().add(string.ptr());
 
     if (addResult.isNewEntry) {
@@ -420,18 +395,18 @@ Ref<AtomStringImpl> AtomStringImpl::addSlowCase(AtomStringTable& stringTable, St
         return *static_cast<AtomStringImpl*>(StringImpl::empty());
 
     if (string.isStatic()) {
-        AtomStringTableLocker locker;
-        return addStatic(locker, stringTable.table(), string);
+        Locker locker { AtomStringTable::s_lock };
+        return addStatic(stringTable.table(), string);
     }
 
     if (string.isSymbol()) {
-        AtomStringTableLocker locker;
-        return addSymbol(locker, stringTable.table(), string);
+        Locker locker { AtomStringTable::s_lock };
+        return addSymbol(stringTable.table(), string);
     }
 
     ASSERT_WITH_MESSAGE(!string.isAtom(), "AtomStringImpl should not hit the slow case if the string is already an atom.");
 
-    AtomStringTableLocker locker;
+    Locker locker { AtomStringTable::s_lock };
     auto addResult = stringTable.table().add(&string);
 
     if (addResult.isNewEntry) {
@@ -451,7 +426,7 @@ struct AtomStringTableRemovalHashTranslator {
 void AtomStringImpl::remove(AtomStringImpl* string)
 {
     ASSERT(string->isAtom());
-    AtomStringTableLocker locker;
+    Locker locker { AtomStringTable::s_lock };
     auto& atomStringTable = stringTable();
     auto iterator = atomStringTable.find<AtomStringTableRemovalHashTranslator>(string);
     ASSERT_WITH_MESSAGE(iterator != atomStringTable.end(), "The string being removed is an atom in the string table of an other thread!");
@@ -466,7 +441,7 @@ RefPtr<AtomStringImpl> AtomStringImpl::lookUpSlowCase(StringImpl& string)
     if (!string.length())
         return static_cast<AtomStringImpl*>(StringImpl::empty());
 
-    AtomStringTableLocker locker;
+    Locker locker { AtomStringTable::s_lock };
     auto& atomStringTable = stringTable();
     auto iterator = atomStringTable.find(&string);
     if (iterator != atomStringTable.end())
@@ -484,7 +459,7 @@ RefPtr<AtomStringImpl> AtomStringImpl::add(std::span<const char8_t> characters)
 
 RefPtr<AtomStringImpl> AtomStringImpl::lookUp(std::span<const LChar> characters)
 {
-    AtomStringTableLocker locker;
+    Locker locker { AtomStringTable::s_lock };
     auto& table = stringTable();
 
     LCharBuffer buffer { characters };
@@ -496,7 +471,7 @@ RefPtr<AtomStringImpl> AtomStringImpl::lookUp(std::span<const LChar> characters)
 
 RefPtr<AtomStringImpl> AtomStringImpl::lookUp(std::span<const char16_t> characters)
 {
-    AtomStringTableLocker locker;
+    Locker locker { AtomStringTable::s_lock };
     auto& table = stringTable();
 
     UCharBuffer buffer { characters };
@@ -509,7 +484,7 @@ RefPtr<AtomStringImpl> AtomStringImpl::lookUp(std::span<const char16_t> characte
 #if ASSERT_ENABLED
 bool AtomStringImpl::isInAtomStringTable(StringImpl* string)
 {
-    AtomStringTableLocker locker;
+    Locker locker { AtomStringTable::s_lock };
     return stringTable().contains(string);
 }
 #endif
