@@ -358,8 +358,9 @@ bool checkAndSet(T& left, U right)
     return true;
 }
 
-template<typename T>
-inline unsigned ctz(T value); // Clients will also need to #include MathExtras.h
+// Clients of these will also need to #include MathExtras.h
+inline unsigned ctz(auto value);
+inline unsigned clz(auto value);
 
 template<typename T>
 bool findBitInWord(T word, size_t& startOrResultIndex, size_t endIndex, bool value)
@@ -367,7 +368,7 @@ bool findBitInWord(T word, size_t& startOrResultIndex, size_t endIndex, bool val
     static_assert(std::is_unsigned<T>::value, "Type used in findBitInWord must be unsigned");
 
     constexpr size_t bitsInWord = sizeof(word) * CHAR_BIT;
-    ASSERT_UNUSED(bitsInWord, startOrResultIndex <= bitsInWord && endIndex <= bitsInWord);
+    ASSERT_UNUSED(bitsInWord, startOrResultIndex < bitsInWord && endIndex <= bitsInWord);
 
     size_t index = startOrResultIndex;
     word >>= index;
@@ -395,6 +396,43 @@ bool findBitInWord(T word, size_t& startOrResultIndex, size_t endIndex, bool val
 #endif
 
     startOrResultIndex = endIndex;
+    return false;
+}
+
+template<typename T>
+bool findBitInWordReverse(T word, size_t& startOrResultIndex, size_t endIndexInclusive, bool value)
+{
+    static_assert(std::is_unsigned<T>::value, "Type used in findBitInWordReverse must be unsigned");
+
+    constexpr size_t bitsInWord = sizeof(word) * CHAR_BIT;
+    ASSERT_UNUSED(bitsInWord, startOrResultIndex < bitsInWord && endIndexInclusive < bitsInWord);
+
+    size_t index = startOrResultIndex;
+    word <<= index;
+
+#if CPU(X86_64) || CPU(ARM64)
+    // We should only use clz() when we know that clz() is implementated using
+    // a fast hardware instruction. Otherwise, this will actually result in
+    // worse performance.
+
+    word ^= (static_cast<T>(value) - 1);
+    index -= clz(word);
+    if (index >= endIndexInclusive) {
+        startOrResultIndex = index;
+        return true;
+    }
+#else
+    while (index < endIndex) {
+        if ((word & 1) == static_cast<T>(value)) {
+            startOrResultIndex = index;
+            return true;
+        }
+        index--;
+        word <<= 1;
+    }
+#endif
+
+    startOrResultIndex = endIndexInclusive;
     return false;
 }
 
@@ -1606,6 +1644,7 @@ using WTF::dropLast;
 using WTF::equalSpans;
 using WTF::find;
 using WTF::findBitInWord;
+using WTF::findBitInWordReverse;
 using WTF::insertIntoBoundedVector;
 using WTF::is8ByteAligned;
 using WTF::isCompilationThread;

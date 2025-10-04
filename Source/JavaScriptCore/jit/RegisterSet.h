@@ -328,16 +328,12 @@ public:
             });
     }
 
-    class iterator {
+    class iterator : public RegisterBitSet::iterator {
+        WTF_FORBID_HEAP_ALLOCATION;
+        using Base = RegisterBitSet::iterator;
     public:
-        inline constexpr iterator() { }
 
-        inline constexpr iterator(const RegisterBitSet::iterator& iter)
-            : m_iter(iter)
-        {
-        }
-
-        inline constexpr Reg reg() const { return Reg::fromIndex(*m_iter); }
+        inline constexpr Reg reg() const { return Reg::fromIndex(Base::operator*()); }
         inline constexpr Reg operator*() const { return reg(); }
 
         inline constexpr bool isGPR() const { return reg().isGPR(); }
@@ -345,21 +341,10 @@ public:
 
         inline constexpr GPRReg gpr() const { return reg().gpr(); }
         inline constexpr FPRReg fpr() const { return reg().fpr(); }
-
-        iterator& operator++()
-        {
-            ++m_iter;
-            return *this;
-        }
-
-        friend constexpr bool operator==(const iterator&, const iterator&) = default;
-
-    private:
-        RegisterBitSet::iterator m_iter;
     };
 
-    inline constexpr iterator begin() const { return iterator(m_bits.begin()); }
-    inline constexpr iterator end() const { return iterator(m_bits.end()); }
+    inline constexpr iterator begin() const LIFETIME_BOUND { return iterator(m_bits.begin()); }
+    inline constexpr iterator end() const LIFETIME_BOUND { return iterator(m_bits.end()); }
 
     inline constexpr RegisterSet& add(Reg reg, Width width)
     {

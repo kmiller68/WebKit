@@ -118,7 +118,7 @@ namespace JSC {
     struct SlowCaseEntry {
         MacroAssembler::Jump from;
         BytecodeIndex to;
-        
+
         SlowCaseEntry(MacroAssembler::Jump f, BytecodeIndex t)
             : from(f)
             , to(t)
@@ -153,12 +153,13 @@ namespace JSC {
         BaselineUnlinkedCallLinkInfo* unlinkedCallLinkInfo;
     };
 
-    class JIT final : public JSInterfaceJIT {
+    class JIT : public JSInterfaceJIT {
         WTF_MAKE_TZONE_NON_HEAP_ALLOCATABLE(JIT);
 
         friend class JITSlowPathCall;
         friend class JITStubCall;
         friend class JITThunks;
+        friend class LOLJIT;
 
         using MacroAssembler::Jump;
         using MacroAssembler::JumpList;
@@ -187,7 +188,7 @@ namespace JSC {
         JS_EXPORT_PRIVATE static UncheckedKeyHashMap<CString, Seconds> compileTimeStats();
         JS_EXPORT_PRIVATE static Seconds totalCompileTime();
 
-    private:
+    protected:
         void privateCompileMainPass();
         void privateCompileLinkPass();
         void privateCompileSlowCases();
@@ -647,7 +648,7 @@ namespace JSC {
         template <typename Op, typename Generator, typename ProfiledRepatchFunction, typename ProfiledFunction, typename RepatchFunction>
         void emitMathICSlow(JITUnaryMathIC<Generator>*, const JSInstruction*, ProfiledRepatchFunction, ProfiledFunction, RepatchFunction);
 
-    private:
+    protected:
         static MacroAssemblerCodeRef<JITThunkPtrTag> slow_op_put_to_scopeGenerator(VM&);
         static MacroAssemblerCodeRef<JITThunkPtrTag> op_throw_handlerGenerator(VM&);
         static MacroAssemblerCodeRef<JITThunkPtrTag> op_check_traps_handlerGenerator(VM&);

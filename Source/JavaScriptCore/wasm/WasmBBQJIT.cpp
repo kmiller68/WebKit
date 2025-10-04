@@ -4142,10 +4142,10 @@ void BBQJIT::loadWebAssemblyGlobalState(GPRReg wasmBaseMemoryPointer, GPRReg was
 void BBQJIT::flushRegistersForException()
 {
     // Flush all locals.
-    m_gprAllocator.flushIf(*this, [&](const RegisterBinding& binding) {
+    m_gprAllocator.flushIf(*this, [&](GPRReg, const RegisterBinding& binding) {
         return binding.toValue().isLocal();
     });
-    m_fprAllocator.flushIf(*this, [&](const RegisterBinding& binding) {
+    m_fprAllocator.flushIf(*this, [&](FPRReg, const RegisterBinding& binding) {
         return binding.toValue().isLocal();
     });
 }

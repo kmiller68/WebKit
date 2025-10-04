@@ -84,16 +84,14 @@ public:
     constexpr ALWAYS_INLINE void forEachSetBit(size_t startIndex, const Func&) const;
 
     constexpr size_t findBit(size_t startIndex, bool value) const;
+    constexpr size_t findBitReverse(size_t startIndex, bool value) const;
 
     class iterator {
-        WTF_DEPRECATED_MAKE_FAST_ALLOCATED(iterator);
+        WTF_FORBID_HEAP_ALLOCATION;
     public:
-        constexpr iterator()
-            : m_bitSet(nullptr)
-            , m_index(0)
-        {
-        }
+        using iterator_category = std::bidirectional_iterator_tag;
 
+        constexpr iterator() = default;
         constexpr iterator(const BitSet& bitSet, size_t index)
             : m_bitSet(&bitSet)
             , m_index(index)
@@ -107,21 +105,31 @@ public:
             m_index = m_bitSet->findBit(m_index + 1, true);
             return *this;
         }
-        
+
+        iterator& operator--()
+        {
+            m_index = m_bitSet->findBitReverse(m_index - 1, true);
+            return *this;
+        }
+
         constexpr bool operator==(const iterator& other) const
         {
             return m_index == other.m_index;
         }
         
     private:
-        const BitSet* m_bitSet;
-        size_t m_index;
+        const BitSet* m_bitSet { nullptr };
+        size_t m_index { 0 };
     };
-    
+    using reverse_iterator = std::reverse_iterator<iterator>;
+
     // Use this to iterate over set bits.
     constexpr iterator begin() const LIFETIME_BOUND { return iterator(*this, findBit(0, true)); }
     constexpr iterator end() const LIFETIME_BOUND { return iterator(*this, bitSetSize); }
-    
+
+    reverse_iterator rbegin() const LIFETIME_BOUND { return reverse_iterator(end()); }
+    reverse_iterator rend() const LIFETIME_BOUND { return reverse_iterator(begin()); }
+
     constexpr void mergeAndClear(BitSet&);
     constexpr void setAndClear(BitSet&);
 
@@ -434,6 +442,28 @@ inline constexpr size_t BitSet<bitSetSize, WordType>::findBit(size_t startIndex,
         startIndexInWord = 0;
     }
     
+    return bitSetSize;
+}
+
+template<size_t bitSetSize, typename WordType>
+inline constexpr size_t BitSet<bitSetSize, WordType>::findBitReverse(size_t startIndex, bool value) const
+{
+    WordType skipValue = -(static_cast<WordType>(value) ^ 1);
+    size_t wordIndex = startIndex / wordSize;
+    size_t startIndexInWord = startIndex - wordIndex * wordSize;
+
+    while (wordIndex < words) {
+        WordType word = bits[wordIndex];
+        if (word != skipValue) {
+            size_t index = startIndexInWord;
+            if (findBitInWordReverse(word, index, 0, value))
+                return wordIndex * wordSize + index;
+        }
+
+        wordIndex--;
+        startIndexInWord = wordSize - 1;
+    }
+
     return bitSetSize;
 }
 
