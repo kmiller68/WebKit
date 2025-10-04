@@ -25,6 +25,7 @@
 
 #include "config.h"
 #include "BaselineJITPlan.h"
+#include "LOLJIT.h"
 
 #include "JITSafepoint.h"
 
@@ -47,9 +48,15 @@ auto BaselineJITPlan::compileInThreadImpl(JITCompilationEffort effort) -> Compil
         Safepoint safepoint(*this, result);
         safepoint.begin(false);
 
-        JIT jit(*m_vm, *this, m_codeBlock);
-        auto jitCode = jit.compileAndLinkWithoutFinalizing(effort);
-        m_jitCode = WTFMove(jitCode);
+        if (Options::useLOLJIT()) {
+            LOLJIT jit(*m_vm, *this, m_codeBlock);
+            auto jitCode = jit.compileAndLinkWithoutFinalizing(effort);
+            m_jitCode = WTFMove(jitCode);
+        } else {
+            JIT jit(*m_vm, *this, m_codeBlock);
+            auto jitCode = jit.compileAndLinkWithoutFinalizing(effort);
+            m_jitCode = WTFMove(jitCode);
+        }
     }
     if (result.didGetCancelled())
         return CancelPath;
