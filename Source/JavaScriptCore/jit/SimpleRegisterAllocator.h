@@ -161,6 +161,14 @@ public:
         dataLogLnIf(!m_logPrefix.isNull(), m_logPrefix, "\tUsing ", enumTypeName<Register>(), "s ", m_validRegisters);
     }
 
+    void reset()
+    {
+        m_freeRegisters = m_validRegisters;
+        m_spiller = Spiller();
+        m_spiller.initialize(m_validRegisters);
+        m_bindings.fill(RegisterBinding());
+    }
+
     void dump(PrintStream& out) const { dumpInContext(out, nullptr); }
     void dumpInContext(PrintStream& out, JITBackend* context) const
     {

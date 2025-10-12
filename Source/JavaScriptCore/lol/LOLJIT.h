@@ -37,6 +37,7 @@
 #include "JITRightShiftGenerator.h"
 #include "JSInterfaceJIT.h"
 #include "LLIntData.h"
+#include "LOLRegisterAllocator.h"
 #include "PCToCodeOriginMap.h"
 #include "SimpleRegisterAllocator.h"
 #include <wtf/SequesteredMalloc.h>
@@ -45,12 +46,25 @@
 
 #include "JIT.h"
 
-namespace JSC {
+namespace JSC::LOL {
 
 #define FOR_EACH_IMPLEMENTED_OP(macro) \
+    macro(op_add) \
+    macro(op_mul) \
+    macro(op_sub) \
+    macro(op_negate) \
     macro(op_eq) \
+    macro(op_neq) \
+    macro(op_less) \
+    macro(op_lesseq) \
+    macro(op_greater) \
+    macro(op_greatereq) \
+    macro(op_get_from_scope) \
     macro(op_lshift) \
     macro(op_to_number) \
+    macro(op_to_string) \
+    macro(op_to_object) \
+    macro(op_to_numeric) \
     macro(op_rshift) \
     macro(op_urshift) \
 
@@ -145,7 +159,7 @@ namespace JSC {
     macro(op_to_property_key_or_number) \
     macro(op_typeof_is_function) \
 
-class LOLJIT : public JIT {
+class LOLJIT : public JIT, public ReplayBackend {
     WTF_MAKE_TZONE_NON_HEAP_ALLOCATABLE(LOLJIT);
 public:
 
@@ -179,22 +193,20 @@ private:
         bool isFlushed { false };
     };
 
-    void flush(GPRReg gpr, VirtualRegister binding)
+    void flush(const Location& location, GPRReg gpr, VirtualRegister binding)
     {
-        Location& location = locationOf(binding);
-        ASSERT_UNUSED(gpr, location.gpr() == gpr);
         JIT_COMMENT(*this, "Flushing ", binding);
         if (!location.isFlushed)
             emitPutVirtualRegister(binding, gpr);
 #if ASSERT_ENABLED
         else {
+            JIT_COMMENT(*this, " already flushed, validating");
             emitGetVirtualRegister(binding, scratchRegister());
             Jump ok = branch64(Equal, scratchRegister(), gpr);
             breakpoint();
             ok.link(this);
         }
 #endif
-        location = Location();
     }
 
     ALWAYS_INLINE constexpr static bool hasSlowCase(OpcodeID op)
@@ -209,59 +221,68 @@ private:
         return false;
     }
 
-    ALWAYS_INLINE void allocateUseDefs(const JSInstruction* currentInstruction)
+    ALWAYS_INLINE constexpr static bool isImplemented(OpcodeID op)
     {
-        // Bump the spill count for our uses so we don't spill them when allocating below.
-        // TODO: In theory these lock/unlocks are unnecessary because the LRU spill hint should prevent spilling these. It would only help compile times though and it's unclear if it matters yet, so keeping the locking for debugging.
-        ASSERT(!currentInstruction->hasCheckpoints());
-        computeUsesForBytecodeIndexImpl(currentInstruction, noCheckpoints, [&](VirtualRegister operand) ALWAYS_INLINE_LAMBDA {
-            if (auto current = locationOf(operand).regs) {
-                m_allocator.setSpillHint(current.gpr(), m_bytecodeIndex.offset());
-                m_allocator.lock(current.gpr());
-            }
-        });
-        // isDef = true;
-        // TODO Figure out checkpoints
-        // computeDefsForBytecodeIndex(m_profiledCodeBlock, currentInstruction, noCheckpoints, lock);
-
-        bool isDef = true;
-        auto doAllocate = [&](VirtualRegister operand) ALWAYS_INLINE_LAMBDA {
-            ASSERT_IMPLIES(isDef, operand.isLocal());
-            Location& location = locationOf(operand);
-            if (location.regs) {
-                // Uses might be dirty from a previous instruction, so don't touch them.
-                if (isDef) {
-                    // Lock to balance the unlock in releaseUseDefs.
-                    m_allocator.lock(location.gpr());
-                    location.isFlushed = false;
-                }
-                return;
-            }
-
-            // TODO: Consider LRU insertion policy here (aka 0 for hint)
-            location.regs = JSValueRegs(m_allocator.allocate(*this, operand, m_bytecodeIndex.offset()));
-            // Lock to balance the unlock in releaseUseDefs.
-            m_allocator.lock(location.gpr());
-            location.isFlushed = !isDef;
-
-            if (!isDef)
-                emitGetVirtualRegister(operand, location.regs);
-        };
-
-        // Allocate our defs first so that we don't end up flushing them when allocating a use.
-        computeDefsForBytecodeIndex(m_profiledCodeBlock, currentInstruction, noCheckpoints, doAllocate);
-        isDef = false;
-        computeUsesForBytecodeIndexImpl(currentInstruction, noCheckpoints, doAllocate);
+        switch (op) {
+#define HAS_SLOW_CASE(name) case name: return true;
+        FOR_EACH_IMPLEMENTED_OP(HAS_SLOW_CASE)
+        default: break;
+#undef HAS_SLOW_CASE
+        }
+        return false;
     }
 
+    // enum class AllocationMode { FillUses, Replay };
+    // ALWAYS_INLINE void allocateUseDefs(const JSInstruction* currentInstruction, AllocationMode mode = AllocationMode::FillUses)
+    // {
+    //     // Bump the spill count for our uses so we don't spill them when allocating below.
+    //     // TODO: In theory these lock/unlocks are unnecessary because the LRU spill hint should prevent spilling these. It would only help compile times though and it's unclear if it matters yet, so keeping the locking for debugging.
+    //     ASSERT(!currentInstruction->hasCheckpoints());
+    //     computeUsesForBytecodeIndexImpl(currentInstruction, noCheckpoints, [&](VirtualRegister operand) ALWAYS_INLINE_LAMBDA {
+    //         if (auto current = locationOf(operand).regs) {
+    //             m_allocator.setSpillHint(current.gpr(), m_bytecodeIndex.offset());
+    //         }
+    //     });
+    //     // isDef = true;
+    //     // TODO Figure out checkpoints
+    //     // computeDefsForBytecodeIndex(m_profiledCodeBlock, currentInstruction, noCheckpoints, lock);
+
+    //     bool isDef = true;
+    //     auto doAllocate = [&](VirtualRegister operand) ALWAYS_INLINE_LAMBDA {
+    //         ASSERT_IMPLIES(isDef, operand.isLocal());
+    //         Location& location = locationOf(operand);
+    //         if (location.regs) {
+    //             // Uses might be dirty from a previous instruction, so don't touch them.
+    //             if (isDef) {
+    //                 location.isFlushed = false;
+    //             }
+    //             return;
+    //         }
+
+    //         // TODO: Consider LRU insertion policy here (aka 0 for hint)
+    //         location.regs = JSValueRegs(m_allocator.allocate(*this, operand, m_bytecodeIndex.offset()));
+    //         location.isFlushed = !isDef;
+
+    //         if (!isDef && mode == AllocationMode::FillUses)
+    //             emitGetVirtualRegister(operand, location.regs);
+    //     };
+
+    //     // Allocate our defs first so that we don't end up flushing any uses them when allocating uses.
+    //     computeDefsForBytecodeIndex(m_profiledCodeBlock, currentInstruction, noCheckpoints, doAllocate);
+    //     isDef = false;
+    //     computeUsesForBytecodeIndexImpl(currentInstruction, noCheckpoints, doAllocate);
+    // }
+
     // TODO: This could just take all the registers directly rather than looking them up again.
-    ALWAYS_INLINE void releaseUseDefsAndNotifySlowPaths(const JSInstruction* currentInstruction)
+    ALWAYS_INLINE void releaseUseDefsAndNotifySlowPaths(const JSInstruction*)
     {
-        auto unlock = [&](VirtualRegister operand) ALWAYS_INLINE_LAMBDA {
-            m_allocator.unlock(locationOf(operand).gpr());
-        };
-        computeUsesForBytecodeIndexImpl(currentInstruction, noCheckpoints, unlock);
-        computeDefsForBytecodeIndex(m_profiledCodeBlock, currentInstruction, noCheckpoints, unlock);
+
+        // TODO: Add debug lock validation.
+        // auto unlock = [&](VirtualRegister operand) ALWAYS_INLINE_LAMBDA {
+        //     m_allocator.unlock(locationOf(operand).gpr());
+        // };
+        // computeUsesForBytecodeIndexImpl(currentInstruction, noCheckpoints, unlock);
+        // computeDefsForBytecodeIndex(m_profiledCodeBlock, currentInstruction, noCheckpoints, unlock);
 
         // About 41% of bytecodes have a slow path in JS3 (which I'm assuming is close enough for SP3 too if not a higher %)
         // Also 21% of non-slow bytecodes are movs... crazy
@@ -311,58 +332,85 @@ private:
     template<typename Op>
     void emitRightShiftFastPath(const JSInstruction* currentInstruction, JITRightShiftGenerator::ShiftType snippetShiftType);
 
-    void silentSpill(auto... excludeGPRs)
+    void silentSpill(auto allocator, auto... excludeGPRs)
     {
-        for (Reg reg : m_allocator.allocatedRegisters()) {
+        JIT_COMMENT(*this, "Silent spilling");
+        for (Reg reg : allocator.allocatedRegisters()) {
             GPRReg gpr = reg.gpr();
             if (((gpr == excludeGPRs) || ... || false))
                 continue;
-            VirtualRegister binding = m_allocator.bindingFor(gpr);
-            Location& location = locationOf(binding);
+            VirtualRegister binding = allocator.bindingFor(gpr);
+            Location& location = allocator.locationOf(binding);
             ASSERT(location.gpr() == gpr);
             if (!location.isFlushed)
                 emitPutVirtualRegister(binding, JSValueRegs(gpr));
         }
     }
 
-    void silentFill(auto... excludeGPRs)
+    void silentFill(auto allocator, auto... excludeGPRs)
     {
-        for (Reg reg : m_allocator.allocatedRegisters()) {
+        JIT_COMMENT(*this, "Silent filling");
+        for (Reg reg : allocator.allocatedRegisters()) {
             GPRReg gpr = reg.gpr();
             if (((gpr == excludeGPRs) || ... || false))
                 continue;
-            VirtualRegister binding = m_allocator.bindingFor(gpr);
-            Location& location = locationOf(binding);
-            ASSERT(location.gpr() == gpr);
+            VirtualRegister binding = allocator.bindingFor(gpr);
+            ASSERT(allocator.locationOf(binding).gpr() == gpr);
             emitGetVirtualRegister(binding, JSValueRegs(gpr));
         }
     }
 
-    template<typename OperationType>
-    requires (OperationHasResult<OperationType>)
-    void callOperationWithSilentSpill(const OperationType& operation, GPRReg result, auto... args)
-    {
-        silentSpill(result);
-        setupArguments<OperationType>(args...);
-        appendCallWithExceptionCheck<OperationType>(operation);
-        move(returnValueGPR, result);
-        silentFill(result);
-    }
+    // template<typename OperationType>
+    // requires (OperationHasResult<OperationType>)
+    // void callOperationWithSilentSpill(const OperationType& operation, GPRReg result, auto... args)
+    // {
+    //     silentSpill(result);
+    //     setupArguments<OperationType>(args...);
+    //     appendCallWithExceptionCheck<OperationType>(operation);
+    //     move(returnValueGPR, result);
+    //     silentFill(result);
+    // }
 
-    template<typename OperationType>
-    requires (OperationHasResult<OperationType>)
-    void callOperationWithSilentSpill(const OperationType& operation, JSValueRegs result, auto... args) { callOperationWithSilentSpill(operation, result.gpr(), args...); }
+    // template<typename OperationType>
+    // requires (OperationHasResult<OperationType>)
+    // void callOperationWithSilentSpill(const OperationType& operation, JSValueRegs result, auto... args) { callOperationWithSilentSpill(operation, result.gpr(), args...); }
 
-    template<typename OperationType>
-    requires (!OperationHasResult<OperationType>)
-    void callOperationWithSilentSpill(const OperationType& operation, auto... args)
-    {
-        silentSpill();
-        callOperation(operation, args...);
-        silentFill();
-    }
+    // template<typename OperationType>
+    // requires (!OperationHasResult<OperationType>)
+    // void callOperationWithSilentSpill(const OperationType& operation, auto... args)
+    // {
+    //     silentSpill();
+    //     callOperation(operation, args...);
+    //     silentFill();
+    // }
 
     void emitCommonSlowPathSlowCaseCall(const JSInstruction*, Vector<SlowCaseEntry>::iterator&, SlowPathFunction);
+
+    template<typename Op, typename SnippetGenerator>
+    void emitBitBinaryOpFastPath(const JSInstruction* currentInstruction);
+
+    template <typename Op, typename Generator, typename ProfiledFunction, typename NonProfiledFunction>
+    void emitMathICFast(JITUnaryMathIC<Generator>*, const JSInstruction*, ProfiledFunction, NonProfiledFunction);
+    template <typename Op, typename Generator, typename ProfiledFunction, typename NonProfiledFunction>
+    void emitMathICFast(JITBinaryMathIC<Generator>*, const JSInstruction*, ProfiledFunction, NonProfiledFunction);
+
+    template <typename Op, typename Generator, typename ProfiledRepatchFunction, typename ProfiledFunction, typename RepatchFunction>
+    void emitMathICSlow(JITBinaryMathIC<Generator>*, const JSInstruction*, ProfiledRepatchFunction, ProfiledFunction, RepatchFunction);
+    template <typename Op, typename Generator, typename ProfiledRepatchFunction, typename ProfiledFunction, typename RepatchFunction>
+    void emitMathICSlow(JITUnaryMathIC<Generator>*, const JSInstruction*, ProfiledRepatchFunction, ProfiledFunction, RepatchFunction);
+
+    template<typename Op>
+    void emitCompare(const JSInstruction*, RelationalCondition);
+    template <typename EmitCompareFunctor>
+    void emitCompareImpl(VirtualRegister op1, JSValueRegs op1Regs, VirtualRegister op2, JSValueRegs op2Regs, RelationalCondition, const EmitCompareFunctor&);
+
+    template<typename Op, typename SlowOperation>
+    void emitCompareSlow(const JSInstruction*, DoubleCondition, SlowOperation, Vector<SlowCaseEntry>::iterator&);
+    template<typename SlowOperation, typename EmitDoubleCompareFunctor>
+    void emitCompareSlowImpl(VirtualRegister op1, JSValueRegs op1Regs, VirtualRegister op2, JSValueRegs op2Regs, JSValueRegs dstRegs, size_t instructionSize, SlowOperation, Vector<SlowCaseEntry>::iterator&, const EmitDoubleCompareFunctor&);
+
+    template<typename Op>
+    void emitNewFuncCommon(const JSInstruction*);
 
     template<unsigned numGPRs>
     class ScratchScope {
@@ -486,17 +534,17 @@ private:
     };
     template<unsigned> friend class ScratchScope;
 
-    Location& locationOf(VirtualRegister operand)
-    {
-        ASSERT(operand.isValid());
-        if (operand.isLocal())
-            return m_locations[operand.toLocal()];
-        if (operand.isConstant())
-            return m_locations[operand.toConstantIndex() + m_constantsOffset];
-        ASSERT(operand.isArgument() || operand.isHeader());
-        // arguments just naturally follow the headers.
-        return m_locations[operand.offset() + m_headersOffset];
-    }
+    // Location& locationOf(VirtualRegister operand)
+    // {
+    //     ASSERT(operand.isValid());
+    //     if (operand.isLocal())
+    //         return m_locations[operand.toLocal()];
+    //     if (operand.isConstant())
+    //         return m_locations[operand.toConstantIndex() + m_constantsOffset];
+    //     ASSERT(operand.isArgument() || operand.isHeader());
+    //     // arguments just naturally follow the headers.
+    //     return m_locations[operand.offset() + m_headersOffset];
+    // }
 
     template<typename... Operands>
     std::array<JSValueRegs, sizeof...(Operands)> regsFor(Operands... operands) { return { locationOf(operands).regs... }; }
@@ -508,10 +556,12 @@ private:
     const uint32_t m_constantsOffset;
     const uint32_t m_headersOffset;
 
-    static constexpr GPRReg s_scratch = GPRInfo::nonPreservedNonArgumentGPR0;
     // This is laid out as [ locals, constants, headers, arguments ]
-    FixedVector<Location> m_locations;
-    SimpleRegisterAllocator<GPRBank> m_allocator;
+    // FixedVector<Location> m_locations;
+    RegisterAllocator<LOLJIT> m_fastAllocator;
+    static constexpr GPRReg s_scratch = RegisterAllocator<LOLJIT>::s_scratch;
+    ReplayRegisterAllocator m_replayAllocator;
+    // SimpleRegisterAllocator<GPRBank> m_allocator;
     const JSInstruction* m_currentInstruction;
 };
 
