@@ -93,7 +93,7 @@ ALWAYS_INLINE uint32_t jsMapHashImpl(JSGlobalObject* globalObject, VM& vm, JSVal
     ASSERT_WITH_MESSAGE(normalizeMapKey(value) == value, "We expect normalized values flowing into this function.");
 
     if (value.isString()) {
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         auto wtfString = asString(value)->value(globalObject);
         if constexpr (expection == ExceptionExpectation::CanThrow)
             RETURN_IF_EXCEPTION(scope, UINT_MAX);

@@ -63,7 +63,7 @@ TemporalDuration::TemporalDuration(VM& vm, Structure* structure, ISO8601::Durati
 TemporalDuration* TemporalDuration::tryCreateIfValid(JSGlobalObject* globalObject, ISO8601::Duration&& duration, Structure* structure)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!ISO8601::isValidDuration(duration)) {
         throwRangeError(globalObject, scope, "Temporal.Duration properties must be finite and of consistent sign"_s);
@@ -78,7 +78,7 @@ TemporalDuration* TemporalDuration::tryCreateIfValid(JSGlobalObject* globalObjec
 ISO8601::Duration TemporalDuration::fromDurationLike(JSGlobalObject* globalObject, JSObject* durationLike)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (durationLike->inherits<TemporalDuration>())
         return jsCast<TemporalDuration*>(durationLike)->m_duration;
@@ -115,7 +115,7 @@ ISO8601::Duration TemporalDuration::fromDurationLike(JSGlobalObject* globalObjec
 ISO8601::Duration TemporalDuration::toISO8601Duration(JSGlobalObject* globalObject, JSValue itemValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ISO8601::Duration duration;
     if (itemValue.isObject()) {
@@ -153,7 +153,7 @@ ISO8601::Duration TemporalDuration::toISO8601Duration(JSGlobalObject* globalObje
 TemporalDuration* TemporalDuration::toTemporalDuration(JSGlobalObject* globalObject, JSValue itemValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (itemValue.inherits<TemporalDuration>())
         return jsCast<TemporalDuration*>(itemValue);
@@ -169,7 +169,7 @@ TemporalDuration* TemporalDuration::toTemporalDuration(JSGlobalObject* globalObj
 ISO8601::Duration TemporalDuration::toLimitedDuration(JSGlobalObject* globalObject, JSValue itemValue, std::initializer_list<TemporalUnit> disallowedUnits)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ISO8601::Duration duration = toISO8601Duration(globalObject, itemValue);
     RETURN_IF_EXCEPTION(scope, { });
@@ -219,7 +219,7 @@ static double totalSubseconds(ISO8601::Duration& duration)
 static Int128 add24HourDaysToTimeDuration(JSGlobalObject* globalObject, Int128 d, double days)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CheckedInt128 daysInNanoseconds = checkedCastDoubleToInt128(days) * ISO8601::ExactTime::nsPerDay;
     CheckedInt128 result = d + daysInNanoseconds;
@@ -235,7 +235,7 @@ static Int128 add24HourDaysToTimeDuration(JSGlobalObject* globalObject, Int128 d
 JSValue TemporalDuration::compare(JSGlobalObject* globalObject, JSValue valueOne, JSValue valueTwo)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* one = toTemporalDuration(globalObject, valueOne);
     RETURN_IF_EXCEPTION(scope, { });
@@ -277,7 +277,7 @@ int TemporalDuration::sign(const ISO8601::Duration& duration)
 ISO8601::Duration TemporalDuration::with(JSGlobalObject* globalObject, JSObject* durationLike) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ISO8601::Duration result;
     auto hasRelevantProperty = false;
@@ -352,7 +352,7 @@ ISO8601::InternalDuration TemporalDuration::toInternalDurationRecordWith24HourDa
     ISO8601::Duration d)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Int128 timeDuration = timeDurationFromComponents(d.hours(), d.minutes(), d.seconds(),
         d.milliseconds(), d.microseconds(), d.nanoseconds());
@@ -387,7 +387,7 @@ std::optional<ISO8601::PlainDate> TemporalDuration::regulateISODate(double year,
 ISO8601::Duration TemporalDuration::toDateDurationRecordWithoutTime(JSGlobalObject* globalObject, const ISO8601::Duration& duration)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto internalDuration = toInternalDurationRecordWith24HourDays(globalObject, duration);
     RETURN_IF_EXCEPTION(scope, { });
@@ -453,7 +453,7 @@ std::optional<double> TemporalDuration::balance(ISO8601::Duration& duration, Tem
 ISO8601::Duration TemporalDuration::add(JSGlobalObject* globalObject, JSValue otherValue) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto other = toISO8601Duration(globalObject, otherValue);
     RETURN_IF_EXCEPTION(scope, { });
@@ -473,7 +473,7 @@ ISO8601::Duration TemporalDuration::add(JSGlobalObject* globalObject, JSValue ot
     AddOrSubtract op, ISO8601::Duration other, TemporalUnit largestUnit) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (op == AddOrSubtract::Subtract)
         other = -other;
@@ -587,7 +587,7 @@ ISO8601::Duration TemporalDuration::temporalDurationFromInternal(ISO8601::Intern
 ISO8601::Duration TemporalDuration::subtract(JSGlobalObject* globalObject, JSValue otherValue) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto other = toISO8601Duration(globalObject, otherValue);
     RETURN_IF_EXCEPTION(scope, { });
@@ -614,7 +614,7 @@ static double totalTimeDuration(Int128 timeDuration, TemporalUnit unit)
 static ISO8601::Duration adjustDateDurationRecord(JSGlobalObject* globalObject, const ISO8601::Duration& dateDuration, double days, std::optional<double> weeks, std::optional<double> months)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto result = ISO8601::Duration { dateDuration.years(), months ? months.value() : dateDuration.months(), weeks ? weeks.value() : dateDuration.weeks(), days, 0, 0, 0, 0, 0, 0 };
     if (!ISO8601::isValidDuration(result)) {
@@ -655,7 +655,7 @@ static Int128 getEpochNanosecondsFor(std::tuple<ISO8601::PlainDate, ISO8601::Pla
 static Nudged nudgeToCalendarUnit(JSGlobalObject* globalObject, int32_t sign, const ISO8601::InternalDuration& duration, Int128 destEpochNs, ISO8601::PlainDate isoDate, double increment, TemporalUnit unit, RoundingMode roundingMode)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double r1 = 0;
     double r2 = 0;
@@ -758,7 +758,7 @@ static Nudged nudgeToCalendarUnit(JSGlobalObject* globalObject, int32_t sign, co
 static NudgeResult nudgeToDayOrTime(JSGlobalObject* globalObject, ISO8601::InternalDuration duration, Int128 destEpochNs, TemporalUnit largestUnit, double increment, TemporalUnit smallestUnit, RoundingMode roundingMode)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Int128 timeDuration = add24HourDaysToTimeDuration(globalObject, duration.time(), duration.dateDuration().days());
     RETURN_IF_EXCEPTION(scope, { });
@@ -848,7 +848,7 @@ static constexpr TemporalUnit unitInTable(int32_t i)
 static ISO8601::InternalDuration bubbleRelativeDuration(JSGlobalObject* globalObject, int32_t sign, ISO8601::InternalDuration duration, Int128 nudgedEpochNs, ISO8601::PlainDate isoDate, TemporalUnit largestUnit, TemporalUnit smallestUnit)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (smallestUnit == largestUnit)
         return duration;
@@ -896,7 +896,7 @@ static ISO8601::InternalDuration bubbleRelativeDuration(JSGlobalObject* globalOb
 void TemporalDuration::roundRelativeDuration(JSGlobalObject* globalObject, ISO8601::InternalDuration& duration, Int128 destEpochNs, ISO8601::PlainDate isoDate, TemporalUnit largestUnit, double increment, TemporalUnit smallestUnit, RoundingMode roundingMode)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     bool irregularLengthUnit = smallestUnit <= TemporalUnit::Week;
     int32_t sign = duration.sign() < 0 ? -1 : 1;
@@ -922,7 +922,7 @@ void TemporalDuration::roundRelativeDuration(JSGlobalObject* globalObject, ISO86
 ISO8601::InternalDuration TemporalDuration::round(JSGlobalObject* globalObject, ISO8601::InternalDuration internalDuration, double increment, TemporalUnit unit, RoundingMode mode)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(unit >= TemporalUnit::Day);
 
@@ -947,7 +947,7 @@ ISO8601::InternalDuration TemporalDuration::round(JSGlobalObject* globalObject, 
 ISO8601::Duration TemporalDuration::round(JSGlobalObject* globalObject, JSValue optionsValue) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* options = nullptr;
     std::optional<TemporalUnit> smallest;
@@ -1011,7 +1011,7 @@ ISO8601::Duration TemporalDuration::round(JSGlobalObject* globalObject, JSValue 
 double TemporalDuration::total(JSGlobalObject* globalObject, JSValue optionsValue) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     String unitString;
     if (optionsValue.isString()) {
@@ -1053,7 +1053,7 @@ double TemporalDuration::total(JSGlobalObject* globalObject, JSValue optionsValu
 String TemporalDuration::toString(JSGlobalObject* globalObject, JSValue optionsValue) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* options = intlGetOptionsObject(globalObject, optionsValue);
     RETURN_IF_EXCEPTION(scope, { });
@@ -1115,7 +1115,7 @@ static void appendInteger(JSGlobalObject* globalObject, StringBuilder& builder, 
     ASSERT(std::isfinite(value));
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double absValue = std::abs(value);
     if (absValue <= maxSafeInteger()) [[likely]] {
@@ -1139,7 +1139,7 @@ String TemporalDuration::toString(JSGlobalObject* globalObject, const ISO8601::D
     ASSERT(std::get<0>(precision) == Precision::Auto || std::get<1>(precision) < 10);
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     StringBuilder builder;
     auto sign = TemporalDuration::sign(duration);

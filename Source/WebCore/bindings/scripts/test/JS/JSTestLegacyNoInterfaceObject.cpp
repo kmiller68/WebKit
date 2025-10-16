@@ -156,7 +156,7 @@ void JSTestLegacyNoInterfaceObject::destroy(JSC::JSCell* cell)
 static inline JSValue jsTestLegacyNoInterfaceObject_readonlyStringAttributeGetter(JSGlobalObject& lexicalGlobalObject, JSTestLegacyNoInterfaceObject& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLDOMString>(lexicalGlobalObject, throwScope, impl.readonlyStringAttribute())));
 }
@@ -169,7 +169,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestLegacyNoInterfaceObject_readonlyStringAttribute, 
 static inline JSValue jsTestLegacyNoInterfaceObject_readWriteStringAttributeGetter(JSGlobalObject& lexicalGlobalObject, JSTestLegacyNoInterfaceObject& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLDOMString>(lexicalGlobalObject, throwScope, impl.readWriteStringAttribute())));
 }
@@ -183,7 +183,7 @@ static inline bool setJSTestLegacyNoInterfaceObject_readWriteStringAttributeSett
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     auto nativeValueConversionResult = convert<IDLDOMString>(lexicalGlobalObject, value);
     if (nativeValueConversionResult.hasException(throwScope)) [[unlikely]]
@@ -226,7 +226,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestLegacyNoInterfaceObject_customGetterSetterStri
 static inline JSValue jsTestLegacyNoInterfaceObject_nodeAttributeGetter(JSGlobalObject& lexicalGlobalObject, JSTestLegacyNoInterfaceObject& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLInterface<Node>>(lexicalGlobalObject, *thisObject.globalObject(), throwScope, impl.nodeAttribute())));
 }
@@ -240,9 +240,9 @@ static inline bool setJSTestLegacyNoInterfaceObject_nodeAttributeSetter(JSGlobal
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
-    auto nativeValueConversionResult = convert<IDLInterface<Node>>(lexicalGlobalObject, value, [](JSC::JSGlobalObject& lexicalGlobalObject, JSC::ThrowScope& scope) { throwAttributeTypeError(lexicalGlobalObject, scope, "TestLegacyNoInterfaceObject"_s, "nodeAttribute"_s, "Node"_s); });
+    auto nativeValueConversionResult = convert<IDLInterface<Node>>(lexicalGlobalObject, value, [](JSC::JSGlobalObject& lexicalGlobalObject, JSC::ExceptionScope& scope) { throwAttributeTypeError(lexicalGlobalObject, scope, "TestLegacyNoInterfaceObject"_s, "nodeAttribute"_s, "Node"_s); });
     if (nativeValueConversionResult.hasException(throwScope)) [[unlikely]]
         return false;
     invokeFunctorPropagatingExceptionIfNecessary(lexicalGlobalObject, throwScope, [&] {
@@ -259,7 +259,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestLegacyNoInterfaceObject_nodeAttribute, (JSGlob
 static inline JSValue jsTestLegacyNoInterfaceObjectConstructor_staticStringAttributeGetter(JSGlobalObject& lexicalGlobalObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     RELEASE_AND_RETURN(throwScope, (toJS<IDLDOMString>(lexicalGlobalObject, throwScope, TestLegacyNoInterfaceObject::staticStringAttribute())));
 }
 
@@ -272,7 +272,7 @@ static inline bool setJSTestLegacyNoInterfaceObjectConstructor_staticStringAttri
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto nativeValueConversionResult = convert<IDLDOMString>(lexicalGlobalObject, value);
     if (nativeValueConversionResult.hasException(throwScope)) [[unlikely]]
         return false;
@@ -290,7 +290,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestLegacyNoInterfaceObjectConstructor_staticStrin
 static inline JSC::EncodedJSValue jsTestLegacyNoInterfaceObjectPrototypeFunction_voidOperationBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestLegacyNoInterfaceObject>::ClassParameter castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = castedThis->wrapped();
@@ -305,7 +305,7 @@ JSC_DEFINE_HOST_FUNCTION(jsTestLegacyNoInterfaceObjectPrototypeFunction_voidOper
 static inline JSC::EncodedJSValue jsTestLegacyNoInterfaceObjectPrototypeFunction_customOperationBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestLegacyNoInterfaceObject>::ClassParameter castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     RELEASE_AND_RETURN(throwScope, (JSValue::encode(castedThis->customOperation(*lexicalGlobalObject, *callFrame))));
@@ -319,7 +319,7 @@ JSC_DEFINE_HOST_FUNCTION(jsTestLegacyNoInterfaceObjectPrototypeFunction_customOp
 static inline JSC::EncodedJSValue jsTestLegacyNoInterfaceObjectConstructorFunction_staticOperationBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     RELEASE_AND_RETURN(throwScope, JSValue::encode(toJS<IDLUndefined>(*lexicalGlobalObject, throwScope, [&]() -> decltype(auto) { return TestLegacyNoInterfaceObject::staticOperation(); })));

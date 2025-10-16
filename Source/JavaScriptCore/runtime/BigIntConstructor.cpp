@@ -75,7 +75,7 @@ void BigIntConstructor::finishCreation(VM& vm, BigIntPrototype* bigIntPrototype)
 JSC_DEFINE_HOST_FUNCTION(callBigIntConstructor, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     
     JSValue value = callFrame->argument(0);
     JSValue primitive = value.toPrimitive(globalObject, PreferNumber);
@@ -102,14 +102,14 @@ JSC_DEFINE_HOST_FUNCTION(callBigIntConstructor, (JSGlobalObject* globalObject, C
 JSC_DEFINE_HOST_FUNCTION(constructBigIntConstructor, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return throwVMError(globalObject, scope, createNotAConstructorError(globalObject, callFrame->jsCallee()));
 }
 
 JSC_DEFINE_HOST_FUNCTION(bigIntConstructorFuncAsUintN, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     uint64_t numberOfBits = callFrame->argument(0).toIndex(globalObject, "number of bits"_s);
     RETURN_IF_EXCEPTION(scope, { });
@@ -129,7 +129,7 @@ JSC_DEFINE_HOST_FUNCTION(bigIntConstructorFuncAsUintN, (JSGlobalObject* globalOb
 JSC_DEFINE_HOST_FUNCTION(bigIntConstructorFuncAsIntN, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     uint64_t numberOfBits = callFrame->argument(0).toIndex(globalObject, "number of bits"_s);
     RETURN_IF_EXCEPTION(scope, { });

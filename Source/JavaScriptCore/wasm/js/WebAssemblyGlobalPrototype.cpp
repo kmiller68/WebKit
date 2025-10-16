@@ -57,7 +57,7 @@ const ClassInfo WebAssemblyGlobalPrototype::s_info = { "WebAssembly.Global"_s, &
 
 static ALWAYS_INLINE JSWebAssemblyGlobal* getGlobal(JSGlobalObject* globalObject, VM& vm, JSValue v)
 {
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     JSWebAssemblyGlobal* result = jsDynamicCast<JSWebAssemblyGlobal*>(v);
     if (!result) {
         throwException(globalObject, throwScope,
@@ -71,7 +71,7 @@ static ALWAYS_INLINE JSWebAssemblyGlobal* getGlobal(JSGlobalObject* globalObject
 JSC_DEFINE_HOST_FUNCTION(webAssemblyGlobalProtoFuncValueOf, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSWebAssemblyGlobal* global = getGlobal(globalObject, vm, callFrame->thisValue());
     RETURN_IF_EXCEPTION(throwScope, encodedJSValue());
@@ -82,7 +82,7 @@ JSC_DEFINE_HOST_FUNCTION(webAssemblyGlobalProtoFuncValueOf, (JSGlobalObject* glo
 JSC_DEFINE_HOST_FUNCTION(webAssemblyGlobalProtoFuncType, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSWebAssemblyGlobal* global = getGlobal(globalObject, vm, callFrame->thisValue());
     RETURN_IF_EXCEPTION(throwScope, encodedJSValue());
@@ -97,7 +97,7 @@ JSC_DEFINE_HOST_FUNCTION(webAssemblyGlobalProtoFuncType, (JSGlobalObject* global
 JSC_DEFINE_HOST_FUNCTION(webAssemblyGlobalProtoGetterFuncValue, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSWebAssemblyGlobal* global = getGlobal(globalObject, vm, callFrame->thisValue());
     RETURN_IF_EXCEPTION(throwScope, encodedJSValue());
@@ -107,7 +107,7 @@ JSC_DEFINE_HOST_FUNCTION(webAssemblyGlobalProtoGetterFuncValue, (JSGlobalObject*
 JSC_DEFINE_HOST_FUNCTION(webAssemblyGlobalProtoSetterFuncValue, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (callFrame->argumentCount() < 1) [[unlikely]]
         return JSValue::encode(throwException(globalObject, throwScope, createNotEnoughArgumentsError(globalObject)));

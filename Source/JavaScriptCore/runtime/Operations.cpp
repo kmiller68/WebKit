@@ -35,7 +35,7 @@ bool JSValue::equalSlowCase(JSGlobalObject* globalObject, JSValue v1, JSValue v2
 NEVER_INLINE JSValue jsAddSlowCase(JSGlobalObject* globalObject, JSValue v1, JSValue v2)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue p1 = v1.toPrimitive(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
     JSValue p2 = v2.toPrimitive(globalObject);

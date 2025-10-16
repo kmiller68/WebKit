@@ -50,7 +50,7 @@ template<typename T> struct Converter<IDLCallbackFunction<T>> : DefaultConverter
     static Result convert(JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value, JSDOMGlobalObject& globalObject, ExceptionThrower&& exceptionThrower = ExceptionThrower())
     {
         JSC::VM& vm = JSC::getVM(&lexicalGlobalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         if (!value.isCallable()) {
             exceptionThrower(lexicalGlobalObject, scope);
@@ -119,7 +119,7 @@ template<typename T> struct Converter<IDLCallbackInterface<T>> : DefaultConverte
     static Result convert(JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value, JSDOMGlobalObject& globalObject, ExceptionThrower&& exceptionThrower = ExceptionThrower())
     {
         JSC::VM& vm = JSC::getVM(&lexicalGlobalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         if (!value.isObject()) {
             exceptionThrower(lexicalGlobalObject, scope);

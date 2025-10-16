@@ -497,7 +497,7 @@ void ServiceWorkerContainer::postMessage(MessageWithMessagePorts&& message, Serv
         return;
 
     auto& vm = globalObject->vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     MessageEventSource source = RefPtr<ServiceWorker> { ServiceWorker::getOrCreate(context.get(), WTFMove(sourceData)) };
 

@@ -60,7 +60,7 @@ static void reportErrorAccessingRemoteFrame(JSC::JSGlobalObject* lexicalGlobalOb
     switch (reportingOption) {
     case ThrowSecurityError: {
         VM& vm = lexicalGlobalObject->vm();
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         throwSecurityError(*lexicalGlobalObject, scope, remoteFrameAccessError(lexicalGlobalObject));
         break;
     }
@@ -88,7 +88,7 @@ static inline bool canAccessDocument(JSC::JSGlobalObject* lexicalGlobalObject, D
     switch (reportingOption) {
     case ThrowSecurityError: {
         VM& vm = lexicalGlobalObject->vm();
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         throwSecurityError(*lexicalGlobalObject, scope, targetDocument->window()->crossDomainAccessErrorMessage(active, IncludeTargetOrigin::No));
         break;
     }
@@ -118,7 +118,7 @@ bool BindingSecurity::shouldAllowAccessToDOMWindow(JSGlobalObject& lexicalGlobal
 bool BindingSecurity::shouldAllowAccessToDOMWindow(JSGlobalObject& lexicalGlobalObject, LocalDOMWindow& globalObject, String& message)
 {
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     bool shouldAllowAccess = BindingSecurity::shouldAllowAccessToDOMWindow(&lexicalGlobalObject, globalObject, DoNotReportSecurityError);
     EXCEPTION_ASSERT_UNUSED(scope, !scope.exception());

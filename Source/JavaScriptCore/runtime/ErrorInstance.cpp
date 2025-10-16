@@ -59,7 +59,7 @@ ErrorInstance* ErrorInstance::create(JSGlobalObject* globalObject, String&& mess
 ErrorInstance* ErrorInstance::create(JSGlobalObject* globalObject, Structure* structure, JSValue message, JSValue options, SourceAppender appender, RuntimeType type, ErrorType errorType, bool useCurrentFrame, JSCell* subclassCaller)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     String messageString = message.isUndefined() ? String() : message.toWTFString(globalObject);
     RETURN_IF_EXCEPTION(scope, nullptr);
@@ -179,7 +179,7 @@ void ErrorInstance::finishCreation(VM& vm, String&& message, LineColumn lineColu
 String ErrorInstance::sanitizedMessageString(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     Integrity::auditStructureID(structureID());
 
     JSValue messageValue;
@@ -198,7 +198,7 @@ String ErrorInstance::sanitizedMessageString(JSGlobalObject* globalObject)
 String ErrorInstance::sanitizedNameString(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     Integrity::auditStructureID(structureID());
 
     JSValue nameValue;
@@ -229,7 +229,7 @@ String ErrorInstance::sanitizedNameString(JSGlobalObject* globalObject)
 String ErrorInstance::sanitizedToString(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     Integrity::auditStructureID(structureID());
 
     String nameString = sanitizedNameString(globalObject);

@@ -87,7 +87,7 @@ void TemporalInstantConstructor::finishCreation(VM& vm, TemporalInstantPrototype
 JSC_DEFINE_HOST_FUNCTION(constructTemporalInstant, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* newTarget = asObject(callFrame->newTarget());
     Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, instantStructure, newTarget, callFrame->jsCallee());
@@ -102,7 +102,7 @@ JSC_DEFINE_HOST_FUNCTION(constructTemporalInstant, (JSGlobalObject* globalObject
 JSC_DEFINE_HOST_FUNCTION(callTemporalInstant, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "Instant"_s));
 }

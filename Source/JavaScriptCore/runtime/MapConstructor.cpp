@@ -61,14 +61,14 @@ MapConstructor::MapConstructor(VM& vm, Structure* structure)
 JSC_DEFINE_HOST_FUNCTION(callMap, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "Map"_s));
 }
 
 JSC_DEFINE_HOST_FUNCTION(constructMap, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* newTarget = asObject(callFrame->newTarget());
     Structure* mapStructure = JSC_GET_DERIVED_STRUCTURE(vm, mapStructure, newTarget, callFrame->jsCallee());
@@ -99,7 +99,7 @@ JSC_DEFINE_HOST_FUNCTION(constructMap, (JSGlobalObject* globalObject, CallFrame*
 
     scope.release();
     forEachInIterable(globalObject, iterable, [&](VM& vm, JSGlobalObject* globalObject, JSValue nextItem) {
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         if (!nextItem.isObject()) {
             throwTypeError(globalObject, scope);
             return;

@@ -161,7 +161,7 @@ void JSTestJSBuiltinConstructor::destroy(JSC::JSCell* cell)
 JSC_DEFINE_CUSTOM_GETTER(jsTestJSBuiltinConstructorConstructor, (JSGlobalObject* lexicalGlobalObject, EncodedJSValue thisValue, PropertyName))
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* prototype = jsDynamicCast<JSTestJSBuiltinConstructorPrototype*>(JSValue::decode(thisValue));
     if (!prototype) [[unlikely]]
         return throwVMTypeError(lexicalGlobalObject, throwScope);
@@ -206,7 +206,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestJSBuiltinConstructor_testAttributeRWCustom, (J
 static inline JSC::EncodedJSValue jsTestJSBuiltinConstructorPrototypeFunction_testCustomFunctionBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestJSBuiltinConstructor>::ClassParameter castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     RELEASE_AND_RETURN(throwScope, (JSValue::encode(castedThis->testCustomFunction(*lexicalGlobalObject, *callFrame))));

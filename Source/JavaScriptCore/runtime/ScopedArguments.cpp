@@ -141,7 +141,7 @@ void ScopedArguments::overrideThingsIfNecessary(JSGlobalObject* globalObject)
 void ScopedArguments::unmapArgument(JSGlobalObject* globalObject, uint32_t i)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     ASSERT_WITH_SECURITY_IMPLICATION(i < m_totalLength);
     m_hasUnmappedArgument = true;
     unsigned namedLength = m_table->length();

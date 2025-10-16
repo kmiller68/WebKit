@@ -28,9 +28,9 @@
 
 #include "AsyncGeneratorPrototype.h"
 #include "BuiltinNames.h"
-#include "CatchScope.h"
-#include "CommonIdentifiers.h"
 #include "CallFrame.h"
+#include "CommonIdentifiers.h"
+#include "ExceptionScope.h"
 #include "FunctionExecutableInlines.h"
 #include "GeneratorPrototype.h"
 #include "JSBoundFunction.h"
@@ -52,7 +52,7 @@ namespace JSC {
 JSC_DEFINE_HOST_FUNCTION(callHostFunctionAsConstructor, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return throwVMError(globalObject, scope, createNotAConstructorError(globalObject, callFrame->jsCallee()));
 }
 
@@ -165,7 +165,7 @@ JSObject* JSFunction::prototypeForConstruction(VM& vm, JSGlobalObject* globalObj
     // true when we can use the allocation profile.
     ASSERT(canUseAllocationProfiles());
     DeferTermination deferScope(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue prototype = get(globalObject, vm.propertyNames->prototype);
     scope.releaseAssertNoException();
     if (prototype.isObject()) [[likely]]
@@ -274,13 +274,13 @@ JSString* JSFunction::toString(JSGlobalObject* globalObject)
     VM& vm = getVM(globalObject);
     if (inherits<JSBoundFunction>()) {
         JSBoundFunction* function = jsCast<JSBoundFunction*>(this);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         JSValue string = jsMakeNontrivialString(globalObject, "function "_s, function->nameString(), "() {\n    [native code]\n}"_s);
         RETURN_IF_EXCEPTION(scope, nullptr);
         return asString(string);
     } else if (inherits<JSRemoteFunction>()) {
         JSRemoteFunction* function = jsCast<JSRemoteFunction*>(this);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         JSValue string = jsMakeNontrivialString(globalObject, "function "_s, function->nameString(), "() {\n    [native code]\n}"_s);
         RETURN_IF_EXCEPTION(scope, nullptr);
         return asString(string);
@@ -338,7 +338,7 @@ static inline JSObject* constructPrototypeObject(JSGlobalObject* globalObject, J
 bool JSFunction::getOwnPropertySlot(JSObject* object, JSGlobalObject* globalObject, PropertyName propertyName, PropertySlot& slot)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSFunction* thisObject = jsCast<JSFunction*>(object);
 
@@ -368,20 +368,20 @@ void JSFunction::getOwnSpecialPropertyNames(JSObject* object, JSGlobalObject* gl
 {
     JSFunction* thisObject = jsCast<JSFunction*>(object);
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (mode == DontEnumPropertiesMode::Include) {
         bool hasLength = thisObject->hasOwnProperty(globalObject, vm.propertyNames->length);
         if (scope.exception()) [[unlikely]] {
             hasLength = false;
-            scope.clearException();
+            TRY_CLEAR_EXCEPTION(scope, void());
         }
         if (!thisObject->hasReifiedLength() || hasLength)
             propertyNames.add(vm.propertyNames->length);
         bool hasName = thisObject->hasOwnProperty(globalObject, vm.propertyNames->name);
         if (scope.exception()) [[unlikely]] {
             hasName = false;
-            scope.clearException();
+            TRY_CLEAR_EXCEPTION(scope, void());
         }
         if (!thisObject->hasReifiedName() || hasName)
             propertyNames.add(vm.propertyNames->name);
@@ -392,13 +392,13 @@ void JSFunction::getOwnSpecialPropertyNames(JSObject* object, JSGlobalObject* gl
 
         thisObject->getOwnPropertyDescriptor(globalObject, vm.propertyNames->length, descriptor);
         if (scope.exception()) [[unlikely]]
-            scope.clearException();
+            TRY_CLEAR_EXCEPTION(scope, void());
         else if (descriptor.enumerable())
             propertyNames.add(vm.propertyNames->length);
 
         thisObject->getOwnPropertyDescriptor(globalObject, vm.propertyNames->name, descriptor);
         if (scope.exception()) [[unlikely]]
-            scope.clearException();
+            TRY_CLEAR_EXCEPTION(scope, void());
         else if (descriptor.enumerable())
             propertyNames.add(vm.propertyNames->name);
     }
@@ -407,7 +407,7 @@ void JSFunction::getOwnSpecialPropertyNames(JSObject* object, JSGlobalObject* gl
 bool JSFunction::put(JSCell* cell, JSGlobalObject* globalObject, PropertyName propertyName, JSValue value, PutPropertySlot& slot)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSFunction* thisObject = jsCast<JSFunction*>(cell);
 
@@ -438,7 +438,7 @@ bool JSFunction::put(JSCell* cell, JSGlobalObject* globalObject, PropertyName pr
 bool JSFunction::deleteProperty(JSCell* cell, JSGlobalObject* globalObject, PropertyName propertyName, DeletePropertySlot& slot)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSFunction* thisObject = jsCast<JSFunction*>(cell);
 
     PropertyStatus propertyType = thisObject->reifyLazyPropertyIfNeeded<>(vm, globalObject, propertyName);
@@ -451,7 +451,7 @@ bool JSFunction::deleteProperty(JSCell* cell, JSGlobalObject* globalObject, Prop
 bool JSFunction::defineOwnProperty(JSObject* object, JSGlobalObject* globalObject, PropertyName propertyName, const PropertyDescriptor& descriptor, bool throwException)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSFunction* thisObject = jsCast<JSFunction*>(object);
 
@@ -541,7 +541,7 @@ String getCalculatedDisplayName(VM& vm, JSObject* object)
 void JSFunction::setFunctionName(JSGlobalObject* globalObject, JSValue value)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // The "name" property may have been already been defined as part of a property list in an
     // object literal (and therefore reified).
@@ -597,7 +597,7 @@ JSFunction::PropertyStatus JSFunction::reifyName(VM& vm, JSGlobalObject* globalO
 
 JSFunction::PropertyStatus JSFunction::reifyName(VM& vm, JSGlobalObject* globalObject, String name)
 {
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     FunctionRareData* rareData = this->ensureRareData(vm);
 
     ASSERT(!hasReifiedName());
@@ -697,7 +697,7 @@ JSFunction::PropertyStatus JSFunction::reifyLazyNameIfNeeded(VM& vm, JSGlobalObj
 
 JSFunction::PropertyStatus JSFunction::reifyLazyBoundNameIfNeeded(VM& vm, JSGlobalObject* globalObject, PropertyName propertyName)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     const Identifier& nameIdent = vm.propertyNames->name;
     if (propertyName != nameIdent)

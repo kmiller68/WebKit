@@ -71,7 +71,7 @@ DEFINE_VISIT_CHILDREN(IntlSegmentIterator);
 JSObject* IntlSegmentIterator::next(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     int32_t startIndex = ubrk_current(m_segmenter.get());
     int32_t endIndex = ubrk_next(m_segmenter.get());

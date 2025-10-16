@@ -25,7 +25,7 @@
 
 #pragma once
 
-#include <JavaScriptCore/CatchScope.h>
+#include <JavaScriptCore/ExceptionScope.h>
 #include <JavaScriptCore/StackAlignment.h>
 #include <JavaScriptCore/VM.h>
 

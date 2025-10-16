@@ -284,7 +284,7 @@ void substituteBackreferences(StringBuilder& result, const String& replacement, 
 JSC_DEFINE_HOST_FUNCTION(stringProtoFuncRepeatCharacter, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // For a string which length is single, instead of creating ropes,
     // allocating a sequential buffer and fill with the repeated string for efficiency.
@@ -317,7 +317,7 @@ JSC_DEFINE_HOST_FUNCTION(stringProtoFuncRepeatCharacter, (JSGlobalObject* global
 JSC_DEFINE_HOST_FUNCTION(stringProtoFuncReplaceUsingRegExp, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSString* string = callFrame->thisValue().toString(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
@@ -333,7 +333,7 @@ JSC_DEFINE_HOST_FUNCTION(stringProtoFuncReplaceUsingRegExp, (JSGlobalObject* glo
 JSC_DEFINE_HOST_FUNCTION(stringProtoFuncReplaceUsingStringSearch, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSString* string = asString(callFrame->thisValue());
 
@@ -357,7 +357,7 @@ JSC_DEFINE_HOST_FUNCTION(stringProtoFuncReplaceUsingStringSearch, (JSGlobalObjec
 JSC_DEFINE_HOST_FUNCTION(stringProtoFuncReplaceAllUsingStringSearch, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSString* string = asString(callFrame->thisValue());
 
@@ -373,7 +373,7 @@ JSC_DEFINE_HOST_FUNCTION(stringProtoFuncReplaceAllUsingStringSearch, (JSGlobalOb
 JSC_DEFINE_HOST_FUNCTION(stringProtoFuncToString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     // Also used for valueOf.
@@ -394,7 +394,7 @@ JSC_DEFINE_HOST_FUNCTION(stringProtoFuncToString, (JSGlobalObject* globalObject,
 JSC_DEFINE_HOST_FUNCTION(stringProtoFuncCharAt, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     if (!checkObjectCoercible(thisValue)) [[unlikely]]
@@ -420,7 +420,7 @@ JSC_DEFINE_HOST_FUNCTION(stringProtoFuncCharAt, (JSGlobalObject* globalObject, C
 JSC_DEFINE_HOST_FUNCTION(stringProtoFuncCharCodeAt, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     if (!checkObjectCoercible(thisValue)) [[unlikely]]
@@ -457,7 +457,7 @@ static inline char32_t codePointAt(const String& string, unsigned position, unsi
 JSC_DEFINE_HOST_FUNCTION(stringProtoFuncCodePointAt, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     if (!checkObjectCoercible(thisValue)) [[unlikely]]
@@ -487,7 +487,7 @@ JSC_DEFINE_HOST_FUNCTION(stringProtoFuncCodePointAt, (JSGlobalObject* globalObje
 static EncodedJSValue stringIndexOfImpl(JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     if (!checkObjectCoercible(thisValue)) [[unlikely]]
@@ -547,7 +547,7 @@ JSC_DEFINE_HOST_FUNCTION(builtinStringIndexOfInternal, (JSGlobalObject* globalOb
 JSC_DEFINE_HOST_FUNCTION(stringProtoFuncLastIndexOf, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     if (!checkObjectCoercible(thisValue)) [[unlikely]]
@@ -592,7 +592,7 @@ JSC_DEFINE_HOST_FUNCTION(stringProtoFuncLastIndexOf, (JSGlobalObject* globalObje
 JSC_DEFINE_HOST_FUNCTION(stringProtoFuncSlice, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     if (!checkObjectCoercible(thisValue)) [[unlikely]]
@@ -652,7 +652,7 @@ static bool isASCIIIdentifierStart(char16_t ch)
 JSC_DEFINE_HOST_FUNCTION(stringProtoFuncSplitFast, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     ASSERT(checkObjectCoercible(thisValue));
 
@@ -872,7 +872,7 @@ JSC_DEFINE_HOST_FUNCTION(stringProtoFuncSplitFast, (JSGlobalObject* globalObject
 JSC_DEFINE_HOST_FUNCTION(stringProtoFuncSubstr, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     if (!checkObjectCoercible(thisValue)) [[unlikely]]
@@ -916,7 +916,7 @@ JSC_DEFINE_HOST_FUNCTION(stringProtoFuncSubstr, (JSGlobalObject* globalObject, C
 JSC_DEFINE_HOST_FUNCTION(stringProtoFuncSubstring, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     if (!checkObjectCoercible(thisValue)) [[unlikely]]
@@ -964,7 +964,7 @@ JSC_DEFINE_HOST_FUNCTION(stringProtoFuncSubstring, (JSGlobalObject* globalObject
 JSC_DEFINE_HOST_FUNCTION(stringProtoFuncToLowerCase, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     if (!checkObjectCoercible(thisValue)) [[unlikely]]
@@ -1000,7 +1000,7 @@ JSC_DEFINE_HOST_FUNCTION(stringProtoFuncToLowerCase, (JSGlobalObject* globalObje
 JSC_DEFINE_HOST_FUNCTION(stringProtoFuncToUpperCase, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     if (!checkObjectCoercible(thisValue)) [[unlikely]]
@@ -1039,7 +1039,7 @@ JSC_DEFINE_HOST_FUNCTION(stringProtoFuncLocaleCompare, (JSGlobalObject* globalOb
     // http://ecma-international.org/publications/standards/Ecma-402.htm
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 1. Let O be RequireObjectCoercible(this value).
     JSValue thisValue = callFrame->thisValue();
@@ -1084,7 +1084,7 @@ template<CaseConversionMode mode>
 static EncodedJSValue toLocaleCase(JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 1. Let O be RequireObjectCoercible(this value).
     JSValue thisValue = callFrame->thisValue();
@@ -1188,7 +1188,7 @@ template<TrimKind trimKind>
 static inline JSValue trimString(JSGlobalObject* globalObject, JSValue thisValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!checkObjectCoercible(thisValue)) [[unlikely]]
         return throwTypeError(globalObject, scope);
@@ -1244,7 +1244,7 @@ static inline unsigned clampAndTruncateToUnsigned(double value, unsigned min, un
 JSC_DEFINE_HOST_FUNCTION(stringProtoFuncStartsWith, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     if (!checkObjectCoercible(thisValue)) [[unlikely]]
@@ -1284,7 +1284,7 @@ JSC_DEFINE_HOST_FUNCTION(stringProtoFuncStartsWith, (JSGlobalObject* globalObjec
 JSC_DEFINE_HOST_FUNCTION(stringProtoFuncEndsWith, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     if (!checkObjectCoercible(thisValue)) [[unlikely]]
@@ -1325,7 +1325,7 @@ JSC_DEFINE_HOST_FUNCTION(stringProtoFuncEndsWith, (JSGlobalObject* globalObject,
 
 static EncodedJSValue stringIncludesImpl(JSGlobalObject* globalObject, VM& vm, StringView stringToSearchIn, StringView searchString, JSValue positionArg)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto length = stringToSearchIn.length();
     unsigned start;
     if (positionArg.isInt32())
@@ -1341,7 +1341,7 @@ static EncodedJSValue stringIncludesImpl(JSGlobalObject* globalObject, VM& vm, S
 JSC_DEFINE_HOST_FUNCTION(stringProtoFuncIncludes, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     if (!checkObjectCoercible(thisValue)) [[unlikely]]
@@ -1373,7 +1373,7 @@ JSC_DEFINE_HOST_FUNCTION(stringProtoFuncIncludes, (JSGlobalObject* globalObject,
 JSC_DEFINE_HOST_FUNCTION(builtinStringIncludesInternal, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     ASSERT(checkObjectCoercible(thisValue));
@@ -1400,7 +1400,7 @@ JSC_DEFINE_HOST_FUNCTION(builtinStringIncludesInternal, (JSGlobalObject* globalO
 JSC_DEFINE_HOST_FUNCTION(stringProtoFuncIterator, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     if (!checkObjectCoercible(thisValue)) [[unlikely]]
@@ -1438,7 +1438,7 @@ static const UNormalizer2* normalizer(NormalizationForm form)
 static JSValue normalize(JSGlobalObject* globalObject, JSString* string, NormalizationForm form)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto view = string->view(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
@@ -1479,7 +1479,7 @@ static JSValue normalize(JSGlobalObject* globalObject, JSString* string, Normali
 JSC_DEFINE_HOST_FUNCTION(stringProtoFuncNormalize, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     if (!checkObjectCoercible(thisValue)) [[unlikely]]
@@ -1540,7 +1540,7 @@ static inline std::optional<unsigned> illFormedIndex(std::span<const char16_t> c
 JSC_DEFINE_HOST_FUNCTION(stringProtoFuncIsWellFormed, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     if (!checkObjectCoercible(thisValue)) [[unlikely]]
@@ -1564,7 +1564,7 @@ JSC_DEFINE_HOST_FUNCTION(stringProtoFuncIsWellFormed, (JSGlobalObject* globalObj
 JSC_DEFINE_HOST_FUNCTION(stringProtoFuncToWellFormed, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     if (!checkObjectCoercible(thisValue)) [[unlikely]]
@@ -1635,7 +1635,7 @@ JSC_DEFINE_HOST_FUNCTION(stringProtoFuncToWellFormed, (JSGlobalObject* globalObj
 JSC_DEFINE_HOST_FUNCTION(stringProtoFuncAt, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     if (!checkObjectCoercible(thisValue)) [[unlikely]]

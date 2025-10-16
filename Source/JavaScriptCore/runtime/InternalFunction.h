@@ -102,7 +102,7 @@ JS_EXPORT_PRIVATE JSGlobalObject* getFunctionRealm(JSGlobalObject*, JSObject*);
     ((newTarget) == (constructor) \
         ? globalObject->structureMemberFunctionName() \
         : ([&]() -> Structure* { \
-            auto scope = DECLARE_THROW_SCOPE((vm)); \
+            auto scope = DECLARE_EXCEPTION_SCOPE((vm)); \
             auto* functionGlobalObject = getFunctionRealm(globalObject, (newTarget)); \
             RETURN_IF_EXCEPTION(scope, nullptr); \
             RELEASE_AND_RETURN(scope, InternalFunction::createSubclassStructure(globalObject, (newTarget), functionGlobalObject->structureMemberFunctionName())); \

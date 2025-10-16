@@ -51,7 +51,7 @@ public:
     void finishCreation(VM& vm) { Base::finishCreation(vm); }
     void finishCreation(JSGlobalObject* globalObject, VM& vm, HashTable* base)
     {
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         Base::finishCreation(vm);
 
         if (base->m_storage) {
@@ -80,7 +80,7 @@ public:
     ALWAYS_INLINE void add(JSGlobalObject* globalObject, JSValue key, JSValue value = { })
     {
         VM& vm = getVM(globalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         materializeIfNeeded(globalObject);
         RETURN_IF_EXCEPTION(scope, void());
@@ -90,7 +90,7 @@ public:
     ALWAYS_INLINE void addNormalized(JSGlobalObject* globalObject, JSValue key, JSValue value, uint32_t hash)
     {
         VM& vm = getVM(globalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         materializeIfNeeded(globalObject);
         RETURN_IF_EXCEPTION(scope, void());
@@ -127,7 +127,7 @@ public:
     ALWAYS_INLINE void materializeIfNeeded(JSGlobalObject* globalObject)
     {
         VM& vm = getVM(globalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         if (m_storage)
             return;
@@ -172,7 +172,7 @@ public:
     ALWAYS_INLINE JSValue getImpl(JSGlobalObject* globalObject, const FindKeyFunctor& findKeyFunctor)
     {
         VM& vm = getVM(globalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         if (m_storage) {
             Storage& storage = storageRef();
@@ -209,7 +209,7 @@ public:
     ALWAYS_INLINE JSValue getOrInsert(JSGlobalObject* globalObject, JSValue key, const GetValueFunctor& getValueFunctor)
     {
         VM& vm = getVM(globalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         materializeIfNeeded(globalObject);
         RETURN_IF_EXCEPTION(scope, { });

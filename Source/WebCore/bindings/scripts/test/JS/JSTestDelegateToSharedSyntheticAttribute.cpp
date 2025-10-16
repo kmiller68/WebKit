@@ -163,7 +163,7 @@ void JSTestDelegateToSharedSyntheticAttribute::destroy(JSC::JSCell* cell)
 JSC_DEFINE_CUSTOM_GETTER(jsTestDelegateToSharedSyntheticAttributeConstructor, (JSGlobalObject* lexicalGlobalObject, EncodedJSValue thisValue, PropertyName))
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* prototype = jsDynamicCast<JSTestDelegateToSharedSyntheticAttributePrototype*>(JSValue::decode(thisValue));
     if (!prototype) [[unlikely]]
         return throwVMTypeError(lexicalGlobalObject, throwScope);
@@ -173,7 +173,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestDelegateToSharedSyntheticAttributeConstructor, (J
 static inline JSValue jsTestDelegateToSharedSyntheticAttribute_sharedAttribute1Getter(JSGlobalObject& lexicalGlobalObject, JSTestDelegateToSharedSyntheticAttribute& thisObject, PropertyName propertyName)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLLegacyNullToEmptyStringAdaptor<IDLUSVString>>(lexicalGlobalObject, throwScope, impl.sharedAttribute1(propertyNameToAtomString(propertyName)))));
 }
@@ -187,7 +187,7 @@ static inline bool setJSTestDelegateToSharedSyntheticAttribute_sharedAttribute1S
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     CustomElementReactionStack customElementReactionStack(lexicalGlobalObject);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     auto nativeValueConversionResult = convert<IDLLegacyNullToEmptyStringAdaptor<IDLUSVString>>(lexicalGlobalObject, value);
@@ -207,7 +207,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestDelegateToSharedSyntheticAttribute_sharedAttri
 static inline JSValue jsTestDelegateToSharedSyntheticAttribute_sharedAttribute2Getter(JSGlobalObject& lexicalGlobalObject, JSTestDelegateToSharedSyntheticAttribute& thisObject, PropertyName propertyName)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLLegacyNullToEmptyStringAdaptor<IDLUSVString>>(lexicalGlobalObject, throwScope, impl.sharedAttribute2(propertyNameToAtomString(propertyName)))));
 }
@@ -221,7 +221,7 @@ static inline bool setJSTestDelegateToSharedSyntheticAttribute_sharedAttribute2S
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     CustomElementReactionStack customElementReactionStack(lexicalGlobalObject);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     auto nativeValueConversionResult = convert<IDLLegacyNullToEmptyStringAdaptor<IDLUSVString>>(lexicalGlobalObject, value);

@@ -99,7 +99,7 @@ ObjcField::ObjcField(CFStringRef name)
 JSValue ObjcField::valueFromInstance(JSGlobalObject* lexicalGlobalObject, const Instance* instance) const
 {
     VM& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue result = jsUndefined();
     
@@ -134,7 +134,7 @@ static id convertValueToObjcObject(JSGlobalObject* lexicalGlobalObject, JSValue 
 bool ObjcField::setValueToInstance(JSGlobalObject* lexicalGlobalObject, const Instance* instance, JSValue aValue) const
 {
     JSC::VM& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     id targetObject = (static_cast<const ObjcInstance*>(instance))->getObject();
     id value = convertValueToObjcObject(lexicalGlobalObject, aValue);
@@ -166,7 +166,7 @@ ObjcArray::ObjcArray(ObjectStructPtr a, RefPtr<RootObject>&& rootObject)
 bool ObjcArray::setValueAt(JSGlobalObject* lexicalGlobalObject, unsigned int index, JSValue aValue) const
 {
     JSC::VM& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (![_array respondsToSelector:@selector(insertObject:atIndex:)]) {
         throwTypeError(lexicalGlobalObject, scope, "Array is not mutable."_s);
@@ -194,7 +194,7 @@ bool ObjcArray::setValueAt(JSGlobalObject* lexicalGlobalObject, unsigned int ind
 JSValue ObjcArray::valueAt(JSGlobalObject* lexicalGlobalObject, unsigned int index) const
 {
     JSC::VM& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (index > [_array count])
         return throwException(lexicalGlobalObject, scope, createRangeError(lexicalGlobalObject, "Index exceeds array size."_s));
@@ -257,7 +257,7 @@ static JSC_DECLARE_HOST_FUNCTION(callObjCFallbackObject);
 JSC_DEFINE_HOST_FUNCTION(callObjCFallbackObject, (JSGlobalObject* lexicalGlobalObject, CallFrame* callFrame))
 {
     JSC::VM& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     if (!thisValue.inherits<ObjCRuntimeObject>())
@@ -312,7 +312,7 @@ bool ObjcFallbackObjectImp::deleteProperty(JSCell*, JSGlobalObject*, PropertyNam
 JSC_DEFINE_HOST_FUNCTION(convertObjCFallbackObjectToPrimitive, (JSGlobalObject* lexicalGlobalObject, CallFrame* callFrame))
 {
     VM& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* thisObject = jsDynamicCast<ObjcFallbackObjectImp*>(callFrame->thisValue());
     if (!thisObject)

@@ -56,7 +56,7 @@ ProxyConstructor::ProxyConstructor(VM& vm, Structure* structure)
 JSC_DEFINE_HOST_FUNCTION(makeRevocableProxy, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     if (callFrame->argumentCount() < 2)
         return throwVMTypeError(globalObject, scope, "Proxy.revocable needs to be called with two arguments: the target and the handler"_s);
 
@@ -89,7 +89,7 @@ JSC_DEFINE_HOST_FUNCTION(constructProxyObject, (JSGlobalObject* globalObject, Ca
 
 JSC_DEFINE_HOST_FUNCTION(callProxy, (JSGlobalObject* globalObject, CallFrame*))
 {
-    auto scope = DECLARE_THROW_SCOPE(globalObject->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "Proxy"_s));
 }
 

@@ -54,7 +54,7 @@ ALWAYS_INLINE bool speciesWatchpointIsValid(JSObject* thisObject, ArrayBufferSha
 ALWAYS_INLINE std::optional<JSValue> arrayBufferSpeciesConstructor(JSGlobalObject* globalObject, JSArrayBuffer* thisObject, ArrayBufferSharingMode mode)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     bool isValid = speciesWatchpointIsValid(thisObject, mode);
     scope.assertNoException();

@@ -123,7 +123,7 @@ FileSystemWritableFileStreamSink::~FileSystemWritableFileStreamSink()
 
 static ExceptionOr<FileSystemWritableFileStream::ChunkType> convertFileSystemWritableChunk(ScriptExecutionContext& context, JSC::JSValue value)
 {
-    auto scope = DECLARE_THROW_SCOPE(context.vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(context.vm());
     auto chunkResult = convert<IDLUnion<IDLArrayBufferView, IDLArrayBuffer, IDLInterface<Blob>, IDLUSVString, IDLDictionary<FileSystemWritableFileStream::WriteParams>>>(*context.globalObject(), value);
     if (chunkResult.hasException(scope)) [[unlikely]]
         return Exception { ExceptionCode::ExistingExceptionError };

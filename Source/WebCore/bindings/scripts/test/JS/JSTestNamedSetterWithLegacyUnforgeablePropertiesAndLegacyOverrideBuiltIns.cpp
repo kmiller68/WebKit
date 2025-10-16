@@ -178,7 +178,7 @@ void JSTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltIns::
 
 bool JSTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltIns::legacyPlatformObjectGetOwnProperty(JSObject* object, JSGlobalObject* lexicalGlobalObject, PropertyName propertyName, PropertySlot& slot, bool ignoreNamedProperties)
 {
-    auto throwScope = DECLARE_THROW_SCOPE(JSC::getVM(lexicalGlobalObject));
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(JSC::getVM(lexicalGlobalObject));
     auto* thisObject = jsCast<JSTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltIns*>(object);
     ASSERT_GC_OBJECT_INHERITS(thisObject, info());
     if (!ignoreNamedProperties) {
@@ -205,7 +205,7 @@ bool JSTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltIns::
 bool JSTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltIns::getOwnPropertySlotByIndex(JSObject* object, JSGlobalObject* lexicalGlobalObject, unsigned index, PropertySlot& slot)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* thisObject = jsCast<JSTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltIns*>(object);
     ASSERT_GC_OBJECT_INHERITS(thisObject, info());
     auto propertyName = Identifier::from(vm, index);
@@ -239,7 +239,7 @@ bool JSTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltIns::
 
     if (thisObject != putPropertySlot.thisValue()) [[unlikely]]
         return JSObject::put(thisObject, lexicalGlobalObject, propertyName, value, putPropertySlot);
-    auto throwScope = DECLARE_THROW_SCOPE(lexicalGlobalObject->vm());
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject->vm());
 
     if (!propertyName.isSymbol()) {
         auto nativeValue = convert<IDLDOMString>(*lexicalGlobalObject, value);
@@ -268,7 +268,7 @@ bool JSTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltIns::
     ASSERT_GC_OBJECT_INHERITS(thisObject, info());
 
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto propertyName = Identifier::from(vm, index);
     auto nativeValue = convert<IDLDOMString>(*lexicalGlobalObject, value);
@@ -283,7 +283,7 @@ bool JSTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltIns::
     auto* thisObject = jsCast<JSTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltIns*>(object);
     ASSERT_GC_OBJECT_INHERITS(thisObject, info());
 
-    auto throwScope = DECLARE_THROW_SCOPE(lexicalGlobalObject->vm());
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject->vm());
 
     if (!propertyName.isSymbol()) {
 static bool isLegacyUnforgeablePropertyName(PropertyName propertyName)
@@ -351,7 +351,7 @@ bool JSTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltIns::
 JSC_DEFINE_CUSTOM_GETTER(jsTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltInsConstructor, (JSGlobalObject* lexicalGlobalObject, EncodedJSValue thisValue, PropertyName))
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* prototype = jsDynamicCast<JSTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltInsPrototype*>(JSValue::decode(thisValue));
     if (!prototype) [[unlikely]]
         return throwVMTypeError(lexicalGlobalObject, throwScope);
@@ -361,7 +361,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestNamedSetterWithLegacyUnforgeablePropertiesAndLega
 static inline JSValue jsTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltIns_unforgeableAttributeGetter(JSGlobalObject& lexicalGlobalObject, JSTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltIns& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLDOMString>(lexicalGlobalObject, throwScope, impl.unforgeableAttribute())));
 }
@@ -374,7 +374,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestNamedSetterWithLegacyUnforgeablePropertiesAndLega
 static inline JSC::EncodedJSValue jsTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltInsInstanceFunction_unforgeableOperationBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltIns>::ClassParameter castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = castedThis->wrapped();

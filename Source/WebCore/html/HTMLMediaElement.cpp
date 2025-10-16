@@ -1135,7 +1135,7 @@ void HTMLMediaElement::pauseAfterDetachedTask()
         // Call MediaController.deinitialize() to get rid of circular references.
         bool isDeinitialized = DocumentMediaElement::from(document()).setupAndCallMediaControlsJS([this](JSDOMGlobalObject& globalObject, JSC::JSGlobalObject& lexicalGlobalObject, ScriptController&, DOMWrapperWorld&) {
             auto& vm = globalObject.vm();
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
             if (!m_mediaControlsHost)
                 return false;
 
@@ -8703,7 +8703,7 @@ void HTMLMediaElement::setControllerJSProperty(ASCIILiteral propertyName, JSC::J
 {
     DocumentMediaElement::from(document()).setupAndCallMediaControlsJS([this, propertyName, propertyValue](JSDOMGlobalObject& globalObject, JSC::JSGlobalObject& lexicalGlobalObject, ScriptController&, DOMWrapperWorld&) {
         auto& vm = globalObject.vm();
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         if (!m_mediaControlsHost)
             return false;
 
@@ -8742,7 +8742,7 @@ bool HTMLMediaElement::ensureMediaControls()
     if (oldControlsState == ControlsState::None) {
         controlsReady = DocumentMediaElement::from(document()).setupAndCallMediaControlsJS([this, mediaControlsScripts = WTFMove(mediaControlsScripts)](JSDOMGlobalObject& globalObject, JSC::JSGlobalObject& lexicalGlobalObject, ScriptController&, DOMWrapperWorld&) {
             auto& vm = globalObject.vm();
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
             // The media controls script must provide a method with the following details.
             // Name: createControls
@@ -8792,7 +8792,7 @@ bool HTMLMediaElement::ensureMediaControls()
     } else if (oldControlsState == ControlsState::PartiallyDeinitialized) {
         controlsReady = DocumentMediaElement::from(document()).setupAndCallMediaControlsJS([this](JSDOMGlobalObject& globalObject, JSC::JSGlobalObject& lexicalGlobalObject, ScriptController&, DOMWrapperWorld&) {
             auto& vm = globalObject.vm();
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
             if (!m_mediaControlsHost)
                 return false;
@@ -9747,7 +9747,7 @@ void HTMLMediaElement::setShowingStats(bool shouldShowStats)
 
     m_showingStats = DocumentMediaElement::from(document()).setupAndCallMediaControlsJS([this, shouldShowStats](JSDOMGlobalObject& globalObject, JSC::JSGlobalObject& lexicalGlobalObject, ScriptController&, DOMWrapperWorld&) {
         auto& vm = globalObject.vm();
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         if (!m_mediaControlsHost)
             return false;

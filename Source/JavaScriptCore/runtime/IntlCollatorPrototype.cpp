@@ -79,7 +79,7 @@ void IntlCollatorPrototype::finishCreation(VM& vm)
 JSC_DEFINE_HOST_FUNCTION(intlCollatorFuncCompare, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     // 10.3.4 Collator Compare Functions (ECMA-402 2.0)
     // 1. Let collator be the this value.
     // 2. Assert: Type(collator) is Object and collator has an [[initializedCollator]] internal slot whose value is true.
@@ -110,7 +110,7 @@ JSC_DEFINE_HOST_FUNCTION(intlCollatorFuncCompare, (JSGlobalObject* globalObject,
 JSC_DEFINE_CUSTOM_GETTER(intlCollatorPrototypeGetterCompare, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 10.3.3 Intl.Collator.prototype.compare (ECMA-402 2.0)
     // 1. Let collator be this Collator object.
@@ -142,7 +142,7 @@ JSC_DEFINE_CUSTOM_GETTER(intlCollatorPrototypeGetterCompare, (JSGlobalObject* gl
 JSC_DEFINE_HOST_FUNCTION(intlCollatorPrototypeFuncResolvedOptions, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 10.3.5 Intl.Collator.prototype.resolvedOptions() (ECMA-402 2.0)
     IntlCollator* collator = jsDynamicCast<IntlCollator*>(callFrame->thisValue());

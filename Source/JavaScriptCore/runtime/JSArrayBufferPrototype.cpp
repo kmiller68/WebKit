@@ -53,7 +53,7 @@ static JSC_DECLARE_HOST_FUNCTION(sharedArrayBufferProtoGetterFuncMaxByteLength);
 std::optional<JSValue> arrayBufferSpeciesConstructorSlow(JSGlobalObject* globalObject, JSArrayBuffer* thisObject, ArrayBufferSharingMode mode)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     bool isValid = speciesWatchpointIsValid(thisObject, mode);
     scope.assertNoException();
@@ -90,7 +90,7 @@ static ALWAYS_INLINE std::pair<SpeciesConstructResult, JSArrayBuffer*> speciesCo
     // https://tc39.es/ecma262/#sec-arraybuffer.prototype.slice
     // https://tc39.es/ecma262/#sec-sharedarraybuffer.prototype.slice
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     constexpr std::pair<SpeciesConstructResult, JSArrayBuffer*> errorResult { SpeciesConstructResult::Exception, nullptr };
     constexpr std::pair<SpeciesConstructResult, JSArrayBuffer*> fastPathResult { SpeciesConstructResult::FastPath, nullptr };
 
@@ -156,7 +156,7 @@ static EncodedJSValue arrayBufferSlice(JSGlobalObject* globalObject, JSValue arr
     // https://tc39.es/ecma262/#sec-sharedarraybuffer.prototype.slice
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 2. Perform ? RequireInternalSlot(O, [[ArrayBufferData]]).
     // 3. If IsSharedArrayBuffer(O) is true, throw a TypeError exception.
@@ -250,7 +250,7 @@ static EncodedJSValue arrayBufferSlice(JSGlobalObject* globalObject, JSValue arr
 static EncodedJSValue arrayBufferByteLength(JSGlobalObject* globalObject, JSValue arrayBufferValue, ArrayBufferSharingMode mode)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* thisObject = jsDynamicCast<JSArrayBuffer*>(arrayBufferValue);
     if (!thisObject || (mode != thisObject->impl()->sharingMode()))
@@ -272,7 +272,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayBufferProtoFuncResize, (JSGlobalObject* globalObje
     // https://tc39.es/proposal-resizablearraybuffer/#sec-arraybuffer.prototype.resize
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue arrayBufferValue = callFrame->thisValue();
 
@@ -306,7 +306,7 @@ enum class CopyAndDetachMode {
 static JSArrayBuffer* arrayBufferCopyAndDetach(JSGlobalObject* globalObject, JSArrayBuffer* arrayBuffer, size_t newByteLength, CopyAndDetachMode mode)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(arrayBuffer->impl()->sharingMode() == ArrayBufferSharingMode::Default);
     bool isResizable = arrayBuffer->isResizableOrGrowableShared();
@@ -367,7 +367,7 @@ static JSArrayBuffer* arrayBufferCopyAndDetach(JSGlobalObject* globalObject, JSA
 static JSArrayBuffer* arrayBufferProtoFuncTransferImpl(JSGlobalObject* globalObject, JSValue arrayBufferValue, JSValue newLengthValue, CopyAndDetachMode mode)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSArrayBuffer* thisObject = jsDynamicCast<JSArrayBuffer*>(arrayBufferValue);
     if (!thisObject || (ArrayBufferSharingMode::Shared == thisObject->impl()->sharingMode())) {
@@ -415,7 +415,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayBufferProtoGetterFuncByteLength, (JSGlobalObject* 
 JSC_DEFINE_HOST_FUNCTION(arrayBufferProtoGetterFuncResizable, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* thisObject = jsDynamicCast<JSArrayBuffer*>(callFrame->thisValue());
     if (!thisObject || (ArrayBufferSharingMode::Shared == thisObject->impl()->sharingMode()))
@@ -428,7 +428,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayBufferProtoGetterFuncResizable, (JSGlobalObject* g
 JSC_DEFINE_HOST_FUNCTION(arrayBufferProtoGetterFuncMaxByteLength, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* thisObject = jsDynamicCast<JSArrayBuffer*>(callFrame->thisValue());
     if (!thisObject || (ArrayBufferSharingMode::Shared == thisObject->impl()->sharingMode()))
@@ -445,7 +445,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayBufferProtoGetterFuncMaxByteLength, (JSGlobalObjec
 JSC_DEFINE_HOST_FUNCTION(arrayBufferProtoGetterFuncDetached, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* thisObject = jsDynamicCast<JSArrayBuffer*>(callFrame->thisValue());
     if (!thisObject || (ArrayBufferSharingMode::Shared == thisObject->impl()->sharingMode()))
@@ -464,7 +464,7 @@ JSC_DEFINE_HOST_FUNCTION(sharedArrayBufferProtoFuncGrow, (JSGlobalObject* global
     // https://tc39.es/proposal-resizablearraybuffer/#sec-sharedarraybuffer.prototype.grow
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue arrayBufferValue = callFrame->thisValue();
 
@@ -497,7 +497,7 @@ JSC_DEFINE_HOST_FUNCTION(sharedArrayBufferProtoGetterFuncByteLength, (JSGlobalOb
 JSC_DEFINE_HOST_FUNCTION(sharedArrayBufferProtoGetterFuncGrowable, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* thisObject = jsDynamicCast<JSArrayBuffer*>(callFrame->thisValue());
     if (!thisObject || (ArrayBufferSharingMode::Shared != thisObject->impl()->sharingMode()))
@@ -510,7 +510,7 @@ JSC_DEFINE_HOST_FUNCTION(sharedArrayBufferProtoGetterFuncGrowable, (JSGlobalObje
 JSC_DEFINE_HOST_FUNCTION(sharedArrayBufferProtoGetterFuncMaxByteLength, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* thisObject = jsDynamicCast<JSArrayBuffer*>(callFrame->thisValue());
     if (!thisObject || (ArrayBufferSharingMode::Shared != thisObject->impl()->sharingMode()))

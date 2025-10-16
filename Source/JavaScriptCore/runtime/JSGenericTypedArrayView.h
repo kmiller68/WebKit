@@ -25,8 +25,8 @@
 
 #pragma once
 
+#include <JavaScriptCore/ExceptionScope.h>
 #include <JavaScriptCore/JSArrayBufferView.h>
-#include <JavaScriptCore/ThrowScope.h>
 #include <JavaScriptCore/ToNativeFromValue.h>
 #include <wtf/CheckedArithmetic.h>
 

@@ -59,7 +59,7 @@ DEFINE_VISIT_ADDITIONAL_CHILDREN(JSWorkerGlobalScope);
 JSValue JSWorkerGlobalScope::queueMicrotask(JSGlobalObject& lexicalGlobalObject, CallFrame& callFrame)
 {
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (callFrame.argumentCount() < 1) [[unlikely]]
         return throwException(&lexicalGlobalObject, scope, createNotEnoughArgumentsError(&lexicalGlobalObject));

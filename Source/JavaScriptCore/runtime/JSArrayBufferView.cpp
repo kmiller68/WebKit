@@ -240,7 +240,7 @@ void JSArrayBufferView::finalize(JSCell* cell)
 JSArrayBuffer* JSArrayBufferView::unsharedJSBuffer(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     if (ArrayBuffer* buffer = unsharedBuffer())
         return vm.m_typedArrayController->toJS(globalObject, this->globalObject(), buffer);
     scope.throwException(globalObject, createOutOfMemoryError(globalObject));
@@ -250,7 +250,7 @@ JSArrayBuffer* JSArrayBufferView::unsharedJSBuffer(JSGlobalObject* globalObject)
 JSArrayBuffer* JSArrayBufferView::possiblySharedJSBuffer(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     if (ArrayBuffer* buffer = possiblySharedBuffer())
         return vm.m_typedArrayController->toJS(globalObject, this->globalObject(), buffer);
     scope.throwException(globalObject, createOutOfMemoryError(globalObject));

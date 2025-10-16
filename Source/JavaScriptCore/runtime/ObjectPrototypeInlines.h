@@ -38,7 +38,7 @@ bool isPokerBros();
 inline std::tuple<ASCIILiteral, JSString*> inferBuiltinTag(JSGlobalObject* globalObject, JSObject* object)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
 #if PLATFORM(IOS) || PLATFORM(VISION)
     static bool needsOldBuiltinTag = isPokerBros();
@@ -87,7 +87,7 @@ inline std::tuple<ASCIILiteral, JSString*> inferBuiltinTag(JSGlobalObject* globa
 ALWAYS_INLINE JSString* objectPrototypeToStringSlow(JSGlobalObject* globalObject, JSObject* thisObject)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto [ tag, jsCommonTag ] = inferBuiltinTag(globalObject, thisObject);
     RETURN_IF_EXCEPTION(scope, nullptr);
@@ -123,7 +123,7 @@ ALWAYS_INLINE JSString* objectPrototypeToStringSlow(JSGlobalObject* globalObject
 ALWAYS_INLINE JSString* objectPrototypeToString(JSGlobalObject* globalObject, JSValue thisValue)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (thisValue.isUndefined())
         return vm.smallStrings.objectUndefinedString();

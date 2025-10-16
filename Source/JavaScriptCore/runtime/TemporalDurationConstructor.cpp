@@ -83,7 +83,7 @@ void TemporalDurationConstructor::finishCreation(VM& vm, TemporalDurationPrototy
 JSC_DEFINE_HOST_FUNCTION(constructTemporalDuration, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* newTarget = asObject(callFrame->newTarget());
     Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, durationStructure, newTarget, callFrame->jsCallee());
@@ -109,7 +109,7 @@ JSC_DEFINE_HOST_FUNCTION(constructTemporalDuration, (JSGlobalObject* globalObjec
 JSC_DEFINE_HOST_FUNCTION(callTemporalDuration, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "Duration"_s));
 }

@@ -42,7 +42,7 @@ DEFINE_VISIT_AGGREGATE(RegExpGlobalData);
 JSValue RegExpGlobalData::getBackref(JSGlobalObject* globalObject, unsigned i)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSArray* array = m_cachedResult.lastResult(globalObject, globalObject);
     RETURN_IF_EXCEPTION(scope, { });
@@ -60,7 +60,7 @@ JSValue RegExpGlobalData::getBackref(JSGlobalObject* globalObject, unsigned i)
 JSValue RegExpGlobalData::getLastParen(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSArray* array = m_cachedResult.lastResult(globalObject, globalObject);
     RETURN_IF_EXCEPTION(scope, { });

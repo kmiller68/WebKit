@@ -370,12 +370,9 @@ private:
         m_state->setReadAgainForBranch1(false);
         m_state->setReadAgainForBranch2(false);
 
-        auto scope = DECLARE_CATCH_SCOPE(globalObject->vm());
+        auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
         auto chunkResult = convert<IDLArrayBufferView>(*globalObject, value);
-        if (chunkResult.hasException(scope)) [[unlikely]] {
-            scope.clearException();
-            return;
-        }
+        TRY_CLEAR_EXCEPTION(scope, void());
 
         Ref chunk1 = chunkResult.releaseReturnValue();
         Ref chunk2 = chunk1;
@@ -479,12 +476,9 @@ private:
         RefPtr branch1 = m_state->branch1();
         RefPtr branch2 = m_state->branch2();
 
-        auto scope = DECLARE_CATCH_SCOPE(globalObject->vm());
+        auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
         auto chunkResult = convert<IDLArrayBufferView>(*globalObject, value);
-        if (chunkResult.hasException(scope)) [[unlikely]] {
-            scope.clearException();
-            return;
-        }
+        TRY_CLEAR_EXCEPTION(scope, void());
 
         Ref chunk = chunkResult.releaseReturnValue();
 
@@ -540,12 +534,9 @@ private:
             branch2->controller()->close(*globalObject);
 
         if (!value.isUndefined()) {
-            auto scope = DECLARE_CATCH_SCOPE(globalObject->vm());
+            auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
             auto chunkResult = convert<IDLArrayBufferView>(*globalObject, value);
-            if (chunkResult.hasException(scope)) [[unlikely]] {
-                scope.clearException();
-                return;
-            }
+            TRY_CLEAR_EXCEPTION(scope, void());
 
             Ref chunk = chunkResult.releaseReturnValue();
             ASSERT(!chunk->byteLength());

@@ -231,7 +231,7 @@ ExceptionOr<void> RTCRtpSFrameTransform::createStreams()
         if (!context.globalObject())
             return Exception { ExceptionCode::InvalidStateError };
         auto& globalObject = *JSC::jsCast<JSDOMGlobalObject*>(context.globalObject());
-        auto scope = DECLARE_THROW_SCOPE(globalObject.vm());
+        auto scope = DECLARE_EXCEPTION_SCOPE(globalObject.vm());
 
         auto frameConversionResult = convert<IDLUnion<IDLArrayBuffer, IDLArrayBufferView, IDLInterface<RTCEncodedAudioFrame>, IDLInterface<RTCEncodedVideoFrame>>>(globalObject, value);
         if (frameConversionResult.hasException(scope)) [[unlikely]]

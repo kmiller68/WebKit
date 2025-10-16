@@ -60,7 +60,7 @@ JSValue JSKeyframeEffect::getKeyframes(JSGlobalObject& lexicalGlobalObject, Call
         return { lexicalGlobalObject.vm(), keyframeObject };
     });
 
-    auto throwScope = DECLARE_THROW_SCOPE(lexicalGlobalObject.vm());
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject.vm());
     return toJS<IDLSequence<IDLObject>>(lexicalGlobalObject, domGlobalObject, throwScope, keyframeObjects);
 }
 

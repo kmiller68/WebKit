@@ -38,7 +38,7 @@ template<> struct Converter<IDLScheduledAction> : DefaultConverter<IDLScheduledA
     static Result convert(JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value, JSDOMGlobalObject& globalObject, const String& sink)
     {
         JSC::VM& vm = JSC::getVM(&lexicalGlobalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         if (!value.isCallable()) {
             auto code = Converter<IDLStringContextTrustedScriptAdaptor<IDLDOMString>>::convert(lexicalGlobalObject, value, sink);

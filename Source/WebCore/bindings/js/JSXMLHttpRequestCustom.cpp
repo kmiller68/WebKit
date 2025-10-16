@@ -70,7 +70,7 @@ JSValue JSXMLHttpRequest::response(JSGlobalObject& lexicalGlobalObject) const
     switch (type) {
     case XMLHttpRequest::ResponseType::EmptyString:
     case XMLHttpRequest::ResponseType::Text: {
-        auto scope = DECLARE_THROW_SCOPE(lexicalGlobalObject.vm());
+        auto scope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject.vm());
         return cacheResult(toJS<IDLNullable<IDLUSVString>>(lexicalGlobalObject, scope, wrapped().responseText()));
     }
     default:

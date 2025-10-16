@@ -125,7 +125,7 @@ ALWAYS_INLINE int RegExp::matchInline(JSGlobalObject* nullOrGlobalObject, VM& vm
         if (matchFrom == Yarr::MatchFrom::CompilerThread)
             return -1;
         if (nullOrGlobalObject) {
-            auto throwScope = DECLARE_THROW_SCOPE(vm);
+            auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
             throwScope.throwException(nullOrGlobalObject, errorToThrow(nullOrGlobalObject));
         }
         if (!hasHardError(m_constructionErrorCode))
@@ -250,7 +250,7 @@ ALWAYS_INLINE MatchResult RegExp::matchInline(JSGlobalObject* nullOrGlobalObject
         if (matchFrom == Yarr::MatchFrom::CompilerThread)
             return MatchResult::failed();
         if (nullOrGlobalObject) {
-            auto throwScope = DECLARE_THROW_SCOPE(vm);
+            auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
             throwScope.throwException(nullOrGlobalObject, errorToThrow(nullOrGlobalObject));
         }
         if (!hasHardError(m_constructionErrorCode))

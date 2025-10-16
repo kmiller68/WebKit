@@ -182,7 +182,7 @@ struct BufferSourceConverter {
     static Result convert(JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value, ExceptionThrower&& exceptionThrower = ExceptionThrower())
     {
         auto& vm = JSC::getVM(&lexicalGlobalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         if constexpr (mode == BufferSourceConverterAllowSharedMode::Allow) {
             RefPtr object = WrapperType::toWrappedAllowShared(vm, value);
             if (!object) [[unlikely]] {

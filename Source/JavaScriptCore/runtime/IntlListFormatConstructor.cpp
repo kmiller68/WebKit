@@ -81,7 +81,7 @@ void IntlListFormatConstructor::finishCreation(VM& vm, IntlListFormatPrototype* 
 JSC_DEFINE_HOST_FUNCTION(constructIntlListFormat, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* newTarget = asObject(callFrame->newTarget());
     Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, listFormatStructure, newTarget, callFrame->jsCallee());
@@ -99,7 +99,7 @@ JSC_DEFINE_HOST_FUNCTION(constructIntlListFormat, (JSGlobalObject* globalObject,
 JSC_DEFINE_HOST_FUNCTION(callIntlListFormat, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "ListFormat"_s));
 }
@@ -107,7 +107,7 @@ JSC_DEFINE_HOST_FUNCTION(callIntlListFormat, (JSGlobalObject* globalObject, Call
 JSC_DEFINE_HOST_FUNCTION(intlListFormatConstructorSupportedLocalesOf, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     // Intl.ListFormat.supportedLocalesOf(locales [, options])
     // https://tc39.es/proposal-intl-list-format/#sec-Intl.ListFormat.supportedLocalesOf
 

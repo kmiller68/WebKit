@@ -314,7 +314,7 @@ ExceptionOr<bool> canCompile(ScriptExecutionContext& scriptExecutionContext, JSC
 {
     if (compilationType == CompilationType::Function) {
         VM& vm = scriptExecutionContext.vm();
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         bool isTrusted = true;
 

@@ -208,7 +208,7 @@ void JSTestCallTracer::destroy(JSC::JSCell* cell)
 JSC_DEFINE_CUSTOM_GETTER(jsTestCallTracerConstructor, (JSGlobalObject* lexicalGlobalObject, EncodedJSValue thisValue, PropertyName))
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* prototype = jsDynamicCast<JSTestCallTracerPrototype*>(JSValue::decode(thisValue));
     if (!prototype) [[unlikely]]
         return throwVMTypeError(lexicalGlobalObject, throwScope);
@@ -218,7 +218,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestCallTracerConstructor, (JSGlobalObject* lexicalGl
 static inline JSValue jsTestCallTracer_testAttributeInterfaceGetter(JSGlobalObject& lexicalGlobalObject, JSTestCallTracer& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     if (impl.hasActiveTestInterfaceCallTracer()) [[unlikely]]
         TestInterfaceCallTracer::recordAction(impl, "testAttributeInterface"_s);
@@ -234,7 +234,7 @@ static inline bool setJSTestCallTracer_testAttributeInterfaceSetter(JSGlobalObje
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     auto nativeValueConversionResult = convert<IDLBoolean>(lexicalGlobalObject, value);
     if (nativeValueConversionResult.hasException(throwScope)) [[unlikely]]
@@ -255,7 +255,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestCallTracer_testAttributeInterface, (JSGlobalOb
 static inline JSValue jsTestCallTracer_testAttributeSpecifiedGetter(JSGlobalObject& lexicalGlobalObject, JSTestCallTracer& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     if (impl.hasActiveTestAttributeCallTracer()) [[unlikely]]
         TestAttributeCallTracer::recordAction(impl, "testAttributeSpecified"_s);
@@ -271,7 +271,7 @@ static inline bool setJSTestCallTracer_testAttributeSpecifiedSetter(JSGlobalObje
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     auto nativeValueConversionResult = convert<IDLBoolean>(lexicalGlobalObject, value);
     if (nativeValueConversionResult.hasException(throwScope)) [[unlikely]]
@@ -292,7 +292,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestCallTracer_testAttributeSpecified, (JSGlobalOb
 static inline JSValue jsTestCallTracer_testAttributeWithVariantGetter(JSGlobalObject& lexicalGlobalObject, JSTestCallTracer& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     if (impl.hasActiveTestInterfaceCallTracer()) [[unlikely]]
         TestInterfaceCallTracer::recordAction(impl, "testAttributeWithVariant"_s);
@@ -308,7 +308,7 @@ static inline bool setJSTestCallTracer_testAttributeWithVariantSetter(JSGlobalOb
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     auto nativeValueConversionResult = convert<IDLUnion<IDLBoolean, IDLFloat, IDLDOMString>>(lexicalGlobalObject, value);
     if (nativeValueConversionResult.hasException(throwScope)) [[unlikely]]
@@ -329,7 +329,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestCallTracer_testAttributeWithVariant, (JSGlobal
 static inline JSValue jsTestCallTracer_testReadonlyAttributeGetter(JSGlobalObject& lexicalGlobalObject, JSTestCallTracer& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLBoolean>(lexicalGlobalObject, throwScope, impl.testReadonlyAttribute())));
 }
@@ -342,7 +342,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestCallTracer_testReadonlyAttribute, (JSGlobalObject
 static inline JSC::EncodedJSValue jsTestCallTracerPrototypeFunction_testOperationInterfaceBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestCallTracer>::ClassParameter castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = castedThis->wrapped();
@@ -359,7 +359,7 @@ JSC_DEFINE_HOST_FUNCTION(jsTestCallTracerPrototypeFunction_testOperationInterfac
 static inline JSC::EncodedJSValue jsTestCallTracerPrototypeFunction_testOperationSpecifiedBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestCallTracer>::ClassParameter castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = castedThis->wrapped();
@@ -376,7 +376,7 @@ JSC_DEFINE_HOST_FUNCTION(jsTestCallTracerPrototypeFunction_testOperationSpecifie
 static inline JSC::EncodedJSValue jsTestCallTracerPrototypeFunction_testOperationWithArgumentsBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestCallTracer>::ClassParameter castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = castedThis->wrapped();
@@ -407,14 +407,14 @@ JSC_DEFINE_HOST_FUNCTION(jsTestCallTracerPrototypeFunction_testOperationWithArgu
 static inline JSC::EncodedJSValue jsTestCallTracerPrototypeFunction_testOperationWithNullableArgumentBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestCallTracer>::ClassParameter castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = castedThis->wrapped();
     if (callFrame->argumentCount() < 1) [[unlikely]]
         return throwVMError(lexicalGlobalObject, throwScope, createNotEnoughArgumentsError(lexicalGlobalObject));
     EnsureStillAliveScope argument0 = callFrame->uncheckedArgument(0);
-    auto nodeNullableArgConversionResult = convert<IDLNullable<IDLInterface<Node>>>(*lexicalGlobalObject, argument0.value(), [](JSC::JSGlobalObject& lexicalGlobalObject, JSC::ThrowScope& scope) { throwArgumentTypeError(lexicalGlobalObject, scope, 0, "nodeNullableArg"_s, "TestCallTracer"_s, "testOperationWithNullableArgument"_s, "Node"_s); });
+    auto nodeNullableArgConversionResult = convert<IDLNullable<IDLInterface<Node>>>(*lexicalGlobalObject, argument0.value(), [](JSC::JSGlobalObject& lexicalGlobalObject, JSC::ExceptionScope& scope) { throwArgumentTypeError(lexicalGlobalObject, scope, 0, "nodeNullableArg"_s, "TestCallTracer"_s, "testOperationWithNullableArgument"_s, "Node"_s); });
     if (nodeNullableArgConversionResult.hasException(throwScope)) [[unlikely]]
        return encodedJSValue();
     if (impl.hasActiveTestInterfaceCallTracer()) [[unlikely]]
@@ -430,7 +430,7 @@ JSC_DEFINE_HOST_FUNCTION(jsTestCallTracerPrototypeFunction_testOperationWithNull
 static inline JSC::EncodedJSValue jsTestCallTracerPrototypeFunction_testOperationWithVariantArgumentBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestCallTracer>::ClassParameter castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = castedThis->wrapped();
@@ -453,7 +453,7 @@ JSC_DEFINE_HOST_FUNCTION(jsTestCallTracerPrototypeFunction_testOperationWithVari
 static inline JSC::EncodedJSValue jsTestCallTracerPrototypeFunction_testOperationWithNullableVariantArgumentBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestCallTracer>::ClassParameter castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = castedThis->wrapped();
@@ -476,7 +476,7 @@ JSC_DEFINE_HOST_FUNCTION(jsTestCallTracerPrototypeFunction_testOperationWithNull
 static inline JSC::EncodedJSValue jsTestCallTracerPrototypeFunction_testOperationWithOptionalVariantArgumentBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestCallTracer>::ClassParameter castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = castedThis->wrapped();
@@ -497,7 +497,7 @@ JSC_DEFINE_HOST_FUNCTION(jsTestCallTracerPrototypeFunction_testOperationWithOpti
 static inline JSC::EncodedJSValue jsTestCallTracerPrototypeFunction_testOperationWithDefaultVariantArgumentBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestCallTracer>::ClassParameter castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = castedThis->wrapped();

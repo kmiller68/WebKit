@@ -90,7 +90,7 @@ inline Symbol* tryExtractSymbol(JSValue thisValue)
 JSC_DEFINE_CUSTOM_GETTER(symbolProtoGetterDescription, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Symbol* symbol = tryExtractSymbol(JSValue::decode(thisValue));
     if (!symbol)
@@ -104,7 +104,7 @@ JSC_DEFINE_CUSTOM_GETTER(symbolProtoGetterDescription, (JSGlobalObject* globalOb
 JSC_DEFINE_HOST_FUNCTION(symbolProtoFuncToString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Symbol* symbol = tryExtractSymbol(callFrame->thisValue());
     if (!symbol)
@@ -122,7 +122,7 @@ JSC_DEFINE_HOST_FUNCTION(symbolProtoFuncToString, (JSGlobalObject* globalObject,
 JSC_DEFINE_HOST_FUNCTION(symbolProtoFuncValueOf, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Symbol* symbol = tryExtractSymbol(callFrame->thisValue());
     if (!symbol)

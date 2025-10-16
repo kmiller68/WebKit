@@ -260,7 +260,7 @@ void JSTestConditional::destroy(JSC::JSCell* cell)
 JSC_DEFINE_CUSTOM_GETTER(jsTestConditionalConstructor, (JSGlobalObject* lexicalGlobalObject, EncodedJSValue thisValue, PropertyName))
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* prototype = jsDynamicCast<JSTestConditionalPrototype*>(JSValue::decode(thisValue));
     if (!prototype) [[unlikely]]
         return throwVMTypeError(lexicalGlobalObject, throwScope);
@@ -271,7 +271,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestConditionalConstructor, (JSGlobalObject* lexicalG
 static inline JSValue jsTestConditional_fooEnabledGetter(JSGlobalObject& lexicalGlobalObject, JSTestConditional& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLLong>(lexicalGlobalObject, throwScope, impl.fooEnabled())));
 }
@@ -287,7 +287,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestConditional_fooEnabled, (JSGlobalObject* lexicalG
 static inline JSValue jsTestConditional_fooDisabledGetter(JSGlobalObject& lexicalGlobalObject, JSTestConditional& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLLong>(lexicalGlobalObject, throwScope, impl.fooDisabled())));
 }
@@ -303,7 +303,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestConditional_fooDisabled, (JSGlobalObject* lexical
 static inline JSValue jsTestConditional_barOrBazEnabledGetter(JSGlobalObject& lexicalGlobalObject, JSTestConditional& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLLong>(lexicalGlobalObject, throwScope, impl.barOrBazEnabled())));
 }
@@ -319,7 +319,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestConditional_barOrBazEnabled, (JSGlobalObject* lex
 static inline JSValue jsTestConditional_fooEnabledOrBarDisabledGetter(JSGlobalObject& lexicalGlobalObject, JSTestConditional& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLLong>(lexicalGlobalObject, throwScope, impl.fooEnabledOrBarDisabled())));
 }
@@ -335,7 +335,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestConditional_fooEnabledOrBarDisabled, (JSGlobalObj
 static inline JSValue jsTestConditional_fooOrBarBothDisabledGetter(JSGlobalObject& lexicalGlobalObject, JSTestConditional& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLLong>(lexicalGlobalObject, throwScope, impl.fooOrBarBothDisabled())));
 }
@@ -351,7 +351,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestConditional_fooOrBarBothDisabled, (JSGlobalObject
 static inline JSValue jsTestConditional_fooAndBarEnabledGetter(JSGlobalObject& lexicalGlobalObject, JSTestConditional& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLLong>(lexicalGlobalObject, throwScope, impl.fooAndBarEnabled())));
 }
@@ -367,7 +367,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestConditional_fooAndBarEnabled, (JSGlobalObject* le
 static inline JSValue jsTestConditional_fooAndBarDisabledGetter(JSGlobalObject& lexicalGlobalObject, JSTestConditional& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLLong>(lexicalGlobalObject, throwScope, impl.fooAndBarDisabled())));
 }
@@ -383,7 +383,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestConditional_fooAndBarDisabled, (JSGlobalObject* l
 static inline JSValue jsTestConditional_fooAndBarBothDisabledGetter(JSGlobalObject& lexicalGlobalObject, JSTestConditional& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLLong>(lexicalGlobalObject, throwScope, impl.fooAndBarBothDisabled())));
 }
@@ -399,7 +399,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestConditional_fooAndBarBothDisabled, (JSGlobalObjec
 static inline JSValue jsTestConditional_fooOrBarAndBazGetter(JSGlobalObject& lexicalGlobalObject, JSTestConditional& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLLong>(lexicalGlobalObject, throwScope, impl.fooOrBarAndBaz())));
 }
@@ -415,7 +415,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestConditional_fooOrBarAndBaz, (JSGlobalObject* lexi
 static inline JSValue jsTestConditional_fooAndBarOrBazGetter(JSGlobalObject& lexicalGlobalObject, JSTestConditional& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLLong>(lexicalGlobalObject, throwScope, impl.fooAndBarOrBaz())));
 }
@@ -431,7 +431,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestConditional_fooAndBarOrBaz, (JSGlobalObject* lexi
 static inline JSValue jsTestConditional_fooOrBarAndBazDisabledGetter(JSGlobalObject& lexicalGlobalObject, JSTestConditional& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLLong>(lexicalGlobalObject, throwScope, impl.fooOrBarAndBazDisabled())));
 }
@@ -447,7 +447,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestConditional_fooOrBarAndBazDisabled, (JSGlobalObje
 static inline JSValue jsTestConditional_fooAndBarDisabledOrBazGetter(JSGlobalObject& lexicalGlobalObject, JSTestConditional& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLLong>(lexicalGlobalObject, throwScope, impl.fooAndBarDisabledOrBaz())));
 }
@@ -463,7 +463,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestConditional_fooAndBarDisabledOrBaz, (JSGlobalObje
 static inline JSValue jsTestConditional_fooDisabledOrBarAndBazGetter(JSGlobalObject& lexicalGlobalObject, JSTestConditional& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLLong>(lexicalGlobalObject, throwScope, impl.fooDisabledOrBarAndBaz())));
 }

@@ -38,7 +38,7 @@ using namespace JSC;
 JSValue JSRTCRtpSFrameTransform::setEncryptionKey(JSGlobalObject& lexicalGlobalObject, CallFrame& callFrame, Ref<DeferredPromise>&& promise)
 {
     auto& vm = getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (callFrame.argumentCount() < 1) [[unlikely]] {
         throwVMError(&lexicalGlobalObject, throwScope, createNotEnoughArgumentsError(&lexicalGlobalObject));

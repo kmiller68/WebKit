@@ -91,7 +91,7 @@ JSC_DEFINE_HOST_FUNCTION(callReturnUndefined, (JSGlobalObject* globalObject, Cal
 JSC_DEFINE_HOST_FUNCTION(callThrowError, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     // This function is only called from IC. And we do not want to include this frame in Error's stack.
     constexpr bool useCurrentFrame = false;
     throwException(globalObject, scope, ErrorInstance::create(vm, globalObject->errorStructure(ErrorType::TypeError), ReadonlyPropertyWriteError, JSValue(), nullptr, TypeNothing, ErrorType::TypeError, useCurrentFrame));

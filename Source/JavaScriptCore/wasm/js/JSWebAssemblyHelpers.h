@@ -47,7 +47,7 @@ namespace JSC {
 ALWAYS_INLINE uint32_t toNonWrappingUint32(JSGlobalObject* globalObject, JSValue value, ErrorType errorType = ErrorType::TypeError)
 {
     VM& vm = getVM(globalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (value.isUInt32())
         return value.asUInt32();
@@ -72,7 +72,7 @@ ALWAYS_INLINE uint32_t toNonWrappingUint32(JSGlobalObject* globalObject, JSValue
 ALWAYS_INLINE std::span<const uint8_t> getWasmBufferFromValue(JSGlobalObject* globalObject, JSValue value, const SourceProviderBufferGuard&)
 {
     VM& vm = getVM(globalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (auto* source = jsDynamicCast<JSSourceCode*>(value)) {
         auto* provider = static_cast<BaseWebAssemblySourceProvider*>(source->sourceCode().provider());
@@ -111,7 +111,7 @@ ALWAYS_INLINE std::span<const uint8_t> getWasmBufferFromValue(JSGlobalObject* gl
 
 ALWAYS_INLINE Vector<uint8_t> createSourceBufferFromValue(VM& vm, JSGlobalObject* globalObject, JSValue value)
 {
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     BaseWebAssemblySourceProvider* provider = nullptr;
     if (auto* source = jsDynamicCast<JSSourceCode*>(value))
@@ -196,7 +196,7 @@ ALWAYS_INLINE JSValue toJSValue(JSGlobalObject* globalObject, const Wasm::Type t
 ALWAYS_INLINE uint64_t toWebAssemblyValue(JSGlobalObject* globalObject, const Wasm::Type type, JSValue value)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     switch (type.kind) {
     case Wasm::TypeKind::I32:
         RELEASE_AND_RETURN(scope, value.toInt32(globalObject));

@@ -55,7 +55,7 @@ void WeakSetPrototype::finishCreation(VM& vm, JSGlobalObject* globalObject)
 ALWAYS_INLINE static JSWeakSet* getWeakSet(JSGlobalObject* globalObject, JSValue value)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!value.isObject()) [[unlikely]] {
         throwTypeError(globalObject, scope, "Called WeakSet function on non-object"_s);
@@ -94,7 +94,7 @@ JSC_DEFINE_HOST_FUNCTION(protoFuncWeakSetHas, (JSGlobalObject* globalObject, Cal
 JSC_DEFINE_HOST_FUNCTION(protoFuncWeakSetAdd, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* set = getWeakSet(globalObject, callFrame->thisValue());
     EXCEPTION_ASSERT(!!scope.exception() == !set);

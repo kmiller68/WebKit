@@ -81,7 +81,7 @@ void IntlSegmenterConstructor::finishCreation(VM& vm, IntlSegmenterPrototype* se
 JSC_DEFINE_HOST_FUNCTION(constructIntlSegmenter, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* newTarget = asObject(callFrame->newTarget());
     Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, segmenterStructure, newTarget, callFrame->jsCallee());
@@ -99,7 +99,7 @@ JSC_DEFINE_HOST_FUNCTION(constructIntlSegmenter, (JSGlobalObject* globalObject, 
 JSC_DEFINE_HOST_FUNCTION(callIntlSegmenter, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "Segmenter"_s));
 }
@@ -107,7 +107,7 @@ JSC_DEFINE_HOST_FUNCTION(callIntlSegmenter, (JSGlobalObject* globalObject, CallF
 JSC_DEFINE_HOST_FUNCTION(intlSegmenterConstructorSupportedLocalesOf, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     // https://tc39.es/proposal-intl-segmenter/#sec-intl.segmenter.supportedlocalesof
 
     // 1. Let availableLocales be %Segmenter%.[[availableLocales]].

@@ -71,13 +71,13 @@ public:
                 Ref vm = globalObject->vm();
 
                 JSC::JSLockHolder lock(vm);
-                auto scope = DECLARE_CATCH_SCOPE(vm);
+                auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
                 subscribe->invokeRethrowingException();
 
                 JSC::Exception* exception = scope.exception();
                 if (exception) [[unlikely]] {
-                    scope.clearException();
+                    TRY_CLEAR_EXCEPTION(scope, { });
                     subscriber.error(exception->value());
                     return { };
                 }
@@ -113,13 +113,13 @@ private:
         if (RefPtr next = m_inspector.next) {
             Ref vm = this->vm();
             JSC::JSLockHolder lock(vm);
-            auto scope = DECLARE_CATCH_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
             next->invokeRethrowingException(value);
 
             JSC::Exception* exception = scope.exception();
             if (exception) [[unlikely]] {
-                scope.clearException();
+                TRY_CLEAR_EXCEPTION(scope, void());
                 protectedSubscriber()->error(exception->value());
                 return;
             }
@@ -135,13 +135,13 @@ private:
         if (RefPtr error = m_inspector.error) {
             Ref vm = this->vm();
             JSC::JSLockHolder lock(vm);
-            auto scope = DECLARE_CATCH_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
             error->invokeRethrowingException(value);
 
             JSC::Exception* exception = scope.exception();
             if (exception) [[unlikely]] {
-                scope.clearException();
+                TRY_CLEAR_EXCEPTION(scope, void());
                 protectedSubscriber()->error(exception->value());
                 return;
             }
@@ -159,13 +159,13 @@ private:
         if (RefPtr complete = m_inspector.complete) {
             Ref vm = this->vm();
             JSC::JSLockHolder lock(vm);
-            auto scope = DECLARE_CATCH_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
             complete->invokeRethrowingException();
 
             JSC::Exception* exception = scope.exception();
             if (exception) [[unlikely]] {
-                scope.clearException();
+                TRY_CLEAR_EXCEPTION(scope, void());
                 protectedSubscriber()->error(exception->value());
                 return;
             }

@@ -440,7 +440,7 @@ CONCURRENT_SAFE void VMTraps::requestThreadStopIfNeeded(VMTraps::Event event)
 bool VMTraps::handleTraps(VMTraps::BitField mask)
 {
     VM& vm = this->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     ASSERT(onlyContainsAsyncEvents(mask));
     ASSERT(needHandling(mask));
 

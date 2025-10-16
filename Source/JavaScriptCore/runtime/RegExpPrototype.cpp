@@ -95,7 +95,7 @@ void RegExpPrototype::finishCreation(VM& vm, JSGlobalObject* globalObject)
 static inline JSValue regExpExec(JSGlobalObject* globalObject, JSValue thisValue, JSString* str)
 {
     auto& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(thisValue.isObject());
 
@@ -139,7 +139,7 @@ static inline JSValue regExpExec(JSGlobalObject* globalObject, JSValue thisValue
 JSC_DEFINE_HOST_FUNCTION(regExpProtoFuncTest, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     if (!thisValue.isObject()) [[unlikely]]
@@ -168,7 +168,7 @@ JSC_DEFINE_HOST_FUNCTION(regExpProtoFuncTest, (JSGlobalObject* globalObject, Cal
 JSC_DEFINE_HOST_FUNCTION(regExpProtoFuncExec, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     auto* regexp = jsDynamicCast<RegExpObject*>(thisValue);
@@ -193,7 +193,7 @@ JSC_DEFINE_HOST_FUNCTION(regExpProtoFuncMatchFast, (JSGlobalObject* globalObject
 JSC_DEFINE_HOST_FUNCTION(regExpProtoFuncCompile, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     auto* thisRegExp = jsDynamicCast<RegExpObject*>(thisValue);
@@ -240,7 +240,7 @@ JSC_DEFINE_HOST_FUNCTION(regExpProtoFuncCompile, (JSGlobalObject* globalObject, 
 static inline Yarr::FlagsString flagsString(JSGlobalObject* globalObject, JSObject* regexp)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     OptionSet<Yarr::Flags> flags;
 
@@ -260,7 +260,7 @@ static inline Yarr::FlagsString flagsString(JSGlobalObject* globalObject, JSObje
 JSC_DEFINE_HOST_FUNCTION(regExpProtoFuncToString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue().toThis(globalObject, ECMAMode::strict());
     RETURN_IF_EXCEPTION(scope, { });
@@ -292,7 +292,7 @@ JSC_DEFINE_HOST_FUNCTION(regExpProtoFuncToString, (JSGlobalObject* globalObject,
 JSC_DEFINE_HOST_FUNCTION(regExpProtoGetterGlobal, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     auto* regexp = jsDynamicCast<RegExpObject*>(thisValue);
@@ -308,7 +308,7 @@ JSC_DEFINE_HOST_FUNCTION(regExpProtoGetterGlobal, (JSGlobalObject* globalObject,
 JSC_DEFINE_HOST_FUNCTION(regExpProtoGetterHasIndices, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     auto* regexp = jsDynamicCast<RegExpObject*>(thisValue);
@@ -324,7 +324,7 @@ JSC_DEFINE_HOST_FUNCTION(regExpProtoGetterHasIndices, (JSGlobalObject* globalObj
 JSC_DEFINE_HOST_FUNCTION(regExpProtoGetterIgnoreCase, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     auto* regexp = jsDynamicCast<RegExpObject*>(thisValue);
@@ -340,7 +340,7 @@ JSC_DEFINE_HOST_FUNCTION(regExpProtoGetterIgnoreCase, (JSGlobalObject* globalObj
 JSC_DEFINE_HOST_FUNCTION(regExpProtoGetterMultiline, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     auto* regexp = jsDynamicCast<RegExpObject*>(thisValue);
@@ -356,7 +356,7 @@ JSC_DEFINE_HOST_FUNCTION(regExpProtoGetterMultiline, (JSGlobalObject* globalObje
 JSC_DEFINE_HOST_FUNCTION(regExpProtoGetterDotAll, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     
     JSValue thisValue = callFrame->thisValue();
     auto* regexp = jsDynamicCast<RegExpObject*>(thisValue);
@@ -372,7 +372,7 @@ JSC_DEFINE_HOST_FUNCTION(regExpProtoGetterDotAll, (JSGlobalObject* globalObject,
 JSC_DEFINE_HOST_FUNCTION(regExpProtoGetterSticky, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     auto* regexp = jsDynamicCast<RegExpObject*>(thisValue);
@@ -388,7 +388,7 @@ JSC_DEFINE_HOST_FUNCTION(regExpProtoGetterSticky, (JSGlobalObject* globalObject,
 JSC_DEFINE_HOST_FUNCTION(regExpProtoGetterUnicode, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     auto* regexp = jsDynamicCast<RegExpObject*>(thisValue);
@@ -404,7 +404,7 @@ JSC_DEFINE_HOST_FUNCTION(regExpProtoGetterUnicode, (JSGlobalObject* globalObject
 JSC_DEFINE_HOST_FUNCTION(regExpProtoGetterUnicodeSets, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     auto* regexp = jsDynamicCast<RegExpObject*>(thisValue);
@@ -420,7 +420,7 @@ JSC_DEFINE_HOST_FUNCTION(regExpProtoGetterUnicodeSets, (JSGlobalObject* globalOb
 JSC_DEFINE_HOST_FUNCTION(regExpProtoGetterFlags, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue().toThis(globalObject, ECMAMode::strict());
     RETURN_IF_EXCEPTION(scope, { });
@@ -437,7 +437,7 @@ JSC_DEFINE_HOST_FUNCTION(regExpProtoGetterFlags, (JSGlobalObject* globalObject, 
 JSC_DEFINE_HOST_FUNCTION(regExpProtoGetterSource, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     auto* regexp = jsDynamicCast<RegExpObject*>(thisValue);
@@ -453,7 +453,7 @@ JSC_DEFINE_HOST_FUNCTION(regExpProtoGetterSource, (JSGlobalObject* globalObject,
 JSC_DEFINE_HOST_FUNCTION(regExpProtoFuncSearch, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     if (!thisValue.isObject()) [[unlikely]]
@@ -525,7 +525,7 @@ void genericSplit(
     const ControlFunc& control, const PushFunc& push)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     while (matchPosition < inputSize) {
         {
@@ -610,7 +610,7 @@ void genericSplit(
 JSC_DEFINE_HOST_FUNCTION(regExpProtoFuncSplitFast, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 1. [handled by JS builtin] Let rx be the this value.
     // 2. [handled by JS builtin] If Type(rx) is not Object, throw a TypeError exception.

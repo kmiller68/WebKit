@@ -38,7 +38,7 @@ namespace JSC {
 JSC_DEFINE_HOST_FUNCTION(uint8ArrayConstructorFromBase64, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSString* jsString = jsDynamicCast<JSString*>(callFrame->argument(0));
     if (!jsString) [[unlikely]]
@@ -213,7 +213,7 @@ WARN_UNUSED_RETURN size_t decodeHex(std::span<const char16_t> span, std::span<ui
 JSC_DEFINE_HOST_FUNCTION(uint8ArrayConstructorFromHex, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSString* jsString = jsDynamicCast<JSString*>(callFrame->argument(0));
     if (!jsString) [[unlikely]]

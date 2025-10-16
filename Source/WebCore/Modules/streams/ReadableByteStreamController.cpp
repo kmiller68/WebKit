@@ -210,7 +210,7 @@ ExceptionOr<void> ReadableByteStreamController::start(JSDOMGlobalObject& globalO
             return Exception { ExceptionCode::ExistingExceptionError };
         }
         Ref vm = globalObject.vm();
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         auto* promise = JSC::JSPromise::resolvedPromise(&globalObject, startResult.releaseReturnValue());
         if (scope.exception())
             promise = JSC::JSPromise::rejectedPromise(&globalObject, JSC::jsUndefined());
@@ -257,7 +257,7 @@ void ReadableByteStreamController::close(JSDOMGlobalObject& globalObject)
         auto& pullInto = m_pendingPullIntos.first();
         if (pullInto.bytesFilled % pullInto.elementSize) {
             Ref vm = globalObject.vm();
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
             auto error = createDOMException(&globalObject, ExceptionCode::TypeError, "controller has pending pull intos"_s);
             scope.assertNoExceptionExceptTermination();
@@ -598,7 +598,7 @@ void ReadableByteStreamController::error(JSDOMGlobalObject& globalObject, const 
 {
     auto& vm = globalObject.vm();
     JSC::JSLockHolder lock(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto value = createDOMException(&globalObject, exception.code(), exception.message());
 
     if (scope.exception()) [[unlikely]] {

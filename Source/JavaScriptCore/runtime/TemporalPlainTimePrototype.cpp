@@ -115,7 +115,7 @@ void TemporalPlainTimePrototype::finishCreation(VM& vm, JSGlobalObject*)
 JSC_DEFINE_HOST_FUNCTION(temporalPlainTimePrototypeFuncAdd, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* plainTime = jsDynamicCast<TemporalPlainTime*>(callFrame->thisValue());
     if (!plainTime)
@@ -134,7 +134,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalPlainTimePrototypeFuncAdd, (JSGlobalObject* glo
 JSC_DEFINE_HOST_FUNCTION(temporalPlainTimePrototypeFuncSubtract, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* plainTime = jsDynamicCast<TemporalPlainTime*>(callFrame->thisValue());
     if (!plainTime)
@@ -153,7 +153,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalPlainTimePrototypeFuncSubtract, (JSGlobalObject
 JSC_DEFINE_HOST_FUNCTION(temporalPlainTimePrototypeFuncWith, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* plainTime = jsDynamicCast<TemporalPlainTime*>(callFrame->thisValue());
     if (!plainTime)
@@ -173,7 +173,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalPlainTimePrototypeFuncWith, (JSGlobalObject* gl
 JSC_DEFINE_HOST_FUNCTION(temporalPlainTimePrototypeFuncUntil, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* plainTime = jsDynamicCast<TemporalPlainTime*>(callFrame->thisValue());
     if (!plainTime)
@@ -192,7 +192,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalPlainTimePrototypeFuncUntil, (JSGlobalObject* g
 JSC_DEFINE_HOST_FUNCTION(temporalPlainTimePrototypeFuncSince, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* plainTime = jsDynamicCast<TemporalPlainTime*>(callFrame->thisValue());
     if (!plainTime)
@@ -211,7 +211,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalPlainTimePrototypeFuncSince, (JSGlobalObject* g
 JSC_DEFINE_HOST_FUNCTION(temporalPlainTimePrototypeFuncRound, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* plainTime = jsDynamicCast<TemporalPlainTime*>(callFrame->thisValue());
     if (!plainTime)
@@ -231,7 +231,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalPlainTimePrototypeFuncRound, (JSGlobalObject* g
 JSC_DEFINE_HOST_FUNCTION(temporalPlainTimePrototypeFuncEquals, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* plainTime = jsDynamicCast<TemporalPlainTime*>(callFrame->thisValue());
     if (!plainTime)
@@ -247,7 +247,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalPlainTimePrototypeFuncEquals, (JSGlobalObject* 
 JSC_DEFINE_HOST_FUNCTION(temporalPlainTimePrototypeFuncGetISOFields, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* plainTime = jsDynamicCast<TemporalPlainTime*>(callFrame->thisValue());
     if (!plainTime)
@@ -268,7 +268,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalPlainTimePrototypeFuncGetISOFields, (JSGlobalOb
 JSC_DEFINE_HOST_FUNCTION(temporalPlainTimePrototypeFuncToString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* plainTime = jsDynamicCast<TemporalPlainTime*>(callFrame->thisValue());
     if (!plainTime)
@@ -281,7 +281,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalPlainTimePrototypeFuncToString, (JSGlobalObject
 JSC_DEFINE_HOST_FUNCTION(temporalPlainTimePrototypeFuncToJSON, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* plainTime = jsDynamicCast<TemporalPlainTime*>(callFrame->thisValue());
     if (!plainTime)
@@ -294,7 +294,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalPlainTimePrototypeFuncToJSON, (JSGlobalObject* 
 JSC_DEFINE_HOST_FUNCTION(temporalPlainTimePrototypeFuncToLocaleString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* plainTime = jsDynamicCast<TemporalPlainTime*>(callFrame->thisValue());
     if (!plainTime)
@@ -307,7 +307,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalPlainTimePrototypeFuncToLocaleString, (JSGlobal
 JSC_DEFINE_HOST_FUNCTION(temporalPlainTimePrototypeFuncValueOf, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     return throwVMTypeError(globalObject, scope, "Temporal.PlainTime.prototype.valueOf must not be called. To compare PlainTime values, use Temporal.PlainTime.compare"_s);
 }
@@ -315,7 +315,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalPlainTimePrototypeFuncValueOf, (JSGlobalObject*
 JSC_DEFINE_CUSTOM_GETTER(temporalPlainTimePrototypeGetterHour, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* plainTime = jsDynamicCast<TemporalPlainTime*>(JSValue::decode(thisValue));
     if (!plainTime)
@@ -327,7 +327,7 @@ JSC_DEFINE_CUSTOM_GETTER(temporalPlainTimePrototypeGetterHour, (JSGlobalObject* 
 JSC_DEFINE_CUSTOM_GETTER(temporalPlainTimePrototypeGetterMinute, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* plainTime = jsDynamicCast<TemporalPlainTime*>(JSValue::decode(thisValue));
     if (!plainTime)
@@ -339,7 +339,7 @@ JSC_DEFINE_CUSTOM_GETTER(temporalPlainTimePrototypeGetterMinute, (JSGlobalObject
 JSC_DEFINE_CUSTOM_GETTER(temporalPlainTimePrototypeGetterSecond, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* plainTime = jsDynamicCast<TemporalPlainTime*>(JSValue::decode(thisValue));
     if (!plainTime)
@@ -351,7 +351,7 @@ JSC_DEFINE_CUSTOM_GETTER(temporalPlainTimePrototypeGetterSecond, (JSGlobalObject
 JSC_DEFINE_CUSTOM_GETTER(temporalPlainTimePrototypeGetterMillisecond, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* plainTime = jsDynamicCast<TemporalPlainTime*>(JSValue::decode(thisValue));
     if (!plainTime)
@@ -363,7 +363,7 @@ JSC_DEFINE_CUSTOM_GETTER(temporalPlainTimePrototypeGetterMillisecond, (JSGlobalO
 JSC_DEFINE_CUSTOM_GETTER(temporalPlainTimePrototypeGetterMicrosecond, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* plainTime = jsDynamicCast<TemporalPlainTime*>(JSValue::decode(thisValue));
     if (!plainTime)
@@ -375,7 +375,7 @@ JSC_DEFINE_CUSTOM_GETTER(temporalPlainTimePrototypeGetterMicrosecond, (JSGlobalO
 JSC_DEFINE_CUSTOM_GETTER(temporalPlainTimePrototypeGetterNanosecond, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* plainTime = jsDynamicCast<TemporalPlainTime*>(JSValue::decode(thisValue));
     if (!plainTime)
@@ -387,7 +387,7 @@ JSC_DEFINE_CUSTOM_GETTER(temporalPlainTimePrototypeGetterNanosecond, (JSGlobalOb
 JSC_DEFINE_CUSTOM_GETTER(temporalPlainTimePrototypeGetterCalendar, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* plainTime = jsDynamicCast<TemporalPlainTime*>(JSValue::decode(thisValue));
     if (!plainTime)

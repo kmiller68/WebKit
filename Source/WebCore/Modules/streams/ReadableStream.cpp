@@ -62,7 +62,7 @@ static inline ExceptionOr<double> extractHighWaterMark(const QueuingStrategy& st
     return highWaterMark;
 }
 
-static ExceptionOr<bool> isReadableByteSource(JSC::ThrowScope& throwScope, JSDOMGlobalObject& globalObject, JSC::JSValue underlyingSource)
+static ExceptionOr<bool> isReadableByteSource(JSC::ExceptionScope& throwScope, JSDOMGlobalObject& globalObject, JSC::JSValue underlyingSource)
 {
     bool isNullOrUndefined = underlyingSource.isUndefinedOrNull();
     auto* object = isNullOrUndefined ? nullptr : underlyingSource.getObject();
@@ -93,7 +93,7 @@ ExceptionOr<Ref<ReadableStream>> ReadableStream::create(JSDOMGlobalObject& globa
         strategy = strategyValue->get();
 
     Ref vm = globalObject.vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     RefPtr context = globalObject.scriptExecutionContext();
     if (context->settingsValues().readableByteStreamAPIEnabled) {
         // FIXME: We convert strategy twice for regular readable streams.
@@ -263,13 +263,10 @@ void ReadableStream::cancel(Exception&& exception)
 
     Ref vm = globalObject->vm();
     JSC::JSLockHolder lock(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto jsException = createDOMException(globalObject, exception.code(), exception.message());
 
-    if (scope.exception()) [[unlikely]] {
-        scope.clearException();
-        return;
-    }
+    TRY_CLEAR_EXCEPTION(scope, void());
 
     cancel(*globalObject, jsException);
 }

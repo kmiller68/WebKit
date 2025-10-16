@@ -68,7 +68,7 @@ JSJavaScriptCallFrame::~JSJavaScriptCallFrame()
 JSValue JSJavaScriptCallFrame::evaluateWithScopeExtension(JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue scriptValue = callFrame->argument(0);
     if (!scriptValue.isString())
@@ -80,6 +80,7 @@ JSValue JSJavaScriptCallFrame::evaluateWithScopeExtension(JSGlobalObject* global
     NakedPtr<Exception> exception;
     JSObject* scopeExtension = callFrame->argument(1).getObject();
     JSValue result = impl().evaluateWithScopeExtension(vm, script, scopeExtension, exception);
+    scope.assertNoExceptionExceptTermination();
     if (exception)
         throwException(globalObject, scope, exception);
 
@@ -122,7 +123,7 @@ static JSValue valueForScopeLocation(JSGlobalObject* globalObject, const Debugge
 JSValue JSJavaScriptCallFrame::scopeDescriptions(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     DebuggerScope* scopeChain = impl().scopeChain(vm);
     if (!scopeChain)
@@ -174,7 +175,7 @@ JSValue JSJavaScriptCallFrame::functionName(JSGlobalObject* globalObject) const
 JSValue JSJavaScriptCallFrame::scopeChain(JSGlobalObject* globalObject) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!impl().scopeChain(vm))
         return jsNull();

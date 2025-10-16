@@ -159,7 +159,7 @@ template<typename Functor> bool performLegacyPlatformObjectDeleteOperation(JSC::
     if constexpr (IsExceptionOr<ReturnType>) {
         auto result = functor();
         if (result.hasException()) {
-            auto throwScope = DECLARE_THROW_SCOPE(JSC::getVM(&lexicalGlobalObject));
+            auto throwScope = DECLARE_EXCEPTION_SCOPE(JSC::getVM(&lexicalGlobalObject));
             propagateException(lexicalGlobalObject, throwScope, result.releaseException());
             return true;
         }

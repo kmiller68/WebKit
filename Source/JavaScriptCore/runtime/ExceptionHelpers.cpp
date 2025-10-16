@@ -29,9 +29,9 @@
 #include "config.h"
 #include "ExceptionHelpers.h"
 
-#include "CatchScope.h"
 #include "ErrorHandlingScope.h"
 #include "Exception.h"
+#include "ExceptionScope.h"
 #include "JSCInlines.h"
 #include "RuntimeType.h"
 #include <wtf/text/MakeString.h>
@@ -257,7 +257,7 @@ static String invalidPrototypeSourceAppender(const String& originalMessage, Stri
 
 String constructErrorMessage(JSGlobalObject* globalObject, JSValue value, const String& message)
 {
-    auto scope = DECLARE_THROW_SCOPE(globalObject->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
     String valueDescription = errorDescriptionForValue(globalObject, value);
     RETURN_IF_EXCEPTION(scope, { });
     if (!valueDescription)
@@ -268,15 +268,14 @@ String constructErrorMessage(JSGlobalObject* globalObject, JSValue value, const 
 JSObject* createError(JSGlobalObject* globalObject, JSValue value, const String& message, ErrorInstance::SourceAppender appender)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    // The contract for createError() is that it only creates an error object; it doesn't throw them. To make this simpler we defer termination.
+    DeferTerminationForAWhile defer(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
+    scope.noRethrow();
 
     auto errorMessage = constructErrorMessage(globalObject, value, message);
     if (scope.exception() || !errorMessage) [[unlikely]] {
-        // When we see an exception, we're not returning immediately because
-        // we're in a CatchScope, i.e. no exceptions are thrown past this scope.
-        // We're using a CatchScope because the contract for createError() is
-        // that it only creates an error object; it doesn't throw it.
-        scope.clearException();
+        scope.clearExceptionIncludingTermination();
         return createOutOfMemoryError(globalObject);
     }
     scope.assertNoException();
@@ -370,17 +369,17 @@ JSObject* createReinstallPrivateMethodError(JSGlobalObject* globalObject)
     return createTypeError(globalObject, "Cannot install same private methods on object more than once"_s, defaultSourceAppender, TypeNothing);
 }
 
-Exception* throwOutOfMemoryError(JSGlobalObject* globalObject, ThrowScope& scope)
+Exception* throwOutOfMemoryError(JSGlobalObject* globalObject, ExceptionScope& scope)
 {
     return throwException(globalObject, scope, createOutOfMemoryError(globalObject));
 }
 
-Exception* throwOutOfMemoryError(JSGlobalObject* globalObject, ThrowScope& scope, const String& message)
+Exception* throwOutOfMemoryError(JSGlobalObject* globalObject, ExceptionScope& scope, const String& message)
 {
     return throwException(globalObject, scope, createOutOfMemoryError(globalObject, message));
 }
 
-Exception* throwStackOverflowError(JSGlobalObject* globalObject, ThrowScope& scope)
+Exception* throwStackOverflowError(JSGlobalObject* globalObject, ExceptionScope& scope)
 {
     VM& vm = globalObject->vm();
     ErrorHandlingScope errorScope(vm);

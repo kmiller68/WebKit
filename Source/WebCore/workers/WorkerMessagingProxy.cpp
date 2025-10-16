@@ -200,7 +200,7 @@ void WorkerMessagingProxy::postMessageToWorkerObject(MessageWithMessagePorts&& m
                 return;
 
             auto& vm = globalObject->vm();
-            auto scope = DECLARE_CATCH_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
             UserGestureIndicator userGestureIndicator(userGestureForwarder ? userGestureForwarder->userGestureToForward() : nullptr);
             auto event = MessageEvent::create(*globalObject, message.message.releaseNonNull(), { }, { }, { }, WTFMove(ports));
             if (scope.exception()) [[unlikely]] {
@@ -239,7 +239,7 @@ void WorkerMessagingProxy::postMessageToWorkerGlobalScope(MessageWithMessagePort
             return;
 
         auto& vm = globalObject->vm();
-        auto scope = DECLARE_CATCH_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         // Setting m_userGestureForwarder here, before dispatching the MessageEvent, will allow all calls to
         // worker.postMessage() made during the handling of that MessageEvent to inherit the UserGestureToken

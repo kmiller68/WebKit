@@ -83,7 +83,7 @@ void IntlRelativeTimeFormatConstructor::finishCreation(VM& vm, IntlRelativeTimeF
 JSC_DEFINE_HOST_FUNCTION(constructIntlRelativeTimeFormat, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* newTarget = asObject(callFrame->newTarget());
     Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, relativeTimeFormatStructure, newTarget, callFrame->jsCallee());
@@ -101,7 +101,7 @@ JSC_DEFINE_HOST_FUNCTION(constructIntlRelativeTimeFormat, (JSGlobalObject* globa
 JSC_DEFINE_HOST_FUNCTION(callIntlRelativeTimeFormat, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "RelativeTimeFormat"_s));
 }
@@ -110,7 +110,7 @@ JSC_DEFINE_HOST_FUNCTION(callIntlRelativeTimeFormat, (JSGlobalObject* globalObje
 JSC_DEFINE_HOST_FUNCTION(intlRelativeTimeFormatConstructorFuncSupportedLocalesOf, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     const auto& availableLocales = intlRelativeTimeFormatAvailableLocales();
 

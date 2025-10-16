@@ -52,14 +52,14 @@ WeakMapConstructor::WeakMapConstructor(VM& vm, Structure* structure)
 JSC_DEFINE_HOST_FUNCTION(callWeakMap, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "WeakMap"_s));
 }
 
 JSC_DEFINE_HOST_FUNCTION(constructWeakMap, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* newTarget = asObject(callFrame->newTarget());
     Structure* weakMapStructure = JSC_GET_DERIVED_STRUCTURE(vm, weakMapStructure, newTarget, callFrame->jsCallee());
@@ -81,7 +81,7 @@ JSC_DEFINE_HOST_FUNCTION(constructWeakMap, (JSGlobalObject* globalObject, CallFr
 
     scope.release();
     forEachInIterable(globalObject, iterable, [&](VM& vm, JSGlobalObject* globalObject, JSValue nextItem) {
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         if (!nextItem.isObject()) {
             throwTypeError(globalObject, scope, "WeakMap requires that an entry be an Object."_s);
             return;

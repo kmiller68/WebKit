@@ -53,7 +53,7 @@ ALWAYS_INLINE MatchResult RegExpGlobalData::performMatch(JSGlobalObject* owner, 
 {
     ASSERT(owner);
     VM& vm = owner->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     int position = regExp->match(owner, input, startOffset, m_ovector);
     RETURN_IF_EXCEPTION(scope, MatchResult::failed());
 
@@ -77,7 +77,7 @@ ALWAYS_INLINE MatchResult RegExpGlobalData::performMatch(JSGlobalObject* owner, 
 {
     ASSERT(owner);
     VM& vm = owner->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     MatchResult result = regExp->match(owner, input, startOffset);
     RETURN_IF_EXCEPTION(scope, MatchResult::failed());
     if (result)

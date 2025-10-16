@@ -43,7 +43,7 @@ WTF_MAKE_TZONE_ALLOCATED_IMPL(Global);
 JSValue Global::get(JSGlobalObject* globalObject) const
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     switch (m_type.kind) {
     case TypeKind::I32:
@@ -76,7 +76,7 @@ JSValue Global::get(JSGlobalObject* globalObject) const
 void Global::set(JSGlobalObject* globalObject, JSValue argument)
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     ASSERT(m_mutability != Wasm::Immutable);
     switch (m_type.kind) {
     case TypeKind::I32: {

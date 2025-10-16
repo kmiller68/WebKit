@@ -43,7 +43,7 @@ JSC_DEFINE_HOST_FUNCTION(callBooleanConstructor, (JSGlobalObject* globalObject, 
 JSC_DEFINE_HOST_FUNCTION(constructWithBooleanConstructor, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue boolean = jsBoolean(callFrame->argument(0).toBoolean(globalObject));
 
     JSObject* newTarget = asObject(callFrame->newTarget());

@@ -64,6 +64,7 @@ enum class ExceptionCode : uint8_t {
     // Non-standard error.
     StackOverflowError,
     OutOfMemoryError,
+    TerminationError, // Not JS code visible.
 
     // Used to indicate to the bindings that a JS exception was thrown below and it should be propagated.
     ExistingExceptionError,

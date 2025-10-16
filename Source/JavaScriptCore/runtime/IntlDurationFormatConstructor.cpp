@@ -81,7 +81,7 @@ void IntlDurationFormatConstructor::finishCreation(VM& vm, IntlDurationFormatPro
 JSC_DEFINE_HOST_FUNCTION(constructIntlDurationFormat, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* newTarget = asObject(callFrame->newTarget());
     Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, durationFormatStructure, newTarget, callFrame->jsCallee());
@@ -99,7 +99,7 @@ JSC_DEFINE_HOST_FUNCTION(constructIntlDurationFormat, (JSGlobalObject* globalObj
 JSC_DEFINE_HOST_FUNCTION(callIntlDurationFormat, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "DurationFormat"_s));
 }
@@ -107,7 +107,7 @@ JSC_DEFINE_HOST_FUNCTION(callIntlDurationFormat, (JSGlobalObject* globalObject, 
 JSC_DEFINE_HOST_FUNCTION(intlDurationFormatConstructorSupportedLocalesOf, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     // Intl.DurationFormat.supportedLocalesOf(locales [, options])
     // https://tc39.es/proposal-intl-duration-format/#sec-Intl.DurationFormat.supportedLocalesOf
 

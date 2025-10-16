@@ -137,7 +137,7 @@ template<typename Adaptor>
 EncodedJSValue getData(JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSDataView* dataView = jsDynamicCast<JSDataView*>(callFrame->thisValue());
     if (!dataView)
@@ -181,7 +181,7 @@ template<typename Adaptor>
 EncodedJSValue setData(JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSDataView* dataView = jsDynamicCast<JSDataView*>(callFrame->thisValue());
     if (!dataView)
@@ -226,7 +226,7 @@ EncodedJSValue setData(JSGlobalObject* globalObject, CallFrame* callFrame)
 JSC_DEFINE_CUSTOM_GETTER(dataViewProtoGetterBuffer, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSDataView* view = jsDynamicCast<JSDataView*>(JSValue::decode(thisValue));
     if (!view)
@@ -238,7 +238,7 @@ JSC_DEFINE_CUSTOM_GETTER(dataViewProtoGetterBuffer, (JSGlobalObject* globalObjec
 JSC_DEFINE_HOST_FUNCTION(dataViewProtoGetterByteLength, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSDataView* view = jsDynamicCast<JSDataView*>(callFrame->thisValue());
     if (!view) [[unlikely]]
@@ -255,7 +255,7 @@ JSC_DEFINE_HOST_FUNCTION(dataViewProtoGetterByteLength, (JSGlobalObject* globalO
 JSC_DEFINE_CUSTOM_GETTER(dataViewProtoGetterByteOffset, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSDataView* view = jsDynamicCast<JSDataView*>(JSValue::decode(thisValue));
     if (!view)

@@ -42,7 +42,7 @@ template<typename IDL>
 struct GenericSequenceInnerConverter {
     using SequenceType = Vector<typename IDL::SequenceStorageType>;
 
-    static void convert(JSC::ThrowScope& scope, JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value, SequenceType& sequence)
+    static void convert(JSC::ExceptionScope& scope, JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value, SequenceType& sequence)
     {
         ASSERT(!scope.exception());
 
@@ -59,7 +59,7 @@ struct GenericSequenceInnerConverter<IDLInterface<T>> {
     using IDL = IDLInterface<T>;
     using SequenceType = Vector<typename IDL::SequenceStorageType>;
 
-    static void convert(JSC::ThrowScope& scope, JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value, SequenceType& result)
+    static void convert(JSC::ExceptionScope& scope, JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value, SequenceType& result)
     {
         ASSERT(!scope.exception());
 
@@ -86,9 +86,9 @@ struct GenericSequenceConverter {
     static Result convert(JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSObject* object, SequenceType&& sequence)
     {
         auto& vm = lexicalGlobalObject.vm();
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         forEachInIterable(&lexicalGlobalObject, object, [&sequence](JSC::VM& vm, JSC::JSGlobalObject* lexicalGlobalObject, JSC::JSValue nextValue) {
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
             InnerConverter::convert(scope, *lexicalGlobalObject, nextValue, sequence);
         });
@@ -105,9 +105,9 @@ struct GenericSequenceConverter {
     static Result convert(JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSObject* object, JSC::JSValue method, SequenceType&& sequence)
     {
         auto& vm = lexicalGlobalObject.vm();
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         forEachInIterable(lexicalGlobalObject, object, method, [&sequence](JSC::VM& vm, JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue nextValue) {
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
             InnerConverter::convert(scope, lexicalGlobalObject, nextValue, sequence);
         });
@@ -120,7 +120,7 @@ struct GenericSequenceConverter {
 // Specialization for numeric types
 // FIXME: This is only implemented for the IDLFloatingPointTypes and IDLLong. To add
 // support for more numeric types, add an overload of Converter<IDLType>::convert that
-// takes a JSGlobalObject, ThrowScope and double as its arguments.
+// takes a JSGlobalObject, ExceptionScope and double as its arguments.
 template<typename IDL>
 struct NumericSequenceConverterImpl {
     using GenericConverter = GenericSequenceConverter<IDL>;
@@ -130,7 +130,7 @@ struct NumericSequenceConverterImpl {
     using InnerConverter = typename GenericConverter::InnerConverter;
     using SequenceType = typename GenericConverter::SequenceType;
 
-    static Result convertArray(JSC::JSGlobalObject& lexicalGlobalObject, JSC::ThrowScope& scope, JSC::JSArray* array, unsigned length, JSC::IndexingType indexingType, SequenceType&& sequence)
+    static Result convertArray(JSC::JSGlobalObject& lexicalGlobalObject, JSC::ExceptionScope& scope, JSC::JSArray* array, unsigned length, JSC::IndexingType indexingType, SequenceType&& sequence)
     {
         if (indexingType == JSC::Int32Shape) {
             for (unsigned i = 0; i < length; i++) {
@@ -164,7 +164,7 @@ struct NumericSequenceConverterImpl {
     static Result convert(JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value)
     {
         auto& vm = JSC::getVM(&lexicalGlobalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         if (!value.isObject()) {
             throwSequenceTypeError(lexicalGlobalObject, scope);
@@ -203,7 +203,7 @@ struct NumericSequenceConverterImpl {
     static Result convert(JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSObject* object, JSC::JSValue method)
     {
         auto& vm = JSC::getVM(&lexicalGlobalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         if (!JSC::isJSArray(object))
             RELEASE_AND_RETURN(scope, GenericConverter::convert(lexicalGlobalObject, object, method));
@@ -246,7 +246,7 @@ struct SequenceConverterImpl {
     static Result convertArray(JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSArray* array)
     {
         auto& vm = lexicalGlobalObject.vm();
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         unsigned length = array->length();
 
         SequenceType sequence;
@@ -286,7 +286,7 @@ struct SequenceConverterImpl {
     static Result convert(JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value)
     {
         auto& vm = JSC::getVM(&lexicalGlobalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         if (!value.isObject()) {
             throwSequenceTypeError(lexicalGlobalObject, scope);
@@ -364,7 +364,7 @@ template<typename T> struct JSConverter<IDLSequence<T>> {
     static JSC::JSValue convert(JSC::JSGlobalObject& lexicalGlobalObject, JSDOMGlobalObject& globalObject, const Vector<U, inlineCapacity>& vector)
     {
         JSC::VM& vm = JSC::getVM(&lexicalGlobalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         JSC::MarkedArgumentBuffer list;
         list.ensureCapacity(vector.size());
         for (auto& element : vector) {
@@ -388,7 +388,7 @@ template<typename T> struct JSConverter<IDLFrozenArray<T>> {
     static JSC::JSValue convert(JSC::JSGlobalObject& lexicalGlobalObject, JSDOMGlobalObject& globalObject, const Vector<U, inlineCapacity>& vector)
     {
         JSC::VM& vm = JSC::getVM(&lexicalGlobalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         JSC::MarkedArgumentBuffer list;
         list.ensureCapacity(vector.size());
         for (auto& element : vector) {

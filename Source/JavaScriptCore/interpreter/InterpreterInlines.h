@@ -98,7 +98,7 @@ inline OpcodeID Interpreter::getOpcodeID(JSC::Opcode opcode)
 ALWAYS_INLINE JSValue Interpreter::executeCachedCall(CachedCall& cachedCall)
 {
     VM& vm = this->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(!vm.isCollectorBusyOnCurrentThread());
     ASSERT(vm.currentThreadIsHoldingAPILock());

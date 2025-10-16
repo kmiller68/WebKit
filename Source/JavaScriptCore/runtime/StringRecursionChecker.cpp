@@ -28,7 +28,7 @@ namespace JSC {
 JSValue StringRecursionChecker::throwStackOverflowError()
 {
     VM& vm = m_globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return JSC::throwStackOverflowError(m_globalObject, scope);
 }
 

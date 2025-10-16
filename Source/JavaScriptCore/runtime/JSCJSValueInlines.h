@@ -29,9 +29,9 @@
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
 
-#include <JavaScriptCore/CatchScope.h>
 #include <JavaScriptCore/Error.h>
 #include <JavaScriptCore/ExceptionHelpers.h>
+#include <JavaScriptCore/ExceptionScope.h>
 #include <JavaScriptCore/Identifier.h>
 #include <JavaScriptCore/InternalFunction.h>
 #include <JavaScriptCore/JSBigInt.h>
@@ -69,7 +69,7 @@ inline uint32_t JSValue::toUInt32(JSGlobalObject* globalObject) const
 inline uint64_t JSValue::toIndex(JSGlobalObject* globalObject, ASCIILiteral errorName) const
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (isInt32()) {
         int32_t integer = asInt32();
@@ -801,7 +801,7 @@ ALWAYS_INLINE bool JSValue::getUInt32(uint32_t& v) const
 ALWAYS_INLINE Identifier JSValue::toPropertyKey(JSGlobalObject* globalObject) const
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (isString())
         RELEASE_AND_RETURN(scope, asString(*this)->toIdentifier(globalObject));
@@ -819,7 +819,7 @@ ALWAYS_INLINE Identifier JSValue::toPropertyKey(JSGlobalObject* globalObject) co
 ALWAYS_INLINE JSValue JSValue::toPropertyKeyValue(JSGlobalObject* globalObject) const
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (isString() || isSymbol())
         return *this;
@@ -840,7 +840,7 @@ inline JSValue JSValue::toPrimitive(JSGlobalObject* globalObject, PreferredPrimi
 inline PreferredPrimitiveType toPreferredPrimitiveType(JSGlobalObject* globalObject, JSValue value)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!value.isString()) {
         throwTypeError(globalObject, scope, "Primitive hint is not a string."_s);
@@ -873,7 +873,7 @@ ALWAYS_INLINE double JSValue::toNumber(JSGlobalObject* globalObject) const
 ALWAYS_INLINE JSValue JSValue::toNumeric(JSGlobalObject* globalObject) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (isInt32() || isDouble() || isBigInt())
         return *this;
@@ -896,7 +896,7 @@ ALWAYS_INLINE JSValue JSValue::toNumeric(JSGlobalObject* globalObject) const
 ALWAYS_INLINE std::optional<uint32_t> JSValue::toUInt32AfterToNumeric(JSGlobalObject* globalObject) const
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue result = toBigIntOrInt32(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
     if (result.isInt32()) [[likely]]
@@ -907,7 +907,7 @@ ALWAYS_INLINE std::optional<uint32_t> JSValue::toUInt32AfterToNumeric(JSGlobalOb
 ALWAYS_INLINE JSValue JSValue::toBigIntOrInt32(JSGlobalObject* globalObject) const
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (isInt32() || isBigInt())
         return *this;
@@ -1037,7 +1037,7 @@ ALWAYS_INLINE JSValue JSValue::get(JSGlobalObject* globalObject, PropertyName pr
 
 ALWAYS_INLINE JSValue JSValue::get(JSGlobalObject* globalObject, PropertyName propertyName, PropertySlot& slot) const
 {
-    auto scope = DECLARE_THROW_SCOPE(getVM(globalObject));
+    auto scope = DECLARE_EXCEPTION_SCOPE(getVM(globalObject));
     bool hasSlot = getPropertySlot(globalObject, propertyName, slot);
     EXCEPTION_ASSERT(!scope.exception() || !hasSlot);
     if (!hasSlot)
@@ -1055,7 +1055,7 @@ ALWAYS_INLINE typename std::invoke_result<CallbackWhenNoException, bool, Propert
 template<typename CallbackWhenNoException>
 ALWAYS_INLINE typename std::invoke_result<CallbackWhenNoException, bool, PropertySlot&>::type JSValue::getPropertySlot(JSGlobalObject* globalObject, PropertyName propertyName, PropertySlot& slot, CallbackWhenNoException callback) const
 {
-    auto scope = DECLARE_THROW_SCOPE(getVM(globalObject));
+    auto scope = DECLARE_EXCEPTION_SCOPE(getVM(globalObject));
     bool found = getPropertySlot(globalObject, propertyName, slot);
     RETURN_IF_EXCEPTION(scope, { });
     RELEASE_AND_RETURN(scope, callback(found, slot));
@@ -1063,7 +1063,7 @@ ALWAYS_INLINE typename std::invoke_result<CallbackWhenNoException, bool, Propert
 
 ALWAYS_INLINE bool JSValue::getPropertySlot(JSGlobalObject* globalObject, PropertyName propertyName, PropertySlot& slot) const
 {
-    auto scope = DECLARE_THROW_SCOPE(getVM(globalObject));
+    auto scope = DECLARE_EXCEPTION_SCOPE(getVM(globalObject));
     // If this is a primitive, we'll need to synthesize the prototype -
     // and if it's a string there are special properties to check first.
     JSObject* object;
@@ -1088,7 +1088,7 @@ ALWAYS_INLINE bool JSValue::getOwnPropertySlot(JSGlobalObject* globalObject, Pro
 {
     // If this is a primitive, we'll need to synthesize the prototype -
     // and if it's a string there are special properties to check first.
-    auto scope = DECLARE_THROW_SCOPE(getVM(globalObject));
+    auto scope = DECLARE_EXCEPTION_SCOPE(getVM(globalObject));
     if (!isObject()) [[unlikely]] {
         if (isString())
             RELEASE_AND_RETURN(scope, asString(*this)->getStringPropertySlot(globalObject, propertyName, slot));
@@ -1108,7 +1108,7 @@ ALWAYS_INLINE JSValue JSValue::get(JSGlobalObject* globalObject, unsigned proper
 
 ALWAYS_INLINE JSValue JSValue::get(JSGlobalObject* globalObject, unsigned propertyName, PropertySlot& slot) const
 {
-    auto scope = DECLARE_THROW_SCOPE(getVM(globalObject));
+    auto scope = DECLARE_EXCEPTION_SCOPE(getVM(globalObject));
     // If this is a primitive, we'll need to synthesize the prototype -
     // and if it's a string there are special properties to check first.
     JSObject* object;
@@ -1201,7 +1201,7 @@ inline bool JSValue::equal(JSGlobalObject* globalObject, JSValue v1, JSValue v2)
 ALWAYS_INLINE bool JSValue::equalSlowCaseInline(JSGlobalObject* globalObject, JSValue v1, JSValue v2)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     do {
         if (v1.isNumber()) {
             if (v2.isNumber())
@@ -1412,7 +1412,7 @@ inline TriState JSValue::pureToBoolean() const
 ALWAYS_INLINE bool JSValue::requireObjectCoercible(JSGlobalObject* globalObject) const
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!isUndefinedOrNull())
         return true;

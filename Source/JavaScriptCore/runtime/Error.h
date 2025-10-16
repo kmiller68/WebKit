@@ -25,10 +25,10 @@
 #include <JavaScriptCore/ErrorInstance.h>
 #include <JavaScriptCore/ErrorType.h>
 #include <JavaScriptCore/Exception.h>
+#include <JavaScriptCore/ExceptionScope.h>
 #include <JavaScriptCore/InternalFunction.h>
 #include <JavaScriptCore/JSObject.h>
 #include <JavaScriptCore/LineColumn.h>
-#include <JavaScriptCore/ThrowScope.h>
 #include <stdint.h>
 
 
@@ -84,29 +84,29 @@ JSObject* createTypeErrorCopy(JSGlobalObject*, JSValue error);
 // Methods to throw Errors.
 
 // Convenience wrappers, create an throw an exception with a default message.
-JS_EXPORT_PRIVATE Exception* throwConstructorCannotBeCalledAsFunctionTypeError(JSGlobalObject*, ThrowScope&, ASCIILiteral constructorName);
-JS_EXPORT_PRIVATE Exception* throwTypeError(JSGlobalObject*, ThrowScope&);
-JS_EXPORT_PRIVATE Exception* throwTypeError(JSGlobalObject*, ThrowScope&, ASCIILiteral errorMessage);
-JS_EXPORT_PRIVATE Exception* throwTypeError(JSGlobalObject*, ThrowScope&, const String& errorMessage);
-JS_EXPORT_PRIVATE Exception* throwSyntaxError(JSGlobalObject*, ThrowScope&);
-JS_EXPORT_PRIVATE Exception* throwSyntaxError(JSGlobalObject*, ThrowScope&, const String& errorMessage);
-inline Exception* throwRangeError(JSGlobalObject* globalObject, ThrowScope& scope, const String& errorMessage) { return throwException(globalObject, scope, createRangeError(globalObject, errorMessage)); }
+JS_EXPORT_PRIVATE Exception* throwConstructorCannotBeCalledAsFunctionTypeError(JSGlobalObject*, ExceptionScope&, ASCIILiteral constructorName);
+JS_EXPORT_PRIVATE Exception* throwTypeError(JSGlobalObject*, ExceptionScope&);
+JS_EXPORT_PRIVATE Exception* throwTypeError(JSGlobalObject*, ExceptionScope&, ASCIILiteral errorMessage);
+JS_EXPORT_PRIVATE Exception* throwTypeError(JSGlobalObject*, ExceptionScope&, const String& errorMessage);
+JS_EXPORT_PRIVATE Exception* throwSyntaxError(JSGlobalObject*, ExceptionScope&);
+JS_EXPORT_PRIVATE Exception* throwSyntaxError(JSGlobalObject*, ExceptionScope&, const String& errorMessage);
+inline Exception* throwRangeError(JSGlobalObject* globalObject, ExceptionScope& scope, const String& errorMessage) { return throwException(globalObject, scope, createRangeError(globalObject, errorMessage)); }
 
 JS_EXPORT_PRIVATE String makeDOMAttributeGetterTypeErrorMessage(const char* interfaceName, const String& attributeName);
 JS_EXPORT_PRIVATE String makeDOMAttributeSetterTypeErrorMessage(const char* interfaceName, const String& attributeName);
 
-JS_EXPORT_PRIVATE JSValue throwDOMAttributeGetterTypeError(JSGlobalObject*, ThrowScope&, const ClassInfo*, PropertyName);
-JS_EXPORT_PRIVATE JSValue throwDOMAttributeSetterTypeError(JSGlobalObject*, ThrowScope&, const ClassInfo*, PropertyName);
+JS_EXPORT_PRIVATE JSValue throwDOMAttributeGetterTypeError(JSGlobalObject*, ExceptionScope&, const ClassInfo*, PropertyName);
+JS_EXPORT_PRIVATE JSValue throwDOMAttributeSetterTypeError(JSGlobalObject*, ExceptionScope&, const ClassInfo*, PropertyName);
 
 // Convenience wrappers, wrap result as an EncodedJSValue.
-inline void throwVMError(JSGlobalObject* globalObject, ThrowScope& scope, Exception* exception) { throwException(globalObject, scope, exception); }
-inline EncodedJSValue throwVMError(JSGlobalObject* globalObject, ThrowScope& scope, JSValue error) { return JSValue::encode(throwException(globalObject, scope, error)); }
-inline EncodedJSValue throwVMError(JSGlobalObject* globalObject, ThrowScope& scope, const String& errorMessage) { return JSValue::encode(throwException(globalObject, scope, createError(globalObject, errorMessage))); }
-inline EncodedJSValue throwVMTypeError(JSGlobalObject* globalObject, ThrowScope& scope) { return JSValue::encode(throwTypeError(globalObject, scope)); }
-inline EncodedJSValue throwVMTypeError(JSGlobalObject* globalObject, ThrowScope& scope, ASCIILiteral errorMessage) { return JSValue::encode(throwTypeError(globalObject, scope, errorMessage)); }
-inline EncodedJSValue throwVMTypeError(JSGlobalObject* globalObject, ThrowScope& scope, const String& errorMessage) { return JSValue::encode(throwTypeError(globalObject, scope, errorMessage)); }
-inline EncodedJSValue throwVMRangeError(JSGlobalObject* globalObject, ThrowScope& scope, const String& errorMessage) { return JSValue::encode(throwRangeError(globalObject, scope, errorMessage)); }
-inline EncodedJSValue throwVMDOMAttributeGetterTypeError(JSGlobalObject* globalObject, ThrowScope& scope, const ClassInfo* classInfo, PropertyName propertyName) { return JSValue::encode(throwDOMAttributeGetterTypeError(globalObject, scope, classInfo, propertyName)); }
-inline EncodedJSValue throwVMDOMAttributeSetterTypeError(JSGlobalObject* globalObject, ThrowScope& scope, const ClassInfo* classInfo, PropertyName propertyName) { return JSValue::encode(throwDOMAttributeSetterTypeError(globalObject, scope, classInfo, propertyName)); }
+inline void throwVMError(JSGlobalObject* globalObject, ExceptionScope& scope, Exception* exception) { throwException(globalObject, scope, exception); }
+inline EncodedJSValue throwVMError(JSGlobalObject* globalObject, ExceptionScope& scope, JSValue error) { return JSValue::encode(throwException(globalObject, scope, error)); }
+inline EncodedJSValue throwVMError(JSGlobalObject* globalObject, ExceptionScope& scope, const String& errorMessage) { return JSValue::encode(throwException(globalObject, scope, createError(globalObject, errorMessage))); }
+inline EncodedJSValue throwVMTypeError(JSGlobalObject* globalObject, ExceptionScope& scope) { return JSValue::encode(throwTypeError(globalObject, scope)); }
+inline EncodedJSValue throwVMTypeError(JSGlobalObject* globalObject, ExceptionScope& scope, ASCIILiteral errorMessage) { return JSValue::encode(throwTypeError(globalObject, scope, errorMessage)); }
+inline EncodedJSValue throwVMTypeError(JSGlobalObject* globalObject, ExceptionScope& scope, const String& errorMessage) { return JSValue::encode(throwTypeError(globalObject, scope, errorMessage)); }
+inline EncodedJSValue throwVMRangeError(JSGlobalObject* globalObject, ExceptionScope& scope, const String& errorMessage) { return JSValue::encode(throwRangeError(globalObject, scope, errorMessage)); }
+inline EncodedJSValue throwVMDOMAttributeGetterTypeError(JSGlobalObject* globalObject, ExceptionScope& scope, const ClassInfo* classInfo, PropertyName propertyName) { return JSValue::encode(throwDOMAttributeGetterTypeError(globalObject, scope, classInfo, propertyName)); }
+inline EncodedJSValue throwVMDOMAttributeSetterTypeError(JSGlobalObject* globalObject, ExceptionScope& scope, const ClassInfo* classInfo, PropertyName propertyName) { return JSValue::encode(throwDOMAttributeSetterTypeError(globalObject, scope, classInfo, propertyName)); }
 
 } // namespace JSC

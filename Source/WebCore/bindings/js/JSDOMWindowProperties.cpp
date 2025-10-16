@@ -134,7 +134,7 @@ bool JSDOMWindowProperties::isExtensible(JSObject*, JSGlobalObject*)
 
 bool JSDOMWindowProperties::defineOwnProperty(JSObject*, JSGlobalObject* lexicalGlobalObject, PropertyName, const PropertyDescriptor&, bool shouldThrow)
 {
-    auto scope = DECLARE_THROW_SCOPE(lexicalGlobalObject->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject->vm());
     return typeError(lexicalGlobalObject, scope, shouldThrow, "Defining a property on a WindowProperties object is not allowed."_s);
 }
 

@@ -64,7 +64,7 @@ bool StringObject::getOwnPropertySlotByIndex(JSObject* object, JSGlobalObject* g
 bool StringObject::put(JSCell* cell, JSGlobalObject* globalObject, PropertyName propertyName, JSValue value, PutPropertySlot& slot)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     StringObject* thisObject = jsCast<StringObject*>(cell);
 
@@ -80,7 +80,7 @@ bool StringObject::put(JSCell* cell, JSGlobalObject* globalObject, PropertyName 
 bool StringObject::putByIndex(JSCell* cell, JSGlobalObject* globalObject, unsigned propertyName, JSValue value, bool shouldThrow)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     StringObject* thisObject = jsCast<StringObject*>(cell);
     if (thisObject->internalValue()->canGetIndex(propertyName))
@@ -103,7 +103,7 @@ static bool isStringOwnProperty(JSGlobalObject* globalObject, StringObject* obje
 bool StringObject::defineOwnProperty(JSObject* object, JSGlobalObject* globalObject, PropertyName propertyName, const PropertyDescriptor& descriptor, bool throwException)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     StringObject* thisObject = jsCast<StringObject*>(object);
 
     if (isStringOwnProperty(globalObject, thisObject, propertyName)) {

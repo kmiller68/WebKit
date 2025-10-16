@@ -26,9 +26,9 @@
 #include "config.h"
 #include "JSMicrotask.h"
 
-#include "CatchScope.h"
 #include "Debugger.h"
 #include "DeferTermination.h"
+#include "ExceptionScope.h"
 #include "GlobalObjectMethodTable.h"
 #include "JSGlobalObject.h"
 #include "JSObjectInlines.h"
@@ -52,7 +52,7 @@ static ALWAYS_INLINE JSCell* dynamicCastToCell(JSValue value)
 static void promiseResolveThenableJobFastSlow(JSGlobalObject* globalObject, JSPromise* promise, JSPromise* promiseToResolve)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* constructor = promiseSpeciesConstructor(globalObject, promise);
     if (scope.exception()) [[unlikely]]
@@ -67,8 +67,7 @@ static void promiseResolveThenableJobFastSlow(JSGlobalObject* globalObject, JSPr
     }
 
     JSValue error = scope.exception()->value();
-    if (!scope.clearExceptionExceptTermination()) [[unlikely]]
-        return;
+    TRY_CLEAR_EXCEPTION(scope, void());
 
     MarkedArgumentBuffer arguments;
     arguments.append(error);
@@ -81,7 +80,7 @@ static void promiseResolveThenableJobFastSlow(JSGlobalObject* globalObject, JSPr
 static void promiseResolveThenableJobWithoutPromiseFastSlow(JSGlobalObject* globalObject, JSPromise* promise, JSValue onFulfilled, JSValue onRejected, JSValue context)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* constructor = promiseSpeciesConstructor(globalObject, promise);
     if (scope.exception()) [[unlikely]]
@@ -96,8 +95,7 @@ static void promiseResolveThenableJobWithoutPromiseFastSlow(JSGlobalObject* glob
     }
 
     JSValue error = scope.exception()->value();
-    if (!scope.clearExceptionExceptTermination()) [[unlikely]]
-        return;
+    TRY_CLEAR_EXCEPTION(scope, void());
 
     MarkedArgumentBuffer arguments;
     arguments.append(error);
@@ -110,7 +108,7 @@ static void promiseResolveThenableJobWithoutPromiseFastSlow(JSGlobalObject* glob
 static void promiseResolveThenableJob(JSGlobalObject* globalObject, JSValue promise, JSValue then, JSValue resolve, JSValue reject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     {
         MarkedArgumentBuffer arguments;
@@ -124,8 +122,7 @@ static void promiseResolveThenableJob(JSGlobalObject* globalObject, JSValue prom
     }
 
     JSValue error = scope.exception()->value();
-    if (!scope.clearExceptionExceptTermination()) [[unlikely]]
-        return;
+    TRY_CLEAR_EXCEPTION(scope, void());
 
     MarkedArgumentBuffer arguments;
     arguments.append(error);
@@ -137,7 +134,7 @@ static void promiseResolveThenableJob(JSGlobalObject* globalObject, JSValue prom
 void runInternalMicrotask(JSGlobalObject* globalObject, InternalMicrotask task, std::span<const JSValue, maxMicrotaskArguments> arguments)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     switch (task) {
     case InternalMicrotask::PromiseResolveThenableJobFast: {
@@ -243,18 +240,14 @@ void runInternalMicrotask(JSGlobalObject* globalObject, InternalMicrotask task, 
         JSValue result;
         JSValue error;
         {
-            auto catchScope = DECLARE_CATCH_SCOPE(vm);
             if (context.isUndefinedOrNull())
                 result = callMicrotask(globalObject, handler, jsUndefined(), dynamicCastToCell(handler), ArgList { std::bit_cast<EncodedJSValue*>(arguments.data() + 2), 1 }, "handler is not a function"_s);
             else
                 result = callMicrotask(globalObject, handler, jsUndefined(), dynamicCastToCell(context), ArgList { std::bit_cast<EncodedJSValue*>(arguments.data() + 2), 2 }, "handler is not a function"_s);
 
-            if (catchScope.exception()) {
-                error = catchScope.exception()->value();
-                if (!catchScope.clearExceptionExceptTermination()) [[unlikely]] {
-                    scope.release();
-                    return;
-                }
+            if (scope.exception()) {
+                error = scope.exception()->value();
+                TRY_CLEAR_EXCEPTION(scope, void());
             }
         }
 

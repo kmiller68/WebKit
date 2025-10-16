@@ -44,7 +44,7 @@ JSMapIterator* JSMapIterator::createWithInitialValues(VM& vm, Structure* structu
 void JSMapIterator::finishCreation(JSGlobalObject* globalObject, JSMap* iteratedObject, IterationKind kind)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Base::finishCreation(vm);
     setEntry(vm, 0);

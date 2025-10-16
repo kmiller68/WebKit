@@ -48,7 +48,7 @@ template<ErrorType errorType>
 inline EncodedJSValue NativeErrorConstructor<errorType>::constructImpl(JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue message = callFrame->argument(0);
     JSValue options = callFrame->argument(1);
 

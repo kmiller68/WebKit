@@ -40,7 +40,7 @@ template<typename IntlType>
 void setNumberFormatDigitOptions(JSGlobalObject* globalObject, IntlType* intlInstance, JSObject* options, unsigned minimumFractionDigitsDefault, unsigned maximumFractionDigitsDefault, IntlNotation notation)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned minimumIntegerDigits = intlNumberOption(globalObject, options, vm.propertyNames->minimumIntegerDigits, 1, 21, 1);
     RETURN_IF_EXCEPTION(scope, void());
@@ -344,7 +344,7 @@ inline IntlNumberFormat* IntlNumberFormat::unwrapForOldFunctions(JSGlobalObject*
 inline IntlMathematicalValue toIntlMathematicalValue(JSGlobalObject* globalObject, JSValue value)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (auto number = JSBigInt::tryExtractDouble(value))
         return IntlMathematicalValue { number.value() };
@@ -354,7 +354,7 @@ inline IntlMathematicalValue toIntlMathematicalValue(JSGlobalObject* globalObjec
 
     auto bigIntToIntlMathematicalValue = [](JSGlobalObject* globalObject, JSValue value) -> IntlMathematicalValue {
         VM& vm = globalObject->vm();
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         if (auto number = JSBigInt::tryExtractDouble(value))
             return IntlMathematicalValue { number.value() };

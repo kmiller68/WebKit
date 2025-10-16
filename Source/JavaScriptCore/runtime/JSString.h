@@ -26,13 +26,13 @@
 #include <JavaScriptCore/CallFrame.h>
 #include <JavaScriptCore/CommonIdentifiers.h>
 #include <JavaScriptCore/EnsureStillAliveHere.h>
+#include <JavaScriptCore/ExceptionScope.h>
 #include <JavaScriptCore/GCOwnedDataScope.h>
 #include <JavaScriptCore/GetVM.h>
 #include <JavaScriptCore/Identifier.h>
 #include <JavaScriptCore/PropertyDescriptor.h>
 #include <JavaScriptCore/PropertySlot.h>
 #include <JavaScriptCore/Structure.h>
-#include <JavaScriptCore/ThrowScope.h>
 #include <array>
 #include <wtf/CheckedArithmetic.h>
 #include <wtf/ForbidHeapAllocation.h>
@@ -834,7 +834,7 @@ inline JSString* jsNontrivialString(VM& vm, String&& s)
 ALWAYS_INLINE Identifier JSRopeString::toIdentifier(JSGlobalObject* globalObject) const
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto atomString = static_cast<const JSRopeString*>(this)->resolveRopeToAtomString(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
     return Identifier::fromString(vm, Ref { *atomString });
@@ -927,7 +927,7 @@ inline GCOwnedDataScope<const String&> JSString::tryGetValue(bool allocationAllo
 inline JSString* JSString::getIndex(JSGlobalObject* globalObject, unsigned i)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     ASSERT(canGetIndex(i));
     auto view = this->view(globalObject);
     RETURN_IF_EXCEPTION(scope, nullptr);
@@ -1048,7 +1048,7 @@ inline JSString* tryJSSubstringImpl(VM& vm, JSGlobalObject* globalObject, JSStri
 
 inline JSString* jsSubstring(VM& vm, JSGlobalObject* globalObject, JSString* base, unsigned offset, unsigned length)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSString* result = tryJSSubstringImpl(vm, globalObject, base, offset, length);
     RETURN_IF_EXCEPTION(scope, nullptr);
 
@@ -1123,7 +1123,7 @@ ALWAYS_INLINE JSString* jsStringWithCache(VM& vm, const String& s)
 ALWAYS_INLINE bool JSString::getStringPropertySlot(JSGlobalObject* globalObject, PropertyName propertyName, PropertySlot& slot)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (propertyName == vm.propertyNames->length) {
         slot.setValue(this, PropertyAttribute::DontEnum | PropertyAttribute::DontDelete | PropertyAttribute::ReadOnly, jsNumber(length()));
@@ -1144,7 +1144,7 @@ ALWAYS_INLINE bool JSString::getStringPropertySlot(JSGlobalObject* globalObject,
 ALWAYS_INLINE bool JSString::getStringPropertySlot(JSGlobalObject* globalObject, unsigned propertyName, PropertySlot& slot)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (propertyName < length()) {
         JSValue value = getIndex(globalObject, propertyName);

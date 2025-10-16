@@ -617,7 +617,7 @@ const LocaleSet& intlSegmenterAvailableLocales()
 TriState intlBooleanOption(JSGlobalObject* globalObject, JSObject* options, PropertyName property)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!options)
         return TriState::Indeterminate;
@@ -637,7 +637,7 @@ String intlStringOption(JSGlobalObject* globalObject, JSObject* options, Propert
     // https://tc39.github.io/ecma402/#sec-getoption
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!options)
         return fallback;
@@ -665,7 +665,7 @@ unsigned intlNumberOption(JSGlobalObject* globalObject, JSObject* options, Prope
     // https://tc39.github.io/ecma402/#sec-getnumberoption
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!options)
         return fallback;
@@ -682,7 +682,7 @@ unsigned intlDefaultNumberOption(JSGlobalObject* globalObject, JSValue value, Pr
     // https://tc39.github.io/ecma402/#sec-defaultnumberoption
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!value.isUndefined()) {
         double doubleValue = value.toNumber(globalObject);
@@ -737,7 +737,7 @@ Vector<String> canonicalizeLocaleList(JSGlobalObject* globalObject, JSValue loca
     // https://tc39.github.io/ecma402/#sec-canonicalizelocalelist
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Vector<String> seen;
 
@@ -1014,7 +1014,7 @@ static JSArray* lookupSupportedLocales(JSGlobalObject* globalObject, const Local
     // https://tc39.github.io/ecma402/#sec-lookupsupportedlocales
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     size_t len = requestedLocales.size();
     JSArray* subset = JSArray::tryCreate(vm, globalObject->arrayStructureForIndexingTypeDuringAllocation(ArrayWithUndecided), 0);
@@ -1052,7 +1052,7 @@ JSValue supportedLocales(JSGlobalObject* globalObject, const LocaleSet& availabl
     // https://tc39.github.io/ecma402/#sec-supportedlocales
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     String matcher;
 
     JSObject* options = intlCoerceOptionsToObject(globalObject, optionsValue);
@@ -1588,7 +1588,7 @@ JSC_DEFINE_HOST_FUNCTION(intlObjectFuncGetCanonicalLocales, (JSGlobalObject* glo
     // https://tc39.github.io/ecma402/#sec-intl.getcanonicallocales
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Vector<String> localeList = canonicalizeLocaleList(globalObject, callFrame->argument(0));
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
@@ -1672,7 +1672,7 @@ static JSArray* availableCalendars(JSGlobalObject* globalObject)
 static JSArray* availableCollations(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     UErrorCode status = U_ZERO_ERROR;
     auto enumeration = std::unique_ptr<UEnumeration, ICUDeleter<uenum_close>>(ucol_getKeywordValues("collation", &status));
@@ -1725,7 +1725,7 @@ static JSArray* availableCollations(JSGlobalObject* globalObject)
 static JSArray* availableCurrencies(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     UErrorCode status = U_ZERO_ERROR;
     auto enumeration = std::unique_ptr<UEnumeration, ICUDeleter<uenum_close>>(ucurr_openISOCurrencies(UCURR_ALL, &status));
@@ -1781,7 +1781,7 @@ static JSArray* availableCurrencies(JSGlobalObject* globalObject)
 static JSArray* availableNumberingSystems(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     UErrorCode status = U_ZERO_ERROR;
     auto enumeration = std::unique_ptr<UEnumeration, ICUDeleter<uenum_close>>(unumsys_openAvailableNames(&status));
@@ -1917,7 +1917,7 @@ static JSArray* availablePrimaryTimeZoneIdentifiers(JSGlobalObject* globalObject
 static JSArray* availableUnits(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSArray* result = JSArray::tryCreate(vm, globalObject->arrayStructureForIndexingTypeDuringAllocation(ArrayWithUndecided), std::size(simpleUnits));
     if (!result) {
@@ -1943,7 +1943,7 @@ static JSArray* availableUnits(JSGlobalObject* globalObject)
 JSC_DEFINE_HOST_FUNCTION(intlObjectFuncSupportedValuesOf, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     String key = callFrame->argument(0).toWTFString(globalObject);
     RETURN_IF_EXCEPTION(scope, { });

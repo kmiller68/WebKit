@@ -115,7 +115,7 @@ RefPtr<Element> JSCustomElementInterface::tryToConstructCustomElement(Document& 
 
     VM& vm = m_isolatedWorld->vm();
     JSLockHolder lock(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!m_constructor)
         return nullptr;
@@ -132,7 +132,7 @@ RefPtr<Element> JSCustomElementInterface::tryToConstructCustomElement(Document& 
     EXCEPTION_ASSERT(!!scope.exception() == !element);
     if (!element) {
         auto* exception = scope.exception();
-        scope.clearException();
+        TRY_CLEAR_EXCEPTION(scope, nullptr);
         reportException(m_constructor->globalObject(), exception);
         return nullptr;
     }
@@ -144,7 +144,7 @@ RefPtr<Element> JSCustomElementInterface::tryToConstructCustomElement(Document& 
 // 6. 1. If the synchronous custom elements flag is set
 static RefPtr<Element> constructCustomElementSynchronously(Document& document, VM& vm, JSGlobalObject& lexicalGlobalObject, JSObject* constructor, const AtomString& localName, ParserConstructElementWithEmptyStack parserConstructElementWithEmptyStack)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto constructData = JSC::getConstructData(constructor);
     if (constructData.type == CallData::Type::None) {
         ASSERT_NOT_REACHED();
@@ -158,8 +158,11 @@ static RefPtr<Element> constructCustomElementSynchronously(Document& document, V
     InspectorInstrumentation::didCallFunction(&document);
     RETURN_IF_EXCEPTION(scope, nullptr);
 
-    if (parserConstructElementWithEmptyStack == ParserConstructElementWithEmptyStack::Yes)
+    if (parserConstructElementWithEmptyStack == ParserConstructElementWithEmptyStack::Yes) {
         document.eventLoop().performMicrotaskCheckpoint();
+        scope.assertNoExceptionExceptTermination();
+        RETURN_IF_EXCEPTION(scope, nullptr);
+    }
 
     ASSERT(!newElement.isEmpty());
     HTMLElement* wrappedElement = JSHTMLElement::toWrapped(vm, newElement);
@@ -211,7 +214,7 @@ void JSCustomElementInterface::upgradeElement(Element& element)
     Ref<JSCustomElementInterface> protectedThis(*this);
     VM& vm = m_isolatedWorld->vm();
     JSLockHolder lock(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!m_constructor)
         return;

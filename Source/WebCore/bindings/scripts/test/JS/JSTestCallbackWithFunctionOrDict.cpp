@@ -106,7 +106,7 @@ CallbackResult<typename IDLUndefined::CallbackReturnType> JSTestCallbackWithFunc
     NakedPtr<JSC::Exception> returnedException;
     m_data->invokeCallback(thisValue, args, JSCallbackData::CallbackType::Function, Identifier(), returnedException);
     if (returnedException) {
-        auto throwScope = DECLARE_THROW_SCOPE(vm);
+        auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
         throwException(&lexicalGlobalObject, throwScope, returnedException);
         return CallbackResultType::ExceptionThrown;
      }

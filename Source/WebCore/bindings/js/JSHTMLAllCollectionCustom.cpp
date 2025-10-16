@@ -44,7 +44,7 @@ static JSC_DECLARE_HOST_FUNCTION(callJSHTMLAllCollection);
 JSC_DEFINE_HOST_FUNCTION(callJSHTMLAllCollection, (JSGlobalObject* lexicalGlobalObject, CallFrame* callFrame))
 {
     VM& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* castedThis = jsCast<JSHTMLAllCollection*>(callFrame->jsCallee());
     ASSERT(castedThis);

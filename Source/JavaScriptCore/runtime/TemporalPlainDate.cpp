@@ -85,7 +85,7 @@ DEFINE_VISIT_CHILDREN(TemporalPlainDate);
 ISO8601::PlainDate TemporalPlainDate::toPlainDate(JSGlobalObject* globalObject, const ISO8601::Duration& duration)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double yearDouble = duration.years();
     double monthDouble = duration.months();
@@ -118,7 +118,7 @@ ISO8601::PlainDate TemporalPlainDate::toPlainDate(JSGlobalObject* globalObject, 
 TemporalPlainDate* TemporalPlainDate::tryCreateIfValid(JSGlobalObject* globalObject, Structure* structure, ISO8601::PlainDate&& plainDate)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!ISO8601::isDateTimeWithinLimits(plainDate.year(), plainDate.month(), plainDate.day(), 12, 0, 0, 0, 0, 0)) {
         throwRangeError(globalObject, scope, "date time is out of range of ECMAScript representation"_s);
@@ -131,7 +131,7 @@ TemporalPlainDate* TemporalPlainDate::tryCreateIfValid(JSGlobalObject* globalObj
 TemporalPlainDate* TemporalPlainDate::tryCreateIfValid(JSGlobalObject* globalObject, Structure* structure, ISO8601::Duration&& duration)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto plainDate = toPlainDate(globalObject, duration);
     RETURN_IF_EXCEPTION(scope, { });
@@ -142,7 +142,7 @@ TemporalPlainDate* TemporalPlainDate::tryCreateIfValid(JSGlobalObject* globalObj
 String TemporalPlainDate::toString(JSGlobalObject* globalObject, JSValue optionsValue) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* options = intlGetOptionsObject(globalObject, optionsValue);
     RETURN_IF_EXCEPTION(scope, { });
@@ -157,7 +157,7 @@ String TemporalPlainDate::toString(JSGlobalObject* globalObject, JSValue options
 TemporalPlainDate* TemporalPlainDate::from(JSGlobalObject* globalObject, JSValue itemValue, std::optional<TemporalOverflow> overflowValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto overflow = overflowValue.value_or(TemporalOverflow::Constrain);
 
@@ -207,7 +207,7 @@ TemporalPlainDate* TemporalPlainDate::from(JSGlobalObject* globalObject, JSValue
 std::array<std::optional<double>, numberOfTemporalPlainDateUnits> TemporalPlainDate::toPartialDate(JSGlobalObject* globalObject, JSObject* temporalDateLike)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     std::optional<double> day;
     JSValue dayProperty = temporalDateLike->get(globalObject, vm.propertyNames->day);
@@ -274,7 +274,7 @@ std::array<std::optional<double>, numberOfTemporalPlainDateUnits> TemporalPlainD
 ISO8601::PlainDate TemporalPlainDate::with(JSGlobalObject* globalObject, JSObject* temporalDateLike, JSValue optionsValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     rejectObjectWithCalendarOrTimeZone(globalObject, temporalDateLike);
     RETURN_IF_EXCEPTION(scope, { });
@@ -314,7 +314,7 @@ static Int128 getUTCEpochNanoseconds(ISO8601::PlainDate isoDate)
 ISO8601::Duration TemporalPlainDate::differenceTemporalPlainDate(JSGlobalObject* globalObject, DifferenceOperation op, TemporalPlainDate* other, TemporalUnit smallestUnit, TemporalUnit largestUnit, RoundingMode roundingMode, double increment)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!TemporalCalendar::isoDateCompare(plainDate(), other->plainDate()))
         return ISO8601::Duration();
@@ -340,7 +340,7 @@ ISO8601::Duration TemporalPlainDate::differenceTemporalPlainDate(JSGlobalObject*
 ISO8601::Duration TemporalPlainDate::until(JSGlobalObject* globalObject, TemporalPlainDate* other, JSValue optionsValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     bool calendarsMatch = calendar()->equals(globalObject, other->calendar());
     RETURN_IF_EXCEPTION(scope, { });
@@ -364,7 +364,7 @@ ISO8601::Duration TemporalPlainDate::until(JSGlobalObject* globalObject, Tempora
 ISO8601::Duration TemporalPlainDate::since(JSGlobalObject* globalObject, TemporalPlainDate* other, JSValue optionsValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     bool calendarsMatch = calendar()->equals(globalObject, other->calendar());
     RETURN_IF_EXCEPTION(scope, { });

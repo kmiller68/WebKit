@@ -70,7 +70,7 @@ static std::optional<int64_t> parseTemporalTimeZoneString(StringView)
 JSObject* TemporalTimeZone::from(JSGlobalObject* globalObject, JSValue timeZoneLike)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (timeZoneLike.isObject()) {
         JSObject* timeZoneLikeObject = jsCast<JSObject*>(timeZoneLike);

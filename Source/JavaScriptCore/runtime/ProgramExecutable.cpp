@@ -83,7 +83,7 @@ static ALWAYS_INLINE bool requiresCanDeclareGlobalFunctionQuirk()
 JSObject* ProgramExecutable::initializeGlobalProperties(VM& vm, JSGlobalObject* globalObject, JSScope* scope)
 {
     DeferTermination deferScope(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     RELEASE_ASSERT(scope);
     ASSERT(globalObject == scope->globalObject());
     RELEASE_ASSERT(globalObject);

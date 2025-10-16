@@ -93,7 +93,7 @@ public:
     ALWAYS_INLINE JSValue callWithArguments(JSGlobalObject* globalObject, JSValue thisValue, Args... args)
     {
         VM& vm = m_vm;
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         ASSERT_WITH_MESSAGE(!thisValue.isEmpty(), "Expected thisValue to be non-empty. Use jsUndefined() if you meant to use undefined.");
 #if ASSERT_ENABLED

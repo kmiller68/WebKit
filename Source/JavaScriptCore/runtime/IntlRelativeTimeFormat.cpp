@@ -79,7 +79,7 @@ Vector<String> IntlRelativeTimeFormat::localeData(const String& locale, Relevant
 void IntlRelativeTimeFormat::initializeRelativeTimeFormat(JSGlobalObject* globalObject, JSValue locales, JSValue optionsValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Vector<String> requestedLocales = canonicalizeLocaleList(globalObject, locales);
     RETURN_IF_EXCEPTION(scope, void());
@@ -231,7 +231,7 @@ String IntlRelativeTimeFormat::formatInternal(JSGlobalObject* globalObject, doub
     ASSERT(m_relativeDateTimeFormatter);
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!std::isfinite(value)) {
         throwRangeError(globalObject, scope, "number argument must be finite"_s);
@@ -260,7 +260,7 @@ String IntlRelativeTimeFormat::formatInternal(JSGlobalObject* globalObject, doub
 JSValue IntlRelativeTimeFormat::format(JSGlobalObject* globalObject, double value, StringView unit) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     String result = formatInternal(globalObject, value, unit);
     RETURN_IF_EXCEPTION(scope, { });
@@ -272,7 +272,7 @@ JSValue IntlRelativeTimeFormat::format(JSGlobalObject* globalObject, double valu
 JSValue IntlRelativeTimeFormat::formatToParts(JSGlobalObject* globalObject, double value, StringView unit) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     String formattedRelativeTime = formatInternal(globalObject, value, unit);
     RETURN_IF_EXCEPTION(scope, { });

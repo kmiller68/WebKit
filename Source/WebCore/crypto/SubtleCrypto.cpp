@@ -112,7 +112,7 @@ static bool isX25519Enabled(JSGlobalObject& state)
 static ExceptionOr<std::unique_ptr<CryptoAlgorithmParameters>> normalizeCryptoAlgorithmParameters(JSGlobalObject& state, SubtleCrypto::AlgorithmIdentifier algorithmIdentifier, Operations operation)
 {
     VM& vm = state.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (std::holds_alternative<String>(algorithmIdentifier)) {
         auto newParams = Strong<JSObject>(vm, constructEmptyObject(&state));
@@ -1233,7 +1233,7 @@ void SubtleCrypto::unwrapKey(JSC::JSGlobalObject& state, KeyFormat format, Buffe
         case SubtleCrypto::KeyFormat::Jwk: {
             auto& state = *(promise->globalObject());
             auto& vm = state.vm();
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
             JSLockHolder locker(vm);
             auto jwkObject = JSONParse(&state, byteCast<Latin1Character>(bytes.span()));

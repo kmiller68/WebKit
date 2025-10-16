@@ -29,8 +29,8 @@
 #include "JSDOMGlobalObject.h"
 #include "LocalDOMWindow.h"
 #include <JavaScriptCore/BuiltinNames.h>
-#include <JavaScriptCore/CatchScope.h>
 #include <JavaScriptCore/Exception.h>
+#include <JavaScriptCore/ExceptionScope.h>
 #include <JavaScriptCore/JSNativeStdFunction.h>
 #include <JavaScriptCore/JSPromiseConstructor.h>
 

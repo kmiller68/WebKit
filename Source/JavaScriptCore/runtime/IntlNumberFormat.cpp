@@ -287,7 +287,7 @@ IGNORE_GCC_WARNINGS_END
 void IntlNumberFormat::initializeNumberFormat(JSGlobalObject* globalObject, JSValue locales, JSValue optionsValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto requestedLocales = canonicalizeLocaleList(globalObject, locales);
     RETURN_IF_EXCEPTION(scope, void());
@@ -543,7 +543,7 @@ void IntlNumberFormat::initializeNumberFormat(JSGlobalObject* globalObject, JSVa
 JSValue IntlNumberFormat::format(JSGlobalObject* globalObject, double value) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     value = purifyNaN(value);
 
@@ -566,7 +566,7 @@ JSValue IntlNumberFormat::format(JSGlobalObject* globalObject, double value) con
 JSValue IntlNumberFormat::format(JSGlobalObject* globalObject, IntlMathematicalValue&& value) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     value.ensureNonDouble();
     const auto& string = value.getString();
@@ -589,7 +589,7 @@ JSValue IntlNumberFormat::format(JSGlobalObject* globalObject, IntlMathematicalV
 JSValue IntlNumberFormat::formatRange(JSGlobalObject* globalObject, double start, double end) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(m_numberRangeFormatter);
 
@@ -620,7 +620,7 @@ JSValue IntlNumberFormat::formatRange(JSGlobalObject* globalObject, double start
 JSValue IntlNumberFormat::formatRange(JSGlobalObject* globalObject, IntlMathematicalValue&& start, IntlMathematicalValue&& end) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(m_numberRangeFormatter);
 
@@ -786,7 +786,7 @@ static bool numberFieldsPracticallyEqual(const UFormattedValue* formattedValue, 
 void IntlNumberFormat::formatRangeToPartsInternal(JSGlobalObject* globalObject, Style style, IntlMathematicalValue&& start, IntlMathematicalValue&& end, const UFormattedValue* formattedValue, JSArray* parts)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     UErrorCode status = U_ZERO_ERROR;
 
@@ -910,7 +910,7 @@ void IntlNumberFormat::formatRangeToPartsInternal(JSGlobalObject* globalObject, 
 JSValue IntlNumberFormat::formatRangeToParts(JSGlobalObject* globalObject, double start, double end) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(m_numberRangeFormatter);
 
@@ -957,7 +957,7 @@ JSValue IntlNumberFormat::formatRangeToParts(JSGlobalObject* globalObject, doubl
 JSValue IntlNumberFormat::formatRangeToParts(JSGlobalObject* globalObject, IntlMathematicalValue&& start, IntlMathematicalValue&& end) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(m_numberRangeFormatter);
 
@@ -1245,7 +1245,7 @@ void IntlNumberFormat::setBoundFormat(VM& vm, JSBoundFunction* format)
 void IntlNumberFormat::formatToPartsInternal(JSGlobalObject* globalObject, Style style, bool sign, IntlMathematicalValue::NumberType numberType, const String& formatted, IntlFieldIterator& iterator, JSArray* parts, JSString* sourceType, JSString* unit)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto stringLength = formatted.length();
 
@@ -1293,7 +1293,7 @@ void IntlNumberFormat::formatToPartsInternal(JSGlobalObject* globalObject, Style
 JSValue IntlNumberFormat::formatToParts(JSGlobalObject* globalObject, double value, JSString* sourceType) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     value = purifyNaN(value);
 
@@ -1333,7 +1333,7 @@ JSValue IntlNumberFormat::formatToParts(JSGlobalObject* globalObject, double val
 JSValue IntlNumberFormat::formatToParts(JSGlobalObject* globalObject, IntlMathematicalValue&& value, JSString* sourceType) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     value.ensureNonDouble();
     const auto& string = value.getString();
@@ -1378,7 +1378,7 @@ JSValue IntlNumberFormat::formatToParts(JSGlobalObject* globalObject, IntlMathem
 IntlMathematicalValue IntlMathematicalValue::parseString(JSGlobalObject* globalObject, StringView view)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto trimmed = view.trim([](auto character) {
         return isStrWhiteSpace(character);

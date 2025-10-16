@@ -162,7 +162,7 @@ inline double JSFunction::originalLength(VM& vm)
 }
 
 template<typename... StringTypes>
-ALWAYS_INLINE String makeNameWithOutOfMemoryCheck(JSGlobalObject* globalObject, ThrowScope& throwScope, ASCIILiteral messagePrefix, StringTypes... strings)
+ALWAYS_INLINE String makeNameWithOutOfMemoryCheck(JSGlobalObject* globalObject, ExceptionScope& throwScope, ASCIILiteral messagePrefix, StringTypes... strings)
 {
     String name = tryMakeString(strings...);
     if (!name) [[unlikely]] {
@@ -175,7 +175,7 @@ ALWAYS_INLINE String makeNameWithOutOfMemoryCheck(JSGlobalObject* globalObject, 
 inline JSString* JSFunction::originalName(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (this->inherits<JSBoundFunction>()) {
         JSString* nameMayBeNull = jsCast<JSBoundFunction*>(this)->nameMayBeNull();

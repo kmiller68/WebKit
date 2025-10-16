@@ -80,7 +80,7 @@ void IntlRelativeTimeFormatPrototype::finishCreation(VM& vm)
 JSC_DEFINE_HOST_FUNCTION(intlRelativeTimeFormatPrototypeFuncFormat, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* relativeTimeFormat = jsDynamicCast<IntlRelativeTimeFormat*>(callFrame->thisValue());
     if (!relativeTimeFormat) [[unlikely]]
@@ -99,7 +99,7 @@ JSC_DEFINE_HOST_FUNCTION(intlRelativeTimeFormatPrototypeFuncFormat, (JSGlobalObj
 JSC_DEFINE_HOST_FUNCTION(intlRelativeTimeFormatPrototypeFuncFormatToParts, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* relativeTimeFormat = jsDynamicCast<IntlRelativeTimeFormat*>(callFrame->thisValue());
     if (!relativeTimeFormat) [[unlikely]]
@@ -118,7 +118,7 @@ JSC_DEFINE_HOST_FUNCTION(intlRelativeTimeFormatPrototypeFuncFormatToParts, (JSGl
 JSC_DEFINE_HOST_FUNCTION(intlRelativeTimeFormatPrototypeFuncResolvedOptions, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* relativeTimeFormat = jsDynamicCast<IntlRelativeTimeFormat*>(callFrame->thisValue());
     if (!relativeTimeFormat) [[unlikely]]

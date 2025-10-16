@@ -91,7 +91,7 @@ void TemporalPlainMonthDayPrototype::finishCreation(VM& vm, JSGlobalObject*)
 JSC_DEFINE_HOST_FUNCTION(temporalPlainMonthDayPrototypeFuncToString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* monthDay = jsDynamicCast<TemporalPlainMonthDay*>(callFrame->thisValue());
     if (!monthDay)
@@ -104,7 +104,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalPlainMonthDayPrototypeFuncToString, (JSGlobalOb
 JSC_DEFINE_HOST_FUNCTION(temporalPlainMonthDayPrototypeFuncToJSON, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* monthDay = jsDynamicCast<TemporalPlainMonthDay*>(callFrame->thisValue());
     if (!monthDay)
@@ -117,7 +117,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalPlainMonthDayPrototypeFuncToJSON, (JSGlobalObje
 JSC_DEFINE_HOST_FUNCTION(temporalPlainMonthDayPrototypeFuncToLocaleString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* monthDay = jsDynamicCast<TemporalPlainMonthDay*>(callFrame->thisValue());
     if (!monthDay)
@@ -130,7 +130,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalPlainMonthDayPrototypeFuncToLocaleString, (JSGl
 JSC_DEFINE_CUSTOM_GETTER(temporalPlainMonthDayPrototypeGetterCalendarId, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* monthDay = jsDynamicCast<TemporalPlainMonthDay*>(JSValue::decode(thisValue));
     if (!monthDay)
@@ -144,7 +144,7 @@ JSC_DEFINE_CUSTOM_GETTER(temporalPlainMonthDayPrototypeGetterCalendarId, (JSGlob
 JSC_DEFINE_CUSTOM_GETTER(temporalPlainMonthDayPrototypeGetterDay, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* monthDay = jsDynamicCast<TemporalPlainMonthDay*>(JSValue::decode(thisValue));
     if (!monthDay)
@@ -157,7 +157,7 @@ JSC_DEFINE_CUSTOM_GETTER(temporalPlainMonthDayPrototypeGetterDay, (JSGlobalObjec
 JSC_DEFINE_CUSTOM_GETTER(temporalPlainMonthDayPrototypeGetterMonthCode, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* monthDay = jsDynamicCast<TemporalPlainMonthDay*>(JSValue::decode(thisValue));
     if (!monthDay)

@@ -79,7 +79,7 @@ void IntlListFormatPrototype::finishCreation(VM& vm)
 JSC_DEFINE_HOST_FUNCTION(intlListFormatPrototypeFuncFormat, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* listFormat = jsDynamicCast<IntlListFormat*>(callFrame->thisValue());
     if (!listFormat) [[unlikely]]
@@ -92,7 +92,7 @@ JSC_DEFINE_HOST_FUNCTION(intlListFormatPrototypeFuncFormat, (JSGlobalObject* glo
 JSC_DEFINE_HOST_FUNCTION(intlListFormatPrototypeFuncFormatToParts, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* listFormat = jsDynamicCast<IntlListFormat*>(callFrame->thisValue());
     if (!listFormat) [[unlikely]]
@@ -105,7 +105,7 @@ JSC_DEFINE_HOST_FUNCTION(intlListFormatPrototypeFuncFormatToParts, (JSGlobalObje
 JSC_DEFINE_HOST_FUNCTION(intlListFormatPrototypeFuncResolvedOptions, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* listFormat = jsDynamicCast<IntlListFormat*>(callFrame->thisValue());
     if (!listFormat) [[unlikely]]

@@ -104,11 +104,11 @@ private:
         // error handler.
         JSC::Exception* previousException = nullptr;
         {
-            auto catchScope = DECLARE_CATCH_SCOPE(vm);
+            auto catchScope = DECLARE_EXCEPTION_SCOPE(vm);
             auto result = protectedPredicate()->invokeRethrowingException(value, m_idx);
             previousException = catchScope.exception();
             if (previousException) {
-                catchScope.clearException();
+                TRY_CLEAR_EXCEPTION(catchScope, void());
                 protectedSubscriber()->error(previousException->value());
                 return;
             }

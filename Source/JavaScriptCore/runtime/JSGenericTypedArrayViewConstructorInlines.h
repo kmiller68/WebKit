@@ -84,7 +84,7 @@ template<typename ViewClass>
 inline JSObject* constructGenericTypedArrayViewFromIterator(JSGlobalObject* globalObject, Structure* structure, JSObject* iterable, JSValue iteratorMethod)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     MarkedArgumentBuffer storage;
     forEachInIterable(*globalObject, iterable, iteratorMethod, [&] (VM&, JSGlobalObject&, JSValue value) {
@@ -115,7 +115,7 @@ template<typename ViewClass>
 inline JSObject* constructGenericTypedArrayViewWithArguments(JSGlobalObject* globalObject, Structure* structure, JSValue firstValue, size_t offset, std::optional<size_t> lengthOpt)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // https://tc39.es/proposal-resizablearraybuffer/#sec-initializetypedarrayfromarraybuffer
     if (JSArrayBuffer* jsBuffer = jsDynamicCast<JSArrayBuffer*>(firstValue)) {
@@ -247,7 +247,7 @@ template<typename ViewClass>
 ALWAYS_INLINE EncodedJSValue constructGenericTypedArrayViewImpl(JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* newTarget = asObject(callFrame->newTarget());
 
@@ -309,7 +309,7 @@ template<typename ViewClass>
 ALWAYS_INLINE EncodedJSValue callGenericTypedArrayViewImpl(JSGlobalObject* globalObject, CallFrame*)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, ViewClass::info()->className));
 }
 

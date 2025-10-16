@@ -43,7 +43,7 @@ DEFINE_VISIT_AGGREGATE(RegExpSubstringGlobalAtomCache);
 JSValue RegExpSubstringGlobalAtomCache::collectMatches(JSGlobalObject* globalObject, JSRopeString* substring, RegExp* regExp)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     const String& pattern = regExp->atom();
     ASSERT(!pattern.isEmpty());

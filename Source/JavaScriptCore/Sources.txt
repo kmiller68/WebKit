@@ -768,7 +768,6 @@ runtime/CacheableIdentifier.cpp
 runtime/CachedBytecode.cpp
 runtime/CachedSpecialPropertyAdaptiveStructureWatchpoint.cpp
 runtime/CachedTypes.cpp
-runtime/CatchScope.cpp
 runtime/ClassInfo.cpp
 runtime/ClonedArguments.cpp
 runtime/CodeCache.cpp
@@ -1098,7 +1097,6 @@ runtime/TemporalTimeZone.cpp
 runtime/TemporalTimeZoneConstructor.cpp
 runtime/TemporalTimeZonePrototype.cpp
 runtime/TestRunnerUtils.cpp
-runtime/ThrowScope.cpp
 runtime/TypeLocationCache.cpp
 runtime/TypeProfiler.cpp
 runtime/TypeProfilerLog.cpp

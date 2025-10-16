@@ -150,7 +150,7 @@ void JSRopeString::resolveRopeInternalNoSubstring(std::span<CharacterType> buffe
 GCOwnedDataScope<AtomStringImpl*> JSRopeString::resolveRopeToAtomString(JSGlobalObject* globalObject) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto convertToAtomString = [this](const String& string) -> GCOwnedDataScope<AtomStringImpl*> {
         ASSERT(!string.impl() || string.impl()->isAtom());
@@ -190,7 +190,7 @@ GCOwnedDataScope<AtomStringImpl*> JSRopeString::resolveRopeToAtomString(JSGlobal
 GCOwnedDataScope<AtomStringImpl*> JSRopeString::resolveRopeToExistingAtomString(JSGlobalObject* globalObject) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (length() > maxLengthForOnStackResolve) {
         RefPtr<AtomStringImpl> existingAtomString;
@@ -292,7 +292,7 @@ void JSRopeString::outOfMemory(JSGlobalObject* nullOrGlobalObjectForOOM) const
     ASSERT(isRope());
     if (nullOrGlobalObjectForOOM) {
         VM& vm = nullOrGlobalObjectForOOM->vm();
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         throwOutOfMemoryError(nullOrGlobalObjectForOOM, scope);
     }
 }
@@ -305,7 +305,7 @@ JSValue JSString::toPrimitive(JSGlobalObject*, PreferredPrimitiveType) const
 double JSString::toNumber(JSGlobalObject* globalObject) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto view = this->view(globalObject);
     RETURN_IF_EXCEPTION(scope, 0);
     return jsToNumber(view);

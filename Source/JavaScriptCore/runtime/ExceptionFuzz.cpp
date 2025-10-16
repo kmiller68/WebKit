@@ -37,7 +37,7 @@ static unsigned s_numberOfExceptionFuzzChecks;
 unsigned numberOfExceptionFuzzChecks() { return s_numberOfExceptionFuzzChecks; }
 
 // Call this only if you know that exception fuzzing is enabled.
-void doExceptionFuzzing(JSGlobalObject* globalObject, ThrowScope& scope, ASCIILiteral where, const void* returnPC)
+void doExceptionFuzzing(JSGlobalObject* globalObject, ExceptionScope& scope, ASCIILiteral where, const void* returnPC)
 {
     VM& vm = scope.vm();
     ASSERT(Options::useExceptionFuzz());
@@ -51,7 +51,7 @@ void doExceptionFuzzing(JSGlobalObject* globalObject, ThrowScope& scope, ASCIILi
         SAFE_PRINTF("JSC EXCEPTION FUZZ: Throwing fuzz exception with call frame %p, seen in %s and return address %p.\n", globalObject, where, returnPC);
         fflush(stdout);
 
-        // The ThrowScope also checks for unchecked simulated exceptions before throwing a
+        // The ExceptionScope also checks for unchecked simulated exceptions before throwing a
         // new exception. This ensures that we don't quietly overwrite a pending exception
         // (which should never happen with the only exception being to rethrow the same
         // exception). However, ExceptionFuzz works by intentionally throwing its own exception

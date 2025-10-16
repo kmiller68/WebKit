@@ -36,7 +36,7 @@ using namespace JSC;
 String identifierToString(JSGlobalObject& lexicalGlobalObject, const Identifier& identifier)
 {
     if (identifier.isSymbol()) [[unlikely]] {
-        auto scope = DECLARE_THROW_SCOPE(lexicalGlobalObject.vm());
+        auto scope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject.vm());
         throwTypeError(&lexicalGlobalObject, scope, SymbolCoercionError);
         return { };
     }
@@ -44,7 +44,7 @@ String identifierToString(JSGlobalObject& lexicalGlobalObject, const Identifier&
     return identifier.string();
 }
 
-static inline bool throwIfInvalidByteString(JSGlobalObject& lexicalGlobalObject, JSC::ThrowScope& scope, const String& string)
+static inline bool throwIfInvalidByteString(JSGlobalObject& lexicalGlobalObject, JSC::ExceptionScope& scope, const String& string)
 {
     if (!string.containsOnlyLatin1()) [[unlikely]] {
         throwTypeError(&lexicalGlobalObject, scope);
@@ -56,7 +56,7 @@ static inline bool throwIfInvalidByteString(JSGlobalObject& lexicalGlobalObject,
 String identifierToByteString(JSGlobalObject& lexicalGlobalObject, const Identifier& identifier)
 {
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto string = identifierToString(lexicalGlobalObject, identifier);
     RETURN_IF_EXCEPTION(scope, { });
@@ -68,7 +68,7 @@ String identifierToByteString(JSGlobalObject& lexicalGlobalObject, const Identif
 ConversionResult<IDLByteString> valueToByteString(JSGlobalObject& lexicalGlobalObject, JSValue value)
 {
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto string = value.toWTFString(&lexicalGlobalObject);
     RETURN_IF_EXCEPTION(scope, ConversionResult<IDLByteString>::exception());
@@ -82,7 +82,7 @@ ConversionResult<IDLByteString> valueToByteString(JSGlobalObject& lexicalGlobalO
 ConversionResult<IDLAtomStringAdaptor<IDLByteString>> valueToByteAtomString(JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value)
 {
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     AtomString string = value.toString(&lexicalGlobalObject)->toAtomString(&lexicalGlobalObject).data;
     RETURN_IF_EXCEPTION(scope, ConversionResult<IDLAtomStringAdaptor<IDLByteString>>::exception());
@@ -101,7 +101,7 @@ String identifierToUSVString(JSGlobalObject& lexicalGlobalObject, const Identifi
 ConversionResult<IDLUSVString> valueToUSVString(JSGlobalObject& lexicalGlobalObject, JSValue value)
 {
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto string = value.toWTFString(&lexicalGlobalObject);
     RETURN_IF_EXCEPTION(scope, ConversionResult<IDLUSVString>::exception());
@@ -112,7 +112,7 @@ ConversionResult<IDLUSVString> valueToUSVString(JSGlobalObject& lexicalGlobalObj
 ConversionResult<IDLAtomStringAdaptor<IDLUSVString>> valueToUSVAtomString(JSGlobalObject& lexicalGlobalObject, JSValue value)
 {
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto string = value.toString(&lexicalGlobalObject)->toAtomString(&lexicalGlobalObject);
     RETURN_IF_EXCEPTION(scope, ConversionResult<IDLAtomStringAdaptor<IDLUSVString>>::exception());
@@ -124,7 +124,7 @@ ConversionResult<IDLAtomStringAdaptor<IDLUSVString>> valueToUSVAtomString(JSGlob
 ConversionResult<IDLDOMString> trustedScriptCompliantString(JSGlobalObject& global, JSValue input, const String& sink)
 {
     VM& vm = global.vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (RefPtr trustedScript = JSTrustedScript::toWrapped(vm, input))
         return trustedScript->toString();

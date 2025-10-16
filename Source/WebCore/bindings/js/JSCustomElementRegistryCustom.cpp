@@ -44,7 +44,7 @@ using namespace JSC;
 static JSObject* getCustomElementCallback(JSGlobalObject& lexicalGlobalObject, JSObject& prototype, const Identifier& id)
 {
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue callback = prototype.get(&lexicalGlobalObject, id);
     RETURN_IF_EXCEPTION(scope, nullptr);
@@ -59,7 +59,7 @@ static JSObject* getCustomElementCallback(JSGlobalObject& lexicalGlobalObject, J
 
 static bool validateCustomElementNameAndThrowIfNeeded(JSGlobalObject& lexicalGlobalObject, const AtomString& name)
 {
-    auto scope = DECLARE_THROW_SCOPE(lexicalGlobalObject.vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject.vm());
     switch (Document::validateCustomElementName(name)) {
     case CustomElementNameValidationStatus::Valid:
         return true;
@@ -87,7 +87,7 @@ static bool validateCustomElementNameAndThrowIfNeeded(JSGlobalObject& lexicalGlo
 JSValue JSCustomElementRegistry::define(JSGlobalObject& lexicalGlobalObject, CallFrame& callFrame)
 {
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (callFrame.argumentCount() < 2) [[unlikely]]
         return throwException(&lexicalGlobalObject, scope, createNotEnoughArgumentsError(&lexicalGlobalObject));
@@ -206,7 +206,7 @@ JSValue JSCustomElementRegistry::define(JSGlobalObject& lexicalGlobalObject, Cal
 // https://html.spec.whatwg.org/#dom-customelementregistry-whendefined
 static JSValue whenDefinedPromise(JSGlobalObject& lexicalGlobalObject, CallFrame& callFrame, JSDOMGlobalObject& globalObject, CustomElementRegistry& registry, JSPromise& promise)
 {
-    auto scope = DECLARE_THROW_SCOPE(lexicalGlobalObject.vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject.vm());
 
     if (callFrame.argumentCount() < 1) [[unlikely]]
         return throwException(&lexicalGlobalObject, scope, createNotEnoughArgumentsError(&lexicalGlobalObject));
@@ -233,7 +233,7 @@ static JSValue whenDefinedPromise(JSGlobalObject& lexicalGlobalObject, CallFrame
 
 JSValue JSCustomElementRegistry::whenDefined(JSGlobalObject& lexicalGlobalObject, CallFrame& callFrame)
 {
-    auto catchScope = DECLARE_CATCH_SCOPE(lexicalGlobalObject.vm());
+    auto catchScope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject.vm());
 
     ASSERT(globalObject());
     auto* result = JSPromise::create(lexicalGlobalObject.vm(), lexicalGlobalObject.promiseStructure());

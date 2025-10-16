@@ -58,7 +58,7 @@ void JSTemplateObjectDescriptor::destroy(JSCell* cell)
 JSArray* JSTemplateObjectDescriptor::createTemplateObject(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     unsigned count = descriptor().cookedStrings().size();
     JSArray* templateObject = constructEmptyArray(globalObject, nullptr, count);
     RETURN_IF_EXCEPTION(scope, nullptr);

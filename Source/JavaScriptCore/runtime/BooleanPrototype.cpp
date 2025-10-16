@@ -64,7 +64,7 @@ void BooleanPrototype::finishCreation(VM& vm, JSGlobalObject*)
 JSC_DEFINE_HOST_FUNCTION(booleanProtoFuncToString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     if (thisValue == jsBoolean(false))
         return JSValue::encode(vm.smallStrings.falseString());
@@ -87,7 +87,7 @@ JSC_DEFINE_HOST_FUNCTION(booleanProtoFuncToString, (JSGlobalObject* globalObject
 JSC_DEFINE_HOST_FUNCTION(booleanProtoFuncValueOf, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     if (thisValue.isBoolean())
         return JSValue::encode(thisValue);

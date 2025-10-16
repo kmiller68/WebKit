@@ -33,7 +33,7 @@
 #include "SVGElement.h"
 #include "ScriptController.h"
 #include "Settings.h"
-#include <JavaScriptCore/CatchScope.h>
+#include <JavaScriptCore/ExceptionScope.h>
 #include <JavaScriptCore/FunctionConstructor.h>
 #include <JavaScriptCore/IdentifierInlines.h>
 #include <JavaScriptCore/SourceProvider.h>
@@ -146,7 +146,7 @@ JSObject* JSLazyEventListener::initializeJSFunction(ScriptExecutionContext& exec
 
     VM& vm = globalObject->vm();
     JSLockHolder lock(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSGlobalObject* lexicalGlobalObject = globalObject;
 
     static NeverDestroyed<const String> functionPrefix(MAKE_STATIC_STRING_IMPL("function "));
@@ -166,7 +166,7 @@ JSObject* JSLazyEventListener::initializeJSFunction(ScriptExecutionContext& exec
         m_sourceURL.string(), m_sourceTaintedOrigin, m_sourcePosition, overrideLineNumber, functionConstructorParametersEndPosition);
     if (scope.exception()) [[unlikely]] {
         reportCurrentException(lexicalGlobalObject);
-        scope.clearException();
+        TRY_CLEAR_EXCEPTION(scope, nullptr);
         return nullptr;
     }
 

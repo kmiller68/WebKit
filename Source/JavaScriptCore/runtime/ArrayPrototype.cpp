@@ -253,7 +253,7 @@ inline bool canUseDefaultArrayJoinForToString(JSObject* thisObject)
 JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncToString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue().toThis(globalObject, ECMAMode::strict());
 
     // 1. Let array be the result of calling ToObject on the this value.
@@ -283,7 +283,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncToString, (JSGlobalObject* globalObject, 
 static JSString* toLocaleString(JSGlobalObject* globalObject, JSValue value, JSValue locales, JSValue options)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue toLocaleStringMethod = value.get(globalObject, vm.propertyNames->toLocaleString);
     RETURN_IF_EXCEPTION(scope, { });
@@ -309,7 +309,7 @@ static JSString* toLocaleString(JSGlobalObject* globalObject, JSValue value, JSV
 JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncToLocaleString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue().toThis(globalObject, ECMAMode::strict());
 
     JSValue locales = callFrame->argument(0);
@@ -384,7 +384,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncToLocaleString, (JSGlobalObject* globalOb
 static JSValue slowJoin(JSGlobalObject* globalObject, JSObject* thisObject, JSString* separator, uint64_t length)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 5. If len is zero, return the empty String.
     if (!length)
@@ -432,7 +432,7 @@ static JSValue slowJoin(JSGlobalObject* globalObject, JSObject* thisObject, JSSt
 JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncJoin, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 1. Let O be ? ToObject(this value).
     JSObject* thisObject = callFrame->thisValue().toThis(globalObject, ECMAMode::strict()).toObject(globalObject);
@@ -483,7 +483,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncJoin, (JSGlobalObject* globalObject, Call
 inline EncodedJSValue createArrayIteratorObject(JSGlobalObject* globalObject, CallFrame* callFrame, IterationKind kind)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* thisObject = callFrame->thisValue().toThis(globalObject, ECMAMode::strict()).toObject(globalObject);
     EXCEPTION_ASSERT(!!scope.exception() == !thisObject);
@@ -512,7 +512,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncKeys, (JSGlobalObject* globalObject, Call
 JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncPop, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue().toThis(globalObject, ECMAMode::strict());
 
@@ -551,7 +551,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncPop, (JSGlobalObject* globalObject, CallF
 JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncPush, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue().toThis(globalObject, ECMAMode::strict());
 
     if (isJSArray(thisValue) && callFrame->argumentCount() == 1) [[likely]] {
@@ -586,7 +586,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncPush, (JSGlobalObject* globalObject, Call
 JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncReverse, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* thisObject = callFrame->thisValue().toThis(globalObject, ECMAMode::strict()).toObject(globalObject);
     EXCEPTION_ASSERT(!!scope.exception() == !thisObject);
@@ -689,7 +689,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncReverse, (JSGlobalObject* globalObject, C
 JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncShift, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSObject* thisObj = callFrame->thisValue().toThis(globalObject, ECMAMode::strict()).toObject(globalObject);
     EXCEPTION_ASSERT(!!scope.exception() == !thisObj);
     if (!thisObj) [[unlikely]]
@@ -716,7 +716,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncSlice, (JSGlobalObject* globalObject, Cal
 {
     // https://tc39.github.io/ecma262/#sec-array.prototype.slice
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSObject* thisObj = callFrame->thisValue().toThis(globalObject, ECMAMode::strict()).toObject(globalObject);
     EXCEPTION_ASSERT(!!scope.exception() == !thisObj);
     if (!thisObj) [[unlikely]]
@@ -782,7 +782,7 @@ using SortEntryVector = Vector<std::tuple<JSValue, String>>;
 static ALWAYS_INLINE std::tuple<uint64_t, IndexingType, std::span<EncodedJSValue>> sortCompact(JSGlobalObject* globalObject, JSObject* thisObject, uint64_t length, SortJSValueVector& compactedRoot)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     uint64_t undefinedCount = 0;
 
@@ -901,7 +901,7 @@ static unsigned sortBucketSort(std::span<EncodedJSValue> sorted, unsigned dst, S
 static ALWAYS_INLINE std::span<EncodedJSValue> sortStableSort(JSGlobalObject* globalObject, std::span<EncodedJSValue> sorted, std::span<EncodedJSValue> compacted, JSObject* comparator)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto callData = JSC::getCallDataInline(comparator);
     ASSERT(callData.type != CallData::Type::None);
@@ -910,7 +910,7 @@ static ALWAYS_INLINE std::span<EncodedJSValue> sortStableSort(JSGlobalObject* gl
         CachedCall cachedCall(globalObject, jsCast<JSFunction*>(comparator), 2);
         RETURN_IF_EXCEPTION(scope, sorted);
         RELEASE_AND_RETURN(scope, arrayStableSort(vm, compacted, sorted, [&](auto left, auto right) ALWAYS_INLINE_LAMBDA {
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
             JSValue jsResult = cachedCall.callWithArguments(globalObject, jsUndefined(), JSValue::decode(left), JSValue::decode(right));
             RETURN_IF_EXCEPTION_WITH_TRAPS_DEFERRED(scope, false);
@@ -921,7 +921,7 @@ static ALWAYS_INLINE std::span<EncodedJSValue> sortStableSort(JSGlobalObject* gl
 
     MarkedArgumentBuffer args;
     RELEASE_AND_RETURN(scope, arrayStableSort(vm, compacted, sorted, [&](auto left, auto right) ALWAYS_INLINE_LAMBDA {
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         args.clear();
 
@@ -942,7 +942,7 @@ static ALWAYS_INLINE std::span<EncodedJSValue> sortStableSort(JSGlobalObject* gl
 static ALWAYS_INLINE void sortCommit(JSGlobalObject* globalObject, JSObject* thisObject, uint64_t length, IndexingType indexingType, std::span<const EncodedJSValue> sorted, uint64_t undefinedCount)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned index = 0;
 
@@ -986,7 +986,7 @@ static ALWAYS_INLINE void sortCommit(JSGlobalObject* globalObject, JSObject* thi
 static ALWAYS_INLINE void sortImpl(JSGlobalObject* globalObject, JSObject* thisObject, uint64_t length, JSValue comparatorValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // For compatibility with Firefox and Chrome, do nothing observable
     // to the target array if it has 0 or 1 sortable properties.
@@ -1033,7 +1033,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncSort, (JSGlobalObject* globalObject, Call
     // https://tc39.es/ecma262/#sec-array.prototype.sort
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue comparatorValue = callFrame->argument(0);
     if (!comparatorValue.isUndefined() && !comparatorValue.isCallable()) [[unlikely]]
@@ -1056,7 +1056,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncSplice, (JSGlobalObject* globalObject, Ca
     // 15.4.4.12
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* thisObj = callFrame->thisValue().toThis(globalObject, ECMAMode::strict()).toObject(globalObject);
     EXCEPTION_ASSERT(!!scope.exception() == !thisObj);
@@ -1160,7 +1160,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncSplice, (JSGlobalObject* globalObject, Ca
 JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncUnShift, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     // 15.4.4.13
 
     JSObject* thisObj = callFrame->thisValue().toThis(globalObject, ECMAMode::strict()).toObject(globalObject);
@@ -1191,7 +1191,7 @@ enum class IndexOfDirection { Forward, Backward };
 template<IndexOfDirection direction>
 ALWAYS_INLINE JSValue fastIndexOf(JSGlobalObject* globalObject, VM& vm, JSArray* array, uint64_t length64, JSValue searchElement, uint64_t index64)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     bool canDoFastPath = array->canDoFastIndexedAccess()
         && array->getArrayLength() == length64 // The effects in getting `index` could have changed the length of this array.
@@ -1302,7 +1302,7 @@ ALWAYS_INLINE JSValue fastIndexOf(JSGlobalObject* globalObject, VM& vm, JSArray*
 JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncIndexOf, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 15.4.4.14
     JSObject* thisObject = callFrame->thisValue().toThis(globalObject, ECMAMode::strict()).toObject(globalObject);
@@ -1369,7 +1369,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncIndexOf, (JSGlobalObject* globalObject, C
 JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncLastIndexOf, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 15.4.4.15
     JSObject* thisObject = callFrame->thisValue().toThis(globalObject, ECMAMode::strict()).toObject(globalObject);
@@ -1433,7 +1433,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncLastIndexOf, (JSGlobalObject* globalObjec
 
 static JSArray* concatAppendOne(JSGlobalObject* globalObject, VM& vm, JSArray* first, JSValue second)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(!isJSArray(second));
     ASSERT(!shouldUseSlowPut(first->indexingType()));
@@ -1487,7 +1487,7 @@ static JSArray* concatAppendOne(JSGlobalObject* globalObject, VM& vm, JSArray* f
 
 static JSArray* concatAppendArray(JSGlobalObject* globalObject, VM& vm, JSArray* firstArray, JSArray* secondArray)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Butterfly* firstButterfly = firstArray->butterfly();
     Butterfly* secondButterfly = secondArray->butterfly();
@@ -1582,7 +1582,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoPrivateFuncAppendMemcpy, (JSGlobalObject* glo
     ASSERT(callFrame->argumentCount() == 3);
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSArray* resultArray = jsCast<JSArray*>(callFrame->uncheckedArgument(0));
     JSArray* otherArray = jsCast<JSArray*>(callFrame->uncheckedArgument(1));
     JSValue startValue = callFrame->uncheckedArgument(2);
@@ -1601,7 +1601,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoPrivateFuncAppendMemcpy, (JSGlobalObject* glo
 JSC_DEFINE_HOST_FUNCTION(arrayProtoPrivateFuncFromFastFillWithUndefined, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue constructor = callFrame->uncheckedArgument(0);
     if (constructor != globalObject->arrayConstructor() && constructor.isObject()) [[unlikely]]
@@ -1622,7 +1622,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoPrivateFuncFromFastFillWithUndefined, (JSGlob
 JSC_DEFINE_HOST_FUNCTION(arrayProtoPrivateFuncFromFastFillWithEmpty, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue constructor = callFrame->uncheckedArgument(0);
     if (constructor != globalObject->arrayConstructor() && constructor.isObject()) [[unlikely]]
@@ -1643,7 +1643,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoPrivateFuncFromFastFillWithEmpty, (JSGlobalOb
 JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncConcat, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
 
@@ -1795,7 +1795,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncConcat, (JSGlobalObject* globalObject, Ca
 JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncFill, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto thisValue = callFrame->thisValue().toThis(globalObject, ECMAMode::strict());
     RETURN_IF_EXCEPTION(scope, { });
@@ -1836,7 +1836,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncFill, (JSGlobalObject* globalObject, Call
 JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncToReversed, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto thisValue = callFrame->thisValue().toThis(globalObject, ECMAMode::strict());
     RETURN_IF_EXCEPTION(scope, { });
@@ -1878,7 +1878,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncToReversed, (JSGlobalObject* globalObject
 JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncToSorted, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue comparatorValue = callFrame->argument(0);
     if (!comparatorValue.isUndefined() && !comparatorValue.isCallable()) [[unlikely]]
@@ -1928,7 +1928,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncToSorted, (JSGlobalObject* globalObject, 
 JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncWith, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue().toThis(globalObject, ECMAMode::strict());
     RETURN_IF_EXCEPTION(scope, { });
@@ -1985,7 +1985,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncWith, (JSGlobalObject* globalObject, Call
 JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncIncludes, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue().toThis(globalObject, ECMAMode::strict());
     RETURN_IF_EXCEPTION(scope, { });
@@ -2033,7 +2033,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncIncludes, (JSGlobalObject* globalObject, 
 JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncCopyWithin, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue().toThis(globalObject, ECMAMode::strict());
     RETURN_IF_EXCEPTION(scope, { });
@@ -2101,7 +2101,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncCopyWithin, (JSGlobalObject* globalObject
 JSC_DEFINE_HOST_FUNCTION(arrayProtoFuncToSpliced, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue().toThis(globalObject, ECMAMode::strict());
     RETURN_IF_EXCEPTION(scope, { });

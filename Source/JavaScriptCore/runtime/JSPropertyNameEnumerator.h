@@ -125,7 +125,7 @@ void getEnumerablePropertyNames(JSGlobalObject*, JSObject*, PropertyNameArray&, 
 inline JSPropertyNameEnumerator* propertyNameEnumerator(JSGlobalObject* globalObject, JSObject* base)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     uint32_t indexedLength = base->getEnumerableLength();
 

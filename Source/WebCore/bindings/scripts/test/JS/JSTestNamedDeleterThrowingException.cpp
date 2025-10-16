@@ -153,7 +153,7 @@ void JSTestNamedDeleterThrowingException::destroy(JSC::JSCell* cell)
 
 bool JSTestNamedDeleterThrowingException::legacyPlatformObjectGetOwnProperty(JSObject* object, JSGlobalObject* lexicalGlobalObject, PropertyName propertyName, PropertySlot& slot, bool ignoreNamedProperties)
 {
-    auto throwScope = DECLARE_THROW_SCOPE(JSC::getVM(lexicalGlobalObject));
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(JSC::getVM(lexicalGlobalObject));
     auto* thisObject = jsCast<JSTestNamedDeleterThrowingException*>(object);
     ASSERT_GC_OBJECT_INHERITS(thisObject, info());
     if (!ignoreNamedProperties) {
@@ -180,7 +180,7 @@ bool JSTestNamedDeleterThrowingException::getOwnPropertySlot(JSObject* object, J
 bool JSTestNamedDeleterThrowingException::getOwnPropertySlotByIndex(JSObject* object, JSGlobalObject* lexicalGlobalObject, unsigned index, PropertySlot& slot)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* thisObject = jsCast<JSTestNamedDeleterThrowingException*>(object);
     ASSERT_GC_OBJECT_INHERITS(thisObject, info());
     auto propertyName = Identifier::from(vm, index);
@@ -221,7 +221,7 @@ bool JSTestNamedDeleterThrowingException::put(JSCell* cell, JSGlobalObject* lexi
             return JSObject::put(thisObject, lexicalGlobalObject, propertyName, value, putPropertySlot);
     }
 
-    auto throwScope = DECLARE_THROW_SCOPE(lexicalGlobalObject->vm());
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject->vm());
 
     throwScope.assertNoException();
     PropertyDescriptor ownDescriptor;
@@ -249,7 +249,7 @@ bool JSTestNamedDeleterThrowingException::putByIndex(JSCell* cell, JSGlobalObjec
     ASSERT_GC_OBJECT_INHERITS(thisObject, info());
 
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     throwScope.assertNoException();
     auto propertyName = Identifier::from(vm, index);
@@ -262,7 +262,7 @@ bool JSTestNamedDeleterThrowingException::defineOwnProperty(JSObject* object, JS
     auto* thisObject = jsCast<JSTestNamedDeleterThrowingException*>(object);
     ASSERT_GC_OBJECT_INHERITS(thisObject, info());
 
-    auto throwScope = DECLARE_THROW_SCOPE(lexicalGlobalObject->vm());
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject->vm());
 
     if (!propertyName.isSymbol()) {
         PropertySlot slot { thisObject, PropertySlot::InternalMethodType::VMInquiry, &lexicalGlobalObject->vm() };
@@ -314,7 +314,7 @@ bool JSTestNamedDeleterThrowingException::deletePropertyByIndex(JSCell* cell, JS
 JSC_DEFINE_CUSTOM_GETTER(jsTestNamedDeleterThrowingExceptionConstructor, (JSGlobalObject* lexicalGlobalObject, EncodedJSValue thisValue, PropertyName))
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* prototype = jsDynamicCast<JSTestNamedDeleterThrowingExceptionPrototype*>(JSValue::decode(thisValue));
     if (!prototype) [[unlikely]]
         return throwVMTypeError(lexicalGlobalObject, throwScope);

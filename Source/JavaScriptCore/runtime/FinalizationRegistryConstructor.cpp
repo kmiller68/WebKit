@@ -56,14 +56,14 @@ FinalizationRegistryConstructor::FinalizationRegistryConstructor(VM& vm, Structu
 JSC_DEFINE_HOST_FUNCTION(callFinalizationRegistry, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "FinalizationRegistry"_s));
 }
 
 JSC_DEFINE_HOST_FUNCTION(constructFinalizationRegistry, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!callFrame->argument(0).isCallable())
         return throwVMTypeError(globalObject, scope, "First argument to FinalizationRegistry should be a function"_s);

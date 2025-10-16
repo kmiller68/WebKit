@@ -45,7 +45,7 @@
 #include "ScriptExecutionContext.h"
 #include "SerializedScriptValue.h"
 #include "WebCoreOpaqueRootInlines.h"
-#include <JavaScriptCore/CatchScope.h>
+#include <JavaScriptCore/ExceptionScope.h>
 #include <JavaScriptCore/HeapInlines.h>
 #include <JavaScriptCore/JSCJSValueInlines.h>
 #include <wtf/Locker.h>
@@ -329,7 +329,7 @@ ExceptionOr<Ref<IDBRequest>> IDBObjectStore::putForCursorUpdate(JSGlobalObject& 
 ExceptionOr<Ref<IDBRequest>> IDBObjectStore::putOrAdd(JSGlobalObject& state, JSValue value, RefPtr<IDBKey> key, IndexedDB::ObjectStoreOverwriteMode overwriteMode, InlineKeyCheck inlineKeyCheck, RefPtr<SerializedScriptValue>&& serializedValue)
 {
     VM& vm = state.vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     LOG(IndexedDB, "IDBObjectStore::putOrAdd");
     Ref transaction = m_transaction.get();

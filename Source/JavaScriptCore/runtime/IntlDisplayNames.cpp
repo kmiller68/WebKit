@@ -61,7 +61,7 @@ IntlDisplayNames::IntlDisplayNames(VM& vm, Structure* structure)
 void IntlDisplayNames::initializeDisplayNames(JSGlobalObject* globalObject, JSValue locales, JSValue optionsValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto requestedLocales = canonicalizeLocaleList(globalObject, locales);
     RETURN_IF_EXCEPTION(scope, void());
@@ -140,7 +140,7 @@ JSValue IntlDisplayNames::of(JSGlobalObject* globalObject, JSValue codeValue) co
 {
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(m_displayNames);
     auto code = codeValue.toWTFString(globalObject);

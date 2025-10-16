@@ -222,7 +222,7 @@ template<typename CallbackWhenNoException>
 static ALWAYS_INLINE typename std::invoke_result<CallbackWhenNoException, StringView>::type toStringView(JSGlobalObject* globalObject, JSValue value, CallbackWhenNoException callback)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSString* string = value.toStringOrNull(globalObject);
     EXCEPTION_ASSERT(!!scope.exception() == !string);
     if (!string) [[unlikely]]

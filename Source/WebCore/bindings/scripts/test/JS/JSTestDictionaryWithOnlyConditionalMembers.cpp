@@ -37,7 +37,7 @@ using namespace JSC;
 template<> ConversionResult<IDLDictionary<TestDictionaryWithOnlyConditionalMembers>> convertDictionary<TestDictionaryWithOnlyConditionalMembers>(JSGlobalObject& lexicalGlobalObject, JSValue value)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     bool isNullOrUndefined = value.isUndefinedOrNull();
     auto* object = isNullOrUndefined ? nullptr : value.getObject();
     if (!isNullOrUndefined && !object) [[unlikely]] {
@@ -66,7 +66,7 @@ template<> ConversionResult<IDLDictionary<TestDictionaryWithOnlyConditionalMembe
 JSC::JSObject* convertDictionaryToJS(JSC::JSGlobalObject& lexicalGlobalObject, JSDOMGlobalObject& globalObject, const TestDictionaryWithOnlyConditionalMembers& dictionary)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto result = constructEmptyObject(&lexicalGlobalObject, globalObject.objectPrototype());
 

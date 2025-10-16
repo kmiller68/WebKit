@@ -42,7 +42,7 @@ public:
     template<Setter setter, CastedThisErrorBehavior shouldThrow = CastedThisErrorBehavior::Throw>
     static bool set(JSC::JSGlobalObject& lexicalGlobalObject, JSC::EncodedJSValue thisValue, JSC::EncodedJSValue encodedValue, JSC::PropertyName attributeName)
     {
-        auto throwScope = DECLARE_THROW_SCOPE(JSC::getVM(&lexicalGlobalObject));
+        auto throwScope = DECLARE_EXCEPTION_SCOPE(JSC::getVM(&lexicalGlobalObject));
 
         auto* thisObject = castThisValue<JSClass>(lexicalGlobalObject, JSC::JSValue::decode(thisValue));
         if (!thisObject) [[unlikely]] {
@@ -59,7 +59,7 @@ public:
     template<SetterPassingPropertyName setter, CastedThisErrorBehavior shouldThrow = CastedThisErrorBehavior::Throw>
     static bool setPassingPropertyName(JSC::JSGlobalObject& lexicalGlobalObject, JSC::EncodedJSValue thisValue, JSC::EncodedJSValue encodedValue, JSC::PropertyName attributeName)
     {
-        auto throwScope = DECLARE_THROW_SCOPE(JSC::getVM(&lexicalGlobalObject));
+        auto throwScope = DECLARE_EXCEPTION_SCOPE(JSC::getVM(&lexicalGlobalObject));
 
         auto* thisObject = castThisValue<JSClass>(lexicalGlobalObject, JSC::JSValue::decode(thisValue));
         if (!thisObject) [[unlikely]] {
@@ -81,7 +81,7 @@ public:
     template<Getter getter, CastedThisErrorBehavior shouldThrow = CastedThisErrorBehavior::Throw>
     static JSC::EncodedJSValue get(JSC::JSGlobalObject& lexicalGlobalObject, JSC::EncodedJSValue thisValue, JSC::PropertyName attributeName)
     {
-        auto throwScope = DECLARE_THROW_SCOPE(JSC::getVM(&lexicalGlobalObject));
+        auto throwScope = DECLARE_EXCEPTION_SCOPE(JSC::getVM(&lexicalGlobalObject));
 
         if constexpr (shouldThrow == CastedThisErrorBehavior::Assert) {
             ASSERT(castThisValue<JSClass>(lexicalGlobalObject, JSC::JSValue::decode(thisValue)));
@@ -106,7 +106,7 @@ public:
     template<GetterPassingPropertyName getter, CastedThisErrorBehavior shouldThrow = CastedThisErrorBehavior::Throw>
     static JSC::EncodedJSValue getPassingPropertyName(JSC::JSGlobalObject& lexicalGlobalObject, JSC::EncodedJSValue thisValue, JSC::PropertyName attributeName)
     {
-        auto throwScope = DECLARE_THROW_SCOPE(JSC::getVM(&lexicalGlobalObject));
+        auto throwScope = DECLARE_EXCEPTION_SCOPE(JSC::getVM(&lexicalGlobalObject));
 
         if constexpr (shouldThrow == CastedThisErrorBehavior::Assert) {
             ASSERT(castThisValue<JSClass>(lexicalGlobalObject, JSC::JSValue::decode(thisValue)));

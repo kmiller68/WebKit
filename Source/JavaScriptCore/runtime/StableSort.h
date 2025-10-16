@@ -49,7 +49,7 @@ static ALWAYS_INLINE bool coerceComparatorResultToBoolean(JSGlobalObject* global
 template<typename ElementType, typename Functor>
 static ALWAYS_INLINE void arrayInsertionSort(VM& vm, std::span<ElementType> span, const Functor& comparator, size_t sortedHeader = 0)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* array = span.data();
     size_t length = span.size();
@@ -79,7 +79,7 @@ static ALWAYS_INLINE void arrayInsertionSort(VM& vm, std::span<ElementType> span
 template<typename ElementType, typename Functor>
 static ALWAYS_INLINE void mergePowersortRuns(VM& vm, std::span<ElementType> dst, std::span<const ElementType> src, size_t srcIndex1, size_t srcEnd1, size_t srcIndex2, size_t srcEnd2, const Functor& comparator)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     size_t left = srcIndex1;
     size_t leftEnd = srcEnd1;
@@ -122,7 +122,7 @@ static ALWAYS_INLINE std::span<ElementType> arrayStableSort(VM& vm, std::span<El
 {
     constexpr size_t extendRunCutoff = 8;
 
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     const size_t numElements = src.size();
 

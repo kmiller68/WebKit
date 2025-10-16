@@ -323,7 +323,7 @@ ObjcValueType objcValueTypeForType(const char* rawType)
     return objcValueType;
 }
 
-Exception *throwError(JSGlobalObject* lexicalGlobalObject, ThrowScope& scope, NSString *message)
+Exception *throwError(JSGlobalObject* lexicalGlobalObject, ExceptionScope& scope, NSString *message)
 {
     ASSERT(message);
     return throwException(lexicalGlobalObject, scope, JSC::createError(lexicalGlobalObject, String(message)));

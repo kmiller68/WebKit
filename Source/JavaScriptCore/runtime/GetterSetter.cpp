@@ -49,7 +49,7 @@ DEFINE_VISIT_CHILDREN(GetterSetter);
 JSValue GetterSetter::callGetter(JSGlobalObject* globalObject, JSValue thisValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     // FIXME: Some callers may invoke get() without checking for an exception first.
     // We work around that by checking here.
     RETURN_IF_EXCEPTION(scope, scope.exception()->value());
@@ -63,7 +63,7 @@ JSValue GetterSetter::callGetter(JSGlobalObject* globalObject, JSValue thisValue
 bool GetterSetter::callSetter(JSGlobalObject* globalObject, JSValue thisValue, JSValue value, bool shouldThrow)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* setter = this->setter();
 

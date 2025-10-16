@@ -79,7 +79,7 @@ static IntlDurationFormat::UnitData intlDurationUnitOptions(JSGlobalObject* glob
     // https://tc39.es/proposal-intl-duration-format/#sec-getdurationunitoptions
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     std::optional<IntlDurationFormat::UnitStyle> styleValue;
     switch (styleList) {
@@ -175,7 +175,7 @@ static PropertyName displayName(VM& vm, TemporalUnit unit)
 void IntlDurationFormat::initializeDurationFormat(JSGlobalObject* globalObject, JSValue locales, JSValue optionsValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto requestedLocales = canonicalizeLocaleList(globalObject, locales);
     RETURN_IF_EXCEPTION(scope, void());
@@ -392,7 +392,7 @@ static Vector<Element> collectElements(JSGlobalObject* globalObject, const IntlD
     ASSERT(isValidDuration(duration));
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     bool done = false;
     bool needsSignDisplay = false;
@@ -471,7 +471,7 @@ static Vector<Element> collectElements(JSGlobalObject* globalObject, const IntlD
         value = purifyNaN(value);
         if (value || unitData.display() != IntlDurationFormat::Display::Auto || style == IntlDurationFormat::UnitStyle::TwoDigit || style ==  IntlDurationFormat::UnitStyle::Numeric) {
             auto formatToString = [&](UFormattedNumber* formattedNumber) -> String {
-                auto scope = DECLARE_THROW_SCOPE(vm);
+                auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
                 UErrorCode status = U_ZERO_ERROR;
                 Vector<char16_t, 32> buffer;
@@ -500,7 +500,7 @@ static Vector<Element> collectElements(JSGlobalObject* globalObject, const IntlD
             };
 
             auto formatDouble = [&](const String& skeleton) -> std::unique_ptr<UFormattedNumber, ICUDeleter<unumf_closeResult>> {
-                auto scope = DECLARE_THROW_SCOPE(vm);
+                auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
                 dataLogLnIf(IntlDurationFormatInternal::verbose, skeleton);
                 StringView skeletonView(skeleton);
@@ -531,7 +531,7 @@ static Vector<Element> collectElements(JSGlobalObject* globalObject, const IntlD
                 ASSERT(totalNanosecondsValue);
                 ASSERT(unit == TemporalUnit::Second || unit == TemporalUnit::Millisecond || unit == TemporalUnit::Microsecond);
 
-                auto scope = DECLARE_THROW_SCOPE(vm);
+                auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
                 dataLogLnIf(IntlDurationFormatInternal::verbose, skeleton);
                 StringView skeletonView(skeleton);
@@ -639,7 +639,7 @@ static Vector<Element> collectElements(JSGlobalObject* globalObject, const IntlD
 JSValue IntlDurationFormat::format(JSGlobalObject* globalObject, ISO8601::Duration duration) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto elements = collectElements(globalObject, this, WTFMove(duration));
     RETURN_IF_EXCEPTION(scope, { });
@@ -682,7 +682,7 @@ JSValue IntlDurationFormat::format(JSGlobalObject* globalObject, ISO8601::Durati
 JSValue IntlDurationFormat::formatToParts(JSGlobalObject* globalObject, ISO8601::Duration duration) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto elements = collectElements(globalObject, this, WTFMove(duration));
     RETURN_IF_EXCEPTION(scope, { });
@@ -766,7 +766,7 @@ JSValue IntlDurationFormat::formatToParts(JSGlobalObject* globalObject, ISO8601:
     };
 
     auto pushElements = [&](JSArray* parts, unsigned elementIndex) -> void {
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         if (elementIndex < groupedElements.size()) {
             auto& elements = groupedElements[elementIndex];
             for (auto& element : elements) {

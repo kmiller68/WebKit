@@ -53,7 +53,7 @@ JSGenericTypedArrayView<Adaptor>* JSGenericTypedArrayView<Adaptor>::create(
     JSGlobalObject* globalObject, Structure* structure, size_t length)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     ConstructionContext context(vm, structure, length, sizeof(typename Adaptor::Type));
     if (!context) {
         throwOutOfMemoryError(globalObject, scope);
@@ -84,7 +84,7 @@ template<typename Adaptor>
 JSGenericTypedArrayView<Adaptor>* JSGenericTypedArrayView<Adaptor>::createUninitialized(JSGlobalObject* globalObject, Structure* structure, size_t length)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     ConstructionContext context(
         vm, structure, length, sizeof(typename Adaptor::Type),
         ConstructionContext::DontInitialize);
@@ -103,7 +103,7 @@ template<typename Adaptor>
 JSGenericTypedArrayView<Adaptor>* JSGenericTypedArrayView<Adaptor>::create(JSGlobalObject* globalObject, Structure* structure, RefPtr<ArrayBuffer>&& buffer, size_t byteOffset, std::optional<size_t> length)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     size_t elementSize = sizeof(typename Adaptor::Type);
     ASSERT(buffer);
     if (buffer->isDetached()) {
@@ -148,7 +148,7 @@ template<typename Adaptor>
 JSGenericTypedArrayView<Adaptor>* JSGenericTypedArrayView<Adaptor>::tryCreate(JSGlobalObject* globalObject, Structure* structure, RefPtr<typename Adaptor::ViewType>&& impl)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     if (!impl->possiblySharedBuffer()) {
         throwTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
         return nullptr;
@@ -167,7 +167,7 @@ bool JSGenericTypedArrayView<Adaptor>::validateRange(
     JSGlobalObject* globalObject, size_t offset, size_t length)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     if (canAccessRangeQuickly(offset, length))
         return true;
     
@@ -182,7 +182,7 @@ bool JSGenericTypedArrayView<Adaptor>::setWithSpecificType(
     size_t otherOffset, size_t length, CopyType type)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // Handle the hilarious case: the act of getting the length could have resulted
     // in detaching. Well, no. That'll never happen because there cannot be
@@ -286,7 +286,7 @@ bool JSGenericTypedArrayView<Adaptor>::setFromTypedArray(JSGlobalObject* globalO
     ASSERT(isTypedView(object->type()));
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto memmoveFastPath = [&] (JSArrayBufferView* other) {
         // The super fast case: we can just memmove since we're the same underlying storage type.
@@ -416,7 +416,7 @@ template<typename Adaptor>
 bool JSGenericTypedArrayView<Adaptor>::setFromArrayLike(JSGlobalObject* globalObject, size_t offset, JSObject* object, size_t objectOffset, size_t length)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     bool success = validateRange(globalObject, offset, length);
     EXCEPTION_ASSERT(!scope.exception() == success);
@@ -470,7 +470,7 @@ bool JSGenericTypedArrayView<Adaptor>::setFromArrayLike(JSGlobalObject* globalOb
     // https://tc39.es/ecma262/#sec-settypedarrayfromarraylike
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (isDetached()) {
         throwTypeError(globalObject, scope, typedArrayBufferHasBeenDetachedErrorMessage);
@@ -592,7 +592,7 @@ bool JSGenericTypedArrayView<Adaptor>::defineOwnProperty(
     const PropertyDescriptor& descriptor, bool shouldThrow)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSGenericTypedArrayView* thisObject = jsCast<JSGenericTypedArrayView*>(object);
 
     if (std::optional<uint32_t> index = parseIndex(propertyName)) {
@@ -653,7 +653,7 @@ bool JSGenericTypedArrayView<Adaptor>::getOwnPropertySlotByIndex(
     JSObject* object, JSGlobalObject* globalObject, unsigned propertyName, PropertySlot& slot)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSGenericTypedArrayView* thisObject = jsCast<JSGenericTypedArrayView*>(object);
 
     if (thisObject->isDetached() || !thisObject->inBounds(propertyName))
@@ -848,7 +848,7 @@ template<typename Adaptor> inline void JSGenericTypedArrayView<Adaptor>::setInde
 template<typename Adaptor> inline bool JSGenericTypedArrayView<Adaptor>::setIndex(JSGlobalObject* globalObject, size_t i, JSValue jsValue)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     typename Adaptor::Type value = toNativeFromValue<Adaptor>(globalObject, jsValue);
     RETURN_IF_EXCEPTION(scope, false);

@@ -247,7 +247,7 @@ JSValue JSCell::getPrototype(JSObject*, JSGlobalObject*)
 JSString* JSCell::toStringSlowCase(JSGlobalObject* globalObject) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(isSymbol() || isHeapBigInt());
     auto* emptyString = jsEmptyString(vm);

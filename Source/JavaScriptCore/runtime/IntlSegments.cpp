@@ -64,7 +64,7 @@ IntlSegments::IntlSegments(VM& vm, Structure* structure, std::unique_ptr<UBreakI
 JSValue IntlSegments::containing(JSGlobalObject* globalObject, JSValue indexValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double value = indexValue.toIntegerOrInfinity(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
@@ -91,7 +91,7 @@ JSValue IntlSegments::containing(JSGlobalObject* globalObject, JSValue indexValu
 JSObject* IntlSegments::createSegmentIterator(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     UErrorCode status = U_ZERO_ERROR;
     auto segmenter = std::unique_ptr<UBreakIterator, UBreakIteratorDeleter>(cloneUBreakIterator(m_segmenter.get(), &status));

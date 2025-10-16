@@ -179,7 +179,7 @@ template<typename JSWrapper, typename IteratorTraits>
 JSC::JSValue JSDOMAsyncIteratorBase<JSWrapper, IteratorTraits>::next(JSC::JSGlobalObject& lexicalGlobalObject)
 {
     JSC::VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     
     if (!m_ongoingPromise || !m_ongoingPromise->promise()) {
         auto* promise = runNextSteps(lexicalGlobalObject);
@@ -209,7 +209,7 @@ template<typename JSWrapper, typename IteratorTraits>
 JSC::JSPromise* JSDOMAsyncIteratorBase<JSWrapper, IteratorTraits>::runNextSteps(JSC::JSGlobalObject& globalObject)
 {
     JSC::VM& vm = globalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto nextPromiseCapability = JSC::JSPromise::createNewPromiseCapability(&globalObject, globalObject.promiseConstructor());
     RETURN_IF_EXCEPTION(scope, nullptr);
@@ -276,7 +276,7 @@ template<typename JSWrapper, typename IteratorTraits>
 JSC::EncodedJSValue JSC_HOST_CALL_ATTRIBUTES JSDOMAsyncIteratorBase<JSWrapper, IteratorTraits>::onPromiseSettled(JSC::JSGlobalObject* globalObject, JSC::CallFrame* callFrame)
 {
     JSC::VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto castedThis = JSC::jsDynamicCast<JSDOMAsyncIteratorBase<JSWrapper, IteratorTraits>*>(callFrame->thisValue());
     if (!castedThis)
         return throwThisTypeError(*globalObject, scope, JSWrapper::info()->className, "onPromiseSettled");
@@ -308,7 +308,7 @@ template<typename JSWrapper, typename IteratorTraits>
 JSC::EncodedJSValue JSC_HOST_CALL_ATTRIBUTES JSDOMAsyncIteratorBase<JSWrapper, IteratorTraits>::onPromiseFulFilled(JSC::JSGlobalObject* globalObject, JSC::CallFrame* callFrame)
 {
     JSC::VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto castedThis = JSC::jsDynamicCast<JSDOMAsyncIteratorBase<JSWrapper, IteratorTraits>*>(callFrame->thisValue());
     if (!castedThis)
         return throwThisTypeError(*globalObject, scope, JSWrapper::info()->className, "onPromiseFulfilled");
@@ -331,7 +331,7 @@ JSC::EncodedJSValue JSDOMAsyncIteratorBase<JSWrapper, IteratorTraits>::reject(JS
     m_iterator = nullptr;
 
     JSC::VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return throwVMError(globalObject, scope, reason);
 }
 
@@ -339,7 +339,7 @@ template<typename JSWrapper, typename IteratorTraits>
 JSC::EncodedJSValue JSC_HOST_CALL_ATTRIBUTES JSDOMAsyncIteratorBase<JSWrapper, IteratorTraits>::onPromiseRejected(JSC::JSGlobalObject* globalObject, JSC::CallFrame* callFrame)
 {
     JSC::VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto castedThis = JSC::jsDynamicCast<JSDOMAsyncIteratorBase<JSWrapper, IteratorTraits>*>(callFrame->thisValue());
     if (!castedThis)
         return throwThisTypeError(*globalObject, scope, JSWrapper::info()->className, "onPromiseRejected");
@@ -359,7 +359,7 @@ template<typename JSWrapper, typename IteratorTraits>
 JSC::EncodedJSValue JSC_HOST_CALL_ATTRIBUTES JSDOMAsyncIteratorPrototype<JSWrapper, IteratorTraits>::next(JSC::JSGlobalObject* globalObject, JSC::CallFrame* callFrame)
 {
     JSC::VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto iterator = JSC::jsDynamicCast<JSDOMAsyncIteratorBase<JSWrapper, IteratorTraits>*>(callFrame->thisValue());
     if (!iterator)

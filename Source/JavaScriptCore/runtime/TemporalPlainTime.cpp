@@ -88,7 +88,7 @@ DEFINE_VISIT_CHILDREN(TemporalPlainTime);
 ISO8601::PlainTime TemporalPlainTime::toPlainTime(JSGlobalObject* globalObject, const ISO8601::Duration& duration)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double hour = duration.hours();
     double minute = duration.minutes();
@@ -135,7 +135,7 @@ ISO8601::PlainTime TemporalPlainTime::toPlainTime(JSGlobalObject* globalObject, 
 TemporalPlainTime* TemporalPlainTime::tryCreateIfValid(JSGlobalObject* globalObject, Structure* structure, ISO8601::Duration&& duration)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto plainTime = toPlainTime(globalObject, duration);
     RETURN_IF_EXCEPTION(scope, { });
@@ -219,7 +219,7 @@ ISO8601::Duration TemporalPlainTime::roundTime(ISO8601::PlainTime plainTime, dou
 ISO8601::PlainTime TemporalPlainTime::round(JSGlobalObject* globalObject, JSValue optionsValue) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* options = nullptr;
     std::optional<TemporalUnit> smallest;
@@ -263,7 +263,7 @@ ISO8601::PlainTime TemporalPlainTime::round(JSGlobalObject* globalObject, JSValu
 String TemporalPlainTime::toString(JSGlobalObject* globalObject, JSValue optionsValue) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* options = intlGetOptionsObject(globalObject, optionsValue);
     RETURN_IF_EXCEPTION(scope, { });
@@ -291,7 +291,7 @@ String TemporalPlainTime::toString(JSGlobalObject* globalObject, JSValue options
 ISO8601::Duration TemporalPlainTime::toTemporalTimeRecord(JSGlobalObject* globalObject, JSObject* temporalTimeLike, bool skipRelevantPropertyCheck)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ISO8601::Duration duration { };
     auto hasRelevantProperty = false;
@@ -326,7 +326,7 @@ ISO8601::Duration TemporalPlainTime::toTemporalTimeRecord(JSGlobalObject* global
 std::array<std::optional<double>, numberOfTemporalPlainTimeUnits> TemporalPlainTime::toPartialTime(JSGlobalObject* globalObject, JSObject* temporalTimeLike, bool skipRelevantPropertyCheck)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     bool hasAnyFields = false;
     std::array<std::optional<double>, numberOfTemporalPlainTimeUnits> partialTime { };
@@ -386,7 +386,7 @@ ISO8601::PlainTime TemporalPlainTime::regulateTime(JSGlobalObject* globalObject,
 TemporalPlainTime* TemporalPlainTime::from(JSGlobalObject* globalObject, JSValue itemValue, std::optional<TemporalOverflow> overflowValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto overflow = overflowValue.value_or(TemporalOverflow::Constrain);
 
@@ -492,7 +492,7 @@ ISO8601::Duration TemporalPlainTime::addTime(const ISO8601::PlainTime& plainTime
 ISO8601::PlainTime TemporalPlainTime::with(JSGlobalObject* globalObject, JSObject* temporalTimeLike, JSValue optionsValue) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     rejectObjectWithCalendarOrTimeZone(globalObject, temporalTimeLike);
     RETURN_IF_EXCEPTION(scope, { });
@@ -536,7 +536,7 @@ static Int128 differenceTime(ISO8601::PlainTime time1, ISO8601::PlainTime time2)
 ISO8601::Duration TemporalPlainTime::differenceTemporalPlainTime(DifferenceOperation operation, JSGlobalObject* globalObject, TemporalPlainTime* other, JSValue optionsValue) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto [smallestUnit, largestUnit, roundingMode, increment] = extractDifferenceOptions(globalObject, optionsValue, UnitGroup::Time, TemporalUnit::Nanosecond, TemporalUnit::Hour);
     RETURN_IF_EXCEPTION(scope, { });

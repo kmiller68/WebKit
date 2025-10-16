@@ -961,6 +961,7 @@ void VM::throwTerminationException()
 
 Exception* VM::throwException(JSGlobalObject* globalObject, Exception* exceptionToThrow)
 {
+    RELEASE_ASSERT(!m_forbidExceptionThrowing);
     // The TerminationException should never be overridden.
     if (hasPendingTerminationException())
         return m_exception;
@@ -1321,7 +1322,7 @@ void VM::callPromiseRejectionCallback(Strong<JSPromise>& promise)
     if (!callback)
         return;
 
-    auto scope = DECLARE_CATCH_SCOPE(*this);
+    auto scope = DECLARE_EXCEPTION_SCOPE(*this);
 
     auto callData = JSC::getCallDataInline(callback);
     ASSERT(callData.type != CallData::Type::None);
@@ -1331,11 +1332,12 @@ void VM::callPromiseRejectionCallback(Strong<JSPromise>& promise)
     args.append(promise->result());
     ASSERT(!args.hasOverflowed());
     call(promise->globalObject(), callback, callData, jsNull(), args);
-    scope.clearException();
+    TRY_CLEAR_EXCEPTION(scope, void());
 }
 
 void VM::didExhaustMicrotaskQueue()
 {
+    auto scope = DECLARE_EXCEPTION_SCOPE(*this);
     do {
         auto unhandledRejections = WTFMove(m_aboutToBeNotifiedRejectedPromises);
         for (auto& promise : unhandledRejections) {
@@ -1343,8 +1345,8 @@ void VM::didExhaustMicrotaskQueue()
                 continue;
 
             callPromiseRejectionCallback(promise);
-            if (hasPendingTerminationException()) [[unlikely]]
-                return;
+            scope.assertNoExceptionExceptTermination();
+            RETURN_IF_EXCEPTION(scope, void());
         }
     } while (!m_aboutToBeNotifiedRejectedPromises.isEmpty());
 }
@@ -1365,6 +1367,7 @@ void VM::drainMicrotasks()
         std::optional<VMEntryScope> entryScope;
         if (!m_defaultMicrotaskQueue.isEmpty())
             entryScope.emplace(*this, nullptr);
+        auto scope = DECLARE_EXCEPTION_SCOPE(*this);
         while (true) {
             m_defaultMicrotaskQueue.performMicrotaskCheckpoint</* useCallOnEachMicrotask */ true>(*this,
                 [&](QueuedTask& task) ALWAYS_INLINE_LAMBDA {
@@ -1373,22 +1376,23 @@ void VM::drainMicrotasks()
                     if (RefPtr dispatcher = task.dispatcher())
                         return dispatcher->run(task);
 
-                    auto catchScope = DECLARE_CATCH_SCOPE(*this);
+                    auto catchScope = DECLARE_EXCEPTION_SCOPE(*this);
                     runInternalMicrotask(globalObject, task.job(), task.arguments());
-                    catchScope.clearExceptionExceptTermination();
+                    (void)catchScope.tryClearException();
                     return QueuedTask::Result::Executed;
                 });
-            if (hasPendingTerminationException()) [[unlikely]]
-                return;
+            scope.assertNoExceptionExceptTermination();
+            RETURN_IF_EXCEPTION(scope, void());
             didExhaustMicrotaskQueue();
-            if (hasPendingTerminationException()) [[unlikely]]
-                return;
+            scope.assertNoExceptionExceptTermination();
+            RETURN_IF_EXCEPTION(scope, void());
             if (m_defaultMicrotaskQueue.isEmpty())
                 break;
             if (!entryScope)
                 entryScope.emplace(*this, nullptr);
         }
     }
+
     finalizeSynchronousJSExecution();
 }
 

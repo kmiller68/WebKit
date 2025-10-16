@@ -132,7 +132,7 @@ JSC_DEFINE_HOST_FUNCTION(makeThisTypeErrorForBuiltins, (JSGlobalObject* globalOb
     ASSERT(callFrame->argumentCount() == 2);
     VM& vm = globalObject->vm();
     DeferTermination deferScope(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto interfaceName = callFrame->uncheckedArgument(0).getString(globalObject);
     scope.assertNoException();
@@ -147,7 +147,7 @@ JSC_DEFINE_HOST_FUNCTION(makeGetterTypeErrorForBuiltins, (JSGlobalObject* global
     ASSERT(callFrame->argumentCount() == 2);
     VM& vm = globalObject->vm();
     DeferTermination deferScope(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto interfaceName = callFrame->uncheckedArgument(0).getString(globalObject);
     scope.assertNoException();
@@ -166,7 +166,7 @@ JSC_DEFINE_HOST_FUNCTION(makeDOMExceptionForBuiltins, (JSGlobalObject* globalObj
 
     auto& vm = globalObject->vm();
     DeferTermination deferScope(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto codeValue = callFrame->uncheckedArgument(0).getString(globalObject);
     scope.assertNoException();
@@ -282,7 +282,7 @@ JSC_DEFINE_HOST_FUNCTION(byteLengthQueuingStrategySize, (JSGlobalObject* globalO
 {
     ASSERT(callFrame);
     Ref vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     if (!callFrame->argumentCount()) {
         throwException(globalObject, throwScope, createNotEnoughArgumentsError(globalObject));
         return encodedJSValue();
@@ -420,7 +420,7 @@ String JSDOMGlobalObject::codeForEval(JSGlobalObject* globalObject, JSValue valu
 bool JSDOMGlobalObject::canCompileStrings(JSGlobalObject* globalObject, CompilationType compilationType, String codeString, const ArgList& args)
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto& thisObject = static_cast<JSDOMGlobalObject&>(*globalObject);
     auto* scriptExecutionContext = thisObject.scriptExecutionContext();
@@ -431,7 +431,7 @@ bool JSDOMGlobalObject::canCompileStrings(JSGlobalObject* globalObject, Compilat
         // https://w3c.github.io/webappsec-csp/#can-compile-strings
         // Step 2.7. If the algorithm throws an error, throw an EvalError.
         // This clears the existing exceptions and returns false, where the caller throws an EvalError.
-        throwScope.clearException();
+        TRY_CLEAR_EXCEPTION(throwScope, false);
         return false;
     }
 
@@ -608,18 +608,18 @@ static JSC::JSPromise* handleResponseOnStreamingAction(JSC::JSGlobalObject* glob
             if (result.hasException()) {
                 auto exception = result.exception();
                 if (exception.code() == ExceptionCode::ExistingExceptionError) {
-                    auto scope = DECLARE_CATCH_SCOPE(vm);
+                    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
                     EXCEPTION_ASSERT(scope.exception());
 
                     auto error = scope.exception()->value();
-                    scope.clearException();
+                    TRY_CLEAR_EXCEPTION(scope, void());
 
                     compiler->fail(globalObject, error);
                     return;
                 }
 
-                auto scope = DECLARE_THROW_SCOPE(vm);
+                auto scope = DECLARE_EXCEPTION_SCOPE(vm);
                 auto error = createDOMException(*globalObject, WTFMove(exception));
                 if (scope.exception()) [[unlikely]] {
                     ASSERT(vm.hasPendingTerminationException());
@@ -697,7 +697,7 @@ JSC::Identifier JSDOMGlobalObject::moduleLoaderResolve(JSC::JSGlobalObject* glob
 JSC::JSInternalPromise* JSDOMGlobalObject::moduleLoaderFetch(JSC::JSGlobalObject* globalObject, JSC::JSModuleLoader* moduleLoader, JSC::JSValue moduleKey, JSC::JSValue parameters, JSC::JSValue scriptFetcher)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSDOMGlobalObject* thisObject = JSC::jsCast<JSDOMGlobalObject*>(globalObject);
     if (auto* loader = scriptModuleLoader(thisObject))
         RELEASE_AND_RETURN(scope, loader->fetch(globalObject, moduleLoader, moduleKey, parameters, scriptFetcher));
@@ -718,7 +718,7 @@ JSC::JSValue JSDOMGlobalObject::moduleLoaderEvaluate(JSC::JSGlobalObject* global
 JSC::JSInternalPromise* JSDOMGlobalObject::moduleLoaderImportModule(JSC::JSGlobalObject* globalObject, JSC::JSModuleLoader* moduleLoader, JSC::JSString* moduleName, JSC::JSValue parameters, const JSC::SourceOrigin& sourceOrigin)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSDOMGlobalObject* thisObject = JSC::jsCast<JSDOMGlobalObject*>(globalObject);
     if (auto* loader = scriptModuleLoader(thisObject))
         RELEASE_AND_RETURN(scope, loader->importModule(globalObject, moduleLoader, moduleName, parameters, sourceOrigin));

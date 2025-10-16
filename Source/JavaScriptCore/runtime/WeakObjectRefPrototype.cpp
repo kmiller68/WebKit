@@ -49,7 +49,7 @@ void WeakObjectRefPrototype::finishCreation(VM& vm, JSGlobalObject* globalObject
 ALWAYS_INLINE static JSWeakObjectRef* getWeakRef(JSGlobalObject* globalObject, JSValue value)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!value.isObject()) [[unlikely]] {
         throwTypeError(globalObject, scope, "Called WeakRef function on non-object"_s);

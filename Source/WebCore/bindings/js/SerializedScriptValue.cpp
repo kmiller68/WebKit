@@ -76,12 +76,12 @@
 #include <JavaScriptCore/ArrayConventions.h>
 #include <JavaScriptCore/BigIntObject.h>
 #include <JavaScriptCore/BooleanObject.h>
-#include <JavaScriptCore/CatchScope.h>
 #include <JavaScriptCore/DateInstance.h>
 #include <JavaScriptCore/Error.h>
 #include <JavaScriptCore/ErrorInstance.h>
 #include <JavaScriptCore/Exception.h>
 #include <JavaScriptCore/ExceptionHelpers.h>
+#include <JavaScriptCore/ExceptionScope.h>
 #include <JavaScriptCore/IterationKind.h>
 #include <JavaScriptCore/JSArrayBuffer.h>
 #include <JavaScriptCore/JSArrayBufferView.h>
@@ -1144,7 +1144,7 @@ public:
     {
 #if ASSERT_ENABLED
         auto& vm = lexicalGlobalObject->vm();
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 #endif
 
         CloneSerializer serializer(lexicalGlobalObject, messagePorts, arrayBuffers, imageBitmaps,
@@ -2769,7 +2769,7 @@ SerializationReturnCode CloneSerializer::serialize(JSValue in)
     Vector<WalkerState, 16> stateStack;
     WalkerState state = StateUnknown;
     JSValue inValue = in;
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     while (1) {
         switch (state) {
             arrayStartState:
@@ -3366,7 +3366,7 @@ private:
     {
         static_assert(endState == ArrayEndVisitNamedMember || endState == ObjectEndVisitNamedMember);
         VM& vm = m_lexicalGlobalObject->vm();
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         CachedStringRef cachedString;
         bool wasTerminator = false;
         if (!readStringData(cachedString, wasTerminator, ShouldAtomize::Yes)) {
@@ -3403,7 +3403,7 @@ private:
     ALWAYS_INLINE void objectEndVisitNamedMember(MarkedVector<JSObject*, 32>& outputObjectStack, Vector<Identifier, 16>& propertyNameStack, JSValue& outValue)
     {
         VM& vm = m_lexicalGlobalObject->vm();
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         putProperty(outputObjectStack.last(), propertyNameStack.last(), outValue);
         if (scope.exception()) [[unlikely]]
             return;
@@ -5549,7 +5549,7 @@ private:
 DeserializationResult CloneDeserializer::deserialize()
 {
     VM& vm = m_lexicalGlobalObject->vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Vector<uint32_t, 16> indexStack;
     Vector<Identifier, 16> propertyNameStack;
@@ -5835,7 +5835,7 @@ void validateSerializedResult(CloneSerializer& serializer, SerializationReturnCo
     SERIALIZE_TRACE("validation start");
 
     VM& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSGlobalObject* globalObject = lexicalGlobalObject;
     Vector<String> blobURLs;
@@ -5891,8 +5891,8 @@ void validateSerializedResult(CloneSerializer& serializer, SerializationReturnCo
     RELEASE_ASSERT(deserializer.isValid());
     auto deserializationResult = deserializer.deserialize();
     if (scope.exception()) {
-        scope.clearException();
         SERIALIZE_TRACE("validation abort due to exception");
+        (void)scope.tryClearException();
         return;
     }
 
@@ -6138,7 +6138,7 @@ static ExceptionOr<std::unique_ptr<ArrayBufferContentsArray>> transferArrayBuffe
 static void maybeThrowExceptionIfSerializationFailed(JSGlobalObject& lexicalGlobalObject, SerializationReturnCode code)
 {
     auto& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     switch (code) {
     case SerializationReturnCode::SuccessfullyCompleted:
@@ -6268,7 +6268,7 @@ ExceptionOr<Ref<SerializedScriptValue>> SerializedScriptValue::create(JSGlobalOb
 ExceptionOr<Ref<SerializedScriptValue>> SerializedScriptValue::create(JSGlobalObject& lexicalGlobalObject, JSValue value, Vector<JSC::Strong<JSC::JSObject>>&& transferList, Vector<Ref<MessagePort>>& messagePorts, SerializationForStorage forStorage, SerializationErrorMode throwExceptions, SerializationContext context)
 {
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Vector<RefPtr<JSC::ArrayBuffer>> arrayBuffers;
     Vector<RefPtr<ImageBitmap>> imageBitmaps;
@@ -6298,7 +6298,7 @@ ExceptionOr<Ref<SerializedScriptValue>> SerializedScriptValue::create(JSGlobalOb
             if (arrayBuffer->isDetached() || arrayBuffer->isShared())
                 return Exception { ExceptionCode::DataCloneError };
             if (!arrayBuffer->isDetachable()) {
-                auto scope = DECLARE_THROW_SCOPE(vm);
+                auto scope = DECLARE_EXCEPTION_SCOPE(vm);
                 throwVMTypeError(&lexicalGlobalObject, scope, errorMessageForTransfer(arrayBuffer.get()));
                 return Exception { ExceptionCode::ExistingExceptionError };
             }
@@ -6548,14 +6548,14 @@ RefPtr<SerializedScriptValue> SerializedScriptValue::create(JSContextRef originC
     JSGlobalObject* lexicalGlobalObject = toJS(originContext);
     VM& vm = lexicalGlobalObject->vm();
     JSLockHolder locker(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue value = toJS(lexicalGlobalObject, apiValue);
     auto serializedValue = SerializedScriptValue::create(*lexicalGlobalObject, value);
     if (scope.exception()) [[unlikely]] {
         if (exception)
             *exception = toRef(lexicalGlobalObject, scope.exception()->value());
-        scope.clearException();
+        TRY_CLEAR_EXCEPTION(scope, nullptr);
         return nullptr;
     }
     ASSERT(serializedValue);
@@ -6587,7 +6587,7 @@ JSValue SerializedScriptValue::deserialize(JSGlobalObject& lexicalGlobalObject, 
 JSValue SerializedScriptValue::deserialize(JSGlobalObject& lexicalGlobalObject, JSGlobalObject* globalObject, const Vector<Ref<MessagePort>>& messagePorts, const Vector<String>& blobURLs, const Vector<String>& blobFilePaths, SerializationErrorMode throwExceptions, bool* didFail)
 {
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     DeserializationResult result = CloneDeserializer::deserialize(&lexicalGlobalObject, globalObject, messagePorts, WTFMove(m_internals.detachedImageBitmaps)
 #if ENABLE(OFFSCREEN_CANVAS_IN_WORKERS)
@@ -6641,13 +6641,13 @@ JSValueRef SerializedScriptValue::deserialize(JSContextRef destinationContext, J
     JSGlobalObject* lexicalGlobalObject = toJS(destinationContext);
     VM& vm = lexicalGlobalObject->vm();
     JSLockHolder locker(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue value = deserialize(*lexicalGlobalObject, lexicalGlobalObject);
     if (scope.exception()) [[unlikely]] {
         if (exception)
             *exception = toRef(lexicalGlobalObject, scope.exception()->value());
-        scope.clearException();
+        TRY_CLEAR_EXCEPTION(scope, nullptr);
         return nullptr;
     }
     ASSERT(value);
@@ -6715,7 +6715,7 @@ std::optional<ErrorInformation> extractErrorInformationFromErrorInstance(JSC::JS
 {
     ASSERT(lexicalGlobalObject);
     auto& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto errorTypeValue = errorInstance.get(lexicalGlobalObject, vm.propertyNames->name);
     RETURN_IF_EXCEPTION(scope, std::nullopt);
     String errorTypeString = errorTypeValue.toWTFString(lexicalGlobalObject);

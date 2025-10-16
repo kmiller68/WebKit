@@ -62,7 +62,7 @@ static JSValue wrapValue(JSGlobalObject* globalObject, JSGlobalObject* targetGlo
 static inline JSValue wrapArgument(JSGlobalObject* globalObject, JSGlobalObject* targetGlobalObject, JSValue value)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue result = wrapValue(globalObject, targetGlobalObject, value);
     RETURN_IF_EXCEPTION(scope, { });
     if (!result)
@@ -73,7 +73,7 @@ static inline JSValue wrapArgument(JSGlobalObject* globalObject, JSGlobalObject*
 static inline JSValue wrapReturnValue(JSGlobalObject* globalObject, JSGlobalObject* targetGlobalObject, JSValue value)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue result = wrapValue(globalObject, targetGlobalObject, value);
     RETURN_IF_EXCEPTION(scope, { });
     if (!result)
@@ -84,7 +84,7 @@ static inline JSValue wrapReturnValue(JSGlobalObject* globalObject, JSGlobalObje
 JSC_DEFINE_HOST_FUNCTION(remoteFunctionCallForJSFunction, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSRemoteFunction* remoteFunction = jsCast<JSRemoteFunction*>(callFrame->jsCallee());
     ASSERT(remoteFunction->isRemoteFunction());
     JSFunction* targetFunction = jsCast<JSFunction*>(remoteFunction->targetFunction());
@@ -125,7 +125,7 @@ JSC_DEFINE_HOST_FUNCTION(remoteFunctionCallForJSFunction, (JSGlobalObject* globa
 JSC_DEFINE_HOST_FUNCTION(remoteFunctionCallGeneric, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSRemoteFunction* remoteFunction = jsCast<JSRemoteFunction*>(callFrame->jsCallee());
     ASSERT(remoteFunction->isRemoteFunction());
     JSObject* targetFunction = remoteFunction->targetFunction();
@@ -168,7 +168,7 @@ JSC_DEFINE_HOST_FUNCTION(isRemoteFunction, (JSGlobalObject*, CallFrame* callFram
 JSC_DEFINE_HOST_FUNCTION(createRemoteFunction, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(callFrame->argumentCount() == 2);
     JSValue targetFunction = callFrame->uncheckedArgument(0);
@@ -213,7 +213,7 @@ JSRemoteFunction* JSRemoteFunction::tryCreate(JSGlobalObject* globalObject, VM& 
 void JSRemoteFunction::copyNameAndLength(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     PropertySlot slot(m_targetFunction.get(), PropertySlot::InternalMethodType::GetOwnProperty);
     bool targetHasLength = m_targetFunction->getOwnPropertySlotInline(globalObject, vm.propertyNames->length, slot);
@@ -247,12 +247,12 @@ void JSRemoteFunction::finishCreation(JSGlobalObject* globalObject, VM& vm)
     Base::finishCreation(vm);
     ASSERT(inherits(info()));
 
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     copyNameAndLength(globalObject);
 
     auto* exception = scope.exception();
-    if (exception && !vm.isTerminationException(exception)) [[unlikely]] {
-        scope.clearException();
+    if (exception) [[unlikely]] {
+        TRY_CLEAR_EXCEPTION(scope, void());
         throwTypeError(globalObject, scope, "wrapping returned function throws an error"_s);
     }
 }

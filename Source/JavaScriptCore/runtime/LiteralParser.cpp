@@ -67,7 +67,7 @@ bool LiteralParser<CharType, reviverMode>::tryJSONPParse(Vector<JSONPData>& resu
 {
     ASSERT(m_mode == JSONP);
     VM& vm = m_globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     if (m_lexer.next() != TokIdentifier)
         return false;
     do {
@@ -1355,7 +1355,7 @@ JSValue LiteralParser<CharType, reviverMode>::parseRecursively(VM& vm, uint8_t* 
     if (std::bit_cast<uint8_t*>(currentStackPointer()) < stackLimit) [[unlikely]]
         return parse(vm, StartParseExpression, nullptr);
 
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     TokenType type = m_lexer.currentToken()->type;
     if (type == TokLBracket) {
         JSArray* array = constructEmptyArray(m_globalObject, nullptr);
@@ -1534,7 +1534,7 @@ constexpr unsigned maximumRangesStackRecursion = 4500;
 template <typename CharType, JSONReviverMode reviverMode>
 JSValue LiteralParser<CharType, reviverMode>::parse(VM& vm, ParserState initialState, JSONRanges* sourceRanges)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     ParserState state = initialState;
     JSValue lastValue;
     JSONRanges::Entry lastValueRange;

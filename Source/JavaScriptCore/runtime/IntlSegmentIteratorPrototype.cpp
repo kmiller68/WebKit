@@ -75,7 +75,7 @@ void IntlSegmentIteratorPrototype::finishCreation(VM& vm)
 JSC_DEFINE_HOST_FUNCTION(intlSegmentIteratorPrototypeFuncNext, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* segmentIterator = jsDynamicCast<IntlSegmentIterator*>(callFrame->thisValue());
     if (!segmentIterator) [[unlikely]]

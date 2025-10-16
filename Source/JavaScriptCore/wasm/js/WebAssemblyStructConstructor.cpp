@@ -45,14 +45,14 @@ JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyStruct, (JSGlobalObject* globalOb
 {
     UNUSED_PARAM(callFrame);
     auto& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return throwVMTypeError(globalObject, scope, "WebAssembly.Struct is not accessible from JS"_s);
 }
 
 JSC_DEFINE_HOST_FUNCTION(callJSWebAssemblyStruct, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return throwVMTypeError(globalObject, scope, "WebAssembly.Struct is not accessible from JS"_s);
 }
 

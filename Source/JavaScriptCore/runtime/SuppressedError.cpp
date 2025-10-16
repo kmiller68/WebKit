@@ -34,7 +34,7 @@ namespace JSC {
 
 ErrorInstance* createSuppressedError(JSGlobalObject* globalObject, VM& vm, Structure* structure, JSValue error, JSValue suppressed, JSValue message, ErrorInstance::SourceAppender appender, RuntimeType type, bool useCurrentFrame)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     String messageString = message.isUndefined() ? String() : message.toWTFString(globalObject);
     RETURN_IF_EXCEPTION(scope, nullptr);

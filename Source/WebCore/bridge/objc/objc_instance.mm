@@ -90,7 +90,7 @@ void ObjcInstance::setGlobalException(NSString *exception, JSGlobalObject* excep
 void ObjcInstance::moveGlobalExceptionToExecState(JSGlobalObject* lexicalGlobalObject)
 {
     VM& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!globalException()) {
         ASSERT(!s_exceptionEnvironment);
@@ -216,7 +216,7 @@ JSC::JSValue ObjcInstance::getMethod(JSGlobalObject* lexicalGlobalObject, Proper
 JSC::JSValue ObjcInstance::invokeMethod(JSGlobalObject* lexicalGlobalObject, CallFrame* callFrame, RuntimeMethod* runtimeMethod)
 {
     JSC::VM& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!asObject(runtimeMethod)->inherits<ObjCRuntimeMethod>())
         return throwTypeError(lexicalGlobalObject, scope, "Attempt to invoke non-plug-in method on plug-in object."_s);

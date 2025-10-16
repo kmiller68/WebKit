@@ -54,7 +54,7 @@ using namespace JSC;
 template<> ConversionResult<IDLDictionary<ExposedToWorkerAndWindow::Dict>> convertDictionary<ExposedToWorkerAndWindow::Dict>(JSGlobalObject& lexicalGlobalObject, JSValue value)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     bool isNullOrUndefined = value.isUndefinedOrNull();
     auto* object = isNullOrUndefined ? nullptr : value.getObject();
     if (!isNullOrUndefined && !object) [[unlikely]] {
@@ -81,7 +81,7 @@ template<> ConversionResult<IDLDictionary<ExposedToWorkerAndWindow::Dict>> conve
 JSC::JSObject* convertDictionaryToJS(JSC::JSGlobalObject& lexicalGlobalObject, JSDOMGlobalObject& globalObject, const ExposedToWorkerAndWindow::Dict& dictionary)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto result = constructEmptyObject(&lexicalGlobalObject, globalObject.objectPrototype());
 
@@ -138,7 +138,7 @@ using JSExposedToWorkerAndWindowDOMConstructor = JSDOMConstructor<JSExposedToWor
 template<> EncodedJSValue JSC_HOST_CALL_ATTRIBUTES JSExposedToWorkerAndWindowDOMConstructor::construct(JSGlobalObject* lexicalGlobalObject, CallFrame* callFrame)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = lexicalGlobalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* castedThis = jsCast<JSExposedToWorkerAndWindowDOMConstructor*>(callFrame->jsCallee());
     ASSERT(castedThis);
     auto object = ExposedToWorkerAndWindow::create();
@@ -222,7 +222,7 @@ void JSExposedToWorkerAndWindow::destroy(JSC::JSCell* cell)
 JSC_DEFINE_CUSTOM_GETTER(jsExposedToWorkerAndWindowConstructor, (JSGlobalObject* lexicalGlobalObject, EncodedJSValue thisValue, PropertyName))
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* prototype = jsDynamicCast<JSExposedToWorkerAndWindowPrototype*>(JSValue::decode(thisValue));
     if (!prototype) [[unlikely]]
         return throwVMTypeError(lexicalGlobalObject, throwScope);
@@ -232,7 +232,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsExposedToWorkerAndWindowConstructor, (JSGlobalObject*
 static inline JSC::EncodedJSValue jsExposedToWorkerAndWindowPrototypeFunction_doSomethingBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSExposedToWorkerAndWindow>::ClassParameter castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = castedThis->wrapped();

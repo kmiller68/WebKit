@@ -48,7 +48,7 @@ static JSC_DECLARE_HOST_FUNCTION(callJSWebAssemblyMemory);
 JSWebAssemblyMemory* WebAssemblyMemoryConstructor::createMemoryFromDescriptor(JSGlobalObject* globalObject, Structure* webAssemblyMemoryStructure, JSObject* memoryDescriptor, std::optional<MemoryMode> desiredMemoryMode)
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     PageCount initialPageCount;
     {
@@ -136,7 +136,7 @@ JSWebAssemblyMemory* WebAssemblyMemoryConstructor::createMemoryFromDescriptor(JS
 JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyMemory, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* newTarget = asObject(callFrame->newTarget());
     Structure* webAssemblyMemoryStructure = JSC_GET_DERIVED_STRUCTURE(vm, webAssemblyMemoryStructure, newTarget, callFrame->jsCallee());
@@ -159,7 +159,7 @@ JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyMemory, (JSGlobalObject* globalOb
 JSC_DEFINE_HOST_FUNCTION(callJSWebAssemblyMemory, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, throwScope, "WebAssembly.Memory"_s));
 }
 

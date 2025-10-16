@@ -43,7 +43,7 @@ template <typename T>
 EncodedJSValue APICallbackFunction::callImpl(JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSContextRef execRef = toRef(globalObject);
     JSObjectRef functionRef = toRef(callFrame->jsCallee());
     JSObjectRef thisObjRef = toRef(jsCast<JSObject*>(callFrame->thisValue().toThis(globalObject, ECMAMode::sloppy())));
@@ -75,7 +75,7 @@ template <typename T>
 EncodedJSValue APICallbackFunction::constructImpl(JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue callee = callFrame->jsCallee();
     T* constructor = jsCast<T*>(callFrame->jsCallee());
     JSContextRef ctx = toRef(globalObject);

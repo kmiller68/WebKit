@@ -64,7 +64,7 @@ template<typename T> struct Converter<IDLInterface<T>> : DefaultConverter<IDLInt
     static Result convert(JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value, ExceptionThrower&& exceptionThrower = ExceptionThrower())
     {
         auto& vm = JSC::getVM(&lexicalGlobalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         auto object = JSToWrappedOverloader<T>::toWrapped(lexicalGlobalObject, value);
         if (!object) [[unlikely]] {
@@ -99,7 +99,7 @@ template<typename T> struct VariadicConverter<IDLInterface<T>> {
     static std::optional<Item> convert(JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value)
     {
         auto& vm = lexicalGlobalObject.vm();
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         auto result = WebCore::convert<IDLInterface<T>>(lexicalGlobalObject, value);
         if (result.hasException(scope)) [[unlikely]]

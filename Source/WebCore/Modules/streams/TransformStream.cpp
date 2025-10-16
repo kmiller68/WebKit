@@ -80,7 +80,7 @@ static ExceptionOr<JSC::JSValue> invokeTransformStreamFunction(JSC::JSGlobalObje
     JSC::VM& vm = globalObject.vm();
     JSC::JSLockHolder lock(vm);
 
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto function = globalObject.get(&globalObject, identifier);
     ASSERT(function.isCallable());
@@ -110,7 +110,7 @@ ExceptionOr<CreateInternalTransformStreamResult> createInternalTransformStream(J
         return result.releaseException();
 
     JSC::VM& vm = globalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto resultsConversionResult = convert<IDLSequence<IDLObject>>(globalObject, result.returnValue());
     if (resultsConversionResult.hasException(scope)) [[unlikely]]

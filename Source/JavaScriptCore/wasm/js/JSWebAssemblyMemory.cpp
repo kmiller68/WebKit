@@ -70,7 +70,7 @@ void JSWebAssemblyMemory::associateArrayBuffer(JSGlobalObject* globalObject, boo
     ASSERT(!m_buffer);
     ASSERT(!m_bufferWrapper);
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (m_memory->sharingMode() == MemorySharingMode::Shared && m_memory->shared())
         m_buffer = ArrayBuffer::createShared(*m_memory->shared(), shouldBeFixedLength);
@@ -131,7 +131,7 @@ void JSWebAssemblyMemory::disassociateArrayBuffer(VM& vm)
 JSArrayBuffer* JSWebAssemblyMemory::buffer(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (Options::useWasmMemoryToBufferAPIs()) {
         if (auto* wrapper = m_bufferWrapper.get()) {
@@ -191,7 +191,7 @@ JSArrayBuffer* JSWebAssemblyMemory::toFixedLengthBuffer(JSGlobalObject* globalOb
 {
     ASSERT(Options::useWasmMemoryToBufferAPIs());
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!m_buffer) {
         associateArrayBuffer(globalObject, true);
@@ -211,7 +211,7 @@ JSArrayBuffer* JSWebAssemblyMemory::toResizableBuffer(JSGlobalObject* globalObje
 {
     ASSERT(Options::useWasmMemoryToBufferAPIs());
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!m_buffer) {
         associateArrayBuffer(globalObject, false);
@@ -228,7 +228,7 @@ JSArrayBuffer* JSWebAssemblyMemory::toResizableBuffer(JSGlobalObject* globalObje
 
 PageCount JSWebAssemblyMemory::grow(VM& vm, JSGlobalObject* globalObject, uint32_t delta)
 {
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto grown = memory().grow(vm, PageCount(delta)); // calls growSuccessCallback() after growing
     if (!grown) {

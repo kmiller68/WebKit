@@ -40,7 +40,7 @@ JSValue PropertySlot::customGetter(VM& vm, PropertyName propertyName) const
     JSValue thisValue = m_attributes & PropertyAttribute::CustomAccessor ? m_thisValue : JSValue(slotBase());
     if (auto domAttribute = this->domAttribute()) {
         if (!thisValue.inherits(domAttribute->classInfo)) {
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
             return throwDOMAttributeGetterTypeError(globalObject, scope, domAttribute->classInfo, propertyName);
         }
     }

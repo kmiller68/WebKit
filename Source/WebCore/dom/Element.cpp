@@ -2293,7 +2293,7 @@ bool Element::isElementsArrayReflectionAttribute(const QualifiedName& name)
 
 void Element::setUserInfo(JSC::JSGlobalObject& globalObject, JSC::JSValue userInfo)
 {
-    auto throwScope = DECLARE_THROW_SCOPE(globalObject.vm());
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(globalObject.vm());
 
     auto serializedData = JSONStringify(&globalObject, userInfo, 0);
     if (throwScope.exception())

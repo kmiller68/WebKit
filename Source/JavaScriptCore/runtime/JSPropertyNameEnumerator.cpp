@@ -105,7 +105,7 @@ DEFINE_VISIT_CHILDREN(JSPropertyNameEnumerator);
 void getEnumerablePropertyNames(JSGlobalObject* globalObject, JSObject* base, PropertyNameArray& propertyNames, uint32_t& indexedLength, uint32_t& structurePropertyCount)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto getOwnPropertyNames = [&](JSObject* object) {
         auto mode = DontEnumPropertiesMode::Exclude;
@@ -161,7 +161,7 @@ void getEnumerablePropertyNames(JSGlobalObject* globalObject, JSObject* base, Pr
 JSString* JSPropertyNameEnumerator::computeNext(JSGlobalObject* globalObject, JSObject* base, uint32_t& index, Flag& mode, bool shouldAllocateIndexedNameString)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(indexedLength() || sizeOfPropertyNames());
 

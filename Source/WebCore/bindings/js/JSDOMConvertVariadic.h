@@ -38,7 +38,7 @@ struct VariadicConverter {
     static std::optional<Item> convert(JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value)
     {
         auto& vm = JSC::getVM(&lexicalGlobalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         auto result = WebCore::convert<IDL>(lexicalGlobalObject, value);
         if (result.hasException(scope)) [[unlikely]]
@@ -55,7 +55,7 @@ template<typename IDL>
 VariadicArguments<IDL> convertVariadicArguments(JSC::JSGlobalObject& lexicalGlobalObject, JSC::CallFrame& callFrame, size_t startIndex)
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     size_t length = callFrame.argumentCount();
     if (startIndex >= length)

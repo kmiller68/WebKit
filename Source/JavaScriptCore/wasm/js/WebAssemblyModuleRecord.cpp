@@ -152,7 +152,7 @@ static void initializeBuiltinImport(VM& vm, WriteBarrier<JSWebAssemblyInstance>&
 void WebAssemblyModuleRecord::initializeImports(JSGlobalObject* globalObject, JSObject* importObject, Wasm::CreationMode creationMode)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     RELEASE_ASSERT(m_instance);
 
@@ -510,7 +510,7 @@ void WebAssemblyModuleRecord::initializeImports(JSGlobalObject* globalObject, JS
 void WebAssemblyModuleRecord::initializeExports(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     RELEASE_ASSERT(m_instance);
 
@@ -835,7 +835,7 @@ void WebAssemblyModuleRecord::initializeExports(JSGlobalObject* globalObject)
 JSValue WebAssemblyModuleRecord::evaluateConstantExpression(JSGlobalObject* globalObject, const Vector<uint8_t>& constantExpression, const Wasm::ModuleInformation& info, Wasm::Type expectedType, uint64_t& result)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto evalResult = Wasm::evaluateExtendedConstExpr(constantExpression, m_instance.get(), info, expectedType);
     if (!evalResult.has_value()) [[unlikely]]
@@ -854,7 +854,7 @@ NEVER_INLINE static JSValue dataSegmentFail(JSGlobalObject* globalObject, VM& vm
 JSValue WebAssemblyModuleRecord::evaluate(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Wasm::Module& module = m_instance->module(); const Wasm::ModuleInformation& moduleInformation = module.moduleInformation();
 

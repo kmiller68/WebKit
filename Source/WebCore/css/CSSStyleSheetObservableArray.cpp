@@ -48,7 +48,7 @@ CSSStyleSheetObservableArray::CSSStyleSheetObservableArray(ContainerNode& treeSc
 bool CSSStyleSheetObservableArray::setValueAt(JSC::JSGlobalObject* lexicalGlobalObject, unsigned index, JSC::JSValue value)
 {
     auto& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     RELEASE_ASSERT(index <= m_sheets.size());
 

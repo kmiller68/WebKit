@@ -157,7 +157,7 @@ JSC_DEFINE_HOST_FUNCTION(mathProtoFuncATan, (JSGlobalObject* globalObject, CallF
 JSC_DEFINE_HOST_FUNCTION(mathProtoFuncATan2, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     double arg0 = callFrame->argument(0).toNumber(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
     scope.release();
@@ -173,7 +173,7 @@ JSC_DEFINE_HOST_FUNCTION(mathProtoFuncCeil, (JSGlobalObject* globalObject, CallF
 JSC_DEFINE_HOST_FUNCTION(mathProtoFuncClz32, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     uint32_t value = callFrame->argument(0).toUInt32(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
     return JSValue::encode(JSValue(clz(value)));
@@ -197,7 +197,7 @@ JSC_DEFINE_HOST_FUNCTION(mathProtoFuncFloor, (JSGlobalObject* globalObject, Call
 JSC_DEFINE_HOST_FUNCTION(mathProtoFuncHypot, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned argsCount = callFrame->argumentCount();
 
@@ -277,7 +277,7 @@ JSC_DEFINE_HOST_FUNCTION(mathProtoFuncLog, (JSGlobalObject* globalObject, CallFr
 JSC_DEFINE_HOST_FUNCTION(mathProtoFuncMax, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     unsigned argsCount = callFrame->argumentCount();
     if (!argsCount) [[unlikely]]
         return JSValue::encode(jsNumber(-std::numeric_limits<double>::infinity()));
@@ -296,7 +296,7 @@ JSC_DEFINE_HOST_FUNCTION(mathProtoFuncMax, (JSGlobalObject* globalObject, CallFr
 JSC_DEFINE_HOST_FUNCTION(mathProtoFuncMin, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     unsigned argsCount = callFrame->argumentCount();
     if (!argsCount) [[unlikely]]
         return JSValue::encode(jsNumber(std::numeric_limits<double>::infinity()));
@@ -317,7 +317,7 @@ JSC_DEFINE_HOST_FUNCTION(mathProtoFuncPow, (JSGlobalObject* globalObject, CallFr
     // ECMA 15.8.2.1.13
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double arg = callFrame->argument(0).toNumber(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
@@ -365,7 +365,7 @@ JSC_DEFINE_HOST_FUNCTION(mathProtoFuncTan, (JSGlobalObject* globalObject, CallFr
 JSC_DEFINE_HOST_FUNCTION(mathProtoFuncIMul, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     int32_t left = callFrame->argument(0).toInt32(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
     scope.release();
@@ -446,7 +446,7 @@ JSC_DEFINE_HOST_FUNCTION(mathProtoFuncF16Round, (JSGlobalObject* globalObject, C
 JSC_DEFINE_HOST_FUNCTION(mathProtoFuncSumPrecise, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue iterable = callFrame->argument(0);
     if (iterable.isUndefinedOrNull())
@@ -461,7 +461,7 @@ JSC_DEFINE_HOST_FUNCTION(mathProtoFuncSumPrecise, (JSGlobalObject* globalObject,
     auto calculatePreciseSum = [&](auto& sum) {
         uint64_t count = 0;
         forEachInIterable(globalObject, iterable, [&sum, &count](VM& vm, JSGlobalObject* globalObject, JSValue value) {
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
             if (count >= maxSafeIntegerAsUInt64()) [[unlikely]] {
                 throwRangeError(globalObject, scope, "Math.sumPrecise exceeded maximum iterations"_s);
                 return;

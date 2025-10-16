@@ -32,8 +32,8 @@ namespace WebCore {
 
 JSC::JSValue JSPaymentResponse::details(JSC::JSGlobalObject& lexicalGlobalObject) const
 {
-    auto throwScope = DECLARE_THROW_SCOPE(lexicalGlobalObject.vm());
-    return cachedPropertyValue(throwScope, lexicalGlobalObject, *this, wrapped().cachedDetails(), [this, &lexicalGlobalObject](JSC::ThrowScope&) {
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject.vm());
+    return cachedPropertyValue(throwScope, lexicalGlobalObject, *this, wrapped().cachedDetails(), [this, &lexicalGlobalObject](JSC::ExceptionScope&) {
         return wrapped().detailsFunction()(lexicalGlobalObject).get();
     });
 }

@@ -78,7 +78,7 @@ void TemporalPlainMonthDayConstructor::finishCreation(VM& vm, TemporalPlainMonth
 JSC_DEFINE_HOST_FUNCTION(constructTemporalPlainMonthDay, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* newTarget = asObject(callFrame->newTarget());
     Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, plainMonthDayStructure, newTarget, callFrame->jsCallee());
@@ -124,7 +124,7 @@ JSC_DEFINE_HOST_FUNCTION(constructTemporalPlainMonthDay, (JSGlobalObject* global
 JSC_DEFINE_HOST_FUNCTION(callTemporalPlainMonthDay, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "PlainMonthDay"_s));
 }

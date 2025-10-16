@@ -72,7 +72,7 @@ JSC_DEFINE_HOST_FUNCTION(boundThisNoArgsFunctionCall, (JSGlobalObject* globalObj
 JSC_DEFINE_HOST_FUNCTION(boundFunctionCall, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSBoundFunction* boundFunction = jsCast<JSBoundFunction*>(callFrame->jsCallee());
 
     MarkedArgumentBuffer args;
@@ -103,7 +103,7 @@ JSC_DEFINE_HOST_FUNCTION(boundFunctionCall, (JSGlobalObject* globalObject, CallF
 JSC_DEFINE_HOST_FUNCTION(boundFunctionConstruct, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSBoundFunction* boundFunction = jsCast<JSBoundFunction*>(callFrame->jsCallee());
 
     JSObject* targetFunction = boundFunction->targetFunction();
@@ -150,7 +150,7 @@ JSC_DEFINE_HOST_FUNCTION(hasInstanceBoundFunction, (JSGlobalObject* globalObject
 
 inline Structure* getBoundFunctionStructure(VM& vm, JSGlobalObject* globalObject, JSObject* targetFunction)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSFunction* targetJSFunction = jsDynamicCast<JSFunction*>(targetFunction);
     if (targetJSFunction && targetJSFunction->getPrototypeDirect() == globalObject->functionPrototype()) [[likely]]
         return globalObject->boundFunctionStructure();
@@ -185,7 +185,7 @@ inline Structure* getBoundFunctionStructure(VM& vm, JSGlobalObject* globalObject
 
 JSBoundFunction* JSBoundFunction::create(VM& vm, JSGlobalObject* globalObject, JSObject* targetFunction, JSValue boundThis, ArgList args, double length, JSString* nameMayBeNull, const SourceCode& source)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (nameMayBeNull) {
         nameMayBeNull->value(globalObject); // Resolving rope.
@@ -249,11 +249,11 @@ JSBoundFunction::JSBoundFunction(VM& vm, NativeExecutable* executable, JSGlobalO
 JSArray* JSBoundFunction::boundArgsCopy(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSArray* result = constructEmptyArray(this->globalObject(), nullptr);
     RETURN_IF_EXCEPTION(scope, nullptr);
     forEachBoundArg([&](JSValue argument) -> IterationStatus {
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         result->push(globalObject, argument);
         RETURN_IF_EXCEPTION(scope, IterationStatus::Done);
         return IterationStatus::Continue;
@@ -265,8 +265,11 @@ JSArray* JSBoundFunction::boundArgsCopy(JSGlobalObject* globalObject)
 JSString* JSBoundFunction::nameSlow(VM& vm)
 {
     JSGlobalObject* globalObject = this->globalObject();
-    DeferTerminationForAWhile deferScope(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+
+    // Our callers don't always know how to handle exceptions.
+    // FIXME: We could fix this there's not that many of them.
+    // See: https://bugs.webkit.org/show_bug.cgi?id=300891
+    ForbidExceptionScope noExceptions(vm);
 
     unsigned nestingCount = 0;
     JSObject* cursor = m_targetFunction.get();
@@ -275,10 +278,6 @@ JSString* JSBoundFunction::nameSlow(VM& vm)
         ASSERT(cursor->inherits<JSFunction>()); // If this is not JSFunction, we eagerly materialized the name.
         if (!cursor->inherits<JSBoundFunction>()) {
             terminal = jsCast<JSFunction*>(cursor)->originalName(globalObject);
-            if (scope.exception()) [[unlikely]] {
-                scope.clearException();
-                terminal = jsEmptyString(vm);
-            }
             break;
         }
         ++nestingCount;
@@ -294,25 +293,15 @@ JSString* JSBoundFunction::nameSlow(VM& vm)
         for (unsigned i = 0; i < nestingCount; ++i)
             builder.append("bound "_s);
         auto terminalString = terminal->value(globalObject); // Resolving rope.
-        if (scope.exception()) [[unlikely]] {
-            scope.clearException();
+        builder.append(terminalString.data);
+        if (builder.hasOverflowed())
             terminal = jsEmptyString(vm);
-        } else {
-            builder.append(terminalString.data);
-            if (builder.hasOverflowed())
-                terminal = jsEmptyString(vm);
-            else
-                terminal = jsNontrivialString(vm, builder.toString());
-        }
+        else
+            terminal = jsNontrivialString(vm, builder.toString());
     }
 
-    if (terminal) {
+    if (terminal)
         terminal->value(globalObject); // Resolving rope.
-        if (scope.exception()) [[unlikely]] {
-            scope.clearException();
-            terminal = jsEmptyString(vm);
-        }
-    }
 
     m_nameMayBeNull.set(vm, this, terminal);
     return terminal;

@@ -75,7 +75,7 @@ ExceptionOr<void> PaintWorkletGlobalScope::registerPaint(JSC::JSGlobalObject& gl
 {
     auto& vm = paintConstructor->vm();
     JSC::JSLockHolder lock(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // Validate that paintConstructor is a VoidFunction
     if (!paintConstructor->isCallable())

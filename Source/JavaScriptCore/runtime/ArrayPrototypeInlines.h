@@ -90,7 +90,7 @@ ALWAYS_INLINE bool arrayMissingIsConcatSpreadable(VM& vm, JSObject* thisObject)
 ALWAYS_INLINE std::pair<SpeciesConstructResult, JSObject*> speciesConstructArray(JSGlobalObject* globalObject, JSObject* thisObject, uint64_t length)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     constexpr std::pair<SpeciesConstructResult, JSObject*> exceptionResult { SpeciesConstructResult::Exception, nullptr };
 
@@ -139,7 +139,7 @@ ALWAYS_INLINE std::pair<SpeciesConstructResult, JSObject*> speciesConstructArray
 
 ALWAYS_INLINE void setLength(JSGlobalObject* globalObject, VM& vm, JSObject* obj, uint64_t value)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     static constexpr bool throwException = true;
     if (isJSArray(obj)) [[likely]] {
         if (value > UINT32_MAX) [[unlikely]] {
@@ -174,7 +174,7 @@ template<JSArray::ShiftCountMode shiftCountMode>
 void shift(JSGlobalObject* globalObject, JSObject* thisObj, uint64_t header, uint64_t currentCount, uint64_t resultCount, uint64_t length)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     RELEASE_ASSERT(currentCount > resultCount);
     uint64_t count = currentCount - resultCount;
@@ -226,7 +226,7 @@ inline void unshift(JSGlobalObject* globalObject, JSObject* thisObj, uint64_t he
     ASSERT(length <= maxSafeInteger());
 
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     RELEASE_ASSERT(resultCount > currentCount);
     uint64_t count = resultCount - currentCount;
@@ -297,7 +297,7 @@ inline bool canUseFastArrayJoin(const JSObject* thisObject)
 ALWAYS_INLINE JSString* fastArrayJoin(JSGlobalObject* globalObject, JSObject* thisObject, StringView separator, unsigned length, bool& sawHoles, bool& genericCase)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSStringJoiner joiner(separator);
 

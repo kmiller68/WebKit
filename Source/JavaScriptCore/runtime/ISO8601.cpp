@@ -1714,7 +1714,7 @@ static void validateTemporalRoundingIncrement(JSGlobalObject* globalObject, unsi
     Int128 dividend, Inclusivity inclusive)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Int128 maximum = 0;
     switch (inclusive) {
@@ -1738,7 +1738,7 @@ ExactTime ExactTime::round(JSGlobalObject* globalObject, unsigned increment,
     TemporalUnit unit, RoundingMode roundingMode) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Int128 maximum = 0;
     switch (unit) {
@@ -1762,7 +1762,7 @@ static Int128 roundTimeDurationToIncrement(JSGlobalObject* globalObject, Int128 
     RoundingMode roundingMode)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Int128 rounded = roundNumberToIncrementInt128(d, increment, roundingMode);
     if (absInt128(rounded) > InternalDuration::maxTimeDuration) {

@@ -77,7 +77,7 @@ CallbackResult<typename IDLDOMString::CallbackReturnType> JSTestCallbackFunction
         return CallbackResultType::ExceptionThrown;
      }
 
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto returnValue = convert<IDLDOMString>(lexicalGlobalObject, jsResult);
     if (returnValue.hasException(throwScope)) [[unlikely]]
         return CallbackResultType::ExceptionThrown;
@@ -104,12 +104,12 @@ CallbackResult<typename IDLDOMString::CallbackReturnType> JSTestCallbackFunction
     NakedPtr<JSC::Exception> returnedException;
     auto jsResult = m_data->invokeCallback(thisValue, args, JSCallbackData::CallbackType::Function, Identifier(), returnedException);
     if (returnedException) {
-        auto throwScope = DECLARE_THROW_SCOPE(vm);
+        auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
         throwException(&lexicalGlobalObject, throwScope, returnedException);
         return CallbackResultType::ExceptionThrown;
      }
 
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto returnValue = convert<IDLDOMString>(lexicalGlobalObject, jsResult);
     if (returnValue.hasException(throwScope)) [[unlikely]]
         return CallbackResultType::ExceptionThrown;

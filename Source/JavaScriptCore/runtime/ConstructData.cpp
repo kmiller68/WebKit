@@ -41,7 +41,7 @@ JSObject* construct(JSGlobalObject* globalObject, JSValue constructorObject, con
 JSObject* construct(JSGlobalObject* globalObject, JSValue constructorObject, JSValue newTarget, const ArgList& args, ASCIILiteral errorMessage)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto constructData = JSC::getConstructData(constructorObject);
     if (constructData.type == CallData::Type::None) [[unlikely]] {

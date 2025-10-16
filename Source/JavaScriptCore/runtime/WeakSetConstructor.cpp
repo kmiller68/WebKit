@@ -53,14 +53,14 @@ WeakSetConstructor::WeakSetConstructor(VM& vm, Structure* structure)
 JSC_DEFINE_HOST_FUNCTION(callWeakSet, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "WeakSet"_s));
 }
 
 JSC_DEFINE_HOST_FUNCTION(constructWeakSet, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* newTarget = asObject(callFrame->newTarget());
     Structure* weakSetStructure = JSC_GET_DERIVED_STRUCTURE(vm, weakSetStructure, newTarget, callFrame->jsCallee());

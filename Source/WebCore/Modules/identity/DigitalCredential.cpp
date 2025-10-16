@@ -64,7 +64,7 @@ DigitalCredential::DigitalCredential(JSC::Strong<JSC::JSObject>&& data, Identity
 
 static ExceptionOr<UnvalidatedDigitalCredentialRequest> jsToCredentialRequest(const Document& document, const DigitalCredentialRequest& request)
 {
-    auto scope = DECLARE_THROW_SCOPE(document.globalObject()->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(document.globalObject()->vm());
     auto* globalObject = document.globalObject();
 
     // Check that the object is JSON stringifiable.

@@ -41,7 +41,7 @@ std::optional<WebAssemblyCompileOptions> WebAssemblyCompileOptions::tryCreate(JS
 
     WebAssemblyCompileOptions options;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // Check for the 'importedStringConstants' entry
     JSValue importedStringConstantsValue = optionsObject->get(globalObject, PropertyName(Identifier::fromString(vm, "importedStringConstants"_s)));

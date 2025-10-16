@@ -42,7 +42,7 @@ static JSC_DECLARE_HOST_FUNCTION(callJSWebAssemblyLinkError);
 JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyLinkError, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     auto& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue message = callFrame->argument(0);
     JSValue options = callFrame->argument(1);
 

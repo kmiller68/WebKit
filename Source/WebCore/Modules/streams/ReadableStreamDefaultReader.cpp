@@ -104,11 +104,11 @@ void ReadableStreamDefaultReader::read(JSDOMGlobalObject& globalObject, Ref<Read
                     return;
 
                 Ref vm = globalObject->vm();
-                auto scope = DECLARE_CATCH_SCOPE(vm);
+                auto scope = DECLARE_EXCEPTION_SCOPE(vm);
                 auto resultOrException = convertDictionary<ReadableStreamReadResult>(*globalObject, domPromise->result());
-                ASSERT(!resultOrException.hasException(scope));
+                scope.assertNoExceptionExceptTermination();
                 if (resultOrException.hasException(scope)) {
-                    scope.clearException();
+                    TRY_CLEAR_EXCEPTION(scope, void());
                     return;
                 }
                 auto result = resultOrException.releaseReturnValue();

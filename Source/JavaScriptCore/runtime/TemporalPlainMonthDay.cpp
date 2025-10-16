@@ -86,7 +86,7 @@ DEFINE_VISIT_CHILDREN(TemporalPlainMonthDay);
 TemporalPlainMonthDay* TemporalPlainMonthDay::tryCreateIfValid(JSGlobalObject* globalObject, Structure* structure, ISO8601::PlainDate&& plainDate)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!ISO8601::isValidISODate(plainDate.year(), plainDate.month(), plainDate.day())) {
         throwRangeError(globalObject, scope, "PlainMonthDay: invalid date"_s);
@@ -104,7 +104,7 @@ TemporalPlainMonthDay* TemporalPlainMonthDay::tryCreateIfValid(JSGlobalObject* g
 String TemporalPlainMonthDay::toString(JSGlobalObject* globalObject, JSValue optionsValue) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* options = intlGetOptionsObject(globalObject, optionsValue);
     RETURN_IF_EXCEPTION(scope, { });

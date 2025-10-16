@@ -1018,11 +1018,11 @@ static inline ExceptionOr<PeerConnectionBackend::CertificateInformation> certifi
     auto& value = std::get<JSC::Strong<JSC::JSObject>>(algorithmIdentifier);
 
     JSC::VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto parametersConversionResult = convertDictionary<RTCPeerConnection::CertificateParameters>(lexicalGlobalObject, value.get());
     if (parametersConversionResult.hasException(scope)) [[unlikely]] {
-        scope.clearException();
+        TRY_CLEAR_EXCEPTION(scope, Exception(ExceptionCode::TypeError, "Termination"_s));
         return Exception { ExceptionCode::TypeError, "Unable to read certificate parameters"_s };
     }
     auto parameters = parametersConversionResult.releaseReturnValue();

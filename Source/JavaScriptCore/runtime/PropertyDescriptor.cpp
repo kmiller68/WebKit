@@ -242,7 +242,7 @@ void PropertyDescriptor::setGetter(JSValue getter)
 bool PropertyDescriptor::equalTo(JSGlobalObject* globalObject, const PropertyDescriptor& other) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     if (other.m_value.isEmpty() != m_value.isEmpty()
         || other.m_getter.isEmpty() != m_getter.isEmpty()
         || other.m_setter.isEmpty() != m_setter.isEmpty())
@@ -291,7 +291,7 @@ unsigned PropertyDescriptor::attributesOverridingCurrent(const PropertyDescripto
 bool PropertyDescriptor::setPropertySlot(JSGlobalObject* globalObject, PropertyName propertyName, const PropertySlot& slot)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (slot.isAccessor())
         setAccessorDescriptor(slot.getterSetter(), slot.attributes());

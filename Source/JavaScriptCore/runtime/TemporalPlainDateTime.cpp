@@ -84,7 +84,7 @@ DEFINE_VISIT_CHILDREN(TemporalPlainDateTime);
 TemporalPlainDateTime* TemporalPlainDateTime::tryCreateIfValid(JSGlobalObject* globalObject, Structure* structure, ISO8601::PlainDate&& plainDate, ISO8601::PlainTime&& plainTime)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!ISO8601::isDateTimeWithinLimits(plainDate.year(), plainDate.month(), plainDate.day(), plainTime.hour(), plainTime.minute(), plainTime.second(), plainTime.millisecond(), plainTime.microsecond(), plainTime.nanosecond())) {
         throwRangeError(globalObject, scope, "date time is out of range of ECMAScript representation"_s);
@@ -97,7 +97,7 @@ TemporalPlainDateTime* TemporalPlainDateTime::tryCreateIfValid(JSGlobalObject* g
 TemporalPlainDateTime* TemporalPlainDateTime::tryCreateIfValid(JSGlobalObject* globalObject, Structure* structure, ISO8601::Duration&& duration)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto plainDate = TemporalPlainDate::toPlainDate(globalObject, duration);
     RETURN_IF_EXCEPTION(scope, { });
@@ -112,7 +112,7 @@ TemporalPlainDateTime* TemporalPlainDateTime::tryCreateIfValid(JSGlobalObject* g
 TemporalPlainDateTime* TemporalPlainDateTime::from(JSGlobalObject* globalObject, JSValue itemValue, std::optional<TemporalOverflow> overflowValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto overflow = overflowValue.value_or(TemporalOverflow::Constrain);
 
@@ -201,7 +201,7 @@ static void incrementDay(ISO8601::Duration& duration)
 String TemporalPlainDateTime::toString(JSGlobalObject* globalObject, JSValue optionsValue) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* options = intlGetOptionsObject(globalObject, optionsValue);
     RETURN_IF_EXCEPTION(scope, { });
@@ -261,7 +261,7 @@ uint8_t TemporalPlainDateTime::weekOfYear() const
 TemporalPlainDateTime* TemporalPlainDateTime::with(JSGlobalObject* globalObject, JSObject* temporalDateTimeLike, JSValue optionsValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     rejectObjectWithCalendarOrTimeZone(globalObject, temporalDateTimeLike);
     RETURN_IF_EXCEPTION(scope, { });
@@ -306,7 +306,7 @@ TemporalPlainDateTime* TemporalPlainDateTime::with(JSGlobalObject* globalObject,
 TemporalPlainDateTime* TemporalPlainDateTime::round(JSGlobalObject* globalObject, JSValue optionsValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* options = nullptr;
     std::optional<TemporalUnit> smallest;

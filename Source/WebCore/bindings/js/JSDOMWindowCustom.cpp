@@ -116,7 +116,7 @@ static ALWAYS_INLINE bool allowsLegacyExpandoIndexedProperties()
 bool jsDOMWindowGetOwnPropertySlotRestrictedAccess(JSDOMGlobalObject* thisObject, DOMWindow& window, JSGlobalObject& lexicalGlobalObject, PropertyName propertyName, PropertySlot& slot, const String& errorMessage)
 {
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto& builtinNames = WebCore::builtinNames(vm);
 
@@ -271,7 +271,7 @@ bool JSDOMWindow::getOwnPropertySlotByIndex(JSObject* object, JSGlobalObject* le
 bool JSDOMWindow::put(JSCell* cell, JSGlobalObject* lexicalGlobalObject, PropertyName propertyName, JSValue value, PutPropertySlot& slot)
 {
     VM& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* thisObject = jsCast<JSDOMWindow*>(cell);
 
@@ -297,7 +297,7 @@ bool JSDOMWindow::putByIndex(JSCell* cell, JSGlobalObject* lexicalGlobalObject, 
 {
     VM& vm = lexicalGlobalObject->vm();
     auto* thisObject = jsCast<JSDOMWindow*>(cell);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     String errorMessage;
     if (!BindingSecurity::shouldAllowAccessToDOMWindow(*lexicalGlobalObject, thisObject->wrapped(), errorMessage)) {
@@ -435,7 +435,7 @@ void JSDOMWindow::getOwnPropertyNames(JSObject* object, JSGlobalObject* lexicalG
 bool JSDOMWindow::defineOwnProperty(JSC::JSObject* object, JSC::JSGlobalObject* lexicalGlobalObject, JSC::PropertyName propertyName, const JSC::PropertyDescriptor& descriptor, bool shouldThrow)
 {
     VM& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* thisObject = jsCast<JSDOMWindow*>(object);
     // Only allow defining properties in this way by frames in the same origin, as it allows setters to be introduced.
@@ -532,7 +532,7 @@ static JSC_DECLARE_HOST_FUNCTION(showModalDialog);
 JSC_DEFINE_CUSTOM_GETTER(showModalDialogGetter, (JSGlobalObject* lexicalGlobalObject, EncodedJSValue thisValue, PropertyName propertyName))
 {
     VM& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* thisObject = castThisValue<JSDOMWindow>(*lexicalGlobalObject, JSValue::decode(thisValue));
     if (!thisObject) [[unlikely]]
@@ -560,7 +560,7 @@ JSC_DEFINE_HOST_FUNCTION(showModalDialog, (JSGlobalObject* lexicalGlobalObjectPt
     auto& callFrame = *callFramePtr;
 
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* thisObject = IDLOperation<JSDOMWindow>::cast(lexicalGlobalObject, callFrame);
     if (!thisObject) [[unlikely]]
@@ -595,7 +595,7 @@ JSC_DEFINE_HOST_FUNCTION(showModalDialog, (JSGlobalObject* lexicalGlobalObjectPt
 JSValue JSDOMWindow::queueMicrotask(JSGlobalObject& lexicalGlobalObject, CallFrame& callFrame)
 {
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (callFrame.argumentCount() < 1) [[unlikely]]
         return throwException(&lexicalGlobalObject, scope, createNotEnoughArgumentsError(&lexicalGlobalObject));
@@ -658,7 +658,7 @@ JSValue JSDOMWindow::frames(JSC::JSGlobalObject&) const
 static inline JSC::EncodedJSValue jsDOMWindowInstanceFunctionOpenDatabaseBody(JSC::JSGlobalObject* lexicalGlobalObject, CallFrame* callFrame, typename IDLOperation<JSDOMWindow>::ClassParameter castedThis)
 {
     auto& vm = lexicalGlobalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!BindingSecurity::shouldAllowAccessToDOMWindow(lexicalGlobalObject, castedThis->wrapped(), ThrowSecurityError))
         return JSValue::encode(jsUndefined());
@@ -686,7 +686,7 @@ static inline JSC::EncodedJSValue jsDOMWindowInstanceFunctionOpenDatabaseBody(JS
         return JSValue::encode(constructEmptyObject(lexicalGlobalObject, castedThis->globalObject()->objectPrototype()));
     }
 
-    auto creationCallback = convert<IDLNullable<IDLCallbackFunction<JSDatabaseCallback>>>(*lexicalGlobalObject, callFrame->argument(4), *castedThis->globalObject(), [](JSC::JSGlobalObject& lexicalGlobalObject, JSC::ThrowScope& scope) {
+    auto creationCallback = convert<IDLNullable<IDLCallbackFunction<JSDatabaseCallback>>>(*lexicalGlobalObject, callFrame->argument(4), *castedThis->globalObject(), [](JSC::JSGlobalObject& lexicalGlobalObject, JSC::ExceptionScope& scope) {
         throwArgumentMustBeFunctionError(lexicalGlobalObject, scope, 4, "creationCallback"_s, "Window"_s, "openDatabase"_s);
     });
     if (creationCallback.hasException(throwScope)) [[unlikely]]

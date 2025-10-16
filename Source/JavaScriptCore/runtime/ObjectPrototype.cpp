@@ -103,7 +103,7 @@ JSC_DEFINE_HOST_FUNCTION(objectProtoFuncValueOf, (JSGlobalObject* globalObject, 
 bool objectPrototypeHasOwnProperty(JSGlobalObject* globalObject, JSObject* thisObject, PropertyName propertyName)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     Structure* structure = thisObject->structure();
     HasOwnPropertyCache& hasOwnPropertyCache = vm.ensureHasOwnPropertyCache();
     if (std::optional<bool> result = hasOwnPropertyCache.get(structure, propertyName)) {
@@ -125,7 +125,7 @@ bool objectPrototypeHasOwnProperty(JSGlobalObject* globalObject, JSObject* thisO
 JSC_DEFINE_HOST_FUNCTION(objectProtoFuncHasOwnProperty, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue base = callFrame->thisValue();
     auto subscript = callFrame->argument(0);
@@ -150,7 +150,7 @@ JSC_DEFINE_HOST_FUNCTION(objectProtoFuncHasOwnProperty, (JSGlobalObject* globalO
 JSC_DEFINE_HOST_FUNCTION(objectProtoFuncIsPrototypeOf, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!callFrame->argument(0).isObject())
         return JSValue::encode(jsBoolean(false));
@@ -177,7 +177,7 @@ JSC_DEFINE_HOST_FUNCTION(objectProtoFuncIsPrototypeOf, (JSGlobalObject* globalOb
 JSC_DEFINE_HOST_FUNCTION(objectProtoFuncDefineGetter, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* thisObject = callFrame->thisValue().toThis(globalObject, ECMAMode::strict()).toObject(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
@@ -204,7 +204,7 @@ JSC_DEFINE_HOST_FUNCTION(objectProtoFuncDefineGetter, (JSGlobalObject* globalObj
 JSC_DEFINE_HOST_FUNCTION(objectProtoFuncDefineSetter, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* thisObject = callFrame->thisValue().toThis(globalObject, ECMAMode::strict()).toObject(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
@@ -231,7 +231,7 @@ JSC_DEFINE_HOST_FUNCTION(objectProtoFuncDefineSetter, (JSGlobalObject* globalObj
 JSC_DEFINE_HOST_FUNCTION(objectProtoFuncLookupGetter, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* thisObject = callFrame->thisValue().toThis(globalObject, ECMAMode::strict()).toObject(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
@@ -263,7 +263,7 @@ JSC_DEFINE_HOST_FUNCTION(objectProtoFuncLookupGetter, (JSGlobalObject* globalObj
 JSC_DEFINE_HOST_FUNCTION(objectProtoFuncLookupSetter, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* thisObject = callFrame->thisValue().toThis(globalObject, ECMAMode::strict()).toObject(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
@@ -295,7 +295,7 @@ JSC_DEFINE_HOST_FUNCTION(objectProtoFuncLookupSetter, (JSGlobalObject* globalObj
 JSC_DEFINE_HOST_FUNCTION(objectProtoFuncPropertyIsEnumerable, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto propertyName = callFrame->argument(0).toPropertyKey(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
@@ -313,7 +313,7 @@ JSC_DEFINE_HOST_FUNCTION(objectProtoFuncPropertyIsEnumerable, (JSGlobalObject* g
 JSC_DEFINE_HOST_FUNCTION(objectProtoFuncToLocaleString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 1. Let V be the this value.
     JSValue thisValue = callFrame->thisValue();

@@ -38,7 +38,7 @@ namespace JSC {
 JSValue iteratorNext(JSGlobalObject* globalObject, IterationRecord iterationRecord, JSValue argument)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue iterator = iterationRecord.iterator;
     JSValue nextFunction = iterationRecord.nextMethod;
@@ -63,7 +63,7 @@ JSValue iteratorNext(JSGlobalObject* globalObject, IterationRecord iterationReco
 JSValue iteratorNextWithCachedCall(JSGlobalObject* globalObject, IterationRecord iterationRecord, CachedCall* cachedCall, JSValue argument)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue iterator = iterationRecord.iterator;
 
@@ -90,7 +90,7 @@ JSValue iteratorValue(JSGlobalObject* globalObject, JSValue iterResult)
 bool iteratorComplete(JSGlobalObject* globalObject, JSValue iterResult)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue done = iterResult.get(globalObject, globalObject->vm().propertyNames->done);
     RETURN_IF_EXCEPTION(scope, true);
     RELEASE_AND_RETURN(scope, done.toBoolean(globalObject));
@@ -99,7 +99,7 @@ bool iteratorComplete(JSGlobalObject* globalObject, JSValue iterResult)
 JSValue iteratorStep(JSGlobalObject* globalObject, IterationRecord iterationRecord)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue result = iteratorNext(globalObject, iterationRecord);
     RETURN_IF_EXCEPTION(scope, JSValue());
@@ -113,7 +113,7 @@ JSValue iteratorStep(JSGlobalObject* globalObject, IterationRecord iterationReco
 JSValue iteratorStepWithCachedCall(JSGlobalObject* globalObject, IterationRecord iterationRecord, CachedCall* cachedCall)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue result = iteratorNextWithCachedCall(globalObject, iterationRecord, cachedCall);
     RETURN_IF_EXCEPTION(scope, JSValue());
@@ -127,14 +127,10 @@ JSValue iteratorStepWithCachedCall(JSGlobalObject* globalObject, IterationRecord
 void iteratorClose(JSGlobalObject* globalObject, JSValue iterator)
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
-    auto catchScope = DECLARE_CATCH_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
-    Exception* exception = nullptr;
-    if (catchScope.exception()) [[unlikely]] {
-        exception = catchScope.exception();
-        catchScope.clearException();
-    }
+    Exception* exception = throwScope.exception();
+    TRY_CLEAR_EXCEPTION(throwScope, void());
 
     JSValue returnFunction = iterator.get(globalObject, vm.propertyNames->returnKeyword);
     if (throwScope.exception()) [[unlikely]] {
@@ -201,7 +197,7 @@ JSObject* createIteratorResultObject(JSGlobalObject* globalObject, JSValue value
 bool hasIteratorMethod(JSGlobalObject* globalObject, JSValue value)
 {
     auto& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!value.isObject())
         return false;
@@ -217,7 +213,7 @@ bool hasIteratorMethod(JSGlobalObject* globalObject, JSValue value)
 JSValue iteratorMethod(JSGlobalObject* globalObject, JSObject* object)
 {
     auto& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CallData callData;
     JSValue method = object->getMethod(globalObject, callData, vm.propertyNames->iteratorSymbol, "Symbol.iterator property should be callable"_s);
@@ -229,7 +225,7 @@ JSValue iteratorMethod(JSGlobalObject* globalObject, JSObject* object)
 IterationRecord iteratorForIterable(JSGlobalObject* globalObject, JSObject* object, JSValue iteratorMethod)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto iteratorMethodCallData = JSC::getCallDataInline(iteratorMethod);
     if (iteratorMethodCallData.type == CallData::Type::None) {
@@ -255,7 +251,7 @@ IterationRecord iteratorForIterable(JSGlobalObject* globalObject, JSObject* obje
 IterationRecord iteratorForIterable(JSGlobalObject* globalObject, JSValue iterable)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     
     JSValue iteratorFunction = iterable.get(globalObject, vm.propertyNames->iteratorSymbol);
     RETURN_IF_EXCEPTION(scope, { });

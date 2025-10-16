@@ -142,7 +142,7 @@ template<typename... T> struct Converter<IDLUnion<T...>> : DefaultConverter<IDLU
         using FunctorResultType = decltype(functor(Result::exception()));
 
         JSC::VM& vm = JSC::getVM(&lexicalGlobalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         // 1. If the union type includes undefined and V is undefined, then return the unique undefined value.
         constexpr bool hasUndefinedType = brigand::any<TypeList, std::is_same<IDLUndefined, brigand::_1>>::value;

@@ -25,9 +25,9 @@
 #include "JSObject.h"
 
 #include "AllocationFailureMode.h"
-#include "CatchScope.h"
 #include "CustomGetterSetter.h"
 #include "Exception.h"
+#include "ExceptionScope.h"
 #include "GCDeferralContextInlines.h"
 #include "GetterSetter.h"
 #include "HeapAnalyzer.h"
@@ -490,7 +490,9 @@ String JSObject::calculatedClassName(JSObject* object)
     auto* structure = object->structure();
     auto* globalObject = structure->globalObject();
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    DeferTerminationForAWhile deferTermination(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
+    scope.noRethrow();
 
     // Check for a display name of obj.constructor.
     // This is useful to get `Foo` for the `(class Foo).prototype` object.
@@ -508,8 +510,7 @@ String JSObject::calculatedClassName(JSObject* object)
     }
 
     EXCEPTION_ASSERT(!scope.exception() || constructorFunctionName.isNull());
-    if (scope.exception()) [[unlikely]]
-        scope.clearException();
+    scope.clearExceptionIncludingTermination();
 
     // Get the display name of obj.__proto__.constructor.
     // This is useful to get `Foo` for a `new Foo` object.
@@ -535,8 +536,7 @@ String JSObject::calculatedClassName(JSObject* object)
     }
 
     EXCEPTION_ASSERT(!scope.exception() || constructorFunctionName.isNull());
-    if (scope.exception()) [[unlikely]]
-        scope.clearException();
+    scope.clearExceptionIncludingTermination();
 
     if (constructorFunctionName.isNull() || constructorFunctionName == "Object"_s) {
         PropertySlot slot(object, PropertySlot::InternalMethodType::VMInquiry, &vm);
@@ -546,15 +546,13 @@ String JSObject::calculatedClassName(JSObject* object)
                 JSValue value = slot.getValue(globalObject, vm.propertyNames->toStringTagSymbol);
                 if (value.isString()) {
                     auto tag = asString(value)->value(globalObject);
-                    if (scope.exception()) [[unlikely]]
-                        scope.clearException();
+                    scope.clearExceptionIncludingTermination();
                     return tag;
                 }
             }
         }
 
-        if (scope.exception()) [[unlikely]]
-            scope.clearException();
+        scope.clearExceptionIncludingTermination();
 
         String classInfoName = object->classInfo()->className;
         if (!classInfoName.isNull())
@@ -655,7 +653,7 @@ bool JSObject::getOwnPropertySlot(JSObject* object, JSGlobalObject* globalObject
 bool ordinarySetSlow(JSGlobalObject* globalObject, JSObject* object, PropertyName propertyName, JSValue value, JSValue receiver, bool shouldThrow)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     PropertyDescriptor ownDescriptor;
     if (object->type() != ProxyObjectType) {
         object->getOwnPropertyDescriptor(globalObject, propertyName, ownDescriptor);
@@ -674,7 +672,7 @@ bool ordinarySetWithOwnDescriptor(JSGlobalObject* globalObject, JSObject* object
     // 3. ES6 Proxy.
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSObject* current = object;
     while (true) {
         if (current->type() == ProxyObjectType) {
@@ -777,7 +775,7 @@ bool ordinarySetWithOwnDescriptor(JSGlobalObject* globalObject, JSObject* object
 bool setterThatIgnoresPrototypeProperties(JSGlobalObject* globalObject, JSValue thisValue, JSObject* homeObject, PropertyName propertyName, JSValue value, bool shouldThrow)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!thisValue.isObject())
         return throwTypeError(globalObject, scope, "SetterThatIgnoresPrototypeProperties expected |this| to be an object."_s);
@@ -811,7 +809,7 @@ bool JSObject::putInlineSlow(JSGlobalObject* globalObject, PropertyName property
     ASSERT(!parseIndex(propertyName));
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!vm.isSafeToRecurseSoft()) [[unlikely]] {
         throwStackOverflowError(globalObject, scope);
@@ -922,7 +920,7 @@ bool JSObject::mightBeSpecialProperty(VM& vm, JSType type, UniquedStringImpl* ui
 static NEVER_INLINE bool definePropertyOnReceiverSlow(JSGlobalObject* globalObject, PropertyName propertyName, JSValue value, JSObject* receiver, bool shouldThrow)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     PropertySlot slot(receiver, PropertySlot::InternalMethodType::GetOwnProperty);
     bool hasProperty = receiver->methodTable()->getOwnPropertySlot(receiver, globalObject, propertyName, slot);
@@ -953,7 +951,7 @@ bool JSObject::definePropertyOnReceiver(JSGlobalObject* globalObject, PropertyNa
     ASSERT(!parseIndex(propertyName));
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* receiver = slot.thisValue().getObject();
     // FIXME: For a failure due to primitive receiver, the error message is misleading.
@@ -984,7 +982,7 @@ bool JSObject::putInlineFastReplacingStaticPropertyIfNeeded(JSGlobalObject* glob
     ASSERT(!parseIndex(propertyName));
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Structure* structure = this->structure();
     ASSERT(structure->hasNonReifiedStaticProperties());
@@ -1103,7 +1101,7 @@ bool JSObject::putByIndex(JSCell* cell, JSGlobalObject* globalObject, unsigned p
         WriteBarrier<Unknown>& valueSlot = storage->m_vector[propertyName];
         unsigned length = storage->length();
 
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         
         // Update length & m_numValuesInVector as necessary.
         if (propertyName >= length) {
@@ -2117,7 +2115,7 @@ void JSObject::setPrototypeDirect(VM& vm, JSValue prototype)
 
 bool JSObject::setPrototypeWithCycleCheck(VM& vm, JSGlobalObject* globalObject, JSValue prototype, bool shouldThrowIfCantSet)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (this->structure()->isImmutablePrototypeExoticObject()) {
         // This implements https://tc39.github.io/ecma262/#sec-set-immutable-prototype.
@@ -2304,7 +2302,7 @@ bool JSObject::hasProperty(JSGlobalObject* globalObject, uint64_t propertyName) 
 bool JSObject::hasEnumerableProperty(JSGlobalObject* globalObject, PropertyName propertyName) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     PropertySlot slot(this, PropertySlot::InternalMethodType::GetOwnProperty);
     bool hasProperty = const_cast<JSObject*>(this)->getPropertySlot(globalObject, propertyName, slot);
     RETURN_IF_EXCEPTION(scope, false);
@@ -2316,7 +2314,7 @@ bool JSObject::hasEnumerableProperty(JSGlobalObject* globalObject, PropertyName 
 bool JSObject::hasEnumerableProperty(JSGlobalObject* globalObject, unsigned propertyName) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     PropertySlot slot(this, PropertySlot::InternalMethodType::GetOwnProperty);
     bool hasProperty = const_cast<JSObject*>(this)->getPropertySlot(globalObject, propertyName, slot);
     RETURN_IF_EXCEPTION(scope, false);
@@ -2460,7 +2458,7 @@ template<CachedSpecialPropertyKey key>
 static ALWAYS_INLINE JSValue callToPrimitiveFunction(JSGlobalObject* globalObject, const JSObject* object, PropertyName propertyName, PreferredPrimitiveType hint)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue function = object->structure()->cachedSpecialProperty(key);
     if (!function) {
@@ -2534,7 +2532,7 @@ static ALWAYS_INLINE JSValue callToPrimitiveFunction(JSGlobalObject* globalObjec
 JSValue JSObject::ordinaryToPrimitive(JSGlobalObject* globalObject, PreferredPrimitiveType hint) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // Make sure that whatever default value methods there are on object's prototype chain are
     // being watched.
@@ -2570,7 +2568,7 @@ JSValue JSObject::ordinaryToPrimitive(JSGlobalObject* globalObject, PreferredPri
 JSValue JSObject::toPrimitive(JSGlobalObject* globalObject, PreferredPrimitiveType preferredType) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (isJSArray(this)) {
         auto* array = jsCast<JSArray*>(const_cast<JSObject*>(this));
@@ -2605,7 +2603,7 @@ std::optional<Structure::PropertyHashEntry> JSObject::findPropertyHashEntry(Prop
 bool JSObject::hasInstance(JSGlobalObject* globalObject, JSValue value, JSValue hasInstanceValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!hasInstanceValue.isUndefinedOrNull() && hasInstanceValue != globalObject->functionProtoHasInstanceSymbolFunction()) {
         auto callData = JSC::getCallDataInline(hasInstanceValue);
@@ -2643,7 +2641,7 @@ bool JSObject::hasInstance(JSGlobalObject* globalObject, JSValue value, JSValue 
 bool JSObject::hasInstance(JSGlobalObject* globalObject, JSValue value)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue hasInstanceValue = get(globalObject, vm.propertyNames->hasInstanceSymbol);
     RETURN_IF_EXCEPTION(scope, false);
 
@@ -2653,7 +2651,7 @@ bool JSObject::hasInstance(JSGlobalObject* globalObject, JSValue value)
 bool JSObject::defaultHasInstance(JSGlobalObject* globalObject, JSValue value, JSValue proto)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!value.isObject())
         return false;
@@ -2687,7 +2685,7 @@ JSC_DEFINE_HOST_FUNCTION(objectPrivateFuncInstanceOf, (JSGlobalObject* globalObj
 void JSObject::getPropertyNames(JSGlobalObject* globalObject, PropertyNameArray& propertyNames, DontEnumPropertiesMode mode)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* object = this;
     unsigned prototypeCount = 0;
@@ -2791,7 +2789,7 @@ void JSObject::getOwnIndexedPropertyNames(JSGlobalObject*, PropertyNameArray& pr
 void JSObject::getOwnNonIndexPropertyNames(JSGlobalObject* globalObject, PropertyNameArray& propertyNames, DontEnumPropertiesMode mode)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     methodTable()->getOwnSpecialPropertyNames(this, globalObject, propertyNames, mode);
     RETURN_IF_EXCEPTION(scope, void());
@@ -2804,7 +2802,7 @@ void JSObject::getOwnNonIndexPropertyNames(JSGlobalObject* globalObject, Propert
 double JSObject::toNumber(JSGlobalObject* globalObject) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue primitive = toPrimitive(globalObject, PreferNumber);
     RETURN_IF_EXCEPTION(scope, 0.0); // should be picked up soon in Nodes.cpp
     RELEASE_AND_RETURN(scope, primitive.toNumber(globalObject));
@@ -2813,7 +2811,7 @@ double JSObject::toNumber(JSGlobalObject* globalObject) const
 JSString* JSObject::toString(JSGlobalObject* globalObject) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (isJSArray(this)) {
         auto* array = jsCast<JSArray*>(const_cast<JSObject*>(this));
@@ -2981,7 +2979,7 @@ ALWAYS_INLINE static bool canDoFastPutDirectIndex(JSObject* object)
 bool JSObject::defineOwnIndexedProperty(JSGlobalObject* globalObject, unsigned index, const PropertyDescriptor& descriptor, bool throwException)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(index <= MAX_ARRAY_INDEX);
 
@@ -3135,7 +3133,7 @@ void JSObject::deallocateSparseIndexMap()
 bool JSObject::attemptToInterceptPutByIndexOnHoleForPrototype(JSGlobalObject* globalObject, JSValue thisValue, unsigned i, JSValue value, bool shouldThrow, bool& putResult)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     for (JSObject* current = this; ;) {
         // This has the same behavior with respect to prototypes as JSObject::put(). It only
@@ -3172,7 +3170,7 @@ bool JSObject::attemptToInterceptPutByIndexOnHoleForPrototype(JSGlobalObject* gl
 bool JSObject::attemptToInterceptPutByIndexOnHole(JSGlobalObject* globalObject, unsigned i, JSValue value, bool shouldThrow, bool& putResult)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue prototypeValue = getPrototype(globalObject);
     RETURN_IF_EXCEPTION(scope, false);
@@ -3186,7 +3184,7 @@ template<IndexingType indexingShape>
 bool JSObject::putByIndexBeyondVectorLengthWithoutAttributes(JSGlobalObject* globalObject, unsigned i, JSValue value)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     RELEASE_ASSERT_WITH_SECURITY_IMPLICATION(!isCopyOnWrite(indexingMode()));
     ASSERT((indexingType() & IndexingShapeMask) == indexingShape);
@@ -3251,7 +3249,7 @@ template bool JSObject::putByIndexBeyondVectorLengthWithoutAttributes<Contiguous
 bool JSObject::putByIndexBeyondVectorLengthWithArrayStorage(JSGlobalObject* globalObject, unsigned i, JSValue value, bool shouldThrow, ArrayStorage* storage)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(!isCopyOnWrite(indexingMode()));
     // i should be a valid array index that is outside of the current vector.
@@ -3322,7 +3320,7 @@ bool JSObject::putByIndexBeyondVectorLengthWithArrayStorage(JSGlobalObject* glob
 bool JSObject::putByIndexBeyondVectorLength(JSGlobalObject* globalObject, unsigned i, JSValue value, bool shouldThrow)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     RELEASE_ASSERT_WITH_SECURITY_IMPLICATION(!isCopyOnWrite(indexingMode()));
 
@@ -3392,7 +3390,7 @@ bool JSObject::putByIndexBeyondVectorLength(JSGlobalObject* globalObject, unsign
 bool JSObject::putDirectIndexBeyondVectorLengthWithArrayStorage(JSGlobalObject* globalObject, unsigned i, JSValue value, unsigned attributes, PutDirectIndexMode mode, ArrayStorage* storage)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     
     // i should be a valid array index that is outside of the current vector.
     ASSERT(hasAnyArrayStorage(indexingType()));
@@ -3868,7 +3866,7 @@ Butterfly* JSObject::allocateMoreOutOfLineStorage(VM& vm, size_t oldSize, size_t
 bool JSObject::getOwnPropertyDescriptor(JSGlobalObject* globalObject, PropertyName propertyName, PropertyDescriptor& descriptor)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     PropertySlot slot(this, PropertySlot::InternalMethodType::GetOwnProperty);
 
     bool result = methodTable()->getOwnPropertySlot(this, globalObject, propertyName, slot);
@@ -3891,7 +3889,7 @@ bool validateAndApplyPropertyDescriptor(JSGlobalObject* globalObject, JSObject* 
     const PropertyDescriptor& descriptor, bool isCurrentDefined, const PropertyDescriptor& current, bool throwException)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // If we have a new property we can just put it on normally
     // Step 2.
@@ -3990,7 +3988,7 @@ bool validateAndApplyPropertyDescriptor(JSGlobalObject* globalObject, JSObject* 
 bool JSObject::defineOwnNonIndexProperty(JSGlobalObject* globalObject, PropertyName propertyName, const PropertyDescriptor& descriptor, bool throwException)
 {
     VM& vm  = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     PropertyDescriptor current;
     bool isCurrentDefined = getOwnPropertyDescriptor(globalObject, propertyName, current);
@@ -4133,7 +4131,7 @@ uint32_t JSObject::getEnumerableLength()
 JSValue JSObject::getMethod(JSGlobalObject* globalObject, CallData& callData, const Identifier& ident, const String& errorMessage)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue method = get(globalObject, ident);
     RETURN_IF_EXCEPTION(scope, JSValue());

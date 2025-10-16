@@ -77,7 +77,7 @@ void BigIntPrototype::finishCreation(VM& vm, JSGlobalObject*)
 static ALWAYS_INLINE JSBigInt* toThisBigIntValue(JSGlobalObject* globalObject, JSValue thisValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
 #if USE(BIGINT32)
     // FIXME: heap-allocating all big ints is inneficient, but re-implementing toString for small BigInts is enough work that I'm deferring it to a later patch.
@@ -106,7 +106,7 @@ static ALWAYS_INLINE JSBigInt* toThisBigIntValue(JSGlobalObject* globalObject, J
 JSC_DEFINE_HOST_FUNCTION(bigIntProtoFuncToString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSBigInt* value = toThisBigIntValue(globalObject, callFrame->thisValue());
     RETURN_IF_EXCEPTION(scope, { });
@@ -130,7 +130,7 @@ JSC_DEFINE_HOST_FUNCTION(bigIntProtoFuncToString, (JSGlobalObject* globalObject,
 JSC_DEFINE_HOST_FUNCTION(bigIntProtoFuncToLocaleString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSBigInt* thisValue = toThisBigIntValue(globalObject, callFrame->thisValue());
     RETURN_IF_EXCEPTION(scope, { });
@@ -151,7 +151,7 @@ JSC_DEFINE_HOST_FUNCTION(bigIntProtoFuncToLocaleString, (JSGlobalObject* globalO
 JSC_DEFINE_HOST_FUNCTION(bigIntProtoFuncValueOf, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSBigInt* value = toThisBigIntValue(globalObject, callFrame->thisValue());
     RETURN_IF_EXCEPTION(scope, { });

@@ -57,7 +57,7 @@ JSObject* constructRegExp(JSGlobalObject*, const ArgList&, JSObject* callee = nu
 
 ALWAYS_INLINE bool isRegExp(VM& vm, JSGlobalObject* globalObject, JSValue value)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     if (!value.isObject())
         return false;
 

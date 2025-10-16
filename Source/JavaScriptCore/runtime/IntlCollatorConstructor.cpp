@@ -83,7 +83,7 @@ void IntlCollatorConstructor::finishCreation(VM& vm, IntlCollatorPrototype* coll
 JSC_DEFINE_HOST_FUNCTION(constructIntlCollator, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     // 10.1.2 Intl.Collator ([locales [, options]]) (ECMA-402 2.0)
     // 1. If NewTarget is undefined, let newTarget be the active function object, else let newTarget be NewTarget.
     // 2. Let collator be OrdinaryCreateFromConstructor(newTarget, %CollatorPrototype%).
@@ -124,7 +124,7 @@ JSC_DEFINE_HOST_FUNCTION(callIntlCollator, (JSGlobalObject* globalObject, CallFr
 JSC_DEFINE_HOST_FUNCTION(intlCollatorConstructorFuncSupportedLocalesOf, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     // 10.2.2 Intl.Collator.supportedLocalesOf(locales [, options]) (ECMA-402 2.0)
 
     // 1. Let requestedLocales be CanonicalizeLocaleList(locales).

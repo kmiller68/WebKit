@@ -37,7 +37,7 @@ namespace JSC {
 inline void* throwNotAFunctionErrorFromCallIC(JSGlobalObject* globalObject, JSCell* owner, JSValue callee, CallLinkInfo* callLinkInfo)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto errorMessage = constructErrorMessage(globalObject, callee, "is not a function"_s);
     RETURN_IF_EXCEPTION(scope, nullptr);
     if (!errorMessage) [[unlikely]] {
@@ -59,7 +59,7 @@ inline void* throwNotAFunctionErrorFromCallIC(JSGlobalObject* globalObject, JSCe
 inline void* throwNotAConstructorErrorFromCallIC(JSGlobalObject* globalObject, JSCell* owner, JSValue callee, CallLinkInfo* callLinkInfo)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto errorMessage = constructErrorMessage(globalObject, callee, "is not a constructor"_s);
     RETURN_IF_EXCEPTION(scope, nullptr);
     if (!errorMessage) [[unlikely]] {
@@ -79,7 +79,7 @@ inline void* throwNotAConstructorErrorFromCallIC(JSGlobalObject* globalObject, J
 
 inline void* handleHostCall(VM& vm, JSCell* owner, CallFrame* calleeFrame, JSValue callee, CallLinkInfo* callLinkInfo)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     calleeFrame->setCodeBlock(nullptr);
 
@@ -126,7 +126,7 @@ inline void* handleHostCall(VM& vm, JSCell* owner, CallFrame* calleeFrame, JSVal
 
 ALWAYS_INLINE void* linkFor(VM& vm, JSCell* owner, CallFrame* calleeFrame, CallLinkInfo* callLinkInfo)
 {
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CodeSpecializationKind kind = callLinkInfo->specializationKind();
 
@@ -226,7 +226,7 @@ ALWAYS_INLINE void* linkFor(VM& vm, JSCell* owner, CallFrame* calleeFrame, CallL
 
 ALWAYS_INLINE void* virtualForWithFunction(VM& vm, JSCell* owner, CallFrame* calleeFrame, CallLinkInfo* callLinkInfo, JSCell*& calleeAsFunctionCell)
 {
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CodeSpecializationKind kind = callLinkInfo->specializationKind();
 

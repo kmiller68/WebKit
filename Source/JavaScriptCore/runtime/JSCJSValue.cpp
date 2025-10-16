@@ -61,7 +61,7 @@ uint64_t JSValue::toLength(JSGlobalObject* globalObject) const
 double JSValue::toNumberSlowCase(JSGlobalObject* globalObject) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(!isInt32() && !isDouble());
     if (isCell())
@@ -96,7 +96,7 @@ std::optional<double> JSValue::toNumberFromPrimitive() const
 JSValue JSValue::toBigInt(JSGlobalObject* globalObject) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue primitive = toPrimitive(globalObject, PreferNumber);
     RETURN_IF_EXCEPTION(scope, { });
@@ -120,6 +120,7 @@ JSValue JSValue::toBigInt(JSGlobalObject* globalObject) const
     }
 
     ASSERT(primitive.isUndefinedOrNull() || primitive.isNumber() || primitive.isSymbol());
+    scope.release();
     throwTypeError(globalObject, scope, "Invalid argument type in ToBigInt operation"_s);
     return jsUndefined();
 }
@@ -128,7 +129,7 @@ JSValue JSValue::toBigInt(JSGlobalObject* globalObject) const
 int64_t JSValue::toBigInt64(JSGlobalObject* globalObject) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue value = toBigInt(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
@@ -139,7 +140,7 @@ int64_t JSValue::toBigInt64(JSGlobalObject* globalObject) const
 uint64_t JSValue::toBigUInt64(JSGlobalObject* globalObject) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue value = toBigInt(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
@@ -149,7 +150,7 @@ uint64_t JSValue::toBigUInt64(JSGlobalObject* globalObject) const
 JSObject* JSValue::toObjectSlowCase(JSGlobalObject* globalObject) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     ASSERT(!isCell());
 
     if (isInt32() || isDouble())
@@ -162,6 +163,7 @@ JSObject* JSValue::toObjectSlowCase(JSGlobalObject* globalObject) const
 #endif
 
     ASSERT(isUndefinedOrNull());
+    scope.release();
     throwException(globalObject, scope, createNotAnObjectError(globalObject, *this));
     return nullptr;
 }
@@ -183,7 +185,7 @@ JSValue JSValue::toThisSloppySlowCase(JSGlobalObject* globalObject) const
 JSObject* JSValue::synthesizePrototype(JSGlobalObject* globalObject) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (isCell()) {
         if (isString())
@@ -204,6 +206,7 @@ JSObject* JSValue::synthesizePrototype(JSGlobalObject* globalObject) const
 #endif
 
     ASSERT(isUndefinedOrNull());
+    scope.release();
     throwException(globalObject, scope, createNotAnObjectError(globalObject, *this));
     return nullptr;
 }
@@ -212,7 +215,7 @@ JSObject* JSValue::synthesizePrototype(JSGlobalObject* globalObject) const
 bool JSValue::putToPrimitive(JSGlobalObject* globalObject, PropertyName propertyName, JSValue value, PutPropertySlot& slot)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (std::optional<uint32_t> index = parseIndex(propertyName))
         RELEASE_AND_RETURN(scope, putToPrimitiveByIndex(globalObject, index.value(), value, slot.isStrictMode()));
@@ -230,7 +233,7 @@ bool JSValue::putToPrimitive(JSGlobalObject* globalObject, PropertyName property
 bool JSValue::putToPrimitiveByIndex(JSGlobalObject* globalObject, unsigned propertyName, JSValue value, bool shouldThrow)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (propertyName > MAX_ARRAY_INDEX) {
         PutPropertySlot slot(*this, shouldThrow);
@@ -378,7 +381,7 @@ void JSValue::dumpForBacktrace(PrintStream& out) const
 JSString* JSValue::toStringSlowCase(JSGlobalObject* globalObject, bool returnEmptyStringOnError) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto errorValue = [&] () -> JSString* {
         if (returnEmptyStringOnError)
@@ -411,7 +414,7 @@ JSString* JSValue::toStringSlowCase(JSGlobalObject* globalObject, bool returnEmp
 String JSValue::toWTFStringSlowCase(JSGlobalObject* globalObject) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     if (isInt32())
         return vm.numericStrings.add(asInt32());
     if (isDouble())
@@ -432,7 +435,7 @@ String JSValue::toWTFStringSlowCase(JSGlobalObject* globalObject) const
 WTF::String JSValue::toWTFStringForConsole(JSGlobalObject* globalObject) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSString* string = toString(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
     auto result = string->value(globalObject);

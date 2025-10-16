@@ -53,7 +53,7 @@ ClonedArguments* ClonedArguments::createEmpty(VM& vm, JSGlobalObject* nullOrGlob
             butterfly = tryCreateArrayStorageButterfly(vm, nullptr, structure, length, vectorLength);
             if (!butterfly) [[unlikely]] {
                 if (nullOrGlobalObjectForOOM) {
-                    auto scope = DECLARE_THROW_SCOPE(vm);
+                    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
                     throwOutOfMemoryError(nullOrGlobalObjectForOOM, scope);
                 }
                 return nullptr;
@@ -68,7 +68,7 @@ ClonedArguments* ClonedArguments::createEmpty(VM& vm, JSGlobalObject* nullOrGlob
             butterfly = Butterfly::tryCreate(vm, nullptr, 0, structure->outOfLineCapacity(), true, indexingHeader, vectorLength * sizeof(EncodedJSValue));
             if (!butterfly) [[unlikely]] {
                 if (nullOrGlobalObjectForOOM) {
-                    auto scope = DECLARE_THROW_SCOPE(vm);
+                    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
                     throwOutOfMemoryError(nullOrGlobalObjectForOOM, scope);
                 }
                 return nullptr;
@@ -301,7 +301,7 @@ DEFINE_VISIT_CHILDREN(ClonedArguments);
 void ClonedArguments::copyToArguments(JSGlobalObject* globalObject, JSValue* firstElementDest, unsigned offset, unsigned length)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     switch (this->indexingType()) {
     case ALL_CONTIGUOUS_INDEXING_TYPES: {

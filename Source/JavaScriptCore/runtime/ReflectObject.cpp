@@ -89,7 +89,7 @@ void ReflectObject::finishCreation(VM& vm, JSGlobalObject*)
 JSC_DEFINE_HOST_FUNCTION(reflectObjectConstruct, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue target = callFrame->argument(0);
     if (!target.isObject())
@@ -128,7 +128,7 @@ JSC_DEFINE_HOST_FUNCTION(reflectObjectConstruct, (JSGlobalObject* globalObject, 
 JSC_DEFINE_HOST_FUNCTION(reflectObjectDefineProperty, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue target = callFrame->argument(0);
     if (!target.isObject())
@@ -154,7 +154,7 @@ JSC_DEFINE_HOST_FUNCTION(reflectObjectDefineProperty, (JSGlobalObject* globalObj
 JSC_DEFINE_HOST_FUNCTION(reflectObjectGetOwnPropertyDescriptor, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue target = callFrame->argument(0);
     if (!target.isObject())
@@ -170,7 +170,7 @@ JSC_DEFINE_HOST_FUNCTION(reflectObjectGetOwnPropertyDescriptor, (JSGlobalObject*
 JSC_DEFINE_HOST_FUNCTION(reflectObjectGetPrototypeOf, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue target = callFrame->argument(0);
     if (!target.isObject())
@@ -182,7 +182,7 @@ JSC_DEFINE_HOST_FUNCTION(reflectObjectGetPrototypeOf, (JSGlobalObject* globalObj
 JSC_DEFINE_HOST_FUNCTION(reflectObjectIsExtensible, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue target = callFrame->argument(0);
     if (!target.isObject())
@@ -197,7 +197,7 @@ JSC_DEFINE_HOST_FUNCTION(reflectObjectIsExtensible, (JSGlobalObject* globalObjec
 JSC_DEFINE_HOST_FUNCTION(reflectObjectOwnKeys, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue target = callFrame->argument(0);
     if (!target.isObject())
@@ -209,7 +209,7 @@ JSC_DEFINE_HOST_FUNCTION(reflectObjectOwnKeys, (JSGlobalObject* globalObject, Ca
 JSC_DEFINE_HOST_FUNCTION(reflectObjectPreventExtensions, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue target = callFrame->argument(0);
     if (!target.isObject())
@@ -224,7 +224,7 @@ JSC_DEFINE_HOST_FUNCTION(reflectObjectPreventExtensions, (JSGlobalObject* global
 JSC_DEFINE_HOST_FUNCTION(reflectObjectSet, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue target = callFrame->argument(0);
     if (!target.isObject())
@@ -248,7 +248,7 @@ JSC_DEFINE_HOST_FUNCTION(reflectObjectSet, (JSGlobalObject* globalObject, CallFr
 JSC_DEFINE_HOST_FUNCTION(reflectObjectSetPrototypeOf, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue target = callFrame->argument(0);
     if (!target.isObject())

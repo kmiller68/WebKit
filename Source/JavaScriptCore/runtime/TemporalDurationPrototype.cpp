@@ -119,7 +119,7 @@ void TemporalDurationPrototype::finishCreation(VM& vm)
 JSC_DEFINE_HOST_FUNCTION(temporalDurationPrototypeFuncWith, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* duration = jsDynamicCast<TemporalDuration*>(callFrame->thisValue());
     if (!duration)
@@ -138,7 +138,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalDurationPrototypeFuncWith, (JSGlobalObject* glo
 JSC_DEFINE_HOST_FUNCTION(temporalDurationPrototypeFuncNegated, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* duration = jsDynamicCast<TemporalDuration*>(callFrame->thisValue());
     if (!duration)
@@ -150,7 +150,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalDurationPrototypeFuncNegated, (JSGlobalObject* 
 JSC_DEFINE_HOST_FUNCTION(temporalDurationPrototypeFuncAbs, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* duration = jsDynamicCast<TemporalDuration*>(callFrame->thisValue());
     if (!duration)
@@ -162,7 +162,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalDurationPrototypeFuncAbs, (JSGlobalObject* glob
 JSC_DEFINE_HOST_FUNCTION(temporalDurationPrototypeFuncAdd, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* duration = jsDynamicCast<TemporalDuration*>(callFrame->thisValue());
     if (!duration)
@@ -177,7 +177,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalDurationPrototypeFuncAdd, (JSGlobalObject* glob
 JSC_DEFINE_HOST_FUNCTION(temporalDurationPrototypeFuncSubtract, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* duration = jsDynamicCast<TemporalDuration*>(callFrame->thisValue());
     if (!duration)
@@ -192,7 +192,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalDurationPrototypeFuncSubtract, (JSGlobalObject*
 JSC_DEFINE_HOST_FUNCTION(temporalDurationPrototypeFuncRound, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* duration = jsDynamicCast<TemporalDuration*>(callFrame->thisValue());
     if (!duration)
@@ -211,7 +211,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalDurationPrototypeFuncRound, (JSGlobalObject* gl
 JSC_DEFINE_HOST_FUNCTION(temporalDurationPrototypeFuncTotal, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* duration = jsDynamicCast<TemporalDuration*>(callFrame->thisValue());
     if (!duration)
@@ -227,7 +227,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalDurationPrototypeFuncTotal, (JSGlobalObject* gl
 JSC_DEFINE_HOST_FUNCTION(temporalDurationPrototypeFuncToString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* duration = jsDynamicCast<TemporalDuration*>(callFrame->thisValue());
     if (!duration)
@@ -239,7 +239,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalDurationPrototypeFuncToString, (JSGlobalObject*
 JSC_DEFINE_HOST_FUNCTION(temporalDurationPrototypeFuncToJSON, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* duration = jsDynamicCast<TemporalDuration*>(callFrame->thisValue());
     if (!duration)
@@ -252,7 +252,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalDurationPrototypeFuncToJSON, (JSGlobalObject* g
 JSC_DEFINE_HOST_FUNCTION(temporalDurationPrototypeFuncToLocaleString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* duration = jsDynamicCast<TemporalDuration*>(callFrame->thisValue());
     if (!duration)
@@ -264,7 +264,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalDurationPrototypeFuncToLocaleString, (JSGlobalO
 JSC_DEFINE_HOST_FUNCTION(temporalDurationPrototypeFuncValueOf, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     return throwVMTypeError(globalObject, scope, "Temporal.Duration.prototype.valueOf must not be called. To compare Duration values, use Temporal.Duration.compare"_s);
 }
@@ -272,7 +272,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalDurationPrototypeFuncValueOf, (JSGlobalObject* 
 JSC_DEFINE_CUSTOM_GETTER(temporalDurationPrototypeGetterYears, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* duration = jsDynamicCast<TemporalDuration*>(JSValue::decode(thisValue));
     if (!duration)
@@ -284,7 +284,7 @@ JSC_DEFINE_CUSTOM_GETTER(temporalDurationPrototypeGetterYears, (JSGlobalObject* 
 JSC_DEFINE_CUSTOM_GETTER(temporalDurationPrototypeGetterMonths, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* duration = jsDynamicCast<TemporalDuration*>(JSValue::decode(thisValue));
     if (!duration)
@@ -296,7 +296,7 @@ JSC_DEFINE_CUSTOM_GETTER(temporalDurationPrototypeGetterMonths, (JSGlobalObject*
 JSC_DEFINE_CUSTOM_GETTER(temporalDurationPrototypeGetterWeeks, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* duration = jsDynamicCast<TemporalDuration*>(JSValue::decode(thisValue));
     if (!duration)
@@ -308,7 +308,7 @@ JSC_DEFINE_CUSTOM_GETTER(temporalDurationPrototypeGetterWeeks, (JSGlobalObject* 
 JSC_DEFINE_CUSTOM_GETTER(temporalDurationPrototypeGetterDays, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* duration = jsDynamicCast<TemporalDuration*>(JSValue::decode(thisValue));
     if (!duration)
@@ -320,7 +320,7 @@ JSC_DEFINE_CUSTOM_GETTER(temporalDurationPrototypeGetterDays, (JSGlobalObject* g
 JSC_DEFINE_CUSTOM_GETTER(temporalDurationPrototypeGetterHours, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* duration = jsDynamicCast<TemporalDuration*>(JSValue::decode(thisValue));
     if (!duration)
@@ -332,7 +332,7 @@ JSC_DEFINE_CUSTOM_GETTER(temporalDurationPrototypeGetterHours, (JSGlobalObject* 
 JSC_DEFINE_CUSTOM_GETTER(temporalDurationPrototypeGetterMinutes, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* duration = jsDynamicCast<TemporalDuration*>(JSValue::decode(thisValue));
     if (!duration)
@@ -344,7 +344,7 @@ JSC_DEFINE_CUSTOM_GETTER(temporalDurationPrototypeGetterMinutes, (JSGlobalObject
 JSC_DEFINE_CUSTOM_GETTER(temporalDurationPrototypeGetterSeconds, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* duration = jsDynamicCast<TemporalDuration*>(JSValue::decode(thisValue));
     if (!duration)
@@ -356,7 +356,7 @@ JSC_DEFINE_CUSTOM_GETTER(temporalDurationPrototypeGetterSeconds, (JSGlobalObject
 JSC_DEFINE_CUSTOM_GETTER(temporalDurationPrototypeGetterMilliseconds, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* duration = jsDynamicCast<TemporalDuration*>(JSValue::decode(thisValue));
     if (!duration)
@@ -368,7 +368,7 @@ JSC_DEFINE_CUSTOM_GETTER(temporalDurationPrototypeGetterMilliseconds, (JSGlobalO
 JSC_DEFINE_CUSTOM_GETTER(temporalDurationPrototypeGetterMicroseconds, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* duration = jsDynamicCast<TemporalDuration*>(JSValue::decode(thisValue));
     if (!duration)
@@ -380,7 +380,7 @@ JSC_DEFINE_CUSTOM_GETTER(temporalDurationPrototypeGetterMicroseconds, (JSGlobalO
 JSC_DEFINE_CUSTOM_GETTER(temporalDurationPrototypeGetterNanoseconds, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* duration = jsDynamicCast<TemporalDuration*>(JSValue::decode(thisValue));
     if (!duration)
@@ -392,7 +392,7 @@ JSC_DEFINE_CUSTOM_GETTER(temporalDurationPrototypeGetterNanoseconds, (JSGlobalOb
 JSC_DEFINE_CUSTOM_GETTER(temporalDurationPrototypeGetterSign, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* duration = jsDynamicCast<TemporalDuration*>(JSValue::decode(thisValue));
     if (!duration)
@@ -404,7 +404,7 @@ JSC_DEFINE_CUSTOM_GETTER(temporalDurationPrototypeGetterSign, (JSGlobalObject* g
 JSC_DEFINE_CUSTOM_GETTER(temporalDurationPrototypeGetterBlank, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* duration = jsDynamicCast<TemporalDuration*>(JSValue::decode(thisValue));
     if (!duration)

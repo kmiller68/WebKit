@@ -72,7 +72,7 @@ const ClassInfo WebAssemblyModuleConstructor::s_info = { "Function"_s, &Base::s_
 JSC_DEFINE_HOST_FUNCTION(webAssemblyModuleCustomSections, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (callFrame->argumentCount() < 2) [[unlikely]]
         return JSValue::encode(throwException(globalObject, throwScope, createNotEnoughArgumentsError(globalObject)));
@@ -112,7 +112,7 @@ template <IsImportOrExport T>
 static JSObject* createTypeReflectionObject(JSGlobalObject* globalObject, JSWebAssemblyModule* module, const T& impOrExp)
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* typeObj;
     constexpr auto errorMessage = std::same_as<T, Wasm::Import> ? "WebAssembly.Module.imports unable to produce import descriptors for the given module"_s : "WebAssembly.Module.exports unable to produce export descriptors for the given module"_s;
@@ -208,7 +208,7 @@ static JSObject* createTypeReflectionObject(JSGlobalObject* globalObject, JSWebA
 JSC_DEFINE_HOST_FUNCTION(webAssemblyModuleImports, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSWebAssemblyModule* module = jsDynamicCast<JSWebAssemblyModule*>(callFrame->argument(0));
     if (!module)
@@ -251,7 +251,7 @@ JSC_DEFINE_HOST_FUNCTION(webAssemblyModuleImports, (JSGlobalObject* globalObject
 JSC_DEFINE_HOST_FUNCTION(webAssemblyModuleExports, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSWebAssemblyModule* module = jsDynamicCast<JSWebAssemblyModule*>(callFrame->argument(0));
     if (!module)
@@ -289,7 +289,7 @@ JSC_DEFINE_HOST_FUNCTION(webAssemblyModuleExports, (JSGlobalObject* globalObject
 JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyModule, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     
     Vector<uint8_t> source = createSourceBufferFromValue(vm, globalObject, callFrame->argument(0));
     RETURN_IF_EXCEPTION(scope, { });
@@ -312,14 +312,14 @@ JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyModule, (JSGlobalObject* globalOb
 JSC_DEFINE_HOST_FUNCTION(callJSWebAssemblyModule, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "WebAssembly.Module"_s));
 }
 
 JSWebAssemblyModule* WebAssemblyModuleConstructor::createModule(JSGlobalObject* globalObject, CallFrame* callFrame, Vector<uint8_t>&& buffer, std::optional<WebAssemblyCompileOptions>& options)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* newTarget = asObject(callFrame->newTarget());
     Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, webAssemblyModuleStructure, newTarget, callFrame->jsCallee());

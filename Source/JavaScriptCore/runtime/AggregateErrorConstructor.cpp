@@ -69,7 +69,7 @@ JSC_DEFINE_HOST_FUNCTION(callAggregateErrorConstructor, (JSGlobalObject* globalO
 JSC_DEFINE_HOST_FUNCTION(constructAggregateErrorConstructor, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue errors = callFrame->argument(0);
     JSValue message = callFrame->argument(1);
     JSValue options = callFrame->argument(2);

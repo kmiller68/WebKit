@@ -29,7 +29,7 @@
 #include "AggregateError.h"
 #include "CallFrame.h"
 #include "JSCInlines.h"
-#include "ThrowScope.h"
+#include "ExceptionScope.h"
 
 namespace JSC {
 

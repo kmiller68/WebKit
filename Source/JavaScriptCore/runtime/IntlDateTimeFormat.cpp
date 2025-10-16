@@ -643,7 +643,7 @@ String IntlDateTimeFormat::buildSkeleton(Weekday weekday, Era era, Year year, Mo
 void IntlDateTimeFormat::initializeDateTimeFormat(JSGlobalObject* globalObject, JSValue locales, JSValue originalOptions, RequiredComponent required, Defaults defaults)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Vector<String> requestedLocales = canonicalizeLocaleList(globalObject, locales);
     RETURN_IF_EXCEPTION(scope, void());
@@ -1239,7 +1239,7 @@ JSValue IntlDateTimeFormat::format(JSGlobalObject* globalObject, double value) c
     ASSERT(m_dateFormat);
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!std::isfinite(value))
         return throwRangeError(globalObject, scope, "date value is not finite in DateTimeFormat format()"_s);
@@ -1322,7 +1322,7 @@ JSValue IntlDateTimeFormat::formatToParts(JSGlobalObject* globalObject, double v
     ASSERT(m_dateFormat);
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!std::isfinite(value))
         return throwRangeError(globalObject, scope, "date value is not finite in DateTimeFormat formatToParts()"_s);
@@ -1387,7 +1387,7 @@ UDateIntervalFormat* IntlDateTimeFormat::createDateIntervalFormatIfNecessary(JSG
     ASSERT(m_dateFormat);
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (m_dateIntervalFormat)
         return m_dateIntervalFormat.get();
@@ -1513,7 +1513,7 @@ JSValue IntlDateTimeFormat::formatRange(JSGlobalObject* globalObject, double sta
     ASSERT(m_dateFormat);
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // http://tc39.es/proposal-intl-DateTimeFormat-formatRange/#sec-partitiondatetimerangepattern
     startDate = timeClip(startDate);
@@ -1570,7 +1570,7 @@ JSValue IntlDateTimeFormat::formatRangeToParts(JSGlobalObject* globalObject, dou
     ASSERT(m_dateFormat);
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // http://tc39.es/proposal-intl-DateTimeFormat-formatRange/#sec-partitiondatetimerangepattern
     startDate = timeClip(startDate);

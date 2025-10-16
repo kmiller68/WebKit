@@ -45,7 +45,7 @@ ModuleProgramExecutable::ModuleProgramExecutable(JSGlobalObject* globalObject, c
 UnlinkedModuleProgramCodeBlock* ModuleProgramExecutable::getUnlinkedCodeBlock(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     UnlinkedModuleProgramCodeBlock* unlinkedModuleProgramCode = unlinkedCodeBlock();
     if (unlinkedModuleProgramCode)
@@ -73,7 +73,7 @@ UnlinkedModuleProgramCodeBlock* ModuleProgramExecutable::getUnlinkedCodeBlock(JS
 ModuleProgramExecutable* ModuleProgramExecutable::tryCreate(JSGlobalObject* globalObject, const SourceCode& source)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ModuleProgramExecutable* executable = new (NotNull, allocateCell<ModuleProgramExecutable>(vm)) ModuleProgramExecutable(globalObject, source);
     executable->finishCreation(vm);

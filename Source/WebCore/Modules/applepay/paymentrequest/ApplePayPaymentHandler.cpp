@@ -88,7 +88,7 @@ static ExceptionOr<ApplePayRequest> convertAndValidateApplePayRequest(Document& 
     if (data.isEmpty())
         return Exception { ExceptionCode::TypeError, "Missing payment method data."_s };
 
-    auto throwScope = DECLARE_THROW_SCOPE(document.vm());
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(document.vm());
 
     auto applePayRequestConversion = convertDictionary<ApplePayRequest>(*document.globalObject(), data);
     if (applePayRequestConversion.hasException(throwScope))
@@ -448,11 +448,11 @@ Vector<Ref<ApplePayError>> ApplePayPaymentHandler::computeErrors(String&& error,
 
     computePayerErrors(WTFMove(payerErrors), errors);
 
-    auto scope = DECLARE_CATCH_SCOPE(protectedScriptExecutionContext()->protectedVM().get());
+    auto scope = DECLARE_EXCEPTION_SCOPE(protectedScriptExecutionContext()->protectedVM().get());
     auto exception = computePaymentMethodErrors(paymentMethodErrors, errors);
     if (exception.hasException()) {
         ASSERT(scope.exception());
-        scope.clearException();
+        TRY_CLEAR_EXCEPTION(scope, { });
     }
 
     return errors;
@@ -462,11 +462,11 @@ Vector<Ref<ApplePayError>> ApplePayPaymentHandler::computeErrors(JSC::JSObject* 
 {
     Vector<Ref<ApplePayError>> errors;
 
-    auto scope = DECLARE_CATCH_SCOPE(protectedScriptExecutionContext()->protectedVM().get());
+    auto scope = DECLARE_EXCEPTION_SCOPE(protectedScriptExecutionContext()->protectedVM().get());
     auto exception = computePaymentMethodErrors(paymentMethodErrors, errors);
     if (exception.hasException()) {
         ASSERT(scope.exception());
-        scope.clearException();
+        TRY_CLEAR_EXCEPTION(scope, { });
     }
 
     return errors;
@@ -508,7 +508,7 @@ ExceptionOr<void> ApplePayPaymentHandler::computePaymentMethodErrors(JSC::JSObje
         return { };
 
     Ref context = *scriptExecutionContext();
-    auto scope = DECLARE_THROW_SCOPE(context->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(context->vm());
 
     auto applePayErrors = convert<IDLSequence<IDLInterface<ApplePayError>>>(*context->globalObject(), paymentMethodErrors);
     if (applePayErrors.hasException(scope)) [[unlikely]]
@@ -608,7 +608,7 @@ ExceptionOr<std::optional<std::tuple<PaymentDetailsModifier, ApplePayModifier>>>
         if (serializedModifierData[i].isEmpty())
             continue;
 
-        auto scope = DECLARE_THROW_SCOPE(lexicalGlobalObject.vm());
+        auto scope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject.vm());
         JSC::JSValue data;
         {
             JSC::JSLockHolder lock(&lexicalGlobalObject);
@@ -932,7 +932,7 @@ ExceptionOr<void> ApplePayPaymentHandler::complete(Document& document, std::opti
     }
 
     if (!serializedData.isEmpty()) {
-        auto throwScope = DECLARE_THROW_SCOPE(document.vm());
+        auto throwScope = DECLARE_EXCEPTION_SCOPE(document.vm());
 
         auto parsedData = JSONParse(document.globalObject(), WTFMove(serializedData));
         if (throwScope.exception())

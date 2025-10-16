@@ -41,6 +41,7 @@
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
 
 #include <JavaScriptCore/ExceptionHelpers.h>
+#include <JavaScriptCore/ExceptionScope.h>
 #include <JavaScriptCore/GCIncomingRefCountedInlines.h>
 #include <JavaScriptCore/HeapInlines.h>
 #include <JavaScriptCore/IdentifierInlines.h>
@@ -56,7 +57,6 @@ WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
 #include <JavaScriptCore/SlotVisitorInlines.h>
 #include <JavaScriptCore/StrongInlines.h>
 #include <JavaScriptCore/StructureInlines.h>
-#include <JavaScriptCore/ThrowScope.h>
 #include <JavaScriptCore/WeakGCMapInlines.h>
 #include <JavaScriptCore/WeakGCSetInlines.h>
 

@@ -32,8 +32,8 @@ namespace WebCore {
 
 JSC::JSValue JSMediaControlsHost::controller(JSC::JSGlobalObject& lexicalGlobalObject) const
 {
-    auto throwScope = DECLARE_THROW_SCOPE(lexicalGlobalObject.vm());
-    return cachedPropertyValue(throwScope, lexicalGlobalObject, *this, wrapped().controllerWrapper(), [this](JSC::ThrowScope&) {
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject.vm());
+    return cachedPropertyValue(throwScope, lexicalGlobalObject, *this, wrapped().controllerWrapper(), [this](JSC::ExceptionScope&) {
         return wrapped().controllerWrapper().getValue(JSC::jsUndefined());
     });
 }

@@ -27,7 +27,6 @@
 #include "AtomicsObject.h"
 #include "BigIntConstructor.h"
 #include "BytecodeCacheError.h"
-#include "CatchScope.h"
 #include "CodeBlock.h"
 #include "CodeCache.h"
 #include "CompilerTimingScope.h"
@@ -38,6 +37,7 @@
 #include "Disassembler.h"
 #include "Exception.h"
 #include "ExceptionHelpers.h"
+#include "ExceptionScope.h"
 #include "Fuzzilli.h"
 #include "GlobalObjectMethodTable.h"
 #include "HeapSnapshotBuilder.h"
@@ -149,8 +149,8 @@
 #endif
 
 #if OS(DARWIN) && CPU(ARM_THUMB2)
-#include <fenv.h>
 #include <arm/arch.h>
+#include <fenv.h>
 #endif
 
 #if OS(DARWIN)
@@ -1096,7 +1096,7 @@ static URL absoluteFileURL(const String& fileName)
 JSInternalPromise* GlobalObject::moduleLoaderImportModule(JSGlobalObject* globalObject, JSModuleLoader*, JSString* moduleNameValue, JSValue parameters, const SourceOrigin& sourceOrigin)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* promise = JSInternalPromise::create(vm, globalObject->internalPromiseStructure());
 
@@ -1131,7 +1131,7 @@ JSInternalPromise* GlobalObject::moduleLoaderImportModule(JSGlobalObject* global
 Identifier GlobalObject::moduleLoaderResolve(JSGlobalObject* globalObject, JSModuleLoader*, JSValue keyValue, JSValue referrerValue, JSValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     scope.releaseAssertNoException();
     const Identifier key = keyValue.toPropertyKey(globalObject);
@@ -1463,7 +1463,7 @@ JSInternalPromise* GlobalObject::moduleLoaderFetch(JSGlobalObject* globalObject,
     VM& vm = globalObject->vm();
     JSInternalPromise* promise = JSInternalPromise::create(vm, globalObject->internalPromiseStructure());
 
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto rejectWithError = [&](JSValue error) {
         promise->reject(vm, globalObject, error);
@@ -1514,7 +1514,7 @@ JSInternalPromise* GlobalObject::moduleLoaderFetch(JSGlobalObject* globalObject,
 JSObject* GlobalObject::moduleLoaderCreateImportMetaProperties(JSGlobalObject* globalObject, JSModuleLoader*, JSValue key, JSModuleRecord*, JSValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* metaProperties = constructEmptyObject(vm, globalObject->nullPrototypeObjectStructure());
     RETURN_IF_EXCEPTION(scope, nullptr);
@@ -1544,7 +1544,7 @@ void GlobalObject::promiseRejectionTracker(JSGlobalObject*, JSPromise*, JSPromis
 
 #endif // ENABLE(FUZZILLI)
 
-static CString toCString(JSGlobalObject* globalObject, ThrowScope& scope, Expected<CString, UTF8ConversionError> expectedString)
+static CString toCString(JSGlobalObject* globalObject, ExceptionScope& scope, Expected<CString, UTF8ConversionError> expectedString)
 {
     if (expectedString)
         return expectedString.value();
@@ -1560,7 +1560,7 @@ static CString toCString(JSGlobalObject* globalObject, ThrowScope& scope, Expect
     return { };
 }
 
-template<typename T> static CString toCString(JSGlobalObject* globalObject, ThrowScope& scope, T& string)
+template<typename T> static CString toCString(JSGlobalObject* globalObject, ExceptionScope& scope, T& string)
 {
     return toCString(globalObject, scope, string.tryGetUTF8());
 }
@@ -1568,7 +1568,7 @@ template<typename T> static CString toCString(JSGlobalObject* globalObject, Thro
 static EncodedJSValue printInternal(JSGlobalObject* globalObject, CallFrame* callFrame, FILE* out, bool pretty)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (asyncTestExpectedPasses) {
         JSValue value = callFrame->argument(0);
@@ -1616,7 +1616,7 @@ JSC_DEFINE_HOST_FUNCTION(functionPrettyPrint, (JSGlobalObject* globalObject, Cal
 JSC_DEFINE_HOST_FUNCTION(functionAtob, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!callFrame->argumentCount())
         return JSValue::encode(throwException(globalObject, scope, createError(globalObject, "Missing input for atob."_s)));
@@ -1641,7 +1641,7 @@ JSC_DEFINE_HOST_FUNCTION(functionAtob, (JSGlobalObject* globalObject, CallFrame*
 JSC_DEFINE_HOST_FUNCTION(functionBtoa, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!callFrame->argumentCount())
         return JSValue::encode(throwException(globalObject, scope, createError(globalObject, "Missing input for btoa."_s)));
@@ -1665,7 +1665,7 @@ JSC_DEFINE_HOST_FUNCTION(functionBtoa, (JSGlobalObject* globalObject, CallFrame*
 JSC_DEFINE_HOST_FUNCTION(functionDisassembleBase64, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!callFrame->argumentCount())
         return JSValue::encode(throwException(globalObject, scope, createError(globalObject, "Missing input for disassembleBase64."_s)));
@@ -1693,7 +1693,7 @@ JSC_DEFINE_HOST_FUNCTION(functionDisassembleBase64, (JSGlobalObject* globalObjec
 JSC_DEFINE_HOST_FUNCTION(functionDebug, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* jsString = callFrame->argument(0).toString(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
     auto view = jsString->view(globalObject);
@@ -1728,7 +1728,7 @@ JSC_DEFINE_HOST_FUNCTION(functionDescribeArray, (JSGlobalObject* globalObject, C
 JSC_DEFINE_HOST_FUNCTION(functionSleepSeconds, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (callFrame->argumentCount() >= 1) {
         Seconds seconds = Seconds(callFrame->argument(0).toNumber(globalObject));
@@ -1894,7 +1894,7 @@ JSC_DEFINE_HOST_FUNCTION(functionVersion, (JSGlobalObject*, CallFrame*))
 JSC_DEFINE_HOST_FUNCTION(functionRun, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     String fileName = callFrame->argument(0).toWTFString(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
@@ -1918,9 +1918,8 @@ JSC_DEFINE_HOST_FUNCTION(functionRun, (JSGlobalObject* globalObject, CallFrame* 
     evaluate(realm, jscSource(script, SourceOrigin { absoluteFileURL(fileName) }, fileName), JSValue(), exception);
     stopWatch.stop();
 
+    scope.assertNoExceptionExceptTermination();
     if (exception) {
-        if (vm.isTerminationException(exception.get()))
-            vm.setExecutionForbidden();
         throwException(realm, scope, exception);
         return JSValue::encode(jsUndefined());
     }
@@ -1931,7 +1930,7 @@ JSC_DEFINE_HOST_FUNCTION(functionRun, (JSGlobalObject* globalObject, CallFrame* 
 JSC_DEFINE_HOST_FUNCTION(functionRunString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     String source = callFrame->argument(0).toWTFString(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
@@ -1952,9 +1951,8 @@ JSC_DEFINE_HOST_FUNCTION(functionRunString, (JSGlobalObject* globalObject, CallF
         evaluate(realm, code, JSValue(), exception);
     }
 
+    scope.assertNoExceptionExceptTermination();
     if (exception) {
-        if (vm.isTerminationException(exception.get()))
-            vm.setExecutionForbidden();
         scope.throwException(realm, exception);
         return JSValue::encode(jsUndefined());
     }
@@ -1964,7 +1962,7 @@ JSC_DEFINE_HOST_FUNCTION(functionRunString, (JSGlobalObject* globalObject, CallF
 
 static URL computeFilePath(VM& vm, JSGlobalObject* globalObject, CallFrame* callFrame)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     bool callerRelative = callFrame->argument(1).getString(globalObject) == "caller relative"_s;
     RETURN_IF_EXCEPTION(scope, URL());
@@ -1987,7 +1985,7 @@ static URL computeFilePath(VM& vm, JSGlobalObject* globalObject, CallFrame* call
 JSC_DEFINE_HOST_FUNCTION(functionLoad, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     URL path = computeFilePath(vm, globalObject, callFrame);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
@@ -1998,36 +1996,34 @@ JSC_DEFINE_HOST_FUNCTION(functionLoad, (JSGlobalObject* globalObject, CallFrame*
 
     NakedPtr<Exception> evaluationException;
     JSValue result = evaluate(globalObject, jscSource(script, SourceOrigin { path }, path.fileSystemPath()), JSValue(), evaluationException);
-    if (evaluationException) {
-        if (vm.isTerminationException(evaluationException.get()))
-            vm.setExecutionForbidden();
+    scope.assertNoExceptionExceptTermination();
+    if (evaluationException)
         throwException(globalObject, scope, evaluationException);
-    }
+
     return JSValue::encode(result);
 }
 
 JSC_DEFINE_HOST_FUNCTION(functionLoadString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     String sourceCode = callFrame->argument(0).toWTFString(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
 
     NakedPtr<Exception> evaluationException;
     JSValue result = evaluate(globalObject, jscSource(sourceCode, callFrame->callerSourceOrigin(vm)), JSValue(), evaluationException);
-    if (evaluationException) {
-        if (vm.isTerminationException(evaluationException.get()))
-            vm.setExecutionForbidden();
+    scope.assertNoExceptionExceptTermination();
+    if (evaluationException)
         throwException(globalObject, scope, evaluationException);
-    }
+
     return JSValue::encode(result);
 }
 
 JSC_DEFINE_HOST_FUNCTION(functionReadFile, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     bool isBinary = false;
     if (callFrame->argumentCount() > 1) {
@@ -2061,7 +2057,7 @@ WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
 JSC_DEFINE_HOST_FUNCTION(functionWriteFile, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     String fileName = callFrame->argument(0).toWTFString(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
@@ -2110,7 +2106,7 @@ WTF_ALLOW_UNSAFE_BUFFER_USAGE_END
 JSC_DEFINE_HOST_FUNCTION(functionCheckSyntax, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     String fileName = callFrame->argument(0).toWTFString(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
@@ -2160,7 +2156,7 @@ JSC_DEFINE_HOST_FUNCTION(functionGetRandomSeed, (JSGlobalObject* globalObject, C
 JSC_DEFINE_HOST_FUNCTION(functionSetRandomSeed, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned seed = callFrame->argument(0).toUInt32(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
@@ -2244,7 +2240,7 @@ const ClassInfo JSFileDescriptor::s_info = { "FileDescriptor"_s, &Base::s_info, 
 JSC_DEFINE_HOST_FUNCTION(functionOpenFile, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     URL filePath = computeFilePath(vm, globalObject, callFrame);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
@@ -2317,7 +2313,7 @@ JSC_DEFINE_HOST_FUNCTION(functionNumberOfDFGCompiles, (JSGlobalObject* globalObj
 JSC_DEFINE_HOST_FUNCTION(functionCallerIsBBQOrOMGCompiled, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!Options::useBBQTierUpChecks())
         return JSValue::encode(jsBoolean(true));
@@ -2463,7 +2459,7 @@ JSC_DEFINE_HOST_FUNCTION(functionDollarCreateRealm, (JSGlobalObject* globalObjec
 JSC_DEFINE_HOST_FUNCTION(functionDollarEvalScript, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     String sourceCode = callFrame->argument(0).toWTFString(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
@@ -2478,11 +2474,10 @@ JSC_DEFINE_HOST_FUNCTION(functionDollarEvalScript, (JSGlobalObject* globalObject
 
     NakedPtr<Exception> evaluationException;
     JSValue result = evaluate(realm, jscSource(sourceCode, callFrame->callerSourceOrigin(vm)), JSValue(), evaluationException);
-    if (evaluationException) {
-        if (vm.isTerminationException(evaluationException.get()))
-            vm.setExecutionForbidden();
+    scope.assertNoExceptionExceptTermination();
+    if (evaluationException)
         throwException(globalObject, scope, evaluationException);
-    }
+
     return JSValue::encode(result);
 }
 
@@ -2503,7 +2498,7 @@ JSC_DEFINE_HOST_FUNCTION(functionDollarClearKeptObjects, (JSGlobalObject* global
 JSC_DEFINE_HOST_FUNCTION(functionDollarGlobalObjectFor, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (callFrame->argumentCount() < 1)
         return JSValue::encode(throwException(globalObject, scope, createError(globalObject, "Not enough arguments"_s)));
@@ -2517,7 +2512,7 @@ JSC_DEFINE_HOST_FUNCTION(functionDollarGlobalObjectFor, (JSGlobalObject* globalO
 JSC_DEFINE_HOST_FUNCTION(functionDollarIsRemoteFunction, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (callFrame->argumentCount() < 1)
         return JSValue::encode(throwException(globalObject, scope, createError(globalObject, "Not enough arguments"_s)));
@@ -2529,7 +2524,7 @@ JSC_DEFINE_HOST_FUNCTION(functionDollarIsRemoteFunction, (JSGlobalObject* global
 JSC_DEFINE_HOST_FUNCTION(functionDollarAgentStart, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     String sourceCode = callFrame->argument(0).toWTFString(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
@@ -2562,7 +2557,7 @@ JSC_DEFINE_HOST_FUNCTION(functionDollarAgentStart, (JSGlobalObject* globalObject
             commandLine.m_interactive = false;
             runJSC(
                 commandLine, true,
-                [&] (VM&, GlobalObject* globalObject, bool& success) {
+                [&] (VM& vm, GlobalObject* globalObject, bool& success) {
                     // Notify the thread that started us that we have registered a worker.
                     {
                         Locker locker { didStartLock };
@@ -2570,9 +2565,12 @@ JSC_DEFINE_HOST_FUNCTION(functionDollarAgentStart, (JSGlobalObject* globalObject
                         didStartCondition.notifyOne();
                     }
                     
+                    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
+                    scope.noRethrow();
                     NakedPtr<Exception> evaluationException;
                     JSValue result;
                     result = evaluate(globalObject, jscSource(sourceCode, SourceOrigin(URL({ }, workerPath))), JSValue(), evaluationException);
+                    scope.assertNoExceptionExceptTermination();
                     if (evaluationException)
                         result = evaluationException->value();
                     checkException(globalObject, true, evaluationException, result, commandLine, success);
@@ -2593,7 +2591,7 @@ JSC_DEFINE_HOST_FUNCTION(functionDollarAgentStart, (JSGlobalObject* globalObject
 JSC_DEFINE_HOST_FUNCTION(functionDollarAgentReceiveBroadcast, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue callback = callFrame->argument(0);
     auto callData = JSC::getCallData(callback);
@@ -2640,7 +2638,7 @@ JSC_DEFINE_HOST_FUNCTION(functionDollarAgentReceiveBroadcast, (JSGlobalObject* g
 JSC_DEFINE_HOST_FUNCTION(functionDollarAgentReport, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     String report = callFrame->argument(0).toWTFString(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
@@ -2653,7 +2651,7 @@ JSC_DEFINE_HOST_FUNCTION(functionDollarAgentReport, (JSGlobalObject* globalObjec
 JSC_DEFINE_HOST_FUNCTION(functionDollarAgentSleep, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (callFrame->argumentCount() >= 1) {
         Seconds seconds = Seconds::fromMilliseconds(callFrame->argument(0).toNumber(globalObject));
@@ -2666,7 +2664,7 @@ JSC_DEFINE_HOST_FUNCTION(functionDollarAgentSleep, (JSGlobalObject* globalObject
 JSC_DEFINE_HOST_FUNCTION(functionDollarAgentBroadcast, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     int32_t index = callFrame->argument(1).toInt32(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
@@ -2750,7 +2748,7 @@ JSC_DEFINE_HOST_FUNCTION(functionHeapCapacity, (JSGlobalObject* globalObject, Ca
 JSC_DEFINE_HOST_FUNCTION(functionFlashHeapAccess, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     
     double sleepTimeMs = 0;
     if (callFrame->argumentCount() >= 1) {
@@ -2825,7 +2823,7 @@ JSC_DEFINE_HOST_FUNCTION(functionReoptimizationRetryCount, (JSGlobalObject*, Cal
 JSC_DEFINE_HOST_FUNCTION(functionTransferArrayBuffer, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (callFrame->argumentCount() < 1)
         return JSValue::encode(throwException(globalObject, scope, createError(globalObject, "Not enough arguments"_s)));
@@ -2933,14 +2931,17 @@ JSC_DEFINE_HOST_FUNCTION(functionDumpTypesForAllVariables, (JSGlobalObject* glob
 JSC_DEFINE_HOST_FUNCTION(functionDrainMicrotasks, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     vm.drainMicrotasks();
+    scope.assertNoExceptionExceptTermination();
+    RETURN_IF_EXCEPTION(scope, encodedJSValue());
     return JSValue::encode(jsUndefined());
 }
 
 JSC_DEFINE_HOST_FUNCTION(functionSetTimeout, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // FIXME: This means we can't pass any internal function but I don't think that's common for testing.
     auto callback = jsDynamicCast<JSFunction*>(callFrame->argument(0));
@@ -2975,7 +2976,7 @@ JSC_DEFINE_HOST_FUNCTION(functionReleaseWeakRefs, (JSGlobalObject* globalObject,
 JSC_DEFINE_HOST_FUNCTION(functionFinalizationRegistryLiveCount, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* finalizationRegistry = jsDynamicCast<JSFinalizationRegistry*>(callFrame->argument(0));
     if (!finalizationRegistry)
@@ -2988,7 +2989,7 @@ JSC_DEFINE_HOST_FUNCTION(functionFinalizationRegistryLiveCount, (JSGlobalObject*
 JSC_DEFINE_HOST_FUNCTION(functionFinalizationRegistryDeadCount, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* finalizationRegistry = jsDynamicCast<JSFinalizationRegistry*>(callFrame->argument(0));
     if (!finalizationRegistry)
@@ -3017,7 +3018,7 @@ JSC_DEFINE_HOST_FUNCTION(functionCreateGlobalObject, (JSGlobalObject* globalObje
 JSC_DEFINE_HOST_FUNCTION(functionCreateHeapBigInt, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue argument = callFrame->argument(0);
     JSValue bigInt = argument.toBigInt(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
@@ -3036,7 +3037,7 @@ JSC_DEFINE_HOST_FUNCTION(functionCreateHeapBigInt, (JSGlobalObject* globalObject
 JSC_DEFINE_HOST_FUNCTION(functionCreateBigInt32, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue argument = callFrame->argument(0);
     JSValue bigIntValue = argument.toBigInt(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
@@ -3088,7 +3089,7 @@ JSC_DEFINE_HOST_FUNCTION(functionIsHeapBigInt, (JSGlobalObject*, CallFrame* call
 JSC_DEFINE_HOST_FUNCTION(functionCreateNonRopeNonAtomString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     String source = callFrame->argument(0).toWTFString(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
@@ -3111,7 +3112,7 @@ JSC_DEFINE_HOST_FUNCTION(functionCreateNonRopeNonAtomString, (JSGlobalObject* gl
 JSC_DEFINE_HOST_FUNCTION(functionCheckModuleSyntax, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     String source = callFrame->argument(0).toWTFString(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
@@ -3132,7 +3133,7 @@ JSC_DEFINE_HOST_FUNCTION(functionCheckModuleSyntax, (JSGlobalObject* globalObjec
 JSC_DEFINE_HOST_FUNCTION(functionCheckScriptSyntax, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     String source = callFrame->argument(0).toWTFString(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
@@ -3165,7 +3166,7 @@ JSC_DEFINE_HOST_FUNCTION(functionGenerateHeapSnapshot, (JSGlobalObject* globalOb
     VM& vm = globalObject->vm();
     JSLockHolder lock(vm);
     DeferTermination deferScope(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     HeapSnapshotBuilder snapshotBuilder(vm.ensureHeapProfiler(), HeapSnapshotBuilder::SnapshotType::InspectorSnapshot, OverflowPolicy::RecordOverflow);
     snapshotBuilder.buildSnapshot();
@@ -3184,7 +3185,7 @@ JSC_DEFINE_HOST_FUNCTION(functionGenerateHeapSnapshotForGCDebugging, (JSGlobalOb
     VM& vm = globalObject->vm();
     JSLockHolder lock(vm);
     DeferTermination deferScope(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     String jsonString;
     {
         DeferGCForAWhile deferGC(vm); // Prevent concurrent GC from interfering with the full GC that the snapshot does.
@@ -3232,7 +3233,7 @@ JSC_DEFINE_HOST_FUNCTION(functionSamplingProfilerStackTraces, (JSGlobalObject* g
 {
     VM& vm = globalObject->vm();
     DeferTermination deferScope(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!vm.samplingProfiler())
         return JSValue::encode(throwException(globalObject, scope, createError(globalObject, "Sampling profiler was never started"_s)));
@@ -3255,7 +3256,7 @@ JSC_DEFINE_HOST_FUNCTION(functionMaxArguments, (JSGlobalObject* globalObject, Ca
 JSC_DEFINE_HOST_FUNCTION(functionAsyncTestStart, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue numberOfAsyncPasses = callFrame->argument(0);
     if (!numberOfAsyncPasses.isUInt32())
@@ -3276,7 +3277,7 @@ JSC_DEFINE_HOST_FUNCTION(functionAsyncTestPassed, (JSGlobalObject*, CallFrame*))
 JSC_DEFINE_HOST_FUNCTION(functionWebAssemblyMemoryMode, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     
     if (!Wasm::isSupported())
         return throwVMTypeError(globalObject, scope, "WebAssemblyMemoryMode should only be called if the useWebAssembly option is set"_s);
@@ -3300,7 +3301,7 @@ JSC_DEFINE_HOST_FUNCTION(functionWebAssemblyMemoryMode, (JSGlobalObject* globalO
 JSC_DEFINE_HOST_FUNCTION(functionCreateWebAssemblyMemoryWithMode, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!Wasm::isSupported())
         return throwVMTypeError(globalObject, scope, "createWebAssemblyMemoryWithMode should only be called if the useWebAssembly option is set"_s);
@@ -3326,7 +3327,7 @@ JSC_DEFINE_HOST_FUNCTION(functionSetUnhandledRejectionCallback, (JSGlobalObject*
 {
     VM& vm = globalObject->vm();
     JSObject* object = callFrame->argument(0).getObject();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!object || !object->isCallable())
         return throwVMTypeError(globalObject, scope);
@@ -3338,7 +3339,7 @@ JSC_DEFINE_HOST_FUNCTION(functionSetUnhandledRejectionCallback, (JSGlobalObject*
 JSC_DEFINE_HOST_FUNCTION(functionAsDoubleNumber, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     double num = callFrame->argument(0).toNumber(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
     return JSValue::encode(jsDoubleNumber(num));
@@ -3367,7 +3368,7 @@ static String asSignpostString(JSGlobalObject* globalObject, JSValue v)
 JSC_DEFINE_HOST_FUNCTION(functionPerformanceMark, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto message = asSignpostString(globalObject, callFrame->argument(0));
     RETURN_IF_EXCEPTION(scope, EncodedJSValue());
@@ -3379,7 +3380,7 @@ JSC_DEFINE_HOST_FUNCTION(functionPerformanceMark, (JSGlobalObject* globalObject,
 JSC_DEFINE_HOST_FUNCTION(functionPerformanceMeasure, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto message = asSignpostString(globalObject, callFrame->argument(0));
     RETURN_IF_EXCEPTION(scope, EncodedJSValue());
@@ -3399,7 +3400,7 @@ JSC_DEFINE_HOST_FUNCTION(functionPerformanceMeasure, (JSGlobalObject* globalObje
 JSC_DEFINE_HOST_FUNCTION(functionFuzzilli, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     if (!callFrame->argument(0).isString()) {
         // We directly require a string as argument for simplicity.
         return JSValue::encode(jsUndefined());
@@ -3663,17 +3664,10 @@ WTF_ALLOW_UNSAFE_BUFFER_USAGE_END
 static void dumpException(GlobalObject* globalObject, JSValue exception)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
-
-#define CHECK_EXCEPTION() do { \
-        if (scope.exception()) { \
-            scope.clearException(); \
-            return; \
-        } \
-    } while (false)
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto exceptionString = exception.toWTFString(globalObject);
-    CHECK_EXCEPTION();
+    TRY_CLEAR_EXCEPTION(scope, void());
     Expected<CString, UTF8ConversionError> expectedCString = exceptionString.tryGetUTF8();
     if (expectedCString)
         printf("Exception: %s\n", expectedCString.value().data());
@@ -3681,37 +3675,37 @@ static void dumpException(GlobalObject* globalObject, JSValue exception)
         printf("Exception: <out of memory while extracting exception string>\n");
 
     Identifier nameID = Identifier::fromString(vm, "name"_s);
-    CHECK_EXCEPTION();
+    TRY_CLEAR_EXCEPTION(scope, void());
     Identifier fileNameID = Identifier::fromString(vm, "sourceURL"_s);
-    CHECK_EXCEPTION();
+    TRY_CLEAR_EXCEPTION(scope, void());
     Identifier lineNumberID = Identifier::fromString(vm, "line"_s);
-    CHECK_EXCEPTION();
+    TRY_CLEAR_EXCEPTION(scope, void());
     Identifier stackID = Identifier::fromString(vm, "stack"_s);
-    CHECK_EXCEPTION();
+    TRY_CLEAR_EXCEPTION(scope, void());
 
     JSValue nameValue = exception.get(globalObject, nameID);
-    CHECK_EXCEPTION();
+    TRY_CLEAR_EXCEPTION(scope, void());
     JSValue fileNameValue = exception.get(globalObject, fileNameID);
-    CHECK_EXCEPTION();
+    TRY_CLEAR_EXCEPTION(scope, void());
     JSValue lineNumberValue = exception.get(globalObject, lineNumberID);
-    CHECK_EXCEPTION();
+    TRY_CLEAR_EXCEPTION(scope, void());
     JSValue stackValue = exception.get(globalObject, stackID);
-    CHECK_EXCEPTION();
+    TRY_CLEAR_EXCEPTION(scope, void());
     
     auto nameString = nameValue.toWTFString(globalObject);
-    CHECK_EXCEPTION();
+    TRY_CLEAR_EXCEPTION(scope, void());
 
     if (nameString == "SyntaxError"_s && (!fileNameValue.isUndefinedOrNull() || !lineNumberValue.isUndefinedOrNull())) {
         auto fileNameString = fileNameValue.toWTFString(globalObject);
-        CHECK_EXCEPTION();
+        TRY_CLEAR_EXCEPTION(scope, void());
         auto lineNumberString = lineNumberValue.toWTFString(globalObject);
-        CHECK_EXCEPTION();
+        TRY_CLEAR_EXCEPTION(scope, void());
         printf("at %s:%s\n", fileNameString.utf8().data(), lineNumberString.utf8().data());
     }
     
     if (!stackValue.isUndefinedOrNull()) {
         auto stackString = stackValue.toWTFString(globalObject);
-        CHECK_EXCEPTION();
+        TRY_CLEAR_EXCEPTION(scope, void());
         if (stackString.length()) {
             auto expectedUtf8 = stackString.tryGetUTF8();
             if (expectedUtf8)
@@ -3726,8 +3720,8 @@ static void dumpException(GlobalObject* globalObject, JSValue exception)
 static bool checkUncaughtException(VM& vm, GlobalObject* globalObject, JSValue exception, const CommandLine& options)
 {
     const String& expectedExceptionName = options.m_uncaughtExceptionName;
-    auto scope = DECLARE_CATCH_SCOPE(vm);
-    scope.clearException();
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
+    scope.clearExceptionIncludingTermination();
     if (!exception) {
         printf("Expected uncaught exception with name '%s' but none was thrown\n", expectedExceptionName.utf8().data());
         return false;
@@ -3774,7 +3768,6 @@ static void checkException(GlobalObject* globalObject, bool isLastFile, bool has
     };
 
     if (isTerminationException(value)) {
-        vm.setExecutionForbidden();
         if (options.m_treatWatchdogExceptionAsSuccess) {
             ASSERT(hasException);
             return;
@@ -3807,7 +3800,8 @@ static void runWithOptions(GlobalObject* globalObject, CommandLine& options, boo
     Vector<char> scriptBuffer;
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
+    scope.noRethrow();
 
 #if ENABLE(SAMPLING_FLAGS)
     SamplingFlags::start();
@@ -3873,18 +3867,20 @@ static void runWithOptions(GlobalObject* globalObject, CommandLine& options, boo
 
             promise->then(globalObject, fulfillHandler, rejectHandler);
             scope.releaseAssertNoExceptionExceptTermination();
+            RETURN_IF_EXCEPTION(scope, void());
             vm.drainMicrotasks();
+            scope.assertNoExceptionExceptTermination();
         } else {
             NakedPtr<Exception> evaluationException;
             JSValue returnValue = evaluate(globalObject, jscSource(scriptBuffer, sourceOrigin , fileName), JSValue(), evaluationException);
-            scope.assertNoException();
+            scope.assertNoExceptionExceptTermination();
             if (evaluationException)
                 returnValue = evaluationException->value();
             checkException(globalObject, isLastFile, evaluationException, returnValue, options, success);
         }
 
         scriptBuffer.clear();
-        scope.clearException();
+        scope.clearExceptionIncludingTermination();
     }
 
 #if ENABLE(REGEXP_TRACING)
@@ -3897,7 +3893,7 @@ static void runWithOptions(GlobalObject* globalObject, CommandLine& options, boo
 static void runInteractive(GlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     URL directoryName = currentWorkingDirectory();
     if (!directoryName.isValid())
@@ -3930,6 +3926,7 @@ static void runInteractive(GlobalObject* globalObject)
         
         NakedPtr<Exception> evaluationException;
         JSValue returnValue = evaluate(globalObject, jscSource(source, sourceOrigin), JSValue(), evaluationException);
+
 #else
         printf("%s", interactivePrompt);
         Vector<char, 256> line;
@@ -3946,8 +3943,7 @@ static void runInteractive(GlobalObject* globalObject)
         NakedPtr<Exception> evaluationException;
         JSValue returnValue = evaluate(globalObject, jscSource(line, sourceOrigin, sourceOrigin.string()), JSValue(), evaluationException);
 #endif
-        if (evaluationException && vm.isTerminationException(evaluationException.get()))
-            vm.setExecutionForbidden();
+        scope.assertNoExceptionExceptTermination();
 
         Expected<CString, UTF8ConversionError> utf8;
         if (evaluationException) {
@@ -3966,8 +3962,9 @@ static void runInteractive(GlobalObject* globalObject)
         fwrite(result.data(), sizeof(char), result.length(), stdout);
         putchar('\n');
 
-        scope.clearException();
+        scope.clearExceptionIncludingTermination();
         vm.drainMicrotasks();
+        scope.clearExceptionIncludingTermination();
     }
     printf("\n");
 }
@@ -4358,6 +4355,7 @@ int runJSC(const CommandLine& options, bool isWorker, const Func& func)
     Worker worker(Workers::singleton(), !isWorker);
     
     VM& vm = VM::create(HeapType::Large).leakRef();
+    vm.forbidExecutionOnTermination();
     if (!isWorker && options.m_canBlockIsFalse)
         vm.m_typedArrayController = adoptRef(new JSC::SimpleTypedArrayController(false));
 
@@ -4392,7 +4390,7 @@ int runJSC(const CommandLine& options, bool isWorker, const Func& func)
 #endif
 
             func(vm, globalObject, success);
-            vm.drainMicrotasks();
+            // drainMicrotasks will be called when we release the JSLock at the end of this block.
         }
         vm.deferredWorkTimer->runRunLoop();
         {

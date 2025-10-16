@@ -38,7 +38,7 @@ using namespace JSC;
 static bool getOwnPropertySlotCommon(JSLocation& thisObject, JSGlobalObject& lexicalGlobalObject, PropertyName propertyName, PropertySlot& slot)
 {
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* window = thisObject.wrapped().window();
 
@@ -81,7 +81,7 @@ static bool getOwnPropertySlotCommon(JSLocation& thisObject, JSGlobalObject& lex
 bool JSLocation::getOwnPropertySlot(JSObject* object, JSGlobalObject* lexicalGlobalObject, PropertyName propertyName, PropertySlot& slot)
 {
     VM& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* thisObject = jsCast<JSLocation*>(object);
     ASSERT_GC_OBJECT_INHERITS(thisObject, info());
 
@@ -96,7 +96,7 @@ bool JSLocation::getOwnPropertySlot(JSObject* object, JSGlobalObject* lexicalGlo
 bool JSLocation::getOwnPropertySlotByIndex(JSObject* object, JSGlobalObject* lexicalGlobalObject, unsigned index, PropertySlot& slot)
 {
     VM& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* thisObject = jsCast<JSLocation*>(object);
     ASSERT_GC_OBJECT_INHERITS(thisObject, info());
 
@@ -111,7 +111,7 @@ bool JSLocation::getOwnPropertySlotByIndex(JSObject* object, JSGlobalObject* lex
 bool JSLocation::put(JSCell* cell, JSGlobalObject* lexicalGlobalObject, PropertyName propertyName, JSValue value, PutPropertySlot& putPropertySlot)
 {
     VM& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* thisObject = jsCast<JSLocation*>(cell);
     ASSERT_GC_OBJECT_INHERITS(thisObject, info());
 

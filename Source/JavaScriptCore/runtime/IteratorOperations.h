@@ -27,6 +27,7 @@
 #pragma once
 
 #include <JavaScriptCore/CachedCall.h>
+#include <JavaScriptCore/ExceptionScope.h>
 #include <JavaScriptCore/IterationModeMetadata.h>
 #include <JavaScriptCore/JSArrayIterator.h>
 #include <JavaScriptCore/JSCJSValue.h>
@@ -38,7 +39,6 @@
 #include <JavaScriptCore/JSSetIterator.h>
 #include <JavaScriptCore/MapIteratorPrototypeInlines.h>
 #include <JavaScriptCore/SetIteratorPrototypeInlines.h>
-#include <JavaScriptCore/ThrowScope.h>
 
 namespace JSC {
 
@@ -86,7 +86,7 @@ JS_EXPORT_PRIVATE IterationMode getIterationMode(VM&, JSGlobalObject*, JSValue i
 
 static ALWAYS_INLINE void forEachInMapStorage(VM& vm, JSGlobalObject* globalObject, JSCell* storageCell, JSMap::Helper::Entry startEntry, IterationKind iterationKind, NOESCAPE const Invocable<void(VM&, JSGlobalObject*, JSValue)> auto& callback)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* storage = jsCast<JSMap::Storage*>(storageCell);
     JSMap::Helper::Entry entry = startEntry;
@@ -124,7 +124,7 @@ static ALWAYS_INLINE void forEachInMapStorage(VM& vm, JSGlobalObject* globalObje
 
 static ALWAYS_INLINE void forEachInSetStorage(VM& vm, JSGlobalObject* globalObject, JSCell* storageCell, JSSet::Helper::Entry startEntry, NOESCAPE const Invocable<void(VM&, JSGlobalObject*, JSValue)> auto& callback)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* storage = jsCast<JSSet::Storage*>(storageCell);
     JSSet::Helper::Entry entry = startEntry;
@@ -150,7 +150,7 @@ static ALWAYS_INLINE void forEachInFastArray(JSGlobalObject* globalObject, JSVal
     auto& vm = getVM(globalObject);
     ASSERT(getIterationMode(vm, globalObject, iterable) == IterationMode::FastArray);
 
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     for (unsigned index = 0; index < array->length(); ++index) {
         JSValue nextValue = array->getIndex(globalObject, index);
@@ -169,7 +169,7 @@ static ALWAYS_INLINE void forEachInFastArray(JSGlobalObject* globalObject, JSVal
 ALWAYS_INLINE void forEachInIterationRecord(JSGlobalObject* globalObject, IterationRecord iterationRecord, NOESCAPE const Invocable<void(VM&, JSGlobalObject*, JSValue)> auto& callback)
 {
     auto& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue nextMethod = iterationRecord.nextMethod;
     auto callData = getCallDataInline(nextMethod);
@@ -210,7 +210,7 @@ ALWAYS_INLINE void forEachInIterationRecord(JSGlobalObject* globalObject, Iterat
 void forEachInIterable(JSGlobalObject* globalObject, JSValue iterable, NOESCAPE const Invocable<void(VM&, JSGlobalObject*, JSValue)> auto& callback)
 {
     auto& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (getIterationMode(vm, globalObject, iterable) == IterationMode::FastArray) {
         auto* array = jsCast<JSArray*>(iterable);
@@ -248,7 +248,7 @@ void forEachInIterable(JSGlobalObject* globalObject, JSValue iterable, NOESCAPE 
 void forEachInIterable(JSGlobalObject& globalObject, JSObject* iterable, JSValue iteratorMethod, NOESCAPE const Invocable<void(VM&, JSGlobalObject&, JSValue)> auto& callback)
 {
     auto& vm = getVM(&globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto iterationMode = getIterationMode(vm, &globalObject, iterable, iteratorMethod);
     if (iterationMode == IterationMode::FastArray) {
@@ -316,7 +316,7 @@ void forEachInIterable(JSGlobalObject& globalObject, JSObject* iterable, JSValue
 void forEachInIteratorProtocol(JSGlobalObject* globalObject, JSValue iterable, NOESCAPE const Invocable<void(VM&, JSGlobalObject*, JSValue)> auto& callback)
 {
     auto& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (auto* mapIterator = jsDynamicCast<JSMapIterator*>(iterable)) {
         if (mapIteratorProtocolIsFastAndNonObservable(vm, mapIterator)) {

@@ -334,7 +334,7 @@ public:
     static JSValue divide(JSGlobalObject* globalObject, int32_t x, int32_t y)
     {
         if (!y) {
-            auto scope = DECLARE_THROW_SCOPE(getVM(globalObject));
+            auto scope = DECLARE_EXCEPTION_SCOPE(getVM(globalObject));
             throwRangeError(globalObject, scope, "0 is an invalid divisor value."_s);
             return JSValue();
         }
@@ -349,7 +349,7 @@ public:
     static JSValue remainder(JSGlobalObject* globalObject, int32_t x, int32_t y)
     {
         if (!y) {
-            auto scope = DECLARE_THROW_SCOPE(getVM(globalObject));
+            auto scope = DECLARE_EXCEPTION_SCOPE(getVM(globalObject));
             throwRangeError(globalObject, scope, "0 is an invalid divisor value."_s);
             return JSValue();
         }

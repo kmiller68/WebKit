@@ -103,7 +103,7 @@ namespace {
 template<typename Adaptor, typename Func>
 EncodedJSValue atomicReadModifyWriteCase(JSGlobalObject* globalObject, VM& vm, const JSValue* args, JSArrayBufferView* typedArrayView, uint64_t accessIndex, const Func& func)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSGenericTypedArrayView<Adaptor>* typedArray = jsCast<JSGenericTypedArrayView<Adaptor>*>(typedArrayView);
     
@@ -123,7 +123,7 @@ EncodedJSValue atomicReadModifyWriteCase(JSGlobalObject* globalObject, VM& vm, c
 
 static uint64_t validateAtomicAccess(JSGlobalObject* globalObject, VM& vm, JSArrayBufferView* typedArrayView, JSValue accessIndexValue)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     uint64_t accessIndex = 0;
     size_t length = typedArrayView->length();
     if (accessIndexValue.isUInt32()) [[likely]]
@@ -146,7 +146,7 @@ template<TypedArrayOperationMode mode>
 inline JSArrayBufferView* validateIntegerTypedArray(JSGlobalObject* globalObject, JSValue typedArrayValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSArrayBufferView* typedArray = validateTypedArray(globalObject, typedArrayValue);
     RETURN_IF_EXCEPTION(scope, { });
@@ -182,7 +182,7 @@ inline JSArrayBufferView* validateIntegerTypedArray(JSGlobalObject* globalObject
 template<typename Func>
 EncodedJSValue atomicReadModifyWrite(JSGlobalObject* globalObject, VM& vm, const JSValue* args, const Func& func)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSArrayBufferView* typedArrayView = validateIntegerTypedArray<TypedArrayOperationMode::ReadWrite>(globalObject, args[0]);
     RETURN_IF_EXCEPTION(scope, { });
@@ -308,7 +308,7 @@ struct XorFunc {
 EncodedJSValue isLockFree(JSGlobalObject* globalObject, JSValue arg)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     int32_t size = arg.toInt32(globalObject);
     RETURN_IF_EXCEPTION(scope, JSValue::encode(jsUndefined()));
@@ -331,7 +331,7 @@ EncodedJSValue isLockFree(JSGlobalObject* globalObject, JSValue arg)
 template<typename Adaptor>
 EncodedJSValue atomicStoreCase(JSGlobalObject* globalObject, VM& vm, JSValue operand, JSArrayBufferView* typedArrayView, uint64_t accessIndex)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSGenericTypedArrayView<Adaptor>* typedArray = jsCast<JSGenericTypedArrayView<Adaptor>*>(typedArrayView);
 
@@ -360,7 +360,7 @@ EncodedJSValue atomicStore(JSGlobalObject* globalObject, VM& vm, JSValue base, J
 {
     // https://tc39.es/ecma262/#sec-atomics.store
 
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSArrayBufferView* typedArrayView = validateIntegerTypedArray<TypedArrayOperationMode::ReadWrite>(globalObject, base);
     RETURN_IF_EXCEPTION(scope, { });
@@ -444,7 +444,7 @@ template<typename ValueType, typename JSArrayType>
 JSValue atomicsWaitImpl(JSGlobalObject* globalObject, JSArrayType* typedArray, uint64_t accessIndex, ValueType expectedValue, JSValue timeoutValue, AtomicsWaitType type)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ValueType* ptr = typedArray->typedVector() + accessIndex;
 
@@ -481,7 +481,7 @@ JSValue atomicsWaitImpl(JSGlobalObject* globalObject, JSArrayType* typedArray, u
 JSC_DEFINE_HOST_FUNCTION(atomicsFuncWait, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* typedArrayView = validateIntegerTypedArray<TypedArrayOperationMode::Wait>(globalObject, callFrame->argument(0));
     RETURN_IF_EXCEPTION(scope, { });
@@ -513,7 +513,7 @@ JSC_DEFINE_HOST_FUNCTION(atomicsFuncWait, (JSGlobalObject* globalObject, CallFra
 JSC_DEFINE_HOST_FUNCTION(atomicsFuncWaitAsync, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* typedArrayView = validateIntegerTypedArray<TypedArrayOperationMode::Wait>(globalObject, callFrame->argument(0));
     RETURN_IF_EXCEPTION(scope, { });
@@ -545,7 +545,7 @@ JSC_DEFINE_HOST_FUNCTION(atomicsFuncWaitAsync, (JSGlobalObject* globalObject, Ca
 JSC_DEFINE_HOST_FUNCTION(atomicsFuncPause, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue argument = callFrame->argument(0);
     if (!argument.isUndefined()) {
@@ -564,7 +564,7 @@ JSC_DEFINE_HOST_FUNCTION(atomicsFuncPause, (JSGlobalObject* globalObject, CallFr
 EncodedJSValue getWaiterListSize(JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* typedArrayView = validateIntegerTypedArray<TypedArrayOperationMode::Wait>(globalObject, callFrame->argument(0));
     RETURN_IF_EXCEPTION(scope, { });
@@ -595,7 +595,7 @@ EncodedJSValue getWaiterListSize(JSGlobalObject* globalObject, CallFrame* callFr
 JSC_DEFINE_HOST_FUNCTION(atomicsFuncNotify, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* typedArrayView = validateIntegerTypedArray<TypedArrayOperationMode::Wait>(globalObject, callFrame->argument(0));
     RETURN_IF_EXCEPTION(scope, { });
@@ -644,7 +644,7 @@ JSC_DEFINE_JIT_OPERATION(operationAtomicsAdd, EncodedJSValue, (JSGlobalObject* g
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue args[] = {JSValue::decode(base), JSValue::decode(index), JSValue::decode(operand)};
     OPERATION_RETURN(scope, atomicReadModifyWrite(globalObject, vm, args, AddFunc()));
 }
@@ -654,7 +654,7 @@ JSC_DEFINE_JIT_OPERATION(operationAtomicsAnd, EncodedJSValue, (JSGlobalObject* g
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue args[] = {JSValue::decode(base), JSValue::decode(index), JSValue::decode(operand)};
     OPERATION_RETURN(scope, atomicReadModifyWrite(globalObject, vm, args, AndFunc()));
 }
@@ -664,7 +664,7 @@ JSC_DEFINE_JIT_OPERATION(operationAtomicsCompareExchange, EncodedJSValue, (JSGlo
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue args[] = {JSValue::decode(base), JSValue::decode(index), JSValue::decode(expected), JSValue::decode(newValue)};
     OPERATION_RETURN(scope, atomicReadModifyWrite(globalObject, vm, args, CompareExchangeFunc()));
 }
@@ -674,7 +674,7 @@ JSC_DEFINE_JIT_OPERATION(operationAtomicsExchange, EncodedJSValue, (JSGlobalObje
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue args[] = {JSValue::decode(base), JSValue::decode(index), JSValue::decode(operand)};
     OPERATION_RETURN(scope, atomicReadModifyWrite(globalObject, vm, args, ExchangeFunc()));
 }
@@ -684,7 +684,7 @@ JSC_DEFINE_JIT_OPERATION(operationAtomicsIsLockFree, EncodedJSValue, (JSGlobalOb
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     OPERATION_RETURN(scope, isLockFree(globalObject, JSValue::decode(size)));
 }
 
@@ -693,7 +693,7 @@ JSC_DEFINE_JIT_OPERATION(operationAtomicsLoad, EncodedJSValue, (JSGlobalObject* 
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue args[] = {JSValue::decode(base), JSValue::decode(index)};
     OPERATION_RETURN(scope, atomicReadModifyWrite(globalObject, vm, args, LoadFunc()));
 }
@@ -703,7 +703,7 @@ JSC_DEFINE_JIT_OPERATION(operationAtomicsOr, EncodedJSValue, (JSGlobalObject* gl
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue args[] = {JSValue::decode(base), JSValue::decode(index), JSValue::decode(operand)};
     OPERATION_RETURN(scope, atomicReadModifyWrite(globalObject, vm, args, OrFunc()));
 }
@@ -713,7 +713,7 @@ JSC_DEFINE_JIT_OPERATION(operationAtomicsStore, EncodedJSValue, (JSGlobalObject*
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     OPERATION_RETURN(scope, atomicStore(globalObject, vm, JSValue::decode(base), JSValue::decode(index), JSValue::decode(operand)));
 }
 
@@ -722,7 +722,7 @@ JSC_DEFINE_JIT_OPERATION(operationAtomicsSub, EncodedJSValue, (JSGlobalObject* g
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue args[] = {JSValue::decode(base), JSValue::decode(index), JSValue::decode(operand)};
     OPERATION_RETURN(scope, atomicReadModifyWrite(globalObject, vm, args, SubFunc()));
 }
@@ -732,7 +732,7 @@ JSC_DEFINE_JIT_OPERATION(operationAtomicsXor, EncodedJSValue, (JSGlobalObject* g
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue args[] = {JSValue::decode(base), JSValue::decode(index), JSValue::decode(operand)};
     OPERATION_RETURN(scope, atomicReadModifyWrite(globalObject, vm, args, XorFunc()));
 }

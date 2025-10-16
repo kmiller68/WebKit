@@ -45,7 +45,7 @@
 #include "WorkerOrWorkletGlobalScope.h"
 #include "WorkerOrWorkletScriptController.h"
 #include "WorkerThread.h"
-#include <JavaScriptCore/CatchScope.h>
+#include <JavaScriptCore/ExceptionScope.h>
 #include <JavaScriptCore/JSCJSValueInlines.h>
 #include <JavaScriptCore/JSRunLoopTimer.h>
 #include <wtf/AutodrainedPool.h>
@@ -393,7 +393,7 @@ void WorkerDedicatedRunLoop::Task::performTask(WorkerOrWorkletGlobalScope* conte
         m_task.performTask(*context);
     else if (!context->isClosing() && context->script() && !context->script()->isTerminatingExecution()) {
         JSC::VM& vm = context->script()->vm();
-        auto scope = DECLARE_CATCH_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         m_task.performTask(*context);
         if (context->script() && scope.exception()) [[unlikely]] {
             if (vm.hasPendingTerminationException()) {

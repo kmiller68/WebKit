@@ -46,7 +46,7 @@ static JSC_DECLARE_HOST_FUNCTION(constructJSWebAssemblyTable);
 JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyTable, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* newTarget = asObject(callFrame->newTarget());
     Structure* webAssemblyTableStructure = JSC_GET_DERIVED_STRUCTURE(vm, webAssemblyTableStructure, newTarget, callFrame->jsCallee());
@@ -131,7 +131,7 @@ JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyTable, (JSGlobalObject* globalObj
 JSC_DEFINE_HOST_FUNCTION(callJSWebAssemblyTable, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "WebAssembly.Table"_s));
 }
 

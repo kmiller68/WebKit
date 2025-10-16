@@ -112,7 +112,7 @@ void MapPrototype::finishCreation(VM& vm, JSGlobalObject* globalObject)
 ALWAYS_INLINE static JSMap* getMap(JSGlobalObject* globalObject, JSValue thisValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!thisValue.isCell()) [[unlikely]] {
         throwVMError(globalObject, scope, createNotAnObjectError(globalObject, thisValue));
@@ -128,7 +128,7 @@ ALWAYS_INLINE static JSMap* getMap(JSGlobalObject* globalObject, JSValue thisVal
 JSC_DEFINE_HOST_FUNCTION(mapProtoFuncClear, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSMap* map = getMap(globalObject, callFrame->thisValue());
     RETURN_IF_EXCEPTION(scope, JSValue::encode(jsUndefined()));
@@ -141,7 +141,7 @@ JSC_DEFINE_HOST_FUNCTION(mapProtoFuncClear, (JSGlobalObject* globalObject, CallF
 JSC_DEFINE_HOST_FUNCTION(mapProtoFuncDelete, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSMap* map = getMap(globalObject, callFrame->thisValue());
     RETURN_IF_EXCEPTION(scope, JSValue::encode(jsUndefined()));
@@ -152,7 +152,7 @@ JSC_DEFINE_HOST_FUNCTION(mapProtoFuncDelete, (JSGlobalObject* globalObject, Call
 JSC_DEFINE_HOST_FUNCTION(mapProtoFuncGet, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSMap* map = getMap(globalObject, callFrame->thisValue());
     RETURN_IF_EXCEPTION(scope, JSValue::encode(jsUndefined()));
@@ -163,7 +163,7 @@ JSC_DEFINE_HOST_FUNCTION(mapProtoFuncGet, (JSGlobalObject* globalObject, CallFra
 JSC_DEFINE_HOST_FUNCTION(mapProtoFuncHas, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSMap* map = getMap(globalObject, callFrame->thisValue());
     RETURN_IF_EXCEPTION(scope, JSValue::encode(jsUndefined()));
@@ -174,7 +174,7 @@ JSC_DEFINE_HOST_FUNCTION(mapProtoFuncHas, (JSGlobalObject* globalObject, CallFra
 JSC_DEFINE_HOST_FUNCTION(mapProtoFuncSet, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     JSMap* map = getMap(globalObject, thisValue);
@@ -188,7 +188,7 @@ JSC_DEFINE_HOST_FUNCTION(mapProtoFuncSet, (JSGlobalObject* globalObject, CallFra
 JSC_DEFINE_HOST_FUNCTION(mapProtoFuncGetOrInsert, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSMap* map = getMap(globalObject, callFrame->thisValue());
     RETURN_IF_EXCEPTION(scope, JSValue::encode(jsUndefined()));
@@ -203,7 +203,7 @@ JSC_DEFINE_HOST_FUNCTION(mapProtoFuncGetOrInsert, (JSGlobalObject* globalObject,
 JSC_DEFINE_HOST_FUNCTION(mapProtoFuncGetOrInsertComputed, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSMap* map = getMap(globalObject, callFrame->thisValue());
     RETURN_IF_EXCEPTION(scope, JSValue::encode(jsUndefined()));
@@ -240,7 +240,7 @@ JSC_DEFINE_HOST_FUNCTION(mapProtoFuncGetOrInsertComputed, (JSGlobalObject* globa
 inline JSValue createMapIteratorObject(JSGlobalObject* globalObject, CallFrame* callFrame, IterationKind kind)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     JSMap* map = getMap(globalObject, thisValue);
@@ -267,7 +267,7 @@ JSC_DEFINE_HOST_FUNCTION(mapProtoFuncEntries, (JSGlobalObject* globalObject, Cal
 JSC_DEFINE_HOST_FUNCTION(mapProtoFuncSize, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSMap* map = getMap(globalObject, callFrame->thisValue());
     RETURN_IF_EXCEPTION(scope, JSValue::encode(jsUndefined()));

@@ -26,7 +26,7 @@
 #include "config.h"
 #include "ParserArena.h"
 
-#include "CatchScope.h"
+#include "ExceptionScope.h"
 #include "JSBigInt.h"
 #include "JSCInlines.h"
 #include "Nodes.h"
@@ -87,10 +87,9 @@ const Identifier* IdentifierArena::makeBigIntDecimalIdentifier(VM& vm, const Ide
     if (radix == 10)
         return &identifier;
 
-    DeferTermination deferScope(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    ForbidExceptionScope noExceptions(vm);
+
     JSValue bigInt = JSBigInt::parseInt(nullptr, vm, identifier.string(), radix, JSBigInt::ErrorParseMode::ThrowExceptions, JSBigInt::ParseIntSign::Unsigned);
-    scope.assertNoException();
 
     if (bigInt.isEmpty()) {
         // Handle out-of-memory or other failures by returning null, since

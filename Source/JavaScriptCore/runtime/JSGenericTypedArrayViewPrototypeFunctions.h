@@ -101,7 +101,7 @@ template<typename ViewClass, typename Functor, typename SlowPathArgsConstructor>
 inline JSArrayBufferView* speciesConstruct(JSGlobalObject* globalObject, ViewClass* exemplar, const Functor& defaultConstructor, const SlowPathArgsConstructor& constructArgs, std::optional<size_t> length)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     bool inSameRealm = exemplar->globalObject() == globalObject;
     if (inSameRealm) [[likely]] {
@@ -206,7 +206,7 @@ enum class ForEachDirection { Forward, Backward };
 template<ForEachDirection direction, typename ViewClass, typename Functor>
 static ALWAYS_INLINE void typedArrayViewForEachImpl(JSGlobalObject* globalObject, VM& vm, ViewClass* thisObject, size_t length, NOESCAPE const Functor& functor)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!thisObject->isResizableNonShared()) [[likely]] {
         // Including GrowableShared. The key invariant here is that we can access element via array[index] if we check isDetached.
@@ -276,7 +276,7 @@ static ALWAYS_INLINE void typedArrayViewForEachImpl(JSGlobalObject* globalObject
 template<typename ViewClass>
 ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSet(VM& vm, JSGlobalObject* globalObject, CallFrame* callFrame)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 22.2.3.22
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
@@ -321,7 +321,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSet(VM& vm, JSGlobalO
 template<typename ViewClass>
 ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncCopyWithin(VM& vm, JSGlobalObject* globalObject, CallFrame* callFrame)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 22.2.3.5
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
@@ -434,7 +434,7 @@ static ALWAYS_INLINE size_t typedArrayIndexOfImpl(typename ViewClass::ElementTyp
 template<typename ViewClass>
 ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncIncludes(VM& vm, JSGlobalObject* globalObject, CallFrame* callFrame)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
     validateTypedArray(globalObject, thisObject);
@@ -499,7 +499,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncIncludes(VM& vm, JSGl
 template<typename ViewClass>
 ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncIndexOf(VM& vm, JSGlobalObject* globalObject, CallFrame* callFrame)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 22.2.3.13
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
@@ -544,7 +544,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncIndexOf(VM& vm, JSGlo
 template<typename ViewClass>
 ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncJoin(VM& vm, JSGlobalObject* globalObject, CallFrame* callFrame)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
     validateTypedArray(globalObject, thisObject);
@@ -604,7 +604,7 @@ template<typename ViewClass>
 ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncFill(VM& vm, JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     // https://tc39.es/ecma262/#sec-%typedarray%.prototype.fill
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
     validateTypedArray(globalObject, thisObject);
@@ -665,7 +665,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncFill(VM& vm, JSGlobal
 template<typename ViewClass>
 ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncLastIndexOf(VM& vm, JSGlobalObject* globalObject, CallFrame* callFrame)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 22.2.3.16
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
@@ -765,7 +765,7 @@ template<typename ViewClass>
 ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncForEach(VM& vm, JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     // https://tc39.es/ecma262/#sec-%typedarray%.prototype.foreach
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
     validateTypedArray(globalObject, thisObject);
@@ -796,7 +796,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncForEach(VM& vm, JSGlo
 
     scope.release();
     typedArrayViewForEachImpl<ForEachDirection::Forward>(globalObject, vm, thisObject, length, [&](JSValue element, size_t index, auto) ALWAYS_INLINE_LAMBDA {
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         args.clear();
 
@@ -825,7 +825,7 @@ template<typename ViewClass>
 ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncMap(VM& vm, JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     // https://tc39.es/ecma262/#sec-%typedarray%.prototype.map
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
     validateTypedArray(globalObject, thisObject);
@@ -856,7 +856,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncMap(VM& vm, JSGlobalO
 
         scope.release();
         typedArrayViewForEachImpl<ForEachDirection::Forward>(globalObject, vm, thisObject, length, [&](JSValue element, size_t index, auto) ALWAYS_INLINE_LAMBDA {
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
             JSValue mapped = cachedCall.callWithArguments(globalObject, thisArg, element, jsNumber(index), thisObject);
             RETURN_IF_EXCEPTION_WITH_TRAPS_DEFERRED(scope, IterationStatus::Done);
@@ -878,7 +878,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncMap(VM& vm, JSGlobalO
 
     scope.release();
     typedArrayViewForEachImpl<ForEachDirection::Forward>(globalObject, vm, thisObject, length, [&](JSValue element, size_t index, auto) ALWAYS_INLINE_LAMBDA {
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         args.clear();
 
@@ -932,7 +932,7 @@ template<typename ViewClass>
 ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncFilter(VM& vm, JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     // https://tc39.es/ecma262/#sec-%typedarray%.prototype.filter
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
     validateTypedArray(globalObject, thisObject);
@@ -957,7 +957,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncFilter(VM& vm, JSGlob
         RETURN_IF_EXCEPTION(scope, { });
 
         typedArrayViewForEachImpl<ForEachDirection::Forward>(globalObject, vm, thisObject, length, [&](JSValue element, size_t index, auto nativeValue) ALWAYS_INLINE_LAMBDA {
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
             JSValue result = cachedCall.callWithArguments(globalObject, thisArg, element, jsNumber(index), thisObject);
             RETURN_IF_EXCEPTION_WITH_TRAPS_DEFERRED(scope, IterationStatus::Done);
@@ -972,7 +972,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncFilter(VM& vm, JSGlob
         MarkedArgumentBuffer args;
 
         typedArrayViewForEachImpl<ForEachDirection::Forward>(globalObject, vm, thisObject, length, [&](JSValue element, size_t index, auto nativeValue) ALWAYS_INLINE_LAMBDA {
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
             args.clear();
 
@@ -1025,7 +1025,7 @@ template<typename ViewClass>
 ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncFind(VM& vm, JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     // https://tc39.es/ecma262/#sec-%typedarray%.prototype.find
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
     validateTypedArray(globalObject, thisObject);
@@ -1048,7 +1048,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncFind(VM& vm, JSGlobal
 
         JSValue found = jsUndefined();
         typedArrayViewForEachImpl<ForEachDirection::Forward>(globalObject, vm, thisObject, length, [&](JSValue element, size_t index, auto) ALWAYS_INLINE_LAMBDA -> IterationStatus {
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
             JSValue result = cachedCall.callWithArguments(globalObject, thisArg, element, jsNumber(index), thisObject);
             RETURN_IF_EXCEPTION_WITH_TRAPS_DEFERRED(scope, { });
@@ -1069,7 +1069,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncFind(VM& vm, JSGlobal
 
     JSValue found = jsUndefined();
     typedArrayViewForEachImpl<ForEachDirection::Forward>(globalObject, vm, thisObject, length, [&](JSValue element, size_t index, auto) ALWAYS_INLINE_LAMBDA -> IterationStatus {
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         args.clear();
 
@@ -1098,7 +1098,7 @@ template<typename ViewClass>
 ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncFindIndex(VM& vm, JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     // https://tc39.es/ecma262/#sec-%typedarray%.prototype.findindex
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
     validateTypedArray(globalObject, thisObject);
@@ -1121,7 +1121,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncFindIndex(VM& vm, JSG
 
         JSValue found = jsNumber(-1);
         typedArrayViewForEachImpl<ForEachDirection::Forward>(globalObject, vm, thisObject, length, [&](JSValue element, size_t index, auto) ALWAYS_INLINE_LAMBDA -> IterationStatus {
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
             JSValue result = cachedCall.callWithArguments(globalObject, thisArg, element, jsNumber(index), thisObject);
             RETURN_IF_EXCEPTION_WITH_TRAPS_DEFERRED(scope, { });
@@ -1142,7 +1142,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncFindIndex(VM& vm, JSG
 
     JSValue found = jsNumber(-1);
     typedArrayViewForEachImpl<ForEachDirection::Forward>(globalObject, vm, thisObject, length, [&](JSValue element, size_t index, auto) ALWAYS_INLINE_LAMBDA -> IterationStatus {
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         args.clear();
 
@@ -1171,7 +1171,7 @@ template<typename ViewClass>
 ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncFindLast(VM& vm, JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     // https://tc39.es/ecma262/#sec-%typedarray%.prototype.findlast
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
     validateTypedArray(globalObject, thisObject);
@@ -1194,7 +1194,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncFindLast(VM& vm, JSGl
 
         JSValue found = jsUndefined();
         typedArrayViewForEachImpl<ForEachDirection::Backward>(globalObject, vm, thisObject, length, [&](JSValue element, size_t index, auto) ALWAYS_INLINE_LAMBDA -> IterationStatus {
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
             JSValue result = cachedCall.callWithArguments(globalObject, thisArg, element, jsNumber(index), thisObject);
             RETURN_IF_EXCEPTION_WITH_TRAPS_DEFERRED(scope, { });
@@ -1215,7 +1215,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncFindLast(VM& vm, JSGl
 
     JSValue found = jsUndefined();
     typedArrayViewForEachImpl<ForEachDirection::Backward>(globalObject, vm, thisObject, length, [&](JSValue element, size_t index, auto) ALWAYS_INLINE_LAMBDA -> IterationStatus {
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         args.clear();
 
@@ -1244,7 +1244,7 @@ template<typename ViewClass>
 ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncFindLastIndex(VM& vm, JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     // https://tc39.es/ecma262/#sec-%typedarray%.prototype.findlastindex
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
     validateTypedArray(globalObject, thisObject);
@@ -1267,7 +1267,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncFindLastIndex(VM& vm,
 
         JSValue found = jsNumber(-1);
         typedArrayViewForEachImpl<ForEachDirection::Backward>(globalObject, vm, thisObject, length, [&](JSValue element, size_t index, auto) ALWAYS_INLINE_LAMBDA -> IterationStatus {
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
             JSValue result = cachedCall.callWithArguments(globalObject, thisArg, element, jsNumber(index), thisObject);
             RETURN_IF_EXCEPTION_WITH_TRAPS_DEFERRED(scope, { });
@@ -1288,7 +1288,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncFindLastIndex(VM& vm,
 
     JSValue found = jsNumber(-1);
     typedArrayViewForEachImpl<ForEachDirection::Backward>(globalObject, vm, thisObject, length, [&](JSValue element, size_t index, auto) ALWAYS_INLINE_LAMBDA -> IterationStatus {
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         args.clear();
 
@@ -1317,7 +1317,7 @@ template<typename ViewClass>
 ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncEvery(VM& vm, JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     // https://tc39.es/ecma262/#sec-%typedarray%.prototype.every
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
     validateTypedArray(globalObject, thisObject);
@@ -1340,7 +1340,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncEvery(VM& vm, JSGloba
 
         JSValue condition = jsBoolean(true);
         typedArrayViewForEachImpl<ForEachDirection::Forward>(globalObject, vm, thisObject, length, [&](JSValue element, size_t index, auto) ALWAYS_INLINE_LAMBDA -> IterationStatus {
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
             JSValue result = cachedCall.callWithArguments(globalObject, thisArg, element, jsNumber(index), thisObject);
             RETURN_IF_EXCEPTION_WITH_TRAPS_DEFERRED(scope, { });
@@ -1361,7 +1361,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncEvery(VM& vm, JSGloba
 
     JSValue condition = jsBoolean(true);
     typedArrayViewForEachImpl<ForEachDirection::Forward>(globalObject, vm, thisObject, length, [&](JSValue element, size_t index, auto) ALWAYS_INLINE_LAMBDA -> IterationStatus {
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         args.clear();
 
@@ -1390,7 +1390,7 @@ template<typename ViewClass>
 ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSome(VM& vm, JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     // https://tc39.es/ecma262/#sec-%typedarray%.prototype.some
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
     validateTypedArray(globalObject, thisObject);
@@ -1413,7 +1413,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSome(VM& vm, JSGlobal
 
         JSValue condition = jsBoolean(false);
         typedArrayViewForEachImpl<ForEachDirection::Forward>(globalObject, vm, thisObject, length, [&](JSValue element, size_t index, auto) ALWAYS_INLINE_LAMBDA -> IterationStatus {
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
             JSValue result = cachedCall.callWithArguments(globalObject, thisArg, element, jsNumber(index), thisObject);
             RETURN_IF_EXCEPTION_WITH_TRAPS_DEFERRED(scope, { });
@@ -1434,7 +1434,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSome(VM& vm, JSGlobal
 
     JSValue condition = jsBoolean(false);
     typedArrayViewForEachImpl<ForEachDirection::Forward>(globalObject, vm, thisObject, length, [&](JSValue element, size_t index, auto) ALWAYS_INLINE_LAMBDA -> IterationStatus {
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         args.clear();
 
@@ -1462,7 +1462,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSome(VM& vm, JSGlobal
 template<typename ViewClass>
 ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncReverse(VM& vm, JSGlobalObject* globalObject, CallFrame* callFrame)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 22.2.3.21
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
@@ -1480,7 +1480,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncToReversed(VM& vm, JS
 {
     // https://tc39.es/proposal-change-array-by-copy/#sec-%typedarray%.prototype.toReversed
 
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
     validateTypedArray(globalObject, thisObject);
@@ -1507,7 +1507,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncToReversed(VM& vm, JS
 template<typename ViewClass>
 static ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSortImpl(VM& vm, JSGlobalObject* globalObject, ViewClass* thisObject, JSValue comparatorValue)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // https://tc39.es/ecma262/#sec-%typedarray%.prototype.sort
     if (comparatorValue.isUndefined()) {
@@ -1550,7 +1550,7 @@ static ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSortImpl(VM& v
         CachedCall cachedCall(globalObject, jsCast<JSFunction*>(comparatorValue), 2);
         RETURN_IF_EXCEPTION(scope, { });
         result = arrayStableSort(vm, src, dst, [&](auto left, auto right) ALWAYS_INLINE_LAMBDA {
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
             JSValue leftValue = ViewClass::Adaptor::toJSValue(globalObject, left);
             RETURN_IF_EXCEPTION_WITH_TRAPS_DEFERRED(scope, false);
@@ -1566,7 +1566,7 @@ static ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSortImpl(VM& v
     } else {
         MarkedArgumentBuffer args;
         result = arrayStableSort(vm, src, dst, [&](auto left, auto right) ALWAYS_INLINE_LAMBDA {
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
             args.clear();
 
@@ -1601,7 +1601,7 @@ static ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSortImpl(VM& v
 template<typename ViewClass>
 ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSort(VM& vm, JSGlobalObject* globalObject, CallFrame* callFrame)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue comparatorValue = callFrame->argument(0);
     if (!comparatorValue.isUndefined() && !comparatorValue.isCallable()) [[unlikely]]
@@ -1620,7 +1620,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncToSorted(VM& vm, JSGl
 {
     // https://tc39.es/proposal-change-array-by-copy/#sec-%typedarray%.prototype.toSorted
 
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue comparatorValue = callFrame->argument(0);
     if (!comparatorValue.isUndefined() && !comparatorValue.isCallable()) [[unlikely]]
@@ -1649,7 +1649,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncToSorted(VM& vm, JSGl
 template<typename ViewClass>
 ALWAYS_INLINE EncodedJSValue genericTypedArrayViewPrivateFuncFromFast(VM& vm, JSGlobalObject* globalObject, CallFrame* callFrame)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue arrayLike = callFrame->uncheckedArgument(1);
     JSArrayBufferView* items = jsDynamicCast<JSArrayBufferView*>(arrayLike);
@@ -1712,7 +1712,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewPrivateFuncFromFast(VM& vm, JS
 template<typename ViewClass>
 ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSlice(VM& vm, JSGlobalObject* globalObject, CallFrame* callFrame)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 22.2.3.26
 
@@ -1838,7 +1838,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncSubarray(VM& vm, JSGl
 {
     // https://tc39.es/ecma262/#sec-%typedarray%.prototype.subarray
 
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
 
@@ -1900,7 +1900,7 @@ template<typename ViewClass>
 static inline void validateIntegerIndex(JSGlobalObject* globalObject, ViewClass* thisObject, double index)
 {
     // https://tc39.es/proposal-resizablearraybuffer/#sec-isvalidintegerindex
-    auto scope = DECLARE_THROW_SCOPE(globalObject->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
 
     if (!isInteger(index)) [[unlikely]] {
         throwVMRangeError(globalObject, scope, "index should be integer"_s);
@@ -1924,7 +1924,7 @@ ALWAYS_INLINE EncodedJSValue genericTypedArrayViewProtoFuncWith(VM& vm, JSGlobal
 {
     // https://tc39.es/proposal-change-array-by-copy/#sec-%typedarray%.prototype.with
 
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ViewClass* thisObject = jsCast<ViewClass*>(callFrame->thisValue());
     IdempotentArrayBufferByteLengthGetter<std::memory_order_seq_cst> getter;

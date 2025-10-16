@@ -115,7 +115,7 @@ void SetPrototype::finishCreation(VM& vm, JSGlobalObject* globalObject)
 ALWAYS_INLINE static JSSet* getSet(JSGlobalObject* globalObject, JSValue thisValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!thisValue.isCell()) [[unlikely]] {
         throwVMError(globalObject, scope, createNotAnObjectError(globalObject, thisValue));
@@ -130,7 +130,7 @@ ALWAYS_INLINE static JSSet* getSet(JSGlobalObject* globalObject, JSValue thisVal
 JSC_DEFINE_HOST_FUNCTION(setProtoFuncAdd, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     JSSet* set = getSet(globalObject, thisValue);
@@ -144,7 +144,7 @@ JSC_DEFINE_HOST_FUNCTION(setProtoFuncAdd, (JSGlobalObject* globalObject, CallFra
 JSC_DEFINE_HOST_FUNCTION(setProtoFuncClear, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSSet* set = getSet(globalObject, callFrame->thisValue());
     RETURN_IF_EXCEPTION(scope, JSValue::encode(jsUndefined()));
@@ -157,7 +157,7 @@ JSC_DEFINE_HOST_FUNCTION(setProtoFuncClear, (JSGlobalObject* globalObject, CallF
 JSC_DEFINE_HOST_FUNCTION(setProtoFuncDelete, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSSet* set = getSet(globalObject, callFrame->thisValue());
     RETURN_IF_EXCEPTION(scope, JSValue::encode(jsUndefined()));
@@ -168,7 +168,7 @@ JSC_DEFINE_HOST_FUNCTION(setProtoFuncDelete, (JSGlobalObject* globalObject, Call
 JSC_DEFINE_HOST_FUNCTION(setProtoFuncHas, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSSet* set = getSet(globalObject, callFrame->thisValue());
     RETURN_IF_EXCEPTION(scope, JSValue::encode(jsUndefined()));
@@ -179,7 +179,7 @@ JSC_DEFINE_HOST_FUNCTION(setProtoFuncHas, (JSGlobalObject* globalObject, CallFra
 JSC_DEFINE_HOST_FUNCTION(setProtoFuncSize, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSSet* set = getSet(globalObject, callFrame->thisValue());
     RETURN_IF_EXCEPTION(scope, JSValue::encode(jsUndefined()));
@@ -191,7 +191,7 @@ JSC_DEFINE_HOST_FUNCTION(setProtoFuncSize, (JSGlobalObject* globalObject, CallFr
 static uint32_t getSetSizeAsInt(JSGlobalObject* globalObject, JSValue value)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!value.isObject()) [[unlikely]]
         return throwVMTypeError(globalObject, scope, "Set operation expects first argument to be an object");
@@ -220,7 +220,7 @@ static uint32_t getSetSizeAsInt(JSGlobalObject* globalObject, JSValue value)
 static EncodedJSValue fastSetIntersection(JSGlobalObject* globalObject, JSSet* thisSet, JSSet* otherSet)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSSet* result = JSSet::create(vm, globalObject->setStructure());
 
@@ -258,7 +258,7 @@ static EncodedJSValue fastSetIntersection(JSGlobalObject* globalObject, JSSet* t
 JSC_DEFINE_HOST_FUNCTION(setProtoFuncIntersection, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSSet* thisSet = getSet(globalObject, callFrame->thisValue());
     RETURN_IF_EXCEPTION(scope, { });
@@ -357,7 +357,7 @@ JSC_DEFINE_HOST_FUNCTION(setProtoFuncIntersection, (JSGlobalObject* globalObject
 static EncodedJSValue fastSetUnion(JSGlobalObject* globalObject, JSSet* thisSet, JSSet* otherSet)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSSet* result = thisSet->clone(globalObject, vm, globalObject->setStructure());
     RETURN_IF_EXCEPTION(scope, { });
@@ -389,7 +389,7 @@ static EncodedJSValue fastSetUnion(JSGlobalObject* globalObject, JSSet* thisSet,
 JSC_DEFINE_HOST_FUNCTION(setProtoFuncUnion, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSSet* thisSet = getSet(globalObject, callFrame->thisValue());
     RETURN_IF_EXCEPTION(scope, { });
@@ -446,7 +446,7 @@ JSC_DEFINE_HOST_FUNCTION(setProtoFuncUnion, (JSGlobalObject* globalObject, CallF
 static EncodedJSValue fastSetIsSubsetOf(JSGlobalObject* globalObject, JSSet* thisSet, JSSet* otherSet)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (thisSet->size() > otherSet->size())
         return JSValue::encode(jsBoolean(false));
@@ -481,7 +481,7 @@ static EncodedJSValue fastSetIsSubsetOf(JSGlobalObject* globalObject, JSSet* thi
 static EncodedJSValue fastSetDifference(JSGlobalObject* globalObject, JSSet* thisSet, JSSet* otherSet)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSSet* result = JSSet::create(vm, globalObject->setStructure());
 
@@ -517,7 +517,7 @@ static EncodedJSValue fastSetDifference(JSGlobalObject* globalObject, JSSet* thi
 JSC_DEFINE_HOST_FUNCTION(setProtoFuncDifference, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSSet* thisSet = getSet(globalObject, callFrame->thisValue());
     RETURN_IF_EXCEPTION(scope, { });
@@ -655,7 +655,7 @@ JSC_DEFINE_HOST_FUNCTION(setProtoFuncDifference, (JSGlobalObject* globalObject, 
 static EncodedJSValue fastSetSymmetricDifference(JSGlobalObject* globalObject, JSSet* thisSet, JSSet* otherSet)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSSet* result = thisSet->clone(globalObject, vm, globalObject->setStructure());
     RETURN_IF_EXCEPTION(scope, { });
@@ -695,7 +695,7 @@ static EncodedJSValue fastSetSymmetricDifference(JSGlobalObject* globalObject, J
 JSC_DEFINE_HOST_FUNCTION(setProtoFuncSymmetricDifference, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSSet* thisSet = getSet(globalObject, callFrame->thisValue());
     RETURN_IF_EXCEPTION(scope, { });
@@ -790,7 +790,7 @@ JSC_DEFINE_HOST_FUNCTION(setProtoFuncSymmetricDifference, (JSGlobalObject* globa
 JSC_DEFINE_HOST_FUNCTION(setProtoFuncIsSubsetOf, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSSet* thisSet = getSet(globalObject, callFrame->thisValue());
     RETURN_IF_EXCEPTION(scope, { });
@@ -874,7 +874,7 @@ JSC_DEFINE_HOST_FUNCTION(setProtoFuncIsSubsetOf, (JSGlobalObject* globalObject, 
 static EncodedJSValue fastSetIsSupersetOf(JSGlobalObject* globalObject, JSSet* thisSet, JSSet* otherSet)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (thisSet->size() < otherSet->size())
         return JSValue::encode(jsBoolean(false));
@@ -909,7 +909,7 @@ static EncodedJSValue fastSetIsSupersetOf(JSGlobalObject* globalObject, JSSet* t
 JSC_DEFINE_HOST_FUNCTION(setProtoFuncIsSupersetOf, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSSet* thisSet = getSet(globalObject, callFrame->thisValue());
     RETURN_IF_EXCEPTION(scope, { });
@@ -1001,7 +1001,7 @@ JSC_DEFINE_HOST_FUNCTION(setProtoFuncIsSupersetOf, (JSGlobalObject* globalObject
 static EncodedJSValue fastSetIsDisjointFrom(JSGlobalObject* globalObject, JSSet* thisSet, JSSet* otherSet)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSSet* smallerSet = otherSet;
     JSSet* largerSet = thisSet;
@@ -1040,7 +1040,7 @@ static EncodedJSValue fastSetIsDisjointFrom(JSGlobalObject* globalObject, JSSet*
 JSC_DEFINE_HOST_FUNCTION(setProtoFuncIsDisjointFrom, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSSet* thisSet = getSet(globalObject, callFrame->thisValue());
     RETURN_IF_EXCEPTION(scope, { });
@@ -1174,7 +1174,7 @@ JSC_DEFINE_HOST_FUNCTION(setProtoFuncIsDisjointFrom, (JSGlobalObject* globalObje
 inline JSValue createSetIteratorObject(JSGlobalObject* globalObject, CallFrame* callFrame, IterationKind kind)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     JSSet* set = getSet(globalObject, thisValue);

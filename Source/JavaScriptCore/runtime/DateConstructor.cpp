@@ -76,7 +76,7 @@ static inline double toIntegerOrInfinity(double d)
 static double millisecondsFromComponents(JSGlobalObject* globalObject, const ArgList& args, TimeType timeType)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // Initialize doubleArguments with default values.
     double doubleArguments[7] {
@@ -106,7 +106,7 @@ static double millisecondsFromComponents(JSGlobalObject* globalObject, const Arg
 JSObject* constructDate(JSGlobalObject* globalObject, JSValue newTarget, const ArgList& args)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     int numArgs = args.size();
 
     double value;
@@ -164,7 +164,7 @@ JSC_DEFINE_HOST_FUNCTION(callDate, (JSGlobalObject* globalObject, CallFrame*))
 JSC_DEFINE_HOST_FUNCTION(dateParse, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     String dateStr = callFrame->argument(0).toWTFString(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
     RELEASE_AND_RETURN(scope, JSValue::encode(jsNumber(timeClip(vm.dateCache.parseDate(globalObject, vm, dateStr)))));

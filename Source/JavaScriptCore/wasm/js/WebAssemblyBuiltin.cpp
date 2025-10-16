@@ -303,7 +303,7 @@ static bool isMutI16Array(const JSWebAssemblyArray* array)
     static JSC_DECLARE_HOST_FUNCTION(BUILTIN_JS_ENTRY_NAME(setName, builtinName)); \
     JSC_DEFINE_HOST_FUNCTION(BUILTIN_JS_ENTRY_NAME(setName, builtinName), (JSGlobalObject* globalObject, CallFrame* callFrame)) \
     { \
-        auto scope = DECLARE_THROW_SCOPE(globalObject->vm()); \
+        auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm()); \
         JSValue arg = callFrame->argument(0); \
         JSVALUE_TO_I32(arg, intArg); \
         EncodedJSValue result = BUILTIN_IMPLEMENTATION_NAME(setName, builtinName)(globalObject, intArg); \
@@ -362,7 +362,7 @@ static bool isMutI16Array(const JSWebAssemblyArray* array)
     static JSC_DECLARE_HOST_FUNCTION(BUILTIN_JS_ENTRY_NAME(setName, builtinName)); \
     JSC_DEFINE_HOST_FUNCTION(BUILTIN_JS_ENTRY_NAME(setName, builtinName), (JSGlobalObject* globalObject, CallFrame* callFrame)) \
     { \
-        auto scope = DECLARE_THROW_SCOPE(globalObject->vm()); \
+        auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm()); \
         JSValue arg0 = callFrame->argument(0); \
         JSValue arg1 = callFrame->argument(1); \
         JSVALUE_TO_I32(arg1, intArg1); \
@@ -383,7 +383,7 @@ static bool isMutI16Array(const JSWebAssemblyArray* array)
     static JSC_DECLARE_HOST_FUNCTION(BUILTIN_JS_ENTRY_NAME(setName, builtinName)); \
     JSC_DEFINE_HOST_FUNCTION(BUILTIN_JS_ENTRY_NAME(setName, builtinName), (JSGlobalObject* globalObject, CallFrame* callFrame)) \
     { \
-        auto scope = DECLARE_THROW_SCOPE(globalObject->vm()); \
+        auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm()); \
         JSValue arg0 = callFrame->argument(0); \
         JSValue arg1 = callFrame->argument(1); \
         JSValue arg2 = callFrame->argument(2); \
@@ -406,7 +406,7 @@ static bool isMutI16Array(const JSWebAssemblyArray* array)
     static JSC_DECLARE_HOST_FUNCTION(BUILTIN_JS_ENTRY_NAME(setName, builtinName)); \
     JSC_DEFINE_HOST_FUNCTION(BUILTIN_JS_ENTRY_NAME(setName, builtinName), (JSGlobalObject* globalObject, CallFrame* callFrame)) \
     { \
-        auto scope = DECLARE_THROW_SCOPE(globalObject->vm()); \
+        auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm()); \
         JSValue arg0 = callFrame->argument(0); \
         JSValue arg1 = callFrame->argument(1); \
         JSValue arg2 = callFrame->argument(2); \
@@ -431,7 +431,7 @@ static bool isMutI16Array(const JSWebAssemblyArray* array)
     static JSC_DECLARE_HOST_FUNCTION(BUILTIN_JS_ENTRY_NAME(setName, builtinName)); \
     JSC_DEFINE_HOST_FUNCTION(BUILTIN_JS_ENTRY_NAME(setName, builtinName), (JSGlobalObject* globalObject, CallFrame* callFrame)) \
     { \
-        auto scope = DECLARE_THROW_SCOPE(globalObject->vm()); \
+        auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm()); \
         JSValue arg0 = callFrame->argument(0); \
         JSValue arg1 = callFrame->argument(1); \
         JSValue arg2 = callFrame->argument(2); \
@@ -467,7 +467,7 @@ static bool isMutI16Array(const JSWebAssemblyArray* array)
  */
 DEFINE_BUILTIN_IMPLEMENTATION(jsstring, cast, JSGlobalObject* globalObject, JSValue value)
 {
-    auto scope = DECLARE_THROW_SCOPE(globalObject->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
     if (!value.isString()) [[unlikely]]
         THROW_ILLEGAL_ARGUMENT_EXCEPTION;
     RELEASE_AND_RETURN(scope, JSValue::encode(value));
@@ -502,7 +502,7 @@ DECLARE_BUILTIN_TRAMPOLINE(jsstring, test);
 DEFINE_BUILTIN_IMPLEMENTATION(jsstring, fromCharCodeArray, JSGlobalObject* globalObject, JSValue arg0, int32_t startArg, int32_t endArg)
 {
     auto& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* arrayObject = arg0.getObject();
     if (!arrayObject) [[unlikely]]
@@ -540,7 +540,7 @@ DECLARE_BUILTIN_TRAMPOLINE(jsstring, fromCharCodeArray);
 DEFINE_BUILTIN_IMPLEMENTATION_I32(jsstring, intoCharCodeArray, JSGlobalObject* globalObject, JSValue stringArg, JSValue arrayArg, int32_t startArg)
 {
     auto& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* arrayObject = arrayArg.getObject();
     if (!arrayObject || !stringArg.isString()) [[unlikely]]
@@ -602,7 +602,7 @@ DECLARE_BUILTIN_TRAMPOLINE(jsstring, fromCharCode);
 
 DEFINE_BUILTIN_IMPLEMENTATION(jsstring, fromCodePoint, JSGlobalObject* globalObject, int32_t arg)
 {
-    auto scope = DECLARE_THROW_SCOPE(globalObject->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
     auto codePoint = static_cast<char32_t>(arg);
     if (codePoint > 0x10ffff) [[unlikely]]
         THROW_ILLEGAL_ARGUMENT_EXCEPTION;
@@ -629,7 +629,7 @@ DECLARE_BUILTIN_TRAMPOLINE(jsstring, fromCodePoint);
 
 DEFINE_BUILTIN_IMPLEMENTATION_I32(jsstring, charCodeAt, JSGlobalObject* globalObject, JSValue arg, int32_t index)
 {
-    auto scope = DECLARE_THROW_SCOPE(globalObject->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
     if (!arg.isString()) [[unlikely]]
         THROW_ILLEGAL_ARGUMENT_EXCEPTION;
     auto* string = arg.toString(globalObject);
@@ -654,7 +654,7 @@ DECLARE_BUILTIN_TRAMPOLINE(jsstring, charCodeAt);
 
 DEFINE_BUILTIN_IMPLEMENTATION_I32(jsstring, codePointAt, JSGlobalObject* globalObject, JSValue arg, int32_t index)
 {
-    auto scope = DECLARE_THROW_SCOPE(globalObject->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
     if (!arg.isString()) [[unlikely]]
         THROW_ILLEGAL_ARGUMENT_EXCEPTION;
     auto* string = arg.toString(globalObject);
@@ -689,7 +689,7 @@ DECLARE_BUILTIN_TRAMPOLINE(jsstring, codePointAt);
 
 DEFINE_BUILTIN_IMPLEMENTATION_I32(jsstring, length, JSGlobalObject* globalObject, JSValue arg)
 {
-    auto scope = DECLARE_THROW_SCOPE(globalObject->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
     if (!arg.isString()) [[unlikely]]
         THROW_ILLEGAL_ARGUMENT_EXCEPTION;
     unsigned length = asString(arg)->length();
@@ -710,7 +710,7 @@ DECLARE_BUILTIN_TRAMPOLINE(jsstring, length);
 
 DEFINE_BUILTIN_IMPLEMENTATION(jsstring, concat, JSGlobalObject* globalObject, JSValue left, JSValue right)
 {
-    auto scope = DECLARE_THROW_SCOPE(globalObject->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
     if (!left.isString() || !right.isString()) [[unlikely]]
         THROW_ILLEGAL_ARGUMENT_EXCEPTION;
     JSString* result = jsString(globalObject, asString(left), asString(right)); // creates a rope string
@@ -727,7 +727,7 @@ DECLARE_BUILTIN_TRAMPOLINE(jsstring, concat);
 
 DEFINE_BUILTIN_IMPLEMENTATION(jsstring, substring, JSGlobalObject* globalObject, JSValue arg, int32_t start, int32_t end)
 {
-    auto scope = DECLARE_THROW_SCOPE(globalObject->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
     if (!arg.isString()) [[unlikely]]
         THROW_ILLEGAL_ARGUMENT_EXCEPTION;
     JSString* string = asString(arg);
@@ -759,7 +759,7 @@ DECLARE_BUILTIN_TRAMPOLINE(jsstring, substring);
 
 DEFINE_BUILTIN_IMPLEMENTATION_I32(jsstring, equals, JSGlobalObject* globalObject, JSValue left, JSValue right)
 {
-    auto scope = DECLARE_THROW_SCOPE(globalObject->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
     bool leftIsString = left.isString();
     bool leftIsNull = left.isNull();
     bool rightIsString = right.isString();
@@ -792,7 +792,7 @@ DECLARE_BUILTIN_TRAMPOLINE(jsstring, equals);
 
 DEFINE_BUILTIN_IMPLEMENTATION_I32(jsstring, compare, JSGlobalObject* globalObject, JSValue left, JSValue right)
 {
-    auto scope = DECLARE_THROW_SCOPE(globalObject->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
     if (!left.isString() || !right.isString()) [[unlikely]]
         THROW_ILLEGAL_ARGUMENT_EXCEPTION;
 

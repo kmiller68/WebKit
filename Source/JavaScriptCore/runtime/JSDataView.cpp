@@ -45,7 +45,7 @@ JSDataView* JSDataView::create(
     size_t byteOffset, std::optional<size_t> byteLength)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(buffer);
     if (buffer->isDetached()) {

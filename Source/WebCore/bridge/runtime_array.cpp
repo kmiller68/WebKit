@@ -66,7 +66,7 @@ void RuntimeArray::destroy(JSCell* cell)
 
 JSC_DEFINE_CUSTOM_GETTER(arrayLengthGetter, (JSGlobalObject* lexicalGlobalObject, EncodedJSValue thisValue, PropertyName))
 {
-    auto scope = DECLARE_THROW_SCOPE(lexicalGlobalObject->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject->vm());
 
     RuntimeArray* thisObject = jsDynamicCast<RuntimeArray*>(JSValue::decode(thisValue));
     if (!thisObject)
@@ -122,7 +122,7 @@ bool RuntimeArray::getOwnPropertySlotByIndex(JSObject* object, JSGlobalObject* l
 bool RuntimeArray::put(JSCell* cell, JSGlobalObject* lexicalGlobalObject, PropertyName propertyName, JSValue value, PutPropertySlot& slot)
 {
     Ref vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     RuntimeArray* thisObject = jsCast<RuntimeArray*>(cell);
     if (propertyName == vm->propertyNames->length) {
@@ -138,7 +138,7 @@ bool RuntimeArray::put(JSCell* cell, JSGlobalObject* lexicalGlobalObject, Proper
 
 bool RuntimeArray::putByIndex(JSCell* cell, JSGlobalObject* lexicalGlobalObject, unsigned index, JSValue value, bool)
 {
-    auto scope = DECLARE_THROW_SCOPE(lexicalGlobalObject->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject->vm());
 
     RuntimeArray* thisObject = jsCast<RuntimeArray*>(cell);
     if (index >= thisObject->getLength()) {

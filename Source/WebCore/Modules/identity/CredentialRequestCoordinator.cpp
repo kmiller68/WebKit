@@ -231,7 +231,7 @@ ExceptionOr<JSC::JSObject*> CredentialRequestCoordinator::parseDigitalCredential
     }
 
     JSC::VM& vm = globalObject->vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSC::JSLockHolder lock(globalObject);
     auto parsedJSON = JSC::JSONParse(globalObject, responseDataJSON);
     if (!parsedJSON) {
@@ -241,7 +241,7 @@ ExceptionOr<JSC::JSObject*> CredentialRequestCoordinator::parseDigitalCredential
 
     if (scope.exception()) [[unlikely]] {
         LOG(DigitalCredentials, "Failed to parse response JSON data");
-        scope.clearException();
+        TRY_CLEAR_EXCEPTION(scope, Exception(ExceptionCode::TerminationError, "Termination"_s));
         return Exception { ExceptionCode::SyntaxError, "Failed to parse response JSON data."_s };
     }
 

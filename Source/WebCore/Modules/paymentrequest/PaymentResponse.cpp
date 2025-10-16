@@ -34,8 +34,8 @@
 #include "PaymentComplete.h"
 #include "PaymentCompleteDetails.h"
 #include "PaymentRequest.h"
+#include <JavaScriptCore/ExceptionScope.h>
 #include <JavaScriptCore/JSONObject.h>
-#include <JavaScriptCore/ThrowScope.h>
 #include <wtf/RunLoop.h>
 #include <wtf/TZoneMallocInlines.h>
 
@@ -89,7 +89,7 @@ void PaymentResponse::complete(Document& document, std::optional<PaymentComplete
     String serializedData;
     if (details) {
         if (auto data = details->data) {
-            auto throwScope = DECLARE_THROW_SCOPE(document.globalObject()->vm());
+            auto throwScope = DECLARE_EXCEPTION_SCOPE(document.globalObject()->vm());
 
             serializedData = JSONStringify(document.globalObject(), data.get(), 0);
             if (throwScope.exception()) {

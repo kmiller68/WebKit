@@ -50,7 +50,7 @@ static EncodedJSValue cloneArrayBufferImpl(JSGlobalObject* lexicalGlobalObject, 
 
     auto* buffer = toUnsharedArrayBuffer(vm, callFrame->uncheckedArgument(0));
     if (!buffer) {
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         throwDataCloneError(*lexicalGlobalObject, scope);
         return { };
     }
@@ -74,12 +74,12 @@ JSC_DEFINE_HOST_FUNCTION(structuredCloneForStream, (JSGlobalObject* globalObject
     ASSERT(callFrame->argumentCount());
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue value = callFrame->uncheckedArgument(0);
 
     auto cloneArrayBuffer = [&](ArrayBuffer& buffer) -> RefPtr<ArrayBuffer> {
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         size_t byteLength = buffer.byteLength();
         auto result = ArrayBuffer::tryCreate(byteLength, 1, buffer.maxByteLength());
         if (!result) [[unlikely]] {

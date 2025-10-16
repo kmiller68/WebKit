@@ -42,8 +42,8 @@
 #import "runtime_root.h"
 #import <JavaScriptCore/APICast.h>
 #import <JavaScriptCore/CallFrame.h>
-#import <JavaScriptCore/CatchScope.h>
 #import <JavaScriptCore/Completion.h>
+#import <JavaScriptCore/ExceptionScope.h>
 #import <JavaScriptCore/InitializeThreading.h>
 #import <JavaScriptCore/JSContextInternal.h>
 #import <JavaScriptCore/JSGlobalObject.h>
@@ -131,9 +131,9 @@ static void addExceptionToConsole(JSC::JSGlobalObject* lexicalGlobalObject, JSC:
 static void addExceptionToConsole(JSC::JSGlobalObject* lexicalGlobalObject)
 {
     JSC::VM& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSC::Exception* exception = scope.exception();
-    scope.clearException();
+    TRY_CLEAR_EXCEPTION(scope, void());
     addExceptionToConsole(lexicalGlobalObject, exception);
 }
 
@@ -279,7 +279,7 @@ void disconnectWindowWrapper(WebScriptObject *windowWrapper)
     // JavaScript. Instead, we should use JSGlobalObject, like we do elsewhere.
     JSC::JSGlobalObject* globalObject = root->globalObject();
     JSC::VM& vm = globalObject->vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* target = JSC::jsDynamicCast<JSDOMWindowBase*>(globalObject);
     if (!target)
@@ -346,7 +346,7 @@ static void getListFromNSArray(JSC::JSGlobalObject* lexicalGlobalObject, NSArray
     auto globalObject = [self _rootObject]->globalObject();
     auto& vm = globalObject->vm();
     JSLockHolder lock(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSC::JSGlobalObject* lexicalGlobalObject = globalObject;
     UNUSED_PARAM(scope);
 
@@ -384,7 +384,7 @@ static void getListFromNSArray(JSC::JSGlobalObject* lexicalGlobalObject, NSArray
     auto globalObject = [self _rootObject]->globalObject();
     auto& vm = globalObject->vm();
     JSLockHolder lock(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(scope);
 
     JSC::JSValue returnValue = JSExecState::profiledEvaluate(globalObject, JSC::ProfilingReason::Other, makeSource(String(script), { }, JSC::SourceTaintedOrigin::Untainted), JSC::JSValue());
@@ -402,17 +402,15 @@ static void getListFromNSArray(JSC::JSGlobalObject* lexicalGlobalObject, NSArray
     auto globalObject = [self _rootObject]->globalObject();
     auto& vm = globalObject->vm();
     JSLockHolder lock(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSC::JSGlobalObject* lexicalGlobalObject = globalObject;
 
     JSObject* object = JSC::jsDynamicCast<JSObject*>([self _imp]);
     PutPropertySlot slot(object);
     object->methodTable()->put(object, lexicalGlobalObject, Identifier::fromString(vm, String(key)), convertObjcValueToValue(lexicalGlobalObject, &value, ObjcObjectType, [self _rootObject]), slot);
 
-    if (scope.exception()) [[unlikely]] {
+    if (scope.exception()) [[unlikely]]
         addExceptionToConsole(lexicalGlobalObject);
-        scope.clearException();
-    }
 }
 
 - (id)valueForKey:(NSString *)key
@@ -430,7 +428,7 @@ static void getListFromNSArray(JSC::JSGlobalObject* lexicalGlobalObject, NSArray
         // leaving the lock permanently held
         JSLockHolder lock(vm);
 
-        auto scope = DECLARE_CATCH_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         JSC::JSGlobalObject* lexicalGlobalObject = globalObject;
 
         JSC::JSValue result = [self _imp]->get(lexicalGlobalObject, Identifier::fromString(vm, String(key)));
@@ -438,7 +436,7 @@ static void getListFromNSArray(JSC::JSGlobalObject* lexicalGlobalObject, NSArray
         if (scope.exception()) [[unlikely]] {
             addExceptionToConsole(lexicalGlobalObject);
             result = jsUndefined();
-            scope.clearException();
+            TRY_CLEAR_EXCEPTION(scope, nil);
         }
 
         resultObj = [WebScriptObject _convertValueToObjcValue:result originRootObject:[self _originRootObject] rootObject:[self _rootObject]];
@@ -458,14 +456,14 @@ static void getListFromNSArray(JSC::JSGlobalObject* lexicalGlobalObject, NSArray
     auto globalObject = [self _rootObject]->globalObject();
     auto& vm = globalObject->vm();
     JSLockHolder lock(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSC::JSGlobalObject* lexicalGlobalObject = globalObject;
 
     JSC::JSCell::deleteProperty([self _imp], lexicalGlobalObject, Identifier::fromString(vm, String(key)));
 
     if (scope.exception()) [[unlikely]] {
         addExceptionToConsole(lexicalGlobalObject);
-        scope.clearException();
+        TRY_CLEAR_EXCEPTION(scope, void());
     }
 }
 
@@ -477,14 +475,14 @@ static void getListFromNSArray(JSC::JSGlobalObject* lexicalGlobalObject, NSArray
     auto globalObject = [self _rootObject]->globalObject();
     auto& vm = globalObject->vm();
     JSLockHolder lock(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSC::JSGlobalObject* lexicalGlobalObject = globalObject;
 
     BOOL result = [self _imp]->hasProperty(lexicalGlobalObject, Identifier::fromString(vm, String(key)));
 
     if (scope.exception()) [[unlikely]] {
         addExceptionToConsole(lexicalGlobalObject);
-        scope.clearException();
+        TRY_CLEAR_EXCEPTION(scope, NO);
     }
 
     return result;
@@ -509,7 +507,7 @@ static void getListFromNSArray(JSC::JSGlobalObject* lexicalGlobalObject, NSArray
     auto globalObject = [self _rootObject]->globalObject();
     auto& vm = globalObject->vm();
     JSLockHolder lock(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSC::JSGlobalObject* lexicalGlobalObject = globalObject;
 
     JSC::JSValue result = [self _imp]->get(lexicalGlobalObject, index);
@@ -517,7 +515,7 @@ static void getListFromNSArray(JSC::JSGlobalObject* lexicalGlobalObject, NSArray
     if (scope.exception()) [[unlikely]] {
         addExceptionToConsole(lexicalGlobalObject);
         result = jsUndefined();
-        scope.clearException();
+        TRY_CLEAR_EXCEPTION(scope, nil);
     }
 
     id resultObj = [WebScriptObject _convertValueToObjcValue:result originRootObject:[self _originRootObject] rootObject:[self _rootObject]];
@@ -533,14 +531,14 @@ static void getListFromNSArray(JSC::JSGlobalObject* lexicalGlobalObject, NSArray
     auto globalObject = [self _rootObject]->globalObject();
     auto& vm = globalObject->vm();
     JSLockHolder lock(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSC::JSGlobalObject* lexicalGlobalObject = globalObject;
 
     [self _imp]->methodTable()->putByIndex([self _imp], lexicalGlobalObject, index, convertObjcValueToValue(lexicalGlobalObject, &value, ObjcObjectType, [self _rootObject]), false);
 
     if (scope.exception()) [[unlikely]] {
         addExceptionToConsole(lexicalGlobalObject);
-        scope.clearException();
+        TRY_CLEAR_EXCEPTION(scope, void());
     }
 }
 

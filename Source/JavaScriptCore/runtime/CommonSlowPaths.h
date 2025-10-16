@@ -62,7 +62,7 @@ ALWAYS_INLINE int numberOfStackPaddingSlots(CodeBlock* codeBlock, int argumentCo
 inline JSValue opEnumeratorGetByVal(JSGlobalObject* globalObject, JSValue baseValue, JSValue propertyNameValue, unsigned index, JSPropertyNameEnumerator::Flag mode, JSPropertyNameEnumerator* enumerator, ArrayProfile* arrayProfile = nullptr, uint8_t* enumeratorMetadata = nullptr)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     switch (mode) {
     case JSPropertyNameEnumerator::IndexedMode: {
@@ -104,7 +104,7 @@ inline JSValue opEnumeratorGetByVal(JSGlobalObject* globalObject, JSValue baseVa
 inline bool opInByVal(JSGlobalObject* globalObject, JSValue baseVal, JSValue propName, ArrayProfile* arrayProfile = nullptr)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     if (!baseVal.isObject()) {
         throwException(globalObject, scope, createInvalidInParameterError(globalObject, baseVal));
         return false;
@@ -180,7 +180,7 @@ static ALWAYS_INLINE bool canPutDirectFast(VM& vm, Structure* structure, Propert
 
 static ALWAYS_INLINE void putDirectWithReify(VM& vm, JSGlobalObject* globalObject, JSObject* baseObject, PropertyName propertyName, JSValue value, PutPropertySlot& slot, Structure** result = nullptr)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     bool isJSFunction = baseObject->inherits<JSFunction>();
     if (isJSFunction) {
         JSFunction* jsFunction = jsCast<JSFunction*>(baseObject);
@@ -216,7 +216,7 @@ static ALWAYS_INLINE void putDirectAccessorWithReify(VM& vm, JSGlobalObject* glo
     // constructor, both of which are guaranteed to be extensible and without non-configurable |propertyName|.
     // Please also note that static "prototype" accessor in a `class` literal is a syntax error.
 
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     bool isJSFunction = baseObject->inherits<JSFunction>();
     if (isJSFunction) {
         ASSERT(propertyName != vm.propertyNames->prototype);

@@ -203,7 +203,7 @@ ALWAYS_INLINE bool JSGlobalObject::isSetPrototypeAddFastAndNonObservable()
 ALWAYS_INLINE Structure* JSGlobalObject::arrayStructureForIndexingTypeDuringAllocation(JSGlobalObject* globalObject, IndexingType indexingType, JSValue newTarget) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     if (!newTarget || newTarget == globalObject->arrayConstructor())
         return globalObject->arrayStructureForIndexingTypeDuringAllocation(indexingType);
     auto* functionGlobalObject = getFunctionRealm(globalObject, asObject(newTarget));
@@ -278,7 +278,7 @@ inline unsigned JSGlobalObject::WeakCustomGetterOrSetterHash<T>::hash(const Prop
 inline JSArray* constructEmptyArray(JSGlobalObject* globalObject, ArrayAllocationProfile* profile, unsigned initialLength = 0, JSValue newTarget = JSValue())
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Structure* structure;
     if (initialLength >= MIN_ARRAY_STORAGE_CONSTRUCTION_LENGTH)
@@ -298,7 +298,7 @@ inline JSArray* constructEmptyArray(JSGlobalObject* globalObject, ArrayAllocatio
 inline JSArray* constructArray(JSGlobalObject* globalObject, ArrayAllocationProfile* profile, const ArgList& values, JSValue newTarget = JSValue())
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     Structure* structure = globalObject->arrayStructureForProfileDuringAllocation(globalObject, profile, newTarget);
     RETURN_IF_EXCEPTION(scope, nullptr);
     return ArrayAllocationProfile::updateLastAllocationFor(profile, constructArray(globalObject, structure, values));
@@ -307,7 +307,7 @@ inline JSArray* constructArray(JSGlobalObject* globalObject, ArrayAllocationProf
 inline JSArray* constructArray(JSGlobalObject* globalObject, ArrayAllocationProfile* profile, const JSValue* values, unsigned length, JSValue newTarget = JSValue())
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     Structure* structure = globalObject->arrayStructureForProfileDuringAllocation(globalObject, profile, newTarget);
     RETURN_IF_EXCEPTION(scope, nullptr);
     return ArrayAllocationProfile::updateLastAllocationFor(profile, constructArray(globalObject, structure, values, length));
@@ -316,7 +316,7 @@ inline JSArray* constructArray(JSGlobalObject* globalObject, ArrayAllocationProf
 inline JSArray* constructArrayNegativeIndexed(JSGlobalObject* globalObject, ArrayAllocationProfile* profile, const JSValue* values, unsigned length, JSValue newTarget = JSValue())
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     Structure* structure = globalObject->arrayStructureForProfileDuringAllocation(globalObject, profile, newTarget);
     RETURN_IF_EXCEPTION(scope, nullptr);
     scope.release();
@@ -369,7 +369,7 @@ ALWAYS_INLINE JSArray* tryCreateContiguousArrayWithPattern(JSGlobalObject* globa
 ALWAYS_INLINE JSArray* createPatternFilledArray(JSGlobalObject* globalObject, JSString* pattern, size_t count)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (JSArray* array = tryCreateContiguousArrayWithPattern(globalObject, pattern, count); array) [[likely]]
         return array;
@@ -560,7 +560,7 @@ template<BindingCreationContext context>
 inline void JSGlobalObject::createGlobalVarBinding(const Identifier& ident)
 {
     VM& vm = this->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     PropertySlot slot(this, PropertySlot::InternalMethodType::GetOwnProperty);
     bool hasProperty = getOwnPropertySlot(this, this, ident, slot);

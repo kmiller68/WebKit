@@ -495,7 +495,7 @@ JSArray* ShadowChicken::functionsOnStack(JSGlobalObject* globalObject, CallFrame
 {
     VM& vm = globalObject->vm();
     DeferTermination deferScope(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSArray* result = constructEmptyArray(globalObject, nullptr);
     RETURN_IF_EXCEPTION(scope, nullptr);
 

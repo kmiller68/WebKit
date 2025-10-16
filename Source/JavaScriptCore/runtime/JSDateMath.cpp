@@ -384,7 +384,7 @@ void DateCache::msToGregorianDateTime(double millisecondsFromEpoch, TimeType out
 
 double DateCache::parseDate(JSGlobalObject* globalObject, VM& vm, const String& date)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (date == m_cachedDateString)
         return m_cachedDateStringValue;

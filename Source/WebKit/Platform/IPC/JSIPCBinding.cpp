@@ -42,7 +42,7 @@ namespace IPC {
 static JSC::JSValue jsValueForDecodedStringArgumentValue(JSC::JSGlobalObject* globalObject, const String& value, ASCIILiteral type)
 {
     auto& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* object = JSC::constructEmptyObject(globalObject, globalObject->objectPrototype());
     RETURN_IF_EXCEPTION(scope, JSC::JSValue());
     object->putDirect(vm, JSC::Identifier::fromString(vm, "type"_s), JSC::jsNontrivialString(vm, type));
@@ -74,7 +74,7 @@ template<typename NumericType>
 JSC::JSValue jsValueForDecodedNumericArgumentValue(JSC::JSGlobalObject* globalObject, NumericType value, const String& type)
 {
     auto& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* object = JSC::constructEmptyObject(globalObject, globalObject->objectPrototype());
     RETURN_IF_EXCEPTION(scope, JSC::JSValue());
     object->putDirect(vm, JSC::Identifier::fromString(vm, "type"_s), JSC::jsNontrivialString(vm, type));
@@ -88,7 +88,7 @@ template<>
 JSC::JSValue jsValueForDecodedArgumentValue(JSC::JSGlobalObject* globalObject, bool value)
 {
     auto& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* object = JSC::constructEmptyObject(globalObject, globalObject->objectPrototype());
     RETURN_IF_EXCEPTION(scope, JSC::JSValue());
     object->putDirect(vm, JSC::Identifier::fromString(vm, "type"_s), JSC::jsNontrivialString(vm, "bool"_s));
@@ -168,7 +168,7 @@ template<typename RectType>
 JSC::JSValue jsValueForDecodedArgumentRect(JSC::JSGlobalObject* globalObject, const RectType& value, const String& type)
 {
     auto& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* object = JSC::constructEmptyObject(globalObject, globalObject->objectPrototype());
     RETURN_IF_EXCEPTION(scope, JSC::JSValue());
     object->putDirect(vm, JSC::Identifier::fromString(vm, "type"_s), JSC::jsNontrivialString(vm, type));
@@ -200,7 +200,7 @@ template<>
 JSC::JSValue jsValueForDecodedArgumentValue(JSC::JSGlobalObject* globalObject, WebCore::ExceptionData&& exceptionData)
 {
     auto& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* object = JSC::constructEmptyObject(globalObject, globalObject->objectPrototype());
     RETURN_IF_EXCEPTION(scope, JSC::JSValue());
     object->putDirect(vm, JSC::Identifier::fromString(vm, "type"_s), JSC::jsNontrivialString(vm, "ExceptionData"_s));

@@ -197,7 +197,7 @@ bool JSTestPluginInterface::put(JSCell* cell, JSGlobalObject* lexicalGlobalObjec
             return JSObject::put(thisObject, lexicalGlobalObject, propertyName, value, putPropertySlot);
     }
 
-    auto throwScope = DECLARE_THROW_SCOPE(lexicalGlobalObject->vm());
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject->vm());
 
     bool putResult = false;
     bool success = pluginElementCustomPut(thisObject, lexicalGlobalObject, propertyName, value, putPropertySlot, putResult);
@@ -222,7 +222,7 @@ bool JSTestPluginInterface::putByIndex(JSCell* cell, JSGlobalObject* lexicalGlob
     ASSERT_GC_OBJECT_INHERITS(thisObject, info());
 
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto propertyName = Identifier::from(vm, index);
     PutPropertySlot putPropertySlot(thisObject, shouldThrow);
@@ -247,7 +247,7 @@ CallData JSTestPluginInterface::getCallData(JSCell* cell)
 JSC_DEFINE_CUSTOM_GETTER(jsTestPluginInterfaceConstructor, (JSGlobalObject* lexicalGlobalObject, EncodedJSValue thisValue, PropertyName))
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* prototype = jsDynamicCast<JSTestPluginInterfacePrototype*>(JSValue::decode(thisValue));
     if (!prototype) [[unlikely]]
         return throwVMTypeError(lexicalGlobalObject, throwScope);

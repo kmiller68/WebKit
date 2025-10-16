@@ -116,7 +116,7 @@ Structure* DirectArguments::createStructure(VM& vm, JSGlobalObject* globalObject
 void DirectArguments::overrideThings(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     RELEASE_ASSERT(!m_mappedArguments);
     
@@ -144,7 +144,7 @@ void DirectArguments::overrideThingsIfNecessary(JSGlobalObject* globalObject)
 void DirectArguments::unmapArgument(JSGlobalObject* globalObject, unsigned index)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     overrideThingsIfNecessary(globalObject);
     RETURN_IF_EXCEPTION(scope, void());

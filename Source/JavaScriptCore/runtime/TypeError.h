@@ -31,7 +31,7 @@
 namespace JSC {
 
 template<typename Message>
-inline bool typeError(JSGlobalObject* globalObject, ThrowScope& scope, bool throwException, Message message)
+inline bool typeError(JSGlobalObject* globalObject, ExceptionScope& scope, bool throwException, Message message)
 {
     if (throwException)
         throwTypeError(globalObject, scope, message);

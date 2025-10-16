@@ -168,6 +168,7 @@ static inline ExceptionCode toExceptionCode(NSInteger nsErrorCode)
     case ExceptionCode::JSSyntaxError:
     case ExceptionCode::StackOverflowError:
     case ExceptionCode::OutOfMemoryError:
+    case ExceptionCode::TerminationError:
     case ExceptionCode::ExistingExceptionError:
         return exceptionCode;
     }

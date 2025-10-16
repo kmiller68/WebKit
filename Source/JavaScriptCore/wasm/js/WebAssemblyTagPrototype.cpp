@@ -79,7 +79,7 @@ WebAssemblyTagPrototype::WebAssemblyTagPrototype(VM& vm, Structure* structure)
 ALWAYS_INLINE static JSWebAssemblyTag* getTag(JSGlobalObject* globalObject, JSValue thisValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!thisValue.isCell()) [[unlikely]] {
         throwVMError(globalObject, scope, createNotAnObjectError(globalObject, thisValue));
@@ -95,7 +95,7 @@ ALWAYS_INLINE static JSWebAssemblyTag* getTag(JSGlobalObject* globalObject, JSVa
 JSC_DEFINE_HOST_FUNCTION(webAssemblyTagProtoFuncType, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSWebAssemblyTag* jsTag = getTag(globalObject, callFrame->thisValue());
     RETURN_IF_EXCEPTION(throwScope, encodedJSValue());

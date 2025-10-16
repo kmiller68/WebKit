@@ -59,7 +59,7 @@ bool JSString::equal(JSGlobalObject* globalObject, JSString* other) const
 ALWAYS_INLINE bool JSString::equalInline(JSGlobalObject* globalObject, JSString* other) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned length = this->length();
     if (length != other->length())
@@ -78,7 +78,7 @@ ALWAYS_INLINE bool JSString::equalInline(JSGlobalObject* globalObject, JSString*
 JSString* JSString::tryReplaceOneCharImpl(JSGlobalObject* globalObject, char16_t search, JSString* replacement, uint8_t* stackLimit, bool& found)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (std::bit_cast<uint8_t*>(currentStackPointer()) < stackLimit) [[unlikely]]
         return nullptr; // Stack overflow
@@ -171,7 +171,7 @@ template<typename StringType, typename... StringTypes>
 inline JSValue jsMakeNontrivialString(JSGlobalObject* globalObject, StringType&& string, StringTypes&&... strings)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     String result = tryMakeString(std::forward<StringType>(string), std::forward<StringTypes>(strings)...);
     if (!result) [[unlikely]]
         return throwOutOfMemoryError(globalObject, scope);
@@ -184,7 +184,7 @@ template <typename CharacterType>
 inline JSString* repeatCharacter(JSGlobalObject* globalObject, CharacterType character, unsigned repeatCount)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!repeatCount)
         return jsEmptyString(vm);
@@ -435,7 +435,7 @@ inline void JSRopeString::resolveToBuffer(JSString* fiber0, JSString* fiber1, JS
 
 inline JSString* jsAtomString(JSGlobalObject* globalObject, VM& vm, JSString* string)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned length = string->length();
     if (length > KeyAtomStringCache::maxStringLengthForCache) {
@@ -499,7 +499,7 @@ inline JSString* jsAtomString(JSGlobalObject* globalObject, VM& vm, JSString* st
 
 inline JSString* jsAtomString(JSGlobalObject* globalObject, VM& vm, JSString* s1, JSString* s2)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned length1 = s1->length();
     if (!length1)
@@ -579,7 +579,7 @@ inline JSString* jsAtomString(JSGlobalObject* globalObject, VM& vm, JSString* s1
 
 inline JSString* jsAtomString(JSGlobalObject* globalObject, VM& vm, JSString* s1, JSString* s2, JSString* s3)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned length1 = s1->length();
     if (!length1)

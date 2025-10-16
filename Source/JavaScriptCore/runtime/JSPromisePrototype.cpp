@@ -110,7 +110,7 @@ bool promiseSpeciesWatchpointIsValid(VM& vm, JSPromise* thisObject)
 JSC_DEFINE_HOST_FUNCTION(promiseProtoFuncThen, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue().toThis(globalObject, ECMAMode::strict());
 

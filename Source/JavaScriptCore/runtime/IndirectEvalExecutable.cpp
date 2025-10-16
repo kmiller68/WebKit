@@ -39,7 +39,7 @@ template<typename ErrorHandlerFunctor>
 inline IndirectEvalExecutable* IndirectEvalExecutable::createImpl(JSGlobalObject* globalObject, const SourceCode& source, LexicallyScopedFeatures lexicallyScopedFeatures, DerivedContextType derivedContextType, bool isArrowFunctionContext, EvalContextType evalContextType, ErrorHandlerFunctor errorHandler)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!globalObject->evalEnabled() && globalObject->trustedTypesEnforcement() != TrustedTypesEnforcement::EnforcedWithEvalEnabled) {
         globalObject->globalObjectMethodTable()->reportViolationForUnsafeEval(globalObject, source.provider() ? source.provider()->source().toString() : nullString());
@@ -82,7 +82,7 @@ IndirectEvalExecutable* IndirectEvalExecutable::tryCreate(JSGlobalObject* global
 {
     VM& vm = globalObject->vm();
     auto handleError = [&](const SourceCode& source, ParserError* error) {
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         throwVMError(globalObject, scope, error->toErrorObject(globalObject, source));
     };
     return createImpl(globalObject, source, lexicallyScopedFeatures, derivedContextType, isArrowFunctionContext, evalContextType, handleError);

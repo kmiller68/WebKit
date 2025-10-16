@@ -68,7 +68,7 @@ void IntlLocaleConstructor::finishCreation(VM& vm, IntlLocalePrototype* localePr
 JSC_DEFINE_HOST_FUNCTION(constructIntlLocale, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* newTarget = asObject(callFrame->newTarget());
     Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, localeStructure, newTarget, callFrame->jsCallee());
@@ -90,7 +90,7 @@ JSC_DEFINE_HOST_FUNCTION(constructIntlLocale, (JSGlobalObject* globalObject, Cal
 JSC_DEFINE_HOST_FUNCTION(callIntlLocale, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "Locale"_s));
 }

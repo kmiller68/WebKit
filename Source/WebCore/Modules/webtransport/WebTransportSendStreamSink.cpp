@@ -60,7 +60,7 @@ void WebTransportSendStreamSink::write(ScriptExecutionContext& context, JSC::JSV
         return promise.reject(Exception { ExceptionCode::InvalidStateError });
 
     auto& globalObject = *JSC::jsCast<JSDOMGlobalObject*>(context.globalObject());
-    auto scope = DECLARE_THROW_SCOPE(globalObject.vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(globalObject.vm());
 
     auto bufferSource = convert<IDLUnion<IDLArrayBuffer, IDLArrayBufferView>>(globalObject, value);
     if (bufferSource.hasException(scope)) [[unlikely]]

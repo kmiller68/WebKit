@@ -215,7 +215,7 @@ JSC_DEFINE_HOST_FUNCTION(consoleProtoFuncTrace, (JSGlobalObject* globalObject, C
 JSC_DEFINE_HOST_FUNCTION(consoleProtoFuncAssert, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto client = globalObject->consoleClient();
     if (!client)
         return JSValue::encode(jsUndefined());
@@ -232,7 +232,7 @@ JSC_DEFINE_HOST_FUNCTION(consoleProtoFuncAssert, (JSGlobalObject* globalObject, 
 
 JSC_DEFINE_HOST_FUNCTION(consoleProtoFuncCount, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
-    auto scope = DECLARE_THROW_SCOPE(globalObject->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
     auto client = globalObject->consoleClient();
     if (!client)
         return JSValue::encode(jsUndefined());
@@ -246,7 +246,7 @@ JSC_DEFINE_HOST_FUNCTION(consoleProtoFuncCount, (JSGlobalObject* globalObject, C
 
 JSC_DEFINE_HOST_FUNCTION(consoleProtoFuncCountReset, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
-    auto scope = DECLARE_THROW_SCOPE(globalObject->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
     auto client = globalObject->consoleClient();
     if (!client)
         return JSValue::encode(jsUndefined());
@@ -261,7 +261,7 @@ JSC_DEFINE_HOST_FUNCTION(consoleProtoFuncCountReset, (JSGlobalObject* globalObje
 JSC_DEFINE_HOST_FUNCTION(consoleProtoFuncProfile, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto client = globalObject->consoleClient();
     if (!client)
         return JSValue::encode(jsUndefined());
@@ -282,7 +282,7 @@ JSC_DEFINE_HOST_FUNCTION(consoleProtoFuncProfile, (JSGlobalObject* globalObject,
 JSC_DEFINE_HOST_FUNCTION(consoleProtoFuncProfileEnd, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto client = globalObject->consoleClient();
     if (!client)
         return JSValue::encode(jsUndefined());
@@ -303,7 +303,7 @@ JSC_DEFINE_HOST_FUNCTION(consoleProtoFuncProfileEnd, (JSGlobalObject* globalObje
 JSC_DEFINE_HOST_FUNCTION(consoleProtoFuncTakeHeapSnapshot, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto client = globalObject->consoleClient();
     if (!client)
         return JSValue::encode(jsUndefined());
@@ -323,7 +323,7 @@ JSC_DEFINE_HOST_FUNCTION(consoleProtoFuncTakeHeapSnapshot, (JSGlobalObject* glob
 
 JSC_DEFINE_HOST_FUNCTION(consoleProtoFuncTime, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
-    auto scope = DECLARE_THROW_SCOPE(globalObject->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
     auto client = globalObject->consoleClient();
     if (!client)
         return JSValue::encode(jsUndefined());
@@ -337,7 +337,7 @@ JSC_DEFINE_HOST_FUNCTION(consoleProtoFuncTime, (JSGlobalObject* globalObject, Ca
 
 JSC_DEFINE_HOST_FUNCTION(consoleProtoFuncTimeLog, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
-    auto scope = DECLARE_THROW_SCOPE(globalObject->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
     auto client = globalObject->consoleClient();
     if (!client)
         return JSValue::encode(jsUndefined());
@@ -351,7 +351,7 @@ JSC_DEFINE_HOST_FUNCTION(consoleProtoFuncTimeLog, (JSGlobalObject* globalObject,
 
 JSC_DEFINE_HOST_FUNCTION(consoleProtoFuncTimeEnd, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
-    auto scope = DECLARE_THROW_SCOPE(globalObject->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
     auto client = globalObject->consoleClient();
     if (!client)
         return JSValue::encode(jsUndefined());

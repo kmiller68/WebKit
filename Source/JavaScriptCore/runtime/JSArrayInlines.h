@@ -151,7 +151,7 @@ ALWAYS_INLINE bool JSArray::definitelyNegativeOneMiss() const
 ALWAYS_INLINE uint64_t toLength(JSGlobalObject* globalObject, JSObject* object)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     if (isJSArray(object)) [[likely]]
         return jsCast<JSArray*>(object)->length();
 
@@ -173,7 +173,7 @@ ALWAYS_INLINE uint64_t toLength(JSGlobalObject* globalObject, JSObject* object)
 ALWAYS_INLINE void JSArray::pushInline(JSGlobalObject* globalObject, JSValue value)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ensureWritable(vm);
 

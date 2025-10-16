@@ -124,9 +124,9 @@
 #import <Foundation/NSURLConnection.h>
 #import <JavaScriptCore/APICast.h>
 #import <JavaScriptCore/ArrayPrototype.h>
-#import <JavaScriptCore/CatchScope.h>
 #import <JavaScriptCore/DateInstance.h>
 #import <JavaScriptCore/Exception.h>
+#import <JavaScriptCore/ExceptionScope.h>
 #import <JavaScriptCore/InitializeThreading.h>
 #import <JavaScriptCore/JSCJSValue.h>
 #import <JavaScriptCore/JSGlobalObjectInlines.h>
@@ -7382,7 +7382,7 @@ static NSAppleEventDescriptor* aeDescFromJSValue(JSC::JSGlobalObject* lexicalGlo
 {
     using namespace JSC;
     VM& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     NSAppleEventDescriptor* aeDesc = 0;
     if (jsValue.isBoolean())
@@ -7420,10 +7420,7 @@ static NSAppleEventDescriptor* aeDescFromJSValue(JSC::JSGlobalObject* lexicalGlo
             }
         }
         JSC::JSValue primitive = object->toPrimitive(lexicalGlobalObject);
-        if (scope.exception()) [[unlikely]] {
-            scope.clearException();
-            return [NSAppleEventDescriptor nullDescriptor];
-        }
+        TRY_CLEAR_EXCEPTION(scope, [NSAppleEventDescriptor nullDescriptor]);
         return aeDescFromJSValue(lexicalGlobalObject, primitive);
     }
     if (jsValue.isUndefined())

@@ -94,7 +94,7 @@ void JSPromiseConstructor::finishCreation(VM& vm, JSPromisePrototype* promisePro
 JSC_DEFINE_HOST_FUNCTION(promiseConstructorFuncResolve, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue().toThis(globalObject, ECMAMode::strict());
     JSValue argument = callFrame->argument(0);
@@ -108,7 +108,7 @@ JSC_DEFINE_HOST_FUNCTION(promiseConstructorFuncResolve, (JSGlobalObject* globalO
 JSC_DEFINE_HOST_FUNCTION(promiseConstructorFuncReject, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue().toThis(globalObject, ECMAMode::strict());
     JSValue argument = callFrame->argument(0);

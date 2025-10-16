@@ -187,7 +187,7 @@ void JSTestCEReactions::destroy(JSC::JSCell* cell)
 JSC_DEFINE_CUSTOM_GETTER(jsTestCEReactionsConstructor, (JSGlobalObject* lexicalGlobalObject, EncodedJSValue thisValue, PropertyName))
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* prototype = jsDynamicCast<JSTestCEReactionsPrototype*>(JSValue::decode(thisValue));
     if (!prototype) [[unlikely]]
         return throwVMTypeError(lexicalGlobalObject, throwScope);
@@ -197,7 +197,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestCEReactionsConstructor, (JSGlobalObject* lexicalG
 static inline JSValue jsTestCEReactions_attributeWithCEReactionsGetter(JSGlobalObject& lexicalGlobalObject, JSTestCEReactions& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLDOMString>(lexicalGlobalObject, throwScope, impl.attributeWithCEReactions())));
 }
@@ -211,7 +211,7 @@ static inline bool setJSTestCEReactions_attributeWithCEReactionsSetter(JSGlobalO
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     CustomElementReactionStack customElementReactionStack(lexicalGlobalObject);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     auto nativeValueConversionResult = convert<IDLDOMString>(lexicalGlobalObject, value);
@@ -231,7 +231,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestCEReactions_attributeWithCEReactions, (JSGloba
 static inline JSValue jsTestCEReactions_reflectAttributeWithCEReactionsGetter(JSGlobalObject& lexicalGlobalObject, JSTestCEReactions& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLAtomStringAdaptor<IDLDOMString>>(lexicalGlobalObject, throwScope, impl.attributeWithoutSynchronization(WebCore::HTMLNames::reflectattributewithcereactionsAttr))));
 }
@@ -245,7 +245,7 @@ static inline bool setJSTestCEReactions_reflectAttributeWithCEReactionsSetter(JS
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     CustomElementReactionStack customElementReactionStack(lexicalGlobalObject);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     auto nativeValueConversionResult = convert<IDLAtomStringAdaptor<IDLDOMString>>(lexicalGlobalObject, value);
@@ -265,7 +265,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestCEReactions_reflectAttributeWithCEReactions, (
 static inline JSValue jsTestCEReactions_stringifierAttributeGetter(JSGlobalObject& lexicalGlobalObject, JSTestCEReactions& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLInterface<TestCEReactionsStringifier>>(lexicalGlobalObject, *thisObject.globalObject(), throwScope, impl.stringifierAttribute())));
 }
@@ -279,7 +279,7 @@ static inline bool setJSTestCEReactions_stringifierAttributeSetter(JSGlobalObjec
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto id = Identifier::fromString(vm, "stringifierAttribute"_s);
     auto valueToForwardTo = thisObject.get(&lexicalGlobalObject, id);
     RETURN_IF_EXCEPTION(throwScope, false);
@@ -302,7 +302,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestCEReactions_stringifierAttribute, (JSGlobalObj
 static inline JSValue jsTestCEReactions_attributeWithCEReactionsNotNeededGetter(JSGlobalObject& lexicalGlobalObject, JSTestCEReactions& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLDOMString>(lexicalGlobalObject, throwScope, impl.attributeWithCEReactionsNotNeeded())));
 }
@@ -316,7 +316,7 @@ static inline bool setJSTestCEReactions_attributeWithCEReactionsNotNeededSetter(
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     CustomElementReactionDisallowedScope customElementReactionDisallowedScope;
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     auto nativeValueConversionResult = convert<IDLDOMString>(lexicalGlobalObject, value);
@@ -336,7 +336,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestCEReactions_attributeWithCEReactionsNotNeeded,
 static inline JSValue jsTestCEReactions_reflectAttributeWithCEReactionsNotNeededGetter(JSGlobalObject& lexicalGlobalObject, JSTestCEReactions& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLAtomStringAdaptor<IDLDOMString>>(lexicalGlobalObject, throwScope, impl.attributeWithoutSynchronization(WebCore::HTMLNames::reflectattributewithcereactionsnotneededAttr))));
 }
@@ -350,7 +350,7 @@ static inline bool setJSTestCEReactions_reflectAttributeWithCEReactionsNotNeeded
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     CustomElementReactionDisallowedScope customElementReactionDisallowedScope;
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     auto nativeValueConversionResult = convert<IDLAtomStringAdaptor<IDLDOMString>>(lexicalGlobalObject, value);
@@ -370,7 +370,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestCEReactions_reflectAttributeWithCEReactionsNot
 static inline JSValue jsTestCEReactions_stringifierAttributeNotNeededGetter(JSGlobalObject& lexicalGlobalObject, JSTestCEReactions& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLInterface<TestCEReactionsStringifier>>(lexicalGlobalObject, *thisObject.globalObject(), throwScope, impl.stringifierAttributeNotNeeded())));
 }
@@ -384,7 +384,7 @@ static inline bool setJSTestCEReactions_stringifierAttributeNotNeededSetter(JSGl
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto id = Identifier::fromString(vm, "stringifierAttributeNotNeeded"_s);
     auto valueToForwardTo = thisObject.get(&lexicalGlobalObject, id);
     RETURN_IF_EXCEPTION(throwScope, false);
@@ -407,7 +407,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestCEReactions_stringifierAttributeNotNeeded, (JS
 static inline JSC::EncodedJSValue jsTestCEReactionsPrototypeFunction_methodWithCEReactionsBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestCEReactions>::ClassParameter castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     CustomElementReactionStack customElementReactionStack(*lexicalGlobalObject);
@@ -423,7 +423,7 @@ JSC_DEFINE_HOST_FUNCTION(jsTestCEReactionsPrototypeFunction_methodWithCEReaction
 static inline JSC::EncodedJSValue jsTestCEReactionsPrototypeFunction_methodWithCEReactionsNotNeededBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestCEReactions>::ClassParameter castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     CustomElementReactionDisallowedScope customElementReactionDisallowedScope;

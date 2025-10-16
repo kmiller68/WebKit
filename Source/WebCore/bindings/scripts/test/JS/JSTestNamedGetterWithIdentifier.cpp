@@ -159,7 +159,7 @@ void JSTestNamedGetterWithIdentifier::destroy(JSC::JSCell* cell)
 
 bool JSTestNamedGetterWithIdentifier::legacyPlatformObjectGetOwnProperty(JSObject* object, JSGlobalObject* lexicalGlobalObject, PropertyName propertyName, PropertySlot& slot, bool ignoreNamedProperties)
 {
-    auto throwScope = DECLARE_THROW_SCOPE(JSC::getVM(lexicalGlobalObject));
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(JSC::getVM(lexicalGlobalObject));
     auto* thisObject = jsCast<JSTestNamedGetterWithIdentifier*>(object);
     ASSERT_GC_OBJECT_INHERITS(thisObject, info());
     if (!ignoreNamedProperties) {
@@ -186,7 +186,7 @@ bool JSTestNamedGetterWithIdentifier::getOwnPropertySlot(JSObject* object, JSGlo
 bool JSTestNamedGetterWithIdentifier::getOwnPropertySlotByIndex(JSObject* object, JSGlobalObject* lexicalGlobalObject, unsigned index, PropertySlot& slot)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* thisObject = jsCast<JSTestNamedGetterWithIdentifier*>(object);
     ASSERT_GC_OBJECT_INHERITS(thisObject, info());
     auto propertyName = Identifier::from(vm, index);
@@ -227,7 +227,7 @@ bool JSTestNamedGetterWithIdentifier::put(JSCell* cell, JSGlobalObject* lexicalG
             return JSObject::put(thisObject, lexicalGlobalObject, propertyName, value, putPropertySlot);
     }
 
-    auto throwScope = DECLARE_THROW_SCOPE(lexicalGlobalObject->vm());
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject->vm());
 
     throwScope.assertNoException();
     PropertyDescriptor ownDescriptor;
@@ -255,7 +255,7 @@ bool JSTestNamedGetterWithIdentifier::putByIndex(JSCell* cell, JSGlobalObject* l
     ASSERT_GC_OBJECT_INHERITS(thisObject, info());
 
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     throwScope.assertNoException();
     auto propertyName = Identifier::from(vm, index);
@@ -268,7 +268,7 @@ bool JSTestNamedGetterWithIdentifier::defineOwnProperty(JSObject* object, JSGlob
     auto* thisObject = jsCast<JSTestNamedGetterWithIdentifier*>(object);
     ASSERT_GC_OBJECT_INHERITS(thisObject, info());
 
-    auto throwScope = DECLARE_THROW_SCOPE(lexicalGlobalObject->vm());
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject->vm());
 
     if (!propertyName.isSymbol()) {
         PropertySlot slot { thisObject, PropertySlot::InternalMethodType::VMInquiry, &lexicalGlobalObject->vm() };
@@ -330,7 +330,7 @@ bool JSTestNamedGetterWithIdentifier::deletePropertyByIndex(JSCell* cell, JSGlob
 JSC_DEFINE_CUSTOM_GETTER(jsTestNamedGetterWithIdentifierConstructor, (JSGlobalObject* lexicalGlobalObject, EncodedJSValue thisValue, PropertyName))
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* prototype = jsDynamicCast<JSTestNamedGetterWithIdentifierPrototype*>(JSValue::decode(thisValue));
     if (!prototype) [[unlikely]]
         return throwVMTypeError(lexicalGlobalObject, throwScope);
@@ -340,7 +340,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestNamedGetterWithIdentifierConstructor, (JSGlobalOb
 static inline JSC::EncodedJSValue jsTestNamedGetterWithIdentifierPrototypeFunction_getterNameBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestNamedGetterWithIdentifier>::ClassParameter castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = castedThis->wrapped();

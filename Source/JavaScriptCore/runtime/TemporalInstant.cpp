@@ -69,7 +69,7 @@ TemporalInstant* TemporalInstant::create(VM& vm, Structure* structure, ISO8601::
 TemporalInstant* TemporalInstant::tryCreateIfValid(JSGlobalObject* globalObject, ISO8601::ExactTime exactTime, Structure* structure)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!exactTime.isValid()) {
         throwRangeError(globalObject, scope, makeString(exactTime.asString(), " epoch nanoseconds is outside of supported range for Temporal.Instant"_s));
@@ -82,7 +82,7 @@ TemporalInstant* TemporalInstant::tryCreateIfValid(JSGlobalObject* globalObject,
 TemporalInstant* TemporalInstant::tryCreateIfValid(JSGlobalObject* globalObject, JSValue value, Structure* structure)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue epochNanoseconds = value.toBigInt(globalObject);
     RETURN_IF_EXCEPTION(scope, nullptr);
@@ -123,10 +123,9 @@ TemporalInstant* TemporalInstant::tryCreateIfValid(JSGlobalObject* globalObject,
 
     if (bigIntTooLong || !exactTime.isValid()) {
         String argAsString = bigint->toString(globalObject, 10);
-        if (scope.exception()) {
-            scope.clearException();
+        if (scope.exception())
             argAsString = "The given number of"_s;
-        }
+        TRY_CLEAR_EXCEPTION(scope, nullptr);
 
         throwRangeError(globalObject, scope, makeString(ellipsizeAt(100, argAsString), " epoch nanoseconds is outside of the supported range for Temporal.Instant"_s));
         return nullptr;
@@ -140,7 +139,7 @@ TemporalInstant* TemporalInstant::tryCreateIfValid(JSGlobalObject* globalObject,
 TemporalInstant* TemporalInstant::toInstant(JSGlobalObject* globalObject, JSValue itemValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!itemValue.isObject() && !itemValue.isString()) {
         throwTypeError(globalObject, scope, "can only convert to Instant from object or string values"_s);
@@ -185,7 +184,7 @@ TemporalInstant* TemporalInstant::from(JSGlobalObject* globalObject, JSValue ite
 TemporalInstant* TemporalInstant::fromEpochMilliseconds(JSGlobalObject* globalObject, JSValue epochMillisecondsValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double epochMilliseconds = epochMillisecondsValue.toNumber(globalObject);
     RETURN_IF_EXCEPTION(scope, nullptr);
@@ -212,7 +211,7 @@ TemporalInstant* TemporalInstant::fromEpochNanoseconds(JSGlobalObject* globalObj
 JSValue TemporalInstant::compare(JSGlobalObject* globalObject, JSValue oneValue, JSValue twoValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     TemporalInstant* one = toInstant(globalObject, oneValue);
     RETURN_IF_EXCEPTION(scope, { });
@@ -232,7 +231,7 @@ ISO8601::Duration TemporalInstant::difference(JSGlobalObject* globalObject, Temp
     // https://tc39.es/proposal-temporal/#sec-temporal.instant.prototype.since
     // https://tc39.es/proposal-temporal/#sec-temporal.instant.prototype.until
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* options = intlGetOptionsObject(globalObject, optionsValue);
     RETURN_IF_EXCEPTION(scope, { });
@@ -286,7 +285,7 @@ static double maximumIncrement(TemporalUnit smallestUnit)
 ISO8601::ExactTime TemporalInstant::round(JSGlobalObject* globalObject, JSValue optionsValue) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* options = nullptr;
     std::optional<TemporalUnit> smallest;
@@ -332,7 +331,7 @@ ISO8601::ExactTime TemporalInstant::round(JSGlobalObject* globalObject, JSValue 
 String TemporalInstant::toString(JSGlobalObject* globalObject, JSValue optionsValue) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* options = intlGetOptionsObject(globalObject, optionsValue);
     RETURN_IF_EXCEPTION(scope, { });

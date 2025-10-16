@@ -119,7 +119,7 @@ static ALWAYS_INLINE JSObject* constructObjectWithNewTarget(JSGlobalObject* glob
 {
     VM& vm = globalObject->vm();
     ObjectConstructor* objectConstructor = jsCast<ObjectConstructor*>(callFrame->jsCallee());
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // We need to check newTarget condition in this caller side instead of InternalFunction::createSubclassStructure side.
     // Since if we found this condition is met, we should not fall into the type conversion in the step 3.
@@ -162,7 +162,7 @@ JSC_DEFINE_HOST_FUNCTION(objectConstructorGetPrototypeOf, (JSGlobalObject* globa
 JSC_DEFINE_HOST_FUNCTION(objectConstructorSetPrototypeOf, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue objectValue = callFrame->argument(0);
     if (objectValue.isUndefinedOrNull())
@@ -184,7 +184,7 @@ JSC_DEFINE_HOST_FUNCTION(objectConstructorSetPrototypeOf, (JSGlobalObject* globa
 JSValue objectConstructorGetOwnPropertyDescriptor(JSGlobalObject* globalObject, JSObject* object, const Identifier& propertyName)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     PropertyDescriptor descriptor;
     if (!object->getOwnPropertyDescriptor(globalObject, propertyName, descriptor))
         RELEASE_AND_RETURN(scope, jsUndefined());
@@ -199,7 +199,7 @@ JSValue objectConstructorGetOwnPropertyDescriptor(JSGlobalObject* globalObject, 
 JSValue objectConstructorGetOwnPropertyDescriptors(JSGlobalObject* globalObject, JSObject* object)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     PropertyNameArray properties(vm, PropertyNameMode::StringsAndSymbols, PrivateSymbolMode::Exclude);
     object->methodTable()->getOwnPropertyNames(object, globalObject, properties, DontEnumPropertiesMode::Include);
     RETURN_IF_EXCEPTION(scope, { });
@@ -230,7 +230,7 @@ JSValue objectConstructorGetOwnPropertyDescriptors(JSGlobalObject* globalObject,
 JSC_DEFINE_HOST_FUNCTION(objectConstructorGetOwnPropertyDescriptor, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSObject* object = callFrame->argument(0).toObject(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
     auto propertyName = callFrame->argument(1).toPropertyKey(globalObject);
@@ -241,7 +241,7 @@ JSC_DEFINE_HOST_FUNCTION(objectConstructorGetOwnPropertyDescriptor, (JSGlobalObj
 JSC_DEFINE_HOST_FUNCTION(objectConstructorGetOwnPropertyDescriptors, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSObject* object = callFrame->argument(0).toObject(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
     RELEASE_AND_RETURN(scope, JSValue::encode(objectConstructorGetOwnPropertyDescriptors(globalObject, object)));
@@ -250,7 +250,7 @@ JSC_DEFINE_HOST_FUNCTION(objectConstructorGetOwnPropertyDescriptors, (JSGlobalOb
 JSC_DEFINE_HOST_FUNCTION(objectConstructorGetOwnPropertyNames, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSObject* object = callFrame->argument(0).toObject(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
     RELEASE_AND_RETURN(scope, JSValue::encode(ownPropertyKeys(globalObject, object, PropertyNameMode::Strings, DontEnumPropertiesMode::Include)));
@@ -259,7 +259,7 @@ JSC_DEFINE_HOST_FUNCTION(objectConstructorGetOwnPropertyNames, (JSGlobalObject* 
 JSC_DEFINE_HOST_FUNCTION(objectConstructorGetOwnPropertySymbols, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSObject* object = callFrame->argument(0).toObject(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
     RELEASE_AND_RETURN(scope, JSValue::encode(ownPropertyKeys(globalObject, object, PropertyNameMode::Symbols, DontEnumPropertiesMode::Include)));
@@ -268,7 +268,7 @@ JSC_DEFINE_HOST_FUNCTION(objectConstructorGetOwnPropertySymbols, (JSGlobalObject
 JSC_DEFINE_HOST_FUNCTION(objectConstructorKeys, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSObject* object = callFrame->argument(0).toObject(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
     RELEASE_AND_RETURN(scope, JSValue::encode(ownPropertyKeys(globalObject, object, PropertyNameMode::Strings, DontEnumPropertiesMode::Exclude)));
@@ -276,7 +276,7 @@ JSC_DEFINE_HOST_FUNCTION(objectConstructorKeys, (JSGlobalObject* globalObject, C
 
 void objectAssignGeneric(JSGlobalObject* globalObject, VM& vm, JSObject* target, JSObject* source)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // [[GetOwnPropertyNames]], [[Get]] etc. could modify target object and invalidate this assumption.
     // For example, [[Get]] of source object could configure setter to target object. So disable the fast path.
@@ -314,7 +314,7 @@ void objectAssignGeneric(JSGlobalObject* globalObject, VM& vm, JSObject* target,
 JSC_DEFINE_HOST_FUNCTION(objectConstructorAssign, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue targetValue = callFrame->argument(0);
     if (targetValue.isUndefinedOrNull())
@@ -407,7 +407,7 @@ JSC_DEFINE_HOST_FUNCTION(objectConstructorAssign, (JSGlobalObject* globalObject,
 JSC_DEFINE_HOST_FUNCTION(objectConstructorEntries, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue targetValue = callFrame->argument(0);
     if (targetValue.isUndefinedOrNull())
@@ -560,7 +560,7 @@ JSC_DEFINE_HOST_FUNCTION(objectConstructorEntries, (JSGlobalObject* globalObject
 JSC_DEFINE_HOST_FUNCTION(objectConstructorValues, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue targetValue = callFrame->argument(0);
     if (targetValue.isUndefinedOrNull())
@@ -660,7 +660,7 @@ inline bool toPropertyDescriptor(JSGlobalObject* globalObject, JSValue in, Prope
 {
     ASSERT(desc.isEmpty());
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!in.isObject()) [[unlikely]] {
         throwTypeError(globalObject, scope, "Property description must be an object."_s);
@@ -794,7 +794,7 @@ bool toPropertyDescriptor(JSGlobalObject* globalObject, JSValue value, PropertyD
 JSC_DEFINE_HOST_FUNCTION(objectConstructorDefineProperty, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!callFrame->argument(0).isObject())
         return throwVMTypeError(globalObject, scope, "Properties can only be defined on Objects."_s);
@@ -815,7 +815,7 @@ JSC_DEFINE_HOST_FUNCTION(objectConstructorDefineProperty, (JSGlobalObject* globa
 static JSValue definePropertiesSlow(JSGlobalObject* globalObject, JSObject* object, JSObject* properties)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     PropertyNameArray propertyNames(vm, PropertyNameMode::StringsAndSymbols, PrivateSymbolMode::Exclude);
     asObject(properties)->methodTable()->getOwnPropertyNames(asObject(properties), globalObject, propertyNames, DontEnumPropertiesMode::Exclude);
@@ -861,7 +861,7 @@ static JSValue definePropertiesSlow(JSGlobalObject* globalObject, JSObject* obje
 static JSValue defineProperties(JSGlobalObject* globalObject, JSObject* object, JSObject* properties)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Vector<RefPtr<UniquedStringImpl>, 8> propertyNames;
     MarkedArgumentBuffer values;
@@ -984,7 +984,7 @@ static JSValue defineProperties(JSGlobalObject* globalObject, JSObject* object, 
 JSC_DEFINE_HOST_FUNCTION(objectConstructorDefineProperties, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!callFrame->argument(0).isObject())
         return throwVMTypeError(globalObject, scope, "Properties can only be defined on Objects."_s);
@@ -999,7 +999,7 @@ JSC_DEFINE_HOST_FUNCTION(objectConstructorDefineProperties, (JSGlobalObject* glo
 JSC_DEFINE_HOST_FUNCTION(objectConstructorCreate, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue proto = callFrame->argument(0);
     if (!proto.isObject() && !proto.isNull())
@@ -1024,7 +1024,7 @@ template<IntegrityLevel level>
 bool setIntegrityLevel(JSGlobalObject* globalObject, VM& vm, JSObject* object)
 {
     // See https://tc39.github.io/ecma262/#sec-setintegritylevel.
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     bool success = object->methodTable()->preventExtensions(object, globalObject);
     RETURN_IF_EXCEPTION(scope, false);
@@ -1065,7 +1065,7 @@ bool setIntegrityLevel(JSGlobalObject* globalObject, VM& vm, JSObject* object)
 template<IntegrityLevel level>
 bool testIntegrityLevel(JSGlobalObject* globalObject, VM& vm, JSObject* object)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 1. Assert: Type(O) is Object.
     // 2. Assert: level is either "sealed" or "frozen".
@@ -1114,7 +1114,7 @@ bool testIntegrityLevel(JSGlobalObject* globalObject, VM& vm, JSObject* object)
 JSObject* objectConstructorSeal(JSGlobalObject* globalObject, JSObject* object)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (jsDynamicCast<JSFinalObject*>(object) && !hasIndexedProperties(object->indexingType())) {
         object->seal(vm);
@@ -1134,7 +1134,7 @@ JSObject* objectConstructorSeal(JSGlobalObject* globalObject, JSObject* object)
 JSC_DEFINE_HOST_FUNCTION(objectConstructorSeal, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 1. If Type(O) is not Object, return O.
     JSValue obj = callFrame->argument(0);
@@ -1147,7 +1147,7 @@ JSC_DEFINE_HOST_FUNCTION(objectConstructorSeal, (JSGlobalObject* globalObject, C
 JSObject* objectConstructorFreeze(JSGlobalObject* globalObject, JSObject* object)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (jsDynamicCast<JSFinalObject*>(object) && !hasIndexedProperties(object->indexingType())) {
         object->freeze(vm);
@@ -1166,7 +1166,7 @@ JSObject* objectConstructorFreeze(JSGlobalObject* globalObject, JSObject* object
 JSC_DEFINE_HOST_FUNCTION(objectConstructorFreeze, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     // 1. If Type(O) is not Object, return O.
     JSValue obj = callFrame->argument(0);
     if (!obj.isObject())
@@ -1179,7 +1179,7 @@ JSC_DEFINE_HOST_FUNCTION(objectConstructorFreeze, (JSGlobalObject* globalObject,
 JSC_DEFINE_HOST_FUNCTION(objectConstructorPreventExtensions, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue argument = callFrame->argument(0);
     if (!argument.isObject())
@@ -1231,7 +1231,7 @@ JSC_DEFINE_HOST_FUNCTION(objectConstructorIsFrozen, (JSGlobalObject* globalObjec
 JSC_DEFINE_HOST_FUNCTION(objectConstructorIsExtensible, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue obj = callFrame->argument(0);
     if (!obj.isObject())
         return JSValue::encode(jsBoolean(false));
@@ -1264,7 +1264,7 @@ static CachedPropertyNamesKind inferCachedPropertyNamesKind(PropertyNameMode pro
 JSArray* ownPropertyKeys(JSGlobalObject* globalObject, JSObject* object, PropertyNameMode propertyNameMode, DontEnumPropertiesMode dontEnumPropertiesMode)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto kind = inferCachedPropertyNamesKind(propertyNameMode, dontEnumPropertiesMode);
 
@@ -1403,7 +1403,7 @@ JSObject* constructObjectFromPropertyDescriptorSlow(JSGlobalObject* globalObject
 JSC_DEFINE_HOST_FUNCTION(objectConstructorHasOwn, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSObject* base = callFrame->argument(0).toObject(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
     auto propertyName = callFrame->argument(1).toPropertyKey(globalObject);

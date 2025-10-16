@@ -144,7 +144,7 @@ void OSRExit::emitRestoreArguments(CCallHelpers& jit, VM& vm, const Operands<Val
 JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationCompileOSRExit, void, (CallFrame* callFrame, void* bufferToPreserve))
 {
     VM& vm = callFrame->deprecatedVM();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     ActiveScratchBufferScope activeScratchBufferScope(ScratchBuffer::fromData(bufferToPreserve), GPRInfo::numberOfRegisters + FPRInfo::numberOfRegisters);
 
     if constexpr (validateDFGDoesGC) {

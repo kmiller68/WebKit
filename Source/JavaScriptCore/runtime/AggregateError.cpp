@@ -35,7 +35,7 @@ namespace JSC {
 
 ErrorInstance* createAggregateError(JSGlobalObject* globalObject, VM& vm, Structure* structure, JSValue errors, JSValue message, JSValue options, ErrorInstance::SourceAppender appender, RuntimeType type, bool useCurrentFrame)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     String messageString = message.isUndefined() ? String() : message.toWTFString(globalObject);
     RETURN_IF_EXCEPTION(scope, nullptr);

@@ -30,7 +30,7 @@
 #include "RejectedPromiseTracker.h"
 #include "ScriptExecutionContext.h"
 #include "WorkerGlobalScope.h"
-#include <JavaScriptCore/CatchScope.h>
+#include <JavaScriptCore/ExceptionScope.h>
 #include <JavaScriptCore/MicrotaskQueueInlines.h>
 #include <JavaScriptCore/ScriptProfilingScope.h>
 #include <JavaScriptCore/VMEntryScopeInlines.h>
@@ -71,39 +71,34 @@ void MicrotaskQueue::append(JSC::QueuedTask&& task)
 
 void MicrotaskQueue::runJSMicrotaskWithDebugger(JSC::JSGlobalObject* globalObject, JSC::VM& vm, JSC::QueuedTask& task)
 {
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto identifier = task.identifier();
     if (auto* debugger = globalObject->debugger(); debugger && identifier) [[unlikely]] {
         JSC::DeferTerminationForAWhile deferTerminationForAWhile(vm);
         debugger->willRunMicrotask(globalObject, identifier.value());
-        if (!scope.clearExceptionExceptTermination()) [[unlikely]]
-            return;
+        TRY_CLEAR_EXCEPTION(scope, void());
     }
 
     runJSMicrotask(globalObject, vm, task);
-    if (!scope.clearExceptionExceptTermination()) [[unlikely]]
-        return;
+    TRY_CLEAR_EXCEPTION(scope, void());
 
     if (auto* debugger = globalObject->debugger(); debugger && identifier) [[unlikely]] {
         JSC::DeferTerminationForAWhile deferTerminationForAWhile(vm);
         debugger->didRunMicrotask(globalObject, identifier.value());
-        if (!scope.clearExceptionExceptTermination()) [[unlikely]]
-            return;
+        TRY_CLEAR_EXCEPTION(scope, void());
     }
 }
 
 void MicrotaskQueue::runJSMicrotask(JSC::JSGlobalObject* globalObject, JSC::VM& vm, JSC::QueuedTask& task)
 {
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSC::runInternalMicrotask(globalObject, task.job(), task.arguments());
     if (scope.exception()) [[unlikely]] {
         auto* exception = scope.exception();
-        if (!scope.clearExceptionExceptTermination()) [[unlikely]]
-            return;
+        TRY_CLEAR_EXCEPTION(scope, void());
         reportException(globalObject, exception);
-        if (!scope.clearExceptionExceptTermination()) [[unlikely]]
-            return;
+        TRY_CLEAR_EXCEPTION(scope, void());
     }
 }
 
@@ -115,7 +110,10 @@ void MicrotaskQueue::performMicrotaskCheckpoint()
     SetForScope change(m_performingMicrotaskCheckpoint, true);
     Ref vm = this->vm();
     JSC::JSLockHolder locker(vm);
-    auto catchScope = DECLARE_CATCH_SCOPE(vm);
+    auto catchScope = DECLARE_EXCEPTION_SCOPE(vm);
+    // FIXME: This shouldn't be noRethrow and our callers should instead check for termination exceptions.
+    // We should also ASSERT(vm->currentThreadIsHoldingTheAPILock()); instead of taking it above.
+    catchScope.noRethrow();
     {
         SUPPRESS_UNCOUNTED_ARG auto& data = threadGlobalDataSingleton();
         auto* previousState = data.currentState();
@@ -157,6 +155,8 @@ void MicrotaskQueue::performMicrotaskCheckpoint()
                 }
                 return result;
             });
+        catchScope.assertNoExceptionExceptTermination();
+        RETURN_IF_EXCEPTION(catchScope, void());
         data.setCurrentState(previousState);
     }
     vm->finalizeSynchronousJSExecution();
@@ -174,8 +174,7 @@ void MicrotaskQueue::performMicrotaskCheckpoint()
             }
 
             checkpointTask->execute();
-            if (!catchScope.clearExceptionExceptTermination()) [[unlikely]]
-                break; // Encountered termination.
+            TRY_CLEAR_EXCEPTION(catchScope, void());
         }
     }
 
@@ -183,11 +182,12 @@ void MicrotaskQueue::performMicrotaskCheckpoint()
     Ref { *m_eventLoop }->forEachAssociatedContext([vm = vm.copyRef()](auto& context) {
         if (vm->executionForbidden()) [[unlikely]]
             return;
-        auto catchScope = DECLARE_CATCH_SCOPE(vm);
+        auto catchScope = DECLARE_EXCEPTION_SCOPE(vm);
         if (CheckedPtr tracker = context.rejectedPromiseTracker())
             tracker->processQueueSoon();
-        catchScope.clearExceptionExceptTermination();
+        TRY_CLEAR_EXCEPTION(catchScope, void());
     });
+    RETURN_IF_EXCEPTION(catchScope, void());
 
     // FIXME: We should cleanup Indexed Database transactions as per:
     // https://html.spec.whatwg.org/multipage/webappapis.html#perform-a-microtask-checkpoint (step 5).

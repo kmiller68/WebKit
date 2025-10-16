@@ -1043,7 +1043,6 @@ set(JavaScriptCore_PRIVATE_FRAMEWORK_HEADERS
     runtime/CacheUpdate.h
     runtime/CagedBarrierPtr.h
     runtime/CallData.h
-    runtime/CatchScope.h
     runtime/ClassInfo.h
     runtime/ClonedArguments.h
     runtime/CodeSpecializationKind.h
@@ -1363,7 +1362,6 @@ set(JavaScriptCore_PRIVATE_FRAMEWORK_HEADERS
     runtime/SyntheticModuleRecord.h
     runtime/TemplateObjectDescriptor.h
     runtime/TestRunnerUtils.h
-    runtime/ThrowScope.h
     runtime/ToNativeFromValue.h
     runtime/TypeError.h
     runtime/TypeInfoBlob.h

@@ -38,7 +38,7 @@ template<> struct Converter<IDLJSON> : DefaultConverter<IDLJSON> {
     static Result convert(JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value)
     {
         auto& vm = lexicalGlobalObject.vm();
-        auto throwScope = DECLARE_THROW_SCOPE(vm);
+        auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
         auto conversionResult = JSC::JSONStringify(&lexicalGlobalObject, value, 0);
 

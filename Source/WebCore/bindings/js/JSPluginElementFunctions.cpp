@@ -69,7 +69,7 @@ JSObject* pluginScriptObject(JSGlobalObject* lexicalGlobalObject, JSHTMLElement*
 JSC_DEFINE_CUSTOM_GETTER(pluginElementPropertyGetter, (JSGlobalObject* lexicalGlobalObject, EncodedJSValue thisValue, PropertyName propertyName))
 {
     VM& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSHTMLElement* thisObject = jsDynamicCast<JSHTMLElement*>(JSValue::decode(thisValue));
     if (!thisObject)

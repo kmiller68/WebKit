@@ -74,7 +74,7 @@ DEFINE_VISIT_CHILDREN(JSModuleEnvironment);
 bool JSModuleEnvironment::getOwnPropertySlot(JSObject* cell, JSGlobalObject* globalObject, PropertyName propertyName, PropertySlot& slot)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSModuleEnvironment* thisObject = jsCast<JSModuleEnvironment*>(cell);
     AbstractModuleRecord::Resolution resolution = thisObject->moduleRecord()->resolveImport(globalObject, Identifier::fromUid(vm, propertyName.uid()));
     RETURN_IF_EXCEPTION(scope, false);
@@ -108,7 +108,7 @@ void JSModuleEnvironment::getOwnSpecialPropertyNames(JSObject* cell, JSGlobalObj
 bool JSModuleEnvironment::put(JSCell* cell, JSGlobalObject* globalObject, PropertyName propertyName, JSValue value, PutPropertySlot& slot)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSModuleEnvironment* thisObject = jsCast<JSModuleEnvironment*>(cell);
     // All imported bindings are immutable.
@@ -124,7 +124,7 @@ bool JSModuleEnvironment::put(JSCell* cell, JSGlobalObject* globalObject, Proper
 bool JSModuleEnvironment::deleteProperty(JSCell* cell, JSGlobalObject* globalObject, PropertyName propertyName, DeletePropertySlot& slot)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSModuleEnvironment* thisObject = jsCast<JSModuleEnvironment*>(cell);
     // All imported bindings are immutable.

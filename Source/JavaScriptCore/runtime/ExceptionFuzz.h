@@ -32,13 +32,13 @@ namespace JSC {
 
 class CallFrame;
 class JSGlobalObject;
-class ThrowScope;
+class ExceptionScope;
 
 // Call this only if you know that exception fuzzing is enabled.
-void doExceptionFuzzing(JSGlobalObject*, ThrowScope&, ASCIILiteral where, const void* returnPC);
+void doExceptionFuzzing(JSGlobalObject*, ExceptionScope&, ASCIILiteral where, const void* returnPC);
 
 // This is what you should call if you don't know if fuzzing is enabled.
-ALWAYS_INLINE void doExceptionFuzzingIfEnabled(JSGlobalObject* globalObject, ThrowScope& scope, ASCIILiteral where, const void* returnPC)
+ALWAYS_INLINE void doExceptionFuzzingIfEnabled(JSGlobalObject* globalObject, ExceptionScope& scope, ASCIILiteral where, const void* returnPC)
 {
     if (!Options::useExceptionFuzz()) [[likely]]
         return;

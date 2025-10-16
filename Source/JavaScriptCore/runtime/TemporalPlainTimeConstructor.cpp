@@ -83,7 +83,7 @@ void TemporalPlainTimeConstructor::finishCreation(VM& vm, TemporalPlainTimeProto
 JSC_DEFINE_HOST_FUNCTION(constructTemporalPlainTime, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* newTarget = asObject(callFrame->newTarget());
     Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, plainTimeStructure, newTarget, callFrame->jsCallee());
@@ -104,7 +104,7 @@ JSC_DEFINE_HOST_FUNCTION(constructTemporalPlainTime, (JSGlobalObject* globalObje
 JSC_DEFINE_HOST_FUNCTION(callTemporalPlainTime, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "PlainTime"_s));
 }
@@ -113,7 +113,7 @@ JSC_DEFINE_HOST_FUNCTION(callTemporalPlainTime, (JSGlobalObject* globalObject, C
 JSC_DEFINE_HOST_FUNCTION(temporalPlainTimeConstructorFuncFrom, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* options = intlGetOptionsObject(globalObject, callFrame->argument(1));
     RETURN_IF_EXCEPTION(scope, { });
@@ -133,7 +133,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalPlainTimeConstructorFuncFrom, (JSGlobalObject* 
 JSC_DEFINE_HOST_FUNCTION(temporalPlainTimeConstructorFuncCompare, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* one = TemporalPlainTime::from(globalObject, callFrame->argument(0), std::nullopt);
     RETURN_IF_EXCEPTION(scope, { });

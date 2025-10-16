@@ -97,7 +97,7 @@ namespace JSC {
 static EncodedJSValue formateDateInstance(JSGlobalObject* globalObject, CallFrame* callFrame, DateTimeFormat format, bool asUTCVariant)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& cache = vm.dateCache;
 
     JSValue thisValue = callFrame->thisValue();
@@ -119,7 +119,7 @@ static EncodedJSValue formateDateInstance(JSGlobalObject* globalObject, CallFram
 static void applyToNumberToOtherwiseIgnoredArguments(JSGlobalObject* globalObject, CallFrame* callFrame, unsigned maxArgs)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned numArgs = std::min<unsigned>(callFrame->argumentCount(), maxArgs);
     for (unsigned index = 0; index < numArgs; ++index) {
@@ -135,7 +135,7 @@ static void applyToNumberToOtherwiseIgnoredArguments(JSGlobalObject* globalObjec
 static bool fillStructuresUsingTimeArgs(JSGlobalObject* globalObject, CallFrame* callFrame, unsigned maxArgs, double* ms, GregorianDateTime* t)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double milliseconds = 0;
     unsigned idx = 0;
@@ -184,7 +184,7 @@ static bool fillStructuresUsingTimeArgs(JSGlobalObject* globalObject, CallFrame*
 static bool fillStructuresUsingDateArgs(JSGlobalObject* globalObject, CallFrame* callFrame, unsigned maxArgs, double *ms, GregorianDateTime *t)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     bool ok = true;
     unsigned idx = 0;
@@ -317,7 +317,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncToUTCString, (JSGlobalObject* globalObject
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncToISOString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     auto* thisDateObj = jsDynamicCast<DateInstance*>(thisValue);
     if (!thisDateObj) [[unlikely]]
@@ -371,7 +371,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncToTimeString, (JSGlobalObject* globalObjec
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncToPrimitiveSymbol, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue().toThis(globalObject, ECMAMode::strict());
     if (!thisValue.isObject())
         return throwVMTypeError(globalObject, scope, "Date.prototype[Symbol.toPrimitive] expected |this| to be an object."_s);
@@ -394,7 +394,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncToPrimitiveSymbol, (JSGlobalObject* global
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetTime, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     auto* thisDateObj = jsDynamicCast<DateInstance*>(thisValue);
     if (!thisDateObj) [[unlikely]]
@@ -406,7 +406,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetTime, (JSGlobalObject* globalObject, Ca
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetFullYear, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     auto* thisDateObj = jsDynamicCast<DateInstance*>(thisValue);
     if (!thisDateObj) [[unlikely]]
@@ -421,7 +421,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetFullYear, (JSGlobalObject* globalObject
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetUTCFullYear, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     auto* thisDateObj = jsDynamicCast<DateInstance*>(thisValue);
     if (!thisDateObj) [[unlikely]]
@@ -436,7 +436,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetUTCFullYear, (JSGlobalObject* globalObj
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetMonth, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     auto* thisDateObj = jsDynamicCast<DateInstance*>(thisValue);
     if (!thisDateObj) [[unlikely]]
@@ -451,7 +451,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetMonth, (JSGlobalObject* globalObject, C
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetUTCMonth, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     auto* thisDateObj = jsDynamicCast<DateInstance*>(thisValue);
     if (!thisDateObj) [[unlikely]]
@@ -466,7 +466,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetUTCMonth, (JSGlobalObject* globalObject
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetDate, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     auto* thisDateObj = jsDynamicCast<DateInstance*>(thisValue);
     if (!thisDateObj) [[unlikely]]
@@ -481,7 +481,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetDate, (JSGlobalObject* globalObject, Ca
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetUTCDate, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     auto* thisDateObj = jsDynamicCast<DateInstance*>(thisValue);
     if (!thisDateObj) [[unlikely]]
@@ -496,7 +496,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetUTCDate, (JSGlobalObject* globalObject,
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetDay, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     auto* thisDateObj = jsDynamicCast<DateInstance*>(thisValue);
     if (!thisDateObj) [[unlikely]]
@@ -511,7 +511,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetDay, (JSGlobalObject* globalObject, Cal
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetUTCDay, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     auto* thisDateObj = jsDynamicCast<DateInstance*>(thisValue);
     if (!thisDateObj) [[unlikely]]
@@ -526,7 +526,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetUTCDay, (JSGlobalObject* globalObject, 
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetHours, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     auto* thisDateObj = jsDynamicCast<DateInstance*>(thisValue);
     if (!thisDateObj) [[unlikely]]
@@ -541,7 +541,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetHours, (JSGlobalObject* globalObject, C
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetUTCHours, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     auto* thisDateObj = jsDynamicCast<DateInstance*>(thisValue);
     if (!thisDateObj) [[unlikely]]
@@ -556,7 +556,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetUTCHours, (JSGlobalObject* globalObject
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetMinutes, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     auto* thisDateObj = jsDynamicCast<DateInstance*>(thisValue);
     if (!thisDateObj) [[unlikely]]
@@ -571,7 +571,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetMinutes, (JSGlobalObject* globalObject,
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetUTCMinutes, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     auto* thisDateObj = jsDynamicCast<DateInstance*>(thisValue);
     if (!thisDateObj) [[unlikely]]
@@ -586,7 +586,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetUTCMinutes, (JSGlobalObject* globalObje
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetSeconds, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     auto* thisDateObj = jsDynamicCast<DateInstance*>(thisValue);
     if (!thisDateObj) [[unlikely]]
@@ -601,7 +601,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetSeconds, (JSGlobalObject* globalObject,
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetUTCSeconds, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     auto* thisDateObj = jsDynamicCast<DateInstance*>(thisValue);
     if (!thisDateObj) [[unlikely]]
@@ -616,7 +616,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetUTCSeconds, (JSGlobalObject* globalObje
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetMilliSeconds, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     auto* thisDateObj = jsDynamicCast<DateInstance*>(thisValue);
     if (!thisDateObj) [[unlikely]]
@@ -635,7 +635,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetMilliSeconds, (JSGlobalObject* globalOb
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetUTCMilliseconds, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     auto* thisDateObj = jsDynamicCast<DateInstance*>(thisValue);
     if (!thisDateObj) [[unlikely]]
@@ -654,7 +654,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetUTCMilliseconds, (JSGlobalObject* globa
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetTimezoneOffset, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     auto* thisDateObj = jsDynamicCast<DateInstance*>(thisValue);
     if (!thisDateObj) [[unlikely]]
@@ -669,7 +669,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetTimezoneOffset, (JSGlobalObject* global
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncSetTime, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     auto* thisDateObj = jsDynamicCast<DateInstance*>(thisValue);
     if (!thisDateObj) [[unlikely]]
@@ -684,7 +684,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncSetTime, (JSGlobalObject* globalObject, Ca
 static EncodedJSValue setNewValueFromTimeArgs(JSGlobalObject* globalObject, CallFrame* callFrame, unsigned numArgsToUse, TimeType inputTimeType)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& cache = vm.dateCache;
 
     JSValue thisValue = callFrame->thisValue();
@@ -735,7 +735,7 @@ static EncodedJSValue setNewValueFromTimeArgs(JSGlobalObject* globalObject, Call
 static EncodedJSValue setNewValueFromDateArgs(JSGlobalObject* globalObject, CallFrame* callFrame, unsigned numArgsToUse, TimeType inputTimeType)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& cache = vm.dateCache;
 
     JSValue thisValue = callFrame->thisValue();
@@ -853,7 +853,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncSetUTCFullYear, (JSGlobalObject* globalObj
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncSetYear, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& cache = vm.dateCache;
 
     JSValue thisValue = callFrame->thisValue();
@@ -898,7 +898,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncSetYear, (JSGlobalObject* globalObject, Ca
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetYear, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     auto* thisDateObj = jsDynamicCast<DateInstance*>(thisValue);
     if (!thisDateObj) [[unlikely]]
@@ -915,7 +915,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncGetYear, (JSGlobalObject* globalObject, Ca
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncToJSON, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue().toThis(globalObject, ECMAMode::strict());
     JSObject* object = thisValue.toObject(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
@@ -940,7 +940,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncToJSON, (JSGlobalObject* globalObject, Cal
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncToTemporalInstant, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     auto* thisDateObj = jsDynamicCast<DateInstance*>(thisValue);
     if (!thisDateObj) [[unlikely]]
@@ -959,7 +959,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncToTemporalInstant, (JSGlobalObject* global
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncToLocaleString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     auto* thisDateObj = jsDynamicCast<DateInstance*>(thisValue);
     if (!thisDateObj) [[unlikely]]
@@ -978,7 +978,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncToLocaleString, (JSGlobalObject* globalObj
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncToLocaleDateString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     auto* thisDateObj = jsDynamicCast<DateInstance*>(thisValue);
     if (!thisDateObj) [[unlikely]]
@@ -997,7 +997,7 @@ JSC_DEFINE_HOST_FUNCTION(dateProtoFuncToLocaleDateString, (JSGlobalObject* globa
 JSC_DEFINE_HOST_FUNCTION(dateProtoFuncToLocaleTimeString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue thisValue = callFrame->thisValue();
     auto* thisDateObj = jsDynamicCast<DateInstance*>(thisValue);
     if (!thisDateObj) [[unlikely]]

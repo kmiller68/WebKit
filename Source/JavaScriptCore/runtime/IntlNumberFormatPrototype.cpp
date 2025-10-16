@@ -88,7 +88,7 @@ void IntlNumberFormatPrototype::finishCreation(VM& vm, JSGlobalObject* globalObj
 JSC_DEFINE_HOST_FUNCTION(intlNumberFormatFuncFormat, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* numberFormat = jsDynamicCast<IntlNumberFormat*>(callFrame->thisValue());
     if (!numberFormat) [[unlikely]]
         return JSValue::encode(throwTypeError(globalObject, scope, "Intl.NumberFormat.prototype.format called on value that's not a NumberFormat"_s));
@@ -105,7 +105,7 @@ JSC_DEFINE_HOST_FUNCTION(intlNumberFormatFuncFormat, (JSGlobalObject* globalObje
 JSC_DEFINE_CUSTOM_GETTER(intlNumberFormatPrototypeGetterFormat, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 11.3.3 Intl.NumberFormat.prototype.format (ECMA-402 2.0)
     // 1. Let nf be this NumberFormat object.
@@ -137,7 +137,7 @@ JSC_DEFINE_CUSTOM_GETTER(intlNumberFormatPrototypeGetterFormat, (JSGlobalObject*
 JSC_DEFINE_HOST_FUNCTION(intlNumberFormatPrototypeFuncFormatRange, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // Do not use unwrapForOldFunctions.
     auto* numberFormat = jsDynamicCast<IntlNumberFormat*>(callFrame->thisValue());
@@ -167,7 +167,7 @@ JSC_DEFINE_HOST_FUNCTION(intlNumberFormatPrototypeFuncFormatRange, (JSGlobalObje
 JSC_DEFINE_HOST_FUNCTION(intlNumberFormatPrototypeFuncFormatToParts, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // Intl.NumberFormat.prototype.formatToParts (ECMA-402)
     // https://tc39.github.io/ecma402/#sec-intl.numberformat.prototype.formattoparts
@@ -189,7 +189,7 @@ JSC_DEFINE_HOST_FUNCTION(intlNumberFormatPrototypeFuncFormatToParts, (JSGlobalOb
 JSC_DEFINE_HOST_FUNCTION(intlNumberFormatPrototypeFuncFormatRangeToParts, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // Do not use unwrapForOldFunctions.
     auto* numberFormat = jsDynamicCast<IntlNumberFormat*>(callFrame->thisValue());
@@ -219,7 +219,7 @@ JSC_DEFINE_HOST_FUNCTION(intlNumberFormatPrototypeFuncFormatRangeToParts, (JSGlo
 JSC_DEFINE_HOST_FUNCTION(intlNumberFormatPrototypeFuncResolvedOptions, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 11.3.5 Intl.NumberFormat.prototype.resolvedOptions() (ECMA-402 2.0)
 

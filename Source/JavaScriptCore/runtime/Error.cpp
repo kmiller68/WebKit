@@ -265,7 +265,7 @@ JSObject* addErrorInfo(VM& vm, JSObject* error, int line, const SourceCode& sour
 JSObject* createTypeErrorCopy(JSGlobalObject* globalObject, JSValue error)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     String errorString = "Error encountered during evaluation"_s;
 
     if (error.isPrimitive()) {
@@ -303,42 +303,42 @@ String makeDOMAttributeSetterTypeErrorMessage(const char* interfaceName, const S
     return makeString("The "_s, interfaceNameSpan, '.', attributeName, " setter can only be used on instances of "_s, interfaceNameSpan);
 }
 
-Exception* throwConstructorCannotBeCalledAsFunctionTypeError(JSGlobalObject* globalObject, ThrowScope& scope, ASCIILiteral constructorName)
+Exception* throwConstructorCannotBeCalledAsFunctionTypeError(JSGlobalObject* globalObject, ExceptionScope& scope, ASCIILiteral constructorName)
 {
     return throwTypeError(globalObject, scope, makeString("calling "_s, constructorName, " constructor without new is invalid"_s));
 }
 
-Exception* throwTypeError(JSGlobalObject* globalObject, ThrowScope& scope)
+Exception* throwTypeError(JSGlobalObject* globalObject, ExceptionScope& scope)
 {
     return throwException(globalObject, scope, createTypeError(globalObject));
 }
 
-Exception* throwTypeError(JSGlobalObject* globalObject, ThrowScope& scope, ASCIILiteral errorMessage)
+Exception* throwTypeError(JSGlobalObject* globalObject, ExceptionScope& scope, ASCIILiteral errorMessage)
 {
     return throwTypeError(globalObject, scope, String(errorMessage));
 }
 
-Exception* throwTypeError(JSGlobalObject* globalObject, ThrowScope& scope, const String& message)
+Exception* throwTypeError(JSGlobalObject* globalObject, ExceptionScope& scope, const String& message)
 {
     return throwException(globalObject, scope, createTypeError(globalObject, message));
 }
 
-Exception* throwSyntaxError(JSGlobalObject* globalObject, ThrowScope& scope)
+Exception* throwSyntaxError(JSGlobalObject* globalObject, ExceptionScope& scope)
 {
     return throwException(globalObject, scope, createSyntaxError(globalObject));
 }
 
-Exception* throwSyntaxError(JSGlobalObject* globalObject, ThrowScope& scope, const String& message)
+Exception* throwSyntaxError(JSGlobalObject* globalObject, ExceptionScope& scope, const String& message)
 {
     return throwException(globalObject, scope, createSyntaxError(globalObject, message));
 }
 
-JSValue throwDOMAttributeGetterTypeError(JSGlobalObject* globalObject, ThrowScope& scope, const ClassInfo* classInfo, PropertyName propertyName)
+JSValue throwDOMAttributeGetterTypeError(JSGlobalObject* globalObject, ExceptionScope& scope, const ClassInfo* classInfo, PropertyName propertyName)
 {
     return throwException(globalObject, scope, createGetterTypeError(globalObject, makeDOMAttributeGetterTypeErrorMessage(classInfo->className, String(propertyName.uid()))));
 }
 
-JSValue throwDOMAttributeSetterTypeError(JSGlobalObject* globalObject, ThrowScope& scope, const ClassInfo* classInfo, PropertyName propertyName)
+JSValue throwDOMAttributeSetterTypeError(JSGlobalObject* globalObject, ExceptionScope& scope, const ClassInfo* classInfo, PropertyName propertyName)
 {
     return throwException(globalObject, scope, createTypeError(globalObject, makeDOMAttributeSetterTypeErrorMessage(classInfo->className, String(propertyName.uid()))));
 }

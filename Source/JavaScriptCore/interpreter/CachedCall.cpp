@@ -28,9 +28,9 @@
 #include "CachedCall.h"
 
 #include "ExceptionHelpers.h"
+#include "ExceptionScope.h"
 #include "Interpreter.h"
 #include "JSFunction.h"
-#include "ThrowScope.h"
 #include "VMEntryScope.h"
 #include <wtf/Scope.h>
 
@@ -44,7 +44,7 @@ CachedCall::CachedCall(JSGlobalObject* globalObject, JSFunction* function, int a
     , m_scope(function->scope())
 {
     VM& vm = m_vm;
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 #if ASSERT_ENABLED
     auto updateValidStatus = makeScopeExit([&] {
         m_valid = !scope.exception();
@@ -78,7 +78,7 @@ CachedCall::CachedCall(JSGlobalObject* globalObject, JSFunction* function, int a
 void CachedCall::relink()
 {
     VM& vm = m_vm;
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* codeBlock = m_vm.interpreter.prepareForCachedCall(*this, this->function());
     RETURN_IF_EXCEPTION(scope, void());
     m_protoCallFrame.setCodeBlock(codeBlock);

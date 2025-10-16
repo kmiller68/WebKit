@@ -92,7 +92,7 @@ JSValue SyntheticModuleRecord::evaluate(JSGlobalObject*)
 SyntheticModuleRecord* SyntheticModuleRecord::tryCreateWithExportNamesAndValues(JSGlobalObject* globalObject, const Identifier& moduleKey, const Vector<Identifier, 4>& exportNames, const MarkedArgumentBuffer& exportValues)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(exportNames.size() == exportValues.size());
 
@@ -145,7 +145,7 @@ SyntheticModuleRecord* SyntheticModuleRecord::parseJSONModule(JSGlobalObject* gl
 {
     // https://tc39.es/proposal-json-modules/#sec-parse-json-module
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue result = JSONParseWithException(globalObject, sourceCode.view());
     RETURN_IF_EXCEPTION(scope, { });

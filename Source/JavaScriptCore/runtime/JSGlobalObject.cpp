@@ -56,7 +56,6 @@
 #include "BooleanObjectInlines.h"
 #include "BooleanPrototypeInlines.h"
 #include "BuiltinNames.h"
-#include "CatchScope.h"
 #include "ChainedWatchpoint.h"
 #include "ClonedArguments.h"
 #include "CodeBlock.h"
@@ -76,6 +75,7 @@
 #include "ErrorConstructorInlines.h"
 #include "ErrorInstanceInlines.h"
 #include "ErrorPrototypeInlines.h"
+#include "ExceptionScope.h"
 #include "FinalizationRegistryConstructorInlines.h"
 #include "FinalizationRegistryPrototypeInlines.h"
 #include "FunctionConstructorInlines.h"
@@ -421,7 +421,7 @@ static JSValue createConsoleProperty(VM& vm, JSObject* object)
 JSC_DEFINE_HOST_FUNCTION(createPrivateSymbol, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto description = callFrame->argument(0).toWTFString(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
 
@@ -431,7 +431,7 @@ JSC_DEFINE_HOST_FUNCTION(createPrivateSymbol, (JSGlobalObject* globalObject, Cal
 JSC_DEFINE_HOST_FUNCTION(jsonParse, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto json = callFrame->argument(0).toWTFString(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
 
@@ -488,7 +488,7 @@ JSC_DEFINE_HOST_FUNCTION(disableSamplingProfiler, (JSGlobalObject* globalObject,
 JSC_DEFINE_HOST_FUNCTION(dumpAndClearSamplingProfilerSamples, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue argument = callFrame->argument(0);
     auto filenamePrefix = emptyString();
@@ -529,7 +529,7 @@ static uint64_t asTracePointInt(JSGlobalObject* globalObject, JSValue v)
 JSC_DEFINE_HOST_FUNCTION(tracePointStart, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto getValue = [&] (unsigned arg) {
         JSValue v = callFrame->argument(arg);
@@ -553,7 +553,7 @@ JSC_DEFINE_HOST_FUNCTION(tracePointStart, (JSGlobalObject* globalObject, CallFra
 JSC_DEFINE_HOST_FUNCTION(tracePointStop, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto getValue = [&] (unsigned arg) {
         JSValue v = callFrame->argument(arg);
@@ -585,7 +585,7 @@ static String asSignpostString(JSGlobalObject* globalObject, JSValue v)
 JSC_DEFINE_HOST_FUNCTION(signpostStart, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto message = asSignpostString(globalObject, callFrame->argument(0));
     RETURN_IF_EXCEPTION(scope, EncodedJSValue());
@@ -597,7 +597,7 @@ JSC_DEFINE_HOST_FUNCTION(signpostStart, (JSGlobalObject* globalObject, CallFrame
 JSC_DEFINE_HOST_FUNCTION(signpostStop, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto message = asSignpostString(globalObject, callFrame->argument(0));
     RETURN_IF_EXCEPTION(scope, EncodedJSValue());
@@ -837,7 +837,7 @@ JSC_DEFINE_HOST_FUNCTION(promiseOnRejectedWithContext, (JSGlobalObject* globalOb
 JSC_DEFINE_HOST_FUNCTION(promiseAllOnFulfilled, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue argument = callFrame->uncheckedArgument(0);
     auto* context = jsCast<JSPromiseAllContext*>(callFrame->uncheckedArgument(1));
@@ -871,7 +871,7 @@ JSC_DEFINE_HOST_FUNCTION(promiseEmptyOnFulfilled, (JSGlobalObject*, CallFrame* c
 JSC_DEFINE_HOST_FUNCTION(promiseEmptyOnRejected, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue argument = callFrame->argument(0);
     scope.throwException(globalObject, argument);
     return encodedJSUndefined();
@@ -962,15 +962,12 @@ static ObjectPropertyCondition setupAdaptiveWatchpoint(JSGlobalObject* globalObj
 {
     // Performing these gets should not throw.
     VM& vm = globalObject->vm();
-    DeferTerminationForAWhile deferScope(vm);
-    auto catchScope = DECLARE_CATCH_SCOPE(vm);
+    ForbidExceptionScope noExceptions(vm);
     PropertySlot slot(base, PropertySlot::InternalMethodType::VMInquiry, &vm);
     bool result = base->getOwnPropertySlot(base, globalObject, ident, slot);
     ASSERT_UNUSED(result, result);
-    catchScope.assertNoException();
     RELEASE_ASSERT(slot.isCacheableValue() || slot.isCacheableGetter());
     JSValue functionValue = slot.isCacheableValue() ? slot.getValue(globalObject, ident) : slot.getterSetter();
-    catchScope.assertNoException();
     ASSERT(jsDynamicCast<JSFunction*>(functionValue) || jsDynamicCast<GetterSetter*>(functionValue));
 
     ObjectPropertyCondition condition = generateConditionForSelfEquivalence(vm, nullptr, base, ident.impl());
@@ -986,12 +983,10 @@ static ObjectPropertyCondition setupAbsenceAdaptiveWatchpoint(JSGlobalObject* gl
 {
     // Performing these gets should not throw.
     VM& vm = globalObject->vm();
-    DeferTerminationForAWhile deferScope(vm);
-    auto catchScope = DECLARE_CATCH_SCOPE(vm);
+    ForbidExceptionScope noExceptions(vm);
     PropertySlot slot(base, PropertySlot::InternalMethodType::VMInquiry, &vm);
     bool result = base->getOwnPropertySlot(base, globalObject, propertyName, slot);
     RELEASE_ASSERT(!result);
-    catchScope.assertNoException();
     RELEASE_ASSERT(slot.isUnset());
     RELEASE_ASSERT(base->getPrototypeDirect() == (prototype ? JSValue(prototype) : jsNull()));
     ObjectPropertyCondition condition = ObjectPropertyCondition::absence(vm, globalObject, base, propertyName.uid(), prototype);
@@ -1041,9 +1036,8 @@ WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
 
 void JSGlobalObject::init(VM& vm)
 {
-    ASSERT(vm.traps().isDeferringTermination());
     ASSERT(vm.currentThreadIsHoldingAPILock());
-    auto catchScope = DECLARE_CATCH_SCOPE(vm);
+    ForbidExceptionScope noExceptions(vm);
 
     convertToDictionary(vm);
 
@@ -1643,7 +1637,7 @@ capitalName ## Constructor* lowerName ## Constructor = featureFlag ? capitalName
         [] (const Initializer<IntlCollator>& init) {
             JSGlobalObject* globalObject = jsCast<JSGlobalObject*>(init.owner);
             VM& vm = init.vm;
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
             IntlCollator* collator = IntlCollator::create(vm, globalObject->collatorStructure());
             collator->initializeCollator(globalObject, jsUndefined(), jsUndefined());
             RETURN_IF_EXCEPTION(scope, void());
@@ -1654,7 +1648,7 @@ capitalName ## Constructor* lowerName ## Constructor = featureFlag ? capitalName
         [] (const Initializer<IntlNumberFormat>& init) {
             JSGlobalObject* globalObject = jsCast<JSGlobalObject*>(init.owner);
             VM& vm = init.vm;
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
             auto* numberFormat = IntlNumberFormat::create(vm, globalObject->numberFormatStructure());
             numberFormat->initializeNumberFormat(globalObject, jsUndefined(), jsUndefined());
             RETURN_IF_EXCEPTION(scope, void());
@@ -1729,42 +1723,31 @@ capitalName ## Constructor* lowerName ## Constructor = featureFlag ? capitalName
 
     m_moduleLoader.initLater(
         [] (const Initializer<JSModuleLoader>& init) {
-            auto catchScope = DECLARE_CATCH_SCOPE(init.vm);
+            ForbidExceptionScope noExceptions(init.vm);
             init.set(JSModuleLoader::create(init.owner, init.vm, JSModuleLoader::createStructure(init.vm, init.owner, jsNull())));
-            catchScope.releaseAssertNoException();
         });
     if (Options::exposeInternalModuleLoader())
         putDirectWithoutTransition(vm, vm.propertyNames->Loader, moduleLoader(), static_cast<unsigned>(PropertyAttribute::DontEnum));
 
     GetterSetter* regExpProtoFlagsGetter = getGetterById(this, m_regExpPrototype.get(), vm.propertyNames->flags);
-    catchScope.assertNoException();
     m_linkTimeConstants[static_cast<unsigned>(LinkTimeConstant::regExpProtoFlagsGetter)].set(vm, this, regExpProtoFlagsGetter);
     GetterSetter* regExpProtoHasIndicesGetter = getGetterById(this, m_regExpPrototype.get(), vm.propertyNames->hasIndices);
-    catchScope.assertNoException();
     m_linkTimeConstants[static_cast<unsigned>(LinkTimeConstant::regExpProtoHasIndicesGetter)].set(vm, this, regExpProtoHasIndicesGetter);
     GetterSetter* regExpProtoGlobalGetter = getGetterById(this, m_regExpPrototype.get(), vm.propertyNames->global);
-    catchScope.assertNoException();
     m_linkTimeConstants[static_cast<unsigned>(LinkTimeConstant::regExpProtoGlobalGetter)].set(vm, this, regExpProtoGlobalGetter);
     GetterSetter* regExpProtoIgnoreCaseGetter = getGetterById(this, m_regExpPrototype.get(), vm.propertyNames->ignoreCase);
-    catchScope.assertNoException();
     m_linkTimeConstants[static_cast<unsigned>(LinkTimeConstant::regExpProtoIgnoreCaseGetter)].set(vm, this, regExpProtoIgnoreCaseGetter);
     GetterSetter* regExpProtoMultilineGetter = getGetterById(this, m_regExpPrototype.get(), vm.propertyNames->multiline);
-    catchScope.assertNoException();
     m_linkTimeConstants[static_cast<unsigned>(LinkTimeConstant::regExpProtoMultilineGetter)].set(vm, this, regExpProtoMultilineGetter);
     GetterSetter* regExpProtoSourceGetter = getGetterById(this, m_regExpPrototype.get(), vm.propertyNames->source);
-    catchScope.assertNoException();
     m_linkTimeConstants[static_cast<unsigned>(LinkTimeConstant::regExpProtoSourceGetter)].set(vm, this, regExpProtoSourceGetter);
     GetterSetter* regExpProtoStickyGetter = getGetterById(this, m_regExpPrototype.get(), vm.propertyNames->sticky);
-    catchScope.assertNoException();
     m_linkTimeConstants[static_cast<unsigned>(LinkTimeConstant::regExpProtoStickyGetter)].set(vm, this, regExpProtoStickyGetter);
     GetterSetter* regExpProtoUnicodeGetter = getGetterById(this, m_regExpPrototype.get(), vm.propertyNames->unicode);
-    catchScope.assertNoException();
     m_linkTimeConstants[static_cast<unsigned>(LinkTimeConstant::regExpProtoUnicodeGetter)].set(vm, this, regExpProtoUnicodeGetter);
     GetterSetter* regExpProtoDotAllGetter = getGetterById(this, m_regExpPrototype.get(), vm.propertyNames->dotAll);
-    catchScope.assertNoException();
     m_linkTimeConstants[static_cast<unsigned>(LinkTimeConstant::regExpProtoDotAllGetter)].set(vm, this, regExpProtoDotAllGetter);
     GetterSetter* regExpProtoUnicodeSetsGetter = getGetterById(this, m_regExpPrototype.get(), vm.propertyNames->unicodeSets);
-    catchScope.assertNoException();
     m_linkTimeConstants[static_cast<unsigned>(LinkTimeConstant::regExpProtoUnicodeSetsGetter)].set(vm, this, regExpProtoUnicodeSetsGetter);
     JSFunction* regExpSymbolReplace = jsCast<JSFunction*>(m_regExpPrototype->getDirect(vm, vm.propertyNames->replaceSymbol));
     m_regExpProtoSymbolReplace.set(vm, this, regExpSymbolReplace);
@@ -1778,7 +1761,6 @@ capitalName ## Constructor* lowerName ## Constructor = featureFlag ? capitalName
 
     {
         JSValue hasOwnPropertyFunction = jsCast<JSFunction*>(objectPrototype()->get(this, vm.propertyNames->hasOwnProperty));
-        catchScope.assertNoException();
         RELEASE_ASSERT(!!jsDynamicCast<JSFunction*>(hasOwnPropertyFunction));
         m_linkTimeConstants[static_cast<unsigned>(LinkTimeConstant::hasOwnPropertyFunction)].set(vm, this, jsCast<JSFunction*>(hasOwnPropertyFunction));
     }
@@ -2232,11 +2214,9 @@ capitalName ## Constructor* lowerName ## Constructor = featureFlag ? capitalName
         RELEASE_ASSERT(!m_arrayPrototypeConstructorWatchpoint);
         RELEASE_ASSERT(!m_arrayConstructorSpeciesWatchpoint);
         tryInstallSpeciesWatchpoint(this->arrayPrototype(), arrayConstructor, m_arrayPrototypeConstructorWatchpoint, m_arrayConstructorSpeciesWatchpoint, m_arraySpeciesWatchpointSet, HasSpeciesProperty::Yes, arraySpeciesGetterSetter());
-        catchScope.assertNoException();
     }
     {
         tryInstallSpeciesWatchpoint(this->promisePrototype(), promiseConstructor, m_promisePrototypeConstructorWatchpoint, m_promiseConstructorSpeciesWatchpoint, m_promiseSpeciesWatchpointSet, HasSpeciesProperty::Yes, promiseSpeciesGetterSetter());
-        catchScope.assertNoException();
     }
 
     installSaneChainWatchpoints();
@@ -2259,7 +2239,7 @@ WTF_ALLOW_UNSAFE_BUFFER_USAGE_END
 bool JSGlobalObject::put(JSCell* cell, JSGlobalObject* globalObject, PropertyName propertyName, JSValue value, PutPropertySlot& slot)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSGlobalObject* thisObject = jsCast<JSGlobalObject*>(cell);
     ASSERT(!Heap::heap(value) || Heap::heap(value) == Heap::heap(thisObject));
 
@@ -2286,7 +2266,7 @@ bool JSGlobalObject::put(JSCell* cell, JSGlobalObject* globalObject, PropertyNam
 bool JSGlobalObject::defineOwnProperty(JSObject* object, JSGlobalObject* globalObject, PropertyName propertyName, const PropertyDescriptor& descriptor, bool shouldThrow)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSGlobalObject* thisObject = jsCast<JSGlobalObject*>(object);
 
     SymbolTableEntry entry;
@@ -2320,7 +2300,7 @@ bool JSGlobalObject::defineOwnProperty(JSObject* object, JSGlobalObject* globalO
 // https://tc39.es/ecma262/#sec-candeclareglobalfunction
 bool JSGlobalObject::canDeclareGlobalFunction(const Identifier& ident)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm());
 
     PropertySlot slot(this, PropertySlot::InternalMethodType::GetOwnProperty);
     bool hasProperty = getOwnPropertySlot(this, this, ident, slot);
@@ -2341,7 +2321,7 @@ template<BindingCreationContext context>
 void JSGlobalObject::createGlobalFunctionBinding(const Identifier& ident)
 {
     VM& vm = this->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     PropertySlot slot(this, PropertySlot::InternalMethodType::GetOwnProperty);
     bool hasProperty = getOwnPropertySlot(this, this, ident, slot);
@@ -3133,8 +3113,7 @@ void JSGlobalObject::tryInstallSpeciesWatchpoint(JSObject* prototype, JSObject* 
     RELEASE_ASSERT(!speciesWatchpoint);
 
     VM& vm = this->vm();
-    DeferTerminationForAWhile deferScope(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    ForbidExceptionScope noExceptions(vm);
 
     // First we need to make sure that the %prototype%.constructor property points to a %constructor%
     // and that %constructor%[Symbol.species] is the primordial GetterSetter.
@@ -3151,7 +3130,6 @@ void JSGlobalObject::tryInstallSpeciesWatchpoint(JSObject* prototype, JSObject* 
 
     PropertySlot constructorSlot(prototype, PropertySlot::InternalMethodType::VMInquiry, &vm);
     prototype->getOwnPropertySlot(prototype, this, vm.propertyNames->constructor, constructorSlot);
-    scope.assertNoException();
     if (constructorSlot.slotBase() != prototype
         || !constructorSlot.isCacheableValue()
         || constructorSlot.getValue(this, vm.propertyNames->constructor) != constructor) {
@@ -3165,7 +3143,6 @@ void JSGlobalObject::tryInstallSpeciesWatchpoint(JSObject* prototype, JSObject* 
 
     PropertySlot speciesSlot(constructor, PropertySlot::InternalMethodType::VMInquiry, &vm);
     constructor->getOwnPropertySlot(constructor, this, vm.propertyNames->speciesSymbol, speciesSlot);
-    scope.assertNoException();
     switch (hasSpeciesProperty) {
     case HasSpeciesProperty::Yes: {
         if (speciesSlot.slotBase() != constructor
@@ -3356,14 +3333,12 @@ void JSGlobalObject::installTypedArrayIteratorProtocolWatchpoint(JSObject* base,
 {
     VM& vm = this->vm();
 
-    DeferTerminationForAWhile deferScope(vm);
-    auto catchScope = DECLARE_CATCH_SCOPE(vm);
+    ForbidExceptionScope noExceptions(vm);
 
     auto absenceCondition = [&](PropertyName propertyName) {
         PropertySlot slot(base, PropertySlot::InternalMethodType::VMInquiry, &vm);
         bool result = base->getOwnPropertySlot(base, this, propertyName, slot);
         RELEASE_ASSERT(!result);
-        catchScope.assertNoException();
         RELEASE_ASSERT(slot.isUnset());
         RELEASE_ASSERT(base->getPrototypeDirect() == m_typedArrayProto.get(this));
         return ObjectPropertyCondition::absence(vm, this, base, propertyName.uid(), m_typedArrayProto.get(this));
@@ -3441,8 +3416,7 @@ void JSGlobalObject::tryInstallPropertyDescriptorFastPathWatchpoint()
 {
     VM& vm = this->vm();
 
-    DeferTerminationForAWhile deferScope(vm);
-    auto catchScope = DECLARE_CATCH_SCOPE(vm);
+    ForbidExceptionScope noExceptions(vm);
 
     auto invalidate = [&]() {
         m_propertyDescriptorFastPathWatchpointSet.invalidate(vm, StringFireDetail("Was not able to set up property descriptor related names watchpoint set."));
@@ -3453,7 +3427,6 @@ void JSGlobalObject::tryInstallPropertyDescriptorFastPathWatchpoint()
         bool result = base->getOwnPropertySlot(base, this, propertyName, slot);
         if (result)
             return std::nullopt;
-        catchScope.assertNoException();
         RELEASE_ASSERT(slot.isUnset());
         return ObjectPropertyCondition::absence(vm, this, base, propertyName.uid(), nullptr);
     };

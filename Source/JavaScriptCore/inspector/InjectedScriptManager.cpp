@@ -32,7 +32,7 @@
 #include "InjectedScriptManager.h"
 
 #include "BuiltinNames.h"
-#include "CatchScope.h"
+#include "ExceptionScope.h"
 #include "InjectedScriptHost.h"
 #include "JSLock.h"
 #include "JSObjectInlines.h"
@@ -140,7 +140,7 @@ Expected<JSObject*, NakedPtr<Exception>> InjectedScriptManager::createInjectedSc
 {
     VM& vm = globalObject->vm();
     JSLockHolder lock(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue globalThisValue = globalObject->globalThis();
 

@@ -902,7 +902,7 @@ sub GenerateGetOwnPropertySlot
 
     push(@$outputArray, "    UNUSED_PARAM(ignoreNamedProperties);\n") unless $namedGetterOperation;
     if ($namedGetterOperation || $indexedGetterOperation) {
-        push(@$outputArray, "    auto throwScope = DECLARE_THROW_SCOPE(JSC::getVM(lexicalGlobalObject));\n");
+        push(@$outputArray, "    auto throwScope = DECLARE_EXCEPTION_SCOPE(JSC::getVM(lexicalGlobalObject));\n");
     }
 
     push(@$outputArray, "    auto* thisObject = jsCast<${className}*>(object);\n");
@@ -1020,7 +1020,7 @@ sub GenerateGetOwnPropertySlotByIndex
     push(@$outputArray, "    SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);\n");
 
     if ($namedGetterOperation || $indexedGetterOperation) {
-        push(@$outputArray, "    auto throwScope = DECLARE_THROW_SCOPE(vm);\n");
+        push(@$outputArray, "    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);\n");
     }
 
     push(@$outputArray, "    auto* thisObject = jsCast<${className}*>(object);\n");
@@ -1221,7 +1221,7 @@ sub GeneratePut
        push(@$outputArray, "    }\n\n");
     }
 
-    push(@$outputArray, "    auto throwScope = DECLARE_THROW_SCOPE(lexicalGlobalObject->vm());\n\n");
+    push(@$outputArray, "    auto throwScope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject->vm());\n\n");
 
     assert("CEReactions is not supported on having both named setters and indexed setters") if $namedSetterOperation && $namedSetterOperation->extendedAttributes->{CEReactions}
         && $indexedSetterOperation && $indexedSetterOperation->extendedAttributes->{CEReactions};
@@ -1334,7 +1334,7 @@ sub GeneratePutByIndex
     push(@$outputArray, "    ASSERT_GC_OBJECT_INHERITS(thisObject, info());\n\n");
 
     push(@$outputArray, "    SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);\n");
-    push(@$outputArray, "    auto throwScope = DECLARE_THROW_SCOPE(vm);\n\n");
+    push(@$outputArray, "    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);\n\n");
 
     assert("CEReactions is not supported on having both named setters and indexed setters") if $namedSetterOperation && $namedSetterOperation->extendedAttributes->{CEReactions}
         && $indexedSetterOperation && $indexedSetterOperation->extendedAttributes->{CEReactions};
@@ -1446,7 +1446,7 @@ sub GenerateDefineOwnProperty
     push(@$outputArray, "    auto* thisObject = jsCast<${className}*>(object);\n");
     push(@$outputArray, "    ASSERT_GC_OBJECT_INHERITS(thisObject, info());\n\n");
 
-    push(@$outputArray, "    auto throwScope = DECLARE_THROW_SCOPE(lexicalGlobalObject->vm());\n\n");
+    push(@$outputArray, "    auto throwScope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject->vm());\n\n");
 
     assert("CEReactions is not supported on having both named setters and indexed setters") if $namedSetterOperation && $namedSetterOperation->extendedAttributes->{CEReactions}
         && $indexedSetterOperation && $indexedSetterOperation->extendedAttributes->{CEReactions};
@@ -1881,7 +1881,7 @@ sub GetArgumentExceptionThrowerFunctor
     my ($interface, $argument, $argumentIndex, $quotedFunctionName) = @_;
 
     my $functionCall = GetArgumentExceptionFunction($interface, $argument, $argumentIndex, $quotedFunctionName);
-    return "[](JSC::JSGlobalObject& lexicalGlobalObject, JSC::ThrowScope& scope) { " . $functionCall . " }" if $functionCall;
+    return "[](JSC::JSGlobalObject& lexicalGlobalObject, JSC::ExceptionScope& scope) { " . $functionCall . " }" if $functionCall;
 }
 
 sub GetAttributeExceptionFunction
@@ -1902,7 +1902,7 @@ sub GetAttributeExceptionThrower
     my ($interface, $attribute) = @_;
 
     my $functionCall = GetAttributeExceptionFunction($interface, $attribute);
-    return "[](JSC::JSGlobalObject& lexicalGlobalObject, JSC::ThrowScope& scope) { " . $functionCall . " }" if $functionCall;
+    return "[](JSC::JSGlobalObject& lexicalGlobalObject, JSC::ExceptionScope& scope) { " . $functionCall . " }" if $functionCall;
 }
 
 sub GetArgumentDefaultValueFunctor
@@ -2848,7 +2848,7 @@ sub GenerateDictionaryImplementationContent
         $result .= "template<> ConversionResult<IDLDictionary<${className}>> convertDictionary<$className>(JSGlobalObject& lexicalGlobalObject, JSValue value)\n";
         $result .= "{\n";
         $result .= "    SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);\n";
-        $result .= "    auto throwScope = DECLARE_THROW_SCOPE(vm);\n";
+        $result .= "    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);\n";
         $result .= "    bool isNullOrUndefined = value.isUndefinedOrNull();\n";
         $result .= "    auto* object = isNullOrUndefined ? nullptr : value.getObject();\n";
 
@@ -2962,7 +2962,7 @@ sub GenerateDictionaryImplementationContent
         $result .= "JSC::JSObject* convertDictionaryToJS(JSC::JSGlobalObject& lexicalGlobalObject, JSDOMGlobalObject& globalObject, const ${className}& dictionary)\n";
         $result .= "{\n";
         $result .= "    SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);\n";
-        $result .= "    auto throwScope = DECLARE_THROW_SCOPE(vm);\n\n";
+        $result .= "    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);\n\n";
 
         # 1. Let O be ! ObjectCreate(%ObjectPrototype%).
         $result .= "    auto result = constructEmptyObject(&lexicalGlobalObject, globalObject.objectPrototype());\n\n";
@@ -5264,7 +5264,7 @@ sub GenerateImplementation
         push(@implContent, "JSC_DEFINE_CUSTOM_GETTER(${constructorGetter}, (JSGlobalObject* lexicalGlobalObject, EncodedJSValue thisValue, PropertyName))\n");
         push(@implContent, "{\n");
         push(@implContent, "    SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);\n");
-        push(@implContent, "    auto throwScope = DECLARE_THROW_SCOPE(vm);\n");
+        push(@implContent, "    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);\n");
         push(@implContent, "    auto* prototype = jsDynamicCast<${className}Prototype*>(JSValue::decode(thisValue));\n");
         push(@implContent, "    if (!prototype) [[unlikely]]\n");
         push(@implContent, "        return throwVMTypeError(lexicalGlobalObject, throwScope);\n");
@@ -5681,7 +5681,7 @@ sub GenerateAttributeGetterBodyDefinition
     my $isEventHandler = $codeGenerator->IsEventHandlerType($attribute->type);
     my $isConstructor = $codeGenerator->IsConstructorType($attribute->type);
 
-    my $needThrowScope = $needSecurityCheck || (!$hasCustomGetter && !$isEventHandler && !$isConstructor);
+    my $needExceptionScope = $needSecurityCheck || (!$hasCustomGetter && !$isEventHandler && !$isConstructor);
 
     # Reflecting string attributes always need to be AtomStrings. Since such attribute do not have corresponding getters / setters
     # on the implementation object, we don't require the developers to specify [AtomString] in the IDL. The fact that they need
@@ -5694,9 +5694,9 @@ sub GenerateAttributeGetterBodyDefinition
     push(@$outputArray, "static inline JSValue ${attributeGetterBodyName}(" . join(", ", @signatureArguments) . ")\n");
     push(@$outputArray, "{\n");
 
-    if ($needThrowScope) {
+    if ($needExceptionScope) {
         push(@$outputArray, "    SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);\n");
-        push(@$outputArray, "    auto throwScope = DECLARE_THROW_SCOPE(vm);\n");
+        push(@$outputArray, "    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);\n");
     } else {
         push(@$outputArray, "    UNUSED_PARAM(lexicalGlobalObject);\n");
     }
@@ -5824,10 +5824,10 @@ sub GenerateAttributeGetterBodyDefinition
 
         if ($attribute->extendedAttributes->{CachedAttribute}) {
             push(@$outputArray, "    JSValue result = ${toJSExpression};\n");
-            push(@$outputArray, "    RETURN_IF_EXCEPTION(throwScope, { });\n") if ($needThrowScope);
+            push(@$outputArray, "    RETURN_IF_EXCEPTION(throwScope, { });\n") if ($needExceptionScope);
             push(@$outputArray, "    thisObject.m_" . $attribute->name . ".set(JSC::getVM(&lexicalGlobalObject), &thisObject, result);\n");
             push(@$outputArray, "    return result;\n");
-        } elsif ($needThrowScope) {
+        } elsif ($needExceptionScope) {
             push(@$outputArray, "    RELEASE_AND_RETURN(throwScope, (${toJSExpression}));\n");
         } else {
             push(@$outputArray, "    return ${toJSExpression};\n");
@@ -5908,14 +5908,14 @@ sub GenerateAttributeSetterBodyDefinition
     my $isReplaceable = $attribute->extendedAttributes->{Replaceable};
     my $isLegacyLenientSetter = $attribute->extendedAttributes->{LegacyLenientSetter};
 
-    my $needThrowScope = $needSecurityCheck || (!$hasCustomSetter && !$isEventHandler && !$isReplaceable && !$isLegacyLenientSetter);
+    my $needExceptionScope = $needSecurityCheck || (!$hasCustomSetter && !$isEventHandler && !$isReplaceable && !$isLegacyLenientSetter);
 
     push(@$outputArray, "static inline bool ${attributeSetterBodyName}(" . join(", ", @signatureArguments) . ")\n");
     push(@$outputArray, "{\n");
 
     push(@$outputArray, "    SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);\n");
     push(@$outputArray, "    UNUSED_PARAM(vm);\n");
-    push(@$outputArray, "    auto throwScope = DECLARE_THROW_SCOPE(vm);\n") if $needThrowScope;
+    push(@$outputArray, "    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);\n") if $needExceptionScope;
 
     GenerateCustomElementReactionsStackIfNeeded($outputArray, $attribute, "lexicalGlobalObject");
 
@@ -5947,7 +5947,7 @@ sub GenerateAttributeSetterBodyDefinition
         push(@$outputArray, "    ensureStillAliveHere(value);\n\n");
         push(@$outputArray, "    return true;\n");
     } elsif ($isReplaceable) {
-        push(@$outputArray, "    throwScope.release();\n") if $needThrowScope;
+        push(@$outputArray, "    throwScope.release();\n") if $needExceptionScope;
         push(@$outputArray, "    bool shouldThrow = true;\n");
         push(@$outputArray, "    thisObject.createDataProperty(&lexicalGlobalObject, propertyName, value, shouldThrow);\n");
         push(@$outputArray, "    return true;\n");
@@ -6192,7 +6192,7 @@ sub GenerateOperationBodyDefinition
     push(@$outputArray, "static inline JSC::EncodedJSValue ${functionBodyName}(" . join(", ", @signatureArguments) . ")\n");
     push(@$outputArray, "{\n");
     push(@$outputArray, "    SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);\n");
-    push(@$outputArray, "    auto throwScope = DECLARE_THROW_SCOPE(vm);\n");
+    push(@$outputArray, "    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);\n");
     push(@$outputArray, "    UNUSED_PARAM(throwScope);\n");
     push(@$outputArray, "    UNUSED_PARAM(callFrame);\n");
 
@@ -6238,13 +6238,13 @@ sub GenerateOperationBodyDefinition
         GenerateArgumentsCountCheck($outputArray, $operation, $interface, $indent);
         my $functionString = GenerateParametersCheck($outputArray, $operation, $interface, $functionImplementationName, $indent);
 
-        my $hasThrowScope = 1;
+        my $hasExceptionScope = 1;
         if ($operation->extendedAttributes->{ResultField}) {
             my $resultName = $operation->extendedAttributes->{ResultField};
             push(@$outputArray, "    auto implResult = $functionString;\n");
-            GenerateImplementationFunctionCall($outputArray, $operation, $interface, "WTFMove(implResult.$resultName)", $indent, $hasThrowScope);
+            GenerateImplementationFunctionCall($outputArray, $operation, $interface, "WTFMove(implResult.$resultName)", $indent, $hasExceptionScope);
         } else {
-            GenerateImplementationFunctionCall($outputArray, $operation, $interface, $functionString, $indent, $hasThrowScope);
+            GenerateImplementationFunctionCall($outputArray, $operation, $interface, $functionString, $indent, $hasExceptionScope);
         }
     }
 
@@ -6343,7 +6343,7 @@ sub GenerateOperationDefinition
         push(@$outputArray, "    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);\n");
         push(@$outputArray, "    IGNORE_WARNINGS_END\n");
         push(@$outputArray, "    JSC::JITOperationPrologueCallFrameTracer tracer(vm, callFrame);\n");
-        push(@$outputArray, "    auto throwScope = DECLARE_THROW_SCOPE(vm);\n");
+        push(@$outputArray, "    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);\n");
         push(@$outputArray, "    UNUSED_PARAM(throwScope);\n");
         push(@$outputArray, "    SUPPRESS_UNCOUNTED_LOCAL auto& impl = castedThis->wrapped();\n");
         
@@ -6408,7 +6408,7 @@ sub GenerateDefaultToJSONOperationDefinition
     push(@$outputArray, "static inline EncodedJSValue ${functionName}Body(JSGlobalObject* lexicalGlobalObject, CallFrame*, ${className}* castedThis)\n");
     push(@$outputArray, "{\n");
     push(@implContent, "    SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);\n");
-    push(@implContent, "    auto throwScope = DECLARE_THROW_SCOPE(vm);\n");
+    push(@implContent, "    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);\n");
     push(@implContent, "    UNUSED_PARAM(throwScope);\n");
     push(@implContent, "    SUPPRESS_UNCOUNTED_LOCAL auto& impl = castedThis->wrapped();\n");
 
@@ -7137,7 +7137,7 @@ sub GenerateCallbackImplementationOperationBody
         push(@$contentRef, "        jsPromise->rejectAsHandled(vm, &globalObject, returnedException->value());\n");
         push(@$contentRef, "        return { DOMPromise::create(globalObject, *jsPromise) };\n");
     } elsif ($isForRethrowingHandler) {
-        push(@$contentRef, "        auto throwScope = DECLARE_THROW_SCOPE(vm);\n");
+        push(@$contentRef, "        auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);\n");
         push(@$contentRef, "        throwException(&lexicalGlobalObject, throwScope, returnedException);\n");
         push(@$contentRef, "        return CallbackResultType::ExceptionThrown;\n");
     } else {
@@ -7152,7 +7152,7 @@ sub GenerateCallbackImplementationOperationBody
     } else {
         my $nativeValue = JSValueToNative($interfaceOrCallback, $operation, "jsResult", "", "&lexicalGlobalObject", "lexicalGlobalObject");
 
-        push(@$contentRef, "    auto throwScope = DECLARE_THROW_SCOPE(vm);\n");
+        push(@$contentRef, "    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);\n");
         push(@$contentRef, "    auto returnValue = ${nativeValue};\n");
         push(@$contentRef, "    if (returnValue.hasException(throwScope)) [[unlikely]]\n");
         push(@$contentRef, "        return CallbackResultType::ExceptionThrown;\n");
@@ -7309,7 +7309,7 @@ sub ShouldStoreArgumentAsRefPtr
 
 sub GenerateImplementationFunctionCall
 {
-    my ($outputArray, $operation, $interface, $functionString, $indent, $hasThrowScope) = @_;
+    my ($outputArray, $operation, $interface, $functionString, $indent, $hasExceptionScope) = @_;
 
     my $callTracer = $operation->extendedAttributes->{CallTracer} || $interface->extendedAttributes->{CallTracer};
     if ($callTracer) {
@@ -7328,7 +7328,7 @@ sub GenerateImplementationFunctionCall
         my $globalObjectReference = $operation->isStatic ? "*jsCast<JSDOMGlobalObject*>(lexicalGlobalObject)" : "*castedThis->globalObject()";
         if ($hasWriteBarriersForArguments) {
             push(@$outputArray, $indent . "auto result = JSValue::encode(" . NativeToJSValueUsingPointers($operation, $interface, $functionString, $globalObjectReference) . ");\n");
-            push(@$outputArray, $indent . "RETURN_IF_EXCEPTION(throwScope, encodedJSValue());\n") if $hasThrowScope;
+            push(@$outputArray, $indent . "RETURN_IF_EXCEPTION(throwScope, encodedJSValue());\n") if $hasExceptionScope;
             GenerateWriteBarriersForArguments($outputArray, $operation, $indent);
             push(@$outputArray, $indent . "return result;\n");
         } else {
@@ -8397,7 +8397,7 @@ sub GenerateConstructorDefinitions
             push(@implContent, "template<> EncodedJSValue JSC_HOST_CALL_ATTRIBUTES ${className}DOMConstructor::construct(JSGlobalObject* lexicalGlobalObject, CallFrame* callFrame)\n");
             push(@implContent, "{\n");
             push(@implContent, "    SUPPRESS_UNCOUNTED_LOCAL auto& vm = lexicalGlobalObject->vm();\n");
-            push(@implContent, "    auto throwScope = DECLARE_THROW_SCOPE(vm);\n");
+            push(@implContent, "    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);\n");
             push(@implContent, "    UNUSED_PARAM(throwScope);\n");
 
             GenerateOverloadDispatcher(@{$interface->constructors}[0], $interface, $overloadFunctionPrefix, "", "lexicalGlobalObject, callFrame");
@@ -8441,7 +8441,7 @@ sub GenerateConstructorDefinition
 
             push(@$outputArray, "{\n");
             push(@$outputArray, "    SUPPRESS_UNCOUNTED_LOCAL auto& vm = lexicalGlobalObject->vm();\n");
-            push(@$outputArray, "    auto throwScope = DECLARE_THROW_SCOPE(vm);\n");
+            push(@$outputArray, "    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);\n");
             push(@$outputArray, "    auto* castedThis = jsCast<${constructorClassName}*>(callFrame->jsCallee());\n");
             push(@$outputArray, "    ASSERT(castedThis);\n");
 

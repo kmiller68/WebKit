@@ -83,7 +83,7 @@ static JSObject* toJSObject(JSValueInWrappedObject& wrapper)
 
 static JSFloat32Array* constructJSFloat32Array(VM& vm, JSGlobalObject& globalObject, unsigned length, std::span<const float> data = { })
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     constexpr bool isResizableOrGrowableShared = false;
     auto* jsArray = JSFloat32Array::create(&globalObject, globalObject.typedArrayStructure(TypeFloat32, isResizableOrGrowableShared), length);
@@ -95,7 +95,7 @@ static JSFloat32Array* constructJSFloat32Array(VM& vm, JSGlobalObject& globalObj
 
 static JSObject* constructFrozenKeyValueObject(VM& vm, JSGlobalObject& globalObject, const MemoryCompactLookupOnlyRobinHoodHashMap<String, std::unique_ptr<AudioFloatArray>>& paramValuesMap)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* plainObjectStructure = JSFinalObject::createStructure(vm, &globalObject, globalObject.objectPrototype(), 0);
     auto* object = JSFinalObject::create(vm, plainObjectStructure);
     for (auto& pair : paramValuesMap) {
@@ -117,7 +117,7 @@ enum class ShouldPopulateWithBusData : bool { No, Yes };
 template <typename T>
 static JSArray* constructFrozenJSArray(VM& vm, JSGlobalObject& globalObject, const T& bus, ShouldPopulateWithBusData shouldPopulateWithBusData)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned numberOfChannels = busChannelCount(bus.get());
     auto* channelsData = JSArray::create(vm, globalObject.originalArrayStructureForIndexingType(ArrayWithContiguous), numberOfChannels);
@@ -135,7 +135,7 @@ static JSArray* constructFrozenJSArray(VM& vm, JSGlobalObject& globalObject, con
 template <typename T>
 static JSArray* constructFrozenJSArray(VM& vm, JSGlobalObject& globalObject, const Vector<T>& buses, ShouldPopulateWithBusData shouldPopulateWithBusData)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* array = JSArray::create(vm, globalObject.originalArrayStructureForIndexingType(ArrayWithContiguous), buses.size());
     for (unsigned i = 0; i < buses.size(); ++i) {
         auto* innerArray = constructFrozenJSArray(vm, globalObject, buses[i], shouldPopulateWithBusData);
@@ -149,7 +149,7 @@ static JSArray* constructFrozenJSArray(VM& vm, JSGlobalObject& globalObject, con
 
 static void copyDataFromJSArrayToBuses(VM& vm, JSGlobalObject& globalObject, JSArray& jsArray, Vector<Ref<AudioBus>>& buses)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // We can safely make assumptions about the structure of the JSArray since we use frozen arrays.
     for (unsigned i = 0; i < buses.size(); ++i) {
@@ -174,7 +174,7 @@ static void copyDataFromJSArrayToBuses(VM& vm, JSGlobalObject& globalObject, JSA
 
 static bool copyDataFromBusesToJSArray(VM& vm, JSGlobalObject& globalObject, const Vector<RefPtr<AudioBus>>& buses, JSArray* jsArray)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!jsArray)
         return false;
@@ -200,7 +200,7 @@ static bool copyDataFromBusesToJSArray(VM& vm, JSGlobalObject& globalObject, con
 
 static bool copyDataFromParameterMapToJSObject(VM& vm, JSGlobalObject& globalObject, const MemoryCompactLookupOnlyRobinHoodHashMap<String, std::unique_ptr<AudioFloatArray>>& paramValuesMap, JSObject* jsObject)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!jsObject)
         return false;
@@ -220,7 +220,7 @@ static bool copyDataFromParameterMapToJSObject(VM& vm, JSGlobalObject& globalObj
 
 static bool zeroJSArray(VM& vm, JSGlobalObject& globalObject, const Vector<Ref<AudioBus>>& outputs, JSArray* jsArray)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!jsArray)
         return false;
@@ -266,7 +266,7 @@ AudioWorkletProcessor::AudioWorkletProcessor(AudioWorkletGlobalScope& globalScop
 
 void AudioWorkletProcessor::buildJSArguments(VM& vm, JSGlobalObject& globalObject, MarkedArgumentBuffer& args, const Vector<RefPtr<AudioBus>>& inputs, Vector<Ref<AudioBus>>& outputs, const MemoryCompactLookupOnlyRobinHoodHashMap<String, std::unique_ptr<AudioFloatArray>>& paramValuesMap)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     // For performance reasons, we cache the arrays passed to JS and reconstruct them only when the topology changes.
     bool success = copyDataFromBusesToJSArray(vm, globalObject, inputs, toJSArray(m_jsInputs));
     RETURN_IF_EXCEPTION(scope, void());
@@ -311,7 +311,7 @@ bool AudioWorkletProcessor::process(const Vector<RefPtr<AudioBus>>& inputs, Vect
     auto& vm = globalObject->vm();
     JSLockHolder lock(vm);
 
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     MarkedArgumentBuffer args;
     buildJSArguments(vm, *globalObject, args, inputs, outputs, paramValuesMap);
     ASSERT(!args.hasOverflowed());

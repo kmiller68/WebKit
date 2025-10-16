@@ -108,7 +108,7 @@ static Expected<URL, String> resolveModuleSpecifier(ScriptExecutionContext& cont
 JSC::Identifier ScriptModuleLoader::resolve(JSC::JSGlobalObject* jsGlobalObject, JSC::JSModuleLoader*, JSC::JSValue moduleNameValue, JSC::JSValue importerModuleKey, JSC::JSValue)
 {
     JSC::VM& vm = jsGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // We use a Symbol as a special purpose; It means this module is an inline module.
     // So there is no correct URL to retrieve the module source code. If the module name
@@ -242,7 +242,7 @@ URL ScriptModuleLoader::moduleURL(JSC::JSGlobalObject& jsGlobalObject, JSC::JSVa
 URL ScriptModuleLoader::responseURLFromRequestURL(JSC::JSGlobalObject& jsGlobalObject, JSC::JSValue moduleKeyValue)
 {
     JSC::VM& vm = jsGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (isRootModule(moduleKeyValue)) {
         if (!m_context)
@@ -269,7 +269,7 @@ URL ScriptModuleLoader::responseURLFromRequestURL(JSC::JSGlobalObject& jsGlobalO
 JSC::JSValue ScriptModuleLoader::evaluate(JSC::JSGlobalObject* jsGlobalObject, JSC::JSModuleLoader*, JSC::JSValue moduleKeyValue, JSC::JSValue moduleRecordValue, JSC::JSValue, JSC::JSValue awaitedValue, JSC::JSValue resumeMode)
 {
     JSC::VM& vm = jsGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // FIXME: Currently, we only support JSModuleRecord and WebAssemblyModuleRecord.
     // Once the reflective part of the module loader is supported, we will handle arbitrary values.
@@ -308,7 +308,7 @@ static JSC::JSInternalPromise* rejectPromise(ScriptExecutionContext& context, JS
 JSC::JSInternalPromise* ScriptModuleLoader::importModule(JSC::JSGlobalObject* jsGlobalObject, JSC::JSModuleLoader*, JSC::JSString* moduleName, JSC::JSValue parametersValue, const JSC::SourceOrigin& sourceOrigin)
 {
     JSC::VM& vm = jsGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& globalObject = *JSC::jsCast<JSDOMGlobalObject*>(jsGlobalObject);
 
     if (!m_context)
@@ -327,7 +327,7 @@ JSC::JSInternalPromise* ScriptModuleLoader::importModule(JSC::JSGlobalObject* js
     };
 
     auto getTypeFromAssertions = [&]() -> JSC::ScriptFetchParameters::Type {
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         auto assertions = JSC::retrieveImportAttributesFromDynamicImportOptions(&globalObject, parametersValue, { vm.propertyNames->type.impl() });
         RETURN_IF_EXCEPTION(scope, { });
@@ -409,7 +409,7 @@ JSC::JSObject* ScriptModuleLoader::createImportMetaProperties(JSC::JSGlobalObjec
     // https://html.spec.whatwg.org/multipage/webappapis.html#hostgetimportmetaproperties
 
     auto& vm = jsGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* metaProperties = JSC::constructEmptyObject(vm, jsGlobalObject->nullPrototypeObjectStructure());
     RETURN_IF_EXCEPTION(scope, nullptr);
@@ -424,7 +424,7 @@ JSC::JSObject* ScriptModuleLoader::createImportMetaProperties(JSC::JSGlobalObjec
     OwnerType ownerType = m_ownerType;
     auto* function = JSC::JSNativeStdFunction::create(vm, jsGlobalObject, 1, resolveName, [ownerType, responseURL](JSC::JSGlobalObject* globalObject, JSC::CallFrame* callFrame) -> JSC::EncodedJSValue {
         JSC::VM& vm = globalObject->vm();
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         auto specifier = callFrame->argument(0).toWTFString(globalObject);
         RETURN_IF_EXCEPTION(scope, { });

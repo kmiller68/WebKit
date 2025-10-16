@@ -212,7 +212,7 @@ DEFINE_VISIT_CHILDREN(JSWebAssemblyInstance);
 void JSWebAssemblyInstance::initializeImports(JSGlobalObject* globalObject, JSObject* importObject, CreationMode creationMode)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     m_moduleRecord->prepareLink(vm, this);
     if (creationMode == CreationMode::FromJS) {
@@ -225,7 +225,7 @@ void JSWebAssemblyInstance::initializeImports(JSGlobalObject* globalObject, JSOb
 
 void JSWebAssemblyInstance::finalizeCreation(VM& vm, JSGlobalObject* globalObject, Ref<CalleeGroup>&& wasmCalleeGroup, CreationMode creationMode)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!wasmCalleeGroup->runnable()) {
         throwException(globalObject, scope, createJSWebAssemblyLinkError(globalObject, vm, wasmCalleeGroup->errorMessage()));
@@ -290,7 +290,7 @@ size_t JSWebAssemblyInstance::allocationSize(const Wasm::ModuleInformation& info
 
 JSWebAssemblyInstance* JSWebAssemblyInstance::tryCreate(VM& vm, Structure* instanceStructure, JSGlobalObject* globalObject, const Identifier& moduleKey, JSWebAssemblyModule* jsModule, JSObject* importObject, CreationMode creationMode, RefPtr<SourceProvider>&& provider)
 {
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     const ModuleInformation& moduleInformation = jsModule->moduleInformation();
 

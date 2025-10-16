@@ -962,7 +962,7 @@ void Debugger::pauseIfNeeded(JSGlobalObject* globalObject)
 {
     VM& vm = m_vm;
     DeferTermination deferScope(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (m_isPaused)
         return;

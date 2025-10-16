@@ -66,7 +66,7 @@ namespace JSC {
     JSGlobalObject* globalObject = codeBlock->globalObject(); \
     VM& vm = codeBlock->vm(); \
     SlowPathFrameTracer tracer(vm, callFrame); \
-    auto throwScope = DECLARE_THROW_SCOPE(vm); \
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm); \
     UNUSED_PARAM(throwScope)
 
 #ifndef NDEBUG
@@ -233,7 +233,7 @@ JSC_DEFINE_COMMON_SLOW_PATH(slow_path_new_promise)
 template<typename JSClass, typename Bytecode>
 static JSClass* createInternalFieldObject(JSGlobalObject* globalObject, VM& vm, CodeBlock* codeBlock, const Bytecode& bytecode, JSObject* constructorAsObject, Structure* baseStructure)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Structure* structure = InternalFunction::createSubclassStructure(globalObject, constructorAsObject, baseStructure);
     RETURN_IF_EXCEPTION(scope, nullptr);
@@ -798,7 +798,7 @@ JSC_DEFINE_COMMON_SLOW_PATH(slow_path_is_constructor)
 }
 
 template<OpcodeSize width>
-ALWAYS_INLINE UGPRPair iteratorOpenTryFastImpl(VM& vm, JSGlobalObject* globalObject, CodeBlock* codeBlock, CallFrame* callFrame, ThrowScope& throwScope, const JSInstruction* pc)
+ALWAYS_INLINE UGPRPair iteratorOpenTryFastImpl(VM& vm, JSGlobalObject* globalObject, CodeBlock* codeBlock, CallFrame* callFrame, ExceptionScope& throwScope, const JSInstruction* pc)
 {
     auto bytecode = pc->asKnownWidth<OpIteratorOpen, width>();
     auto& metadata = bytecode.metadata(codeBlock);
@@ -848,7 +848,7 @@ JSC_DEFINE_COMMON_SLOW_PATH(iterator_open_try_fast_wide32)
 }
 
 template<OpcodeSize width>
-ALWAYS_INLINE UGPRPair iteratorNextTryFastImpl(VM& vm, JSGlobalObject* globalObject, CodeBlock* codeBlock, CallFrame* callFrame, ThrowScope& throwScope, const JSInstruction* pc)
+ALWAYS_INLINE UGPRPair iteratorNextTryFastImpl(VM& vm, JSGlobalObject* globalObject, CodeBlock* codeBlock, CallFrame* callFrame, ExceptionScope& throwScope, const JSInstruction* pc)
 {
     auto bytecode = pc->asKnownWidth<OpIteratorNext, width>();
     auto& metadata = bytecode.metadata(codeBlock);

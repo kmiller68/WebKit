@@ -63,7 +63,7 @@ const ClassInfo WebAssemblyTablePrototype::s_info = { "WebAssembly.Table"_s, &Ba
 
 static ALWAYS_INLINE JSWebAssemblyTable* getTable(JSGlobalObject* globalObject, VM& vm, JSValue v)
 {
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     JSWebAssemblyTable* result = jsDynamicCast<JSWebAssemblyTable*>(v);
     if (!result) {
         throwException(globalObject, throwScope, 
@@ -76,7 +76,7 @@ static ALWAYS_INLINE JSWebAssemblyTable* getTable(JSGlobalObject* globalObject, 
 JSC_DEFINE_CUSTOM_GETTER(webAssemblyTableProtoGetterLength, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSWebAssemblyTable* table = getTable(globalObject, vm, JSValue::decode(thisValue));
     RETURN_IF_EXCEPTION(throwScope, encodedJSValue());
@@ -86,7 +86,7 @@ JSC_DEFINE_CUSTOM_GETTER(webAssemblyTableProtoGetterLength, (JSGlobalObject* glo
 JSC_DEFINE_HOST_FUNCTION(webAssemblyTableProtoFuncGrow, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSWebAssemblyTable* table = getTable(globalObject, vm, callFrame->thisValue());
     RETURN_IF_EXCEPTION(throwScope, encodedJSValue());
@@ -115,7 +115,7 @@ JSC_DEFINE_HOST_FUNCTION(webAssemblyTableProtoFuncGrow, (JSGlobalObject* globalO
 JSC_DEFINE_HOST_FUNCTION(webAssemblyTableProtoFuncGet, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSWebAssemblyTable* table = getTable(globalObject, vm, callFrame->thisValue());
     RETURN_IF_EXCEPTION(throwScope, encodedJSValue());
@@ -131,7 +131,7 @@ JSC_DEFINE_HOST_FUNCTION(webAssemblyTableProtoFuncGet, (JSGlobalObject* globalOb
 JSC_DEFINE_HOST_FUNCTION(webAssemblyTableProtoFuncSet, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSWebAssemblyTable* table = getTable(globalObject, vm, callFrame->thisValue());
     RETURN_IF_EXCEPTION(throwScope, encodedJSValue());
@@ -157,7 +157,7 @@ JSC_DEFINE_HOST_FUNCTION(webAssemblyTableProtoFuncSet, (JSGlobalObject* globalOb
 JSC_DEFINE_HOST_FUNCTION(webAssemblyTableProtoFuncType, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSWebAssemblyTable* table = getTable(globalObject, vm, callFrame->thisValue());
     RETURN_IF_EXCEPTION(throwScope, encodedJSValue());

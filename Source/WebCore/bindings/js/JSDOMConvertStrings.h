@@ -68,7 +68,7 @@ template<> struct Converter<IDLDOMString> : DefaultConverter<IDLDOMString> {
     static Result convert(JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value)
     {
         auto& vm = lexicalGlobalObject.vm();
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         auto string = value.toWTFString(&lexicalGlobalObject);
 
@@ -266,7 +266,7 @@ template<typename T> struct Converter<IDLAtomStringAdaptor<T>> : DefaultConverte
         static_assert(std::is_same<T, IDLDOMString>::value, "This adaptor is only supported for IDLDOMString at the moment.");
 
         auto& vm = lexicalGlobalObject.vm();
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         auto string = value.toString(&lexicalGlobalObject)->toAtomString(&lexicalGlobalObject);
 

@@ -105,7 +105,7 @@ JSString* NativeExecutable::toStringSlow(JSGlobalObject *globalObject)
 {
     VM& vm = getVM(globalObject);
 
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue value = jsMakeNontrivialString(globalObject, "function "_s, name(), "() {\n    [native code]\n}"_s);
 

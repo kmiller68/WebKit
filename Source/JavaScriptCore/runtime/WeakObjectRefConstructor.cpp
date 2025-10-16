@@ -52,14 +52,14 @@ WeakObjectRefConstructor::WeakObjectRefConstructor(VM& vm, Structure* structure)
 JSC_DEFINE_HOST_FUNCTION(callWeakRef, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "WeakRef"_s));
 }
 
 JSC_DEFINE_HOST_FUNCTION(constructWeakRef, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue target = callFrame->argument(0);
     if (!canBeHeldWeakly(target)) [[unlikely]]

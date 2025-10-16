@@ -101,7 +101,7 @@ JSC_DEFINE_CUSTOM_GETTER(temporalCalendarPrototypeGetterId, (JSGlobalObject* glo
 JSC_DEFINE_HOST_FUNCTION(temporalCalendarPrototypeFuncDateFromFields, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* calendar = jsDynamicCast<TemporalCalendar*>(callFrame->thisValue());
     if (!calendar)
@@ -131,7 +131,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalCalendarPrototypeFuncDateFromFields, (JSGlobalO
 JSC_DEFINE_HOST_FUNCTION(temporalCalendarPrototypeFuncDateAdd, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* calendar = jsDynamicCast<TemporalCalendar*>(callFrame->thisValue());
     if (!calendar)
@@ -163,7 +163,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalCalendarPrototypeFuncDateAdd, (JSGlobalObject* 
 JSC_DEFINE_HOST_FUNCTION(temporalCalendarPrototypeFuncDateUntil, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* calendar = jsDynamicCast<TemporalCalendar*>(callFrame->thisValue());
     if (!calendar)
@@ -195,7 +195,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalCalendarPrototypeFuncDateUntil, (JSGlobalObject
 JSC_DEFINE_HOST_FUNCTION(temporalCalendarPrototypeFuncFields, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* calendar = jsDynamicCast<TemporalCalendar*>(callFrame->thisValue());
     if (!calendar)
@@ -205,7 +205,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalCalendarPrototypeFuncFields, (JSGlobalObject* g
     bool shouldAddEraAndEraYear = false;
     MarkedArgumentBuffer fieldNames;
     forEachInIterable(globalObject, callFrame->argument(0), [isISO8601, &shouldAddEraAndEraYear, &fieldNames](VM& vm, JSGlobalObject* globalObject, JSValue value) {
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         if (!value.isString()) {
             throwTypeError(globalObject, scope, "fields include non string value"_s);
             return;
@@ -236,7 +236,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalCalendarPrototypeFuncFields, (JSGlobalObject* g
 static JSObject* defaultMergeFields(JSGlobalObject* globalObject, JSObject* fields, JSObject* additionalFields)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* merged = constructEmptyObject(globalObject);
 
@@ -305,7 +305,7 @@ static JSObject* defaultMergeFields(JSGlobalObject* globalObject, JSObject* fiel
 JSC_DEFINE_HOST_FUNCTION(temporalCalendarPrototypeFuncMergeFields, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* calendar = jsDynamicCast<TemporalCalendar*>(callFrame->thisValue());
     if (!calendar)
@@ -322,7 +322,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalCalendarPrototypeFuncMergeFields, (JSGlobalObje
 
     auto copyObject = [](JSGlobalObject* globalObject, JSObject* object) -> JSObject* {
         VM& vm = globalObject->vm();
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         auto* copied = constructEmptyObject(globalObject);
 
@@ -420,7 +420,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalCalendarPrototypeFuncMergeFields, (JSGlobalObje
 JSC_DEFINE_HOST_FUNCTION(temporalCalendarPrototypeFuncToString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* calendar = jsDynamicCast<TemporalCalendar*>(callFrame->thisValue());
     if (!calendar)
@@ -433,7 +433,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalCalendarPrototypeFuncToString, (JSGlobalObject*
 JSC_DEFINE_HOST_FUNCTION(temporalCalendarPrototypeFuncToJSON, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* calendar = jsDynamicCast<TemporalCalendar*>(callFrame->thisValue());
     if (!calendar)

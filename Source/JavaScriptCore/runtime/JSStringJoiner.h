@@ -79,7 +79,7 @@ inline JSStringJoiner::JSStringJoiner(StringView separator)
 inline void JSStringJoiner::reserveCapacity(JSGlobalObject* globalObject, size_t count)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     if (!m_strings.tryReserveCapacity(count)) [[unlikely]]
         throwOutOfMemoryError(globalObject, scope);
 }
@@ -141,7 +141,7 @@ ALWAYS_INLINE bool JSStringJoiner::appendWithoutSideEffects(JSGlobalObject* glob
     // If we might make an effectful calls, return false. Otherwise return true.
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (value.isCell()) {
         // FIXME: Support JSBigInt in side-effect-free append.
@@ -190,7 +190,7 @@ ALWAYS_INLINE bool JSStringJoiner::appendWithoutSideEffects(JSGlobalObject* glob
 ALWAYS_INLINE bool JSStringJoiner::append(JSGlobalObject* globalObject, JSValue value)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     bool success = appendWithoutSideEffects(globalObject, value);
     RETURN_IF_EXCEPTION(scope, false);

@@ -40,7 +40,7 @@ using namespace JSC;
 template<> ConversionResult<IDLDictionary<TestDerivedDictionary2>> convertDictionary<TestDerivedDictionary2>(JSGlobalObject& lexicalGlobalObject, JSValue value)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     bool isNullOrUndefined = value.isUndefinedOrNull();
     auto* object = isNullOrUndefined ? nullptr : value.getObject();
     if (!isNullOrUndefined && !object) [[unlikely]] {
@@ -106,7 +106,7 @@ template<> ConversionResult<IDLDictionary<TestDerivedDictionary2>> convertDictio
 JSC::JSObject* convertDictionaryToJS(JSC::JSGlobalObject& lexicalGlobalObject, JSDOMGlobalObject& globalObject, const TestDerivedDictionary2& dictionary)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto result = constructEmptyObject(&lexicalGlobalObject, globalObject.objectPrototype());
 
@@ -136,7 +136,7 @@ JSC::JSObject* convertDictionaryToJS(JSC::JSGlobalObject& lexicalGlobalObject, J
 template<> ConversionResult<IDLDictionary<TestDerivedDictionary2::Dictionary>> convertDictionary<TestDerivedDictionary2::Dictionary>(JSGlobalObject& lexicalGlobalObject, JSValue value)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     bool isNullOrUndefined = value.isUndefinedOrNull();
     auto* object = isNullOrUndefined ? nullptr : value.getObject();
     if (!isNullOrUndefined && !object) [[unlikely]] {
@@ -299,7 +299,7 @@ template<> ConversionResult<IDLDictionary<TestDerivedDictionary2::Dictionary>> c
 JSC::JSObject* convertDictionaryToJS(JSC::JSGlobalObject& lexicalGlobalObject, JSDOMGlobalObject& globalObject, const TestDerivedDictionary2::Dictionary& dictionary)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto result = constructEmptyObject(&lexicalGlobalObject, globalObject.objectPrototype());
 

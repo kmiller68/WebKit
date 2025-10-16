@@ -36,16 +36,16 @@ using namespace JSC;
 
 JSC::JSValue JSIDBCursor::key(JSC::JSGlobalObject& lexicalGlobalObject) const
 {
-    auto throwScope = DECLARE_THROW_SCOPE(lexicalGlobalObject.vm());
-    return cachedPropertyValue(throwScope, lexicalGlobalObject, *this, wrapped().keyWrapper(), [&](JSC::ThrowScope&) {
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject.vm());
+    return cachedPropertyValue(throwScope, lexicalGlobalObject, *this, wrapped().keyWrapper(), [&](JSC::ExceptionScope&) {
         return toJS(lexicalGlobalObject, lexicalGlobalObject, wrapped().key());
     });
 }
 
 JSC::JSValue JSIDBCursor::primaryKey(JSC::JSGlobalObject& lexicalGlobalObject) const
 {
-    auto throwScope = DECLARE_THROW_SCOPE(lexicalGlobalObject.vm());
-    return cachedPropertyValue(throwScope, lexicalGlobalObject, *this, wrapped().primaryKeyWrapper(), [&](JSC::ThrowScope&) {
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject.vm());
+    return cachedPropertyValue(throwScope, lexicalGlobalObject, *this, wrapped().primaryKeyWrapper(), [&](JSC::ExceptionScope&) {
         return toJS(lexicalGlobalObject, lexicalGlobalObject, wrapped().primaryKey());
     });
 }

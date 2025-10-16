@@ -81,7 +81,7 @@ void IntlDisplayNamesConstructor::finishCreation(VM& vm, IntlDisplayNamesPrototy
 JSC_DEFINE_HOST_FUNCTION(constructIntlDisplayNames, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* newTarget = asObject(callFrame->newTarget());
     Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, displayNamesStructure, newTarget, callFrame->jsCallee());
@@ -99,7 +99,7 @@ JSC_DEFINE_HOST_FUNCTION(constructIntlDisplayNames, (JSGlobalObject* globalObjec
 JSC_DEFINE_HOST_FUNCTION(callIntlDisplayNames, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "DisplayNames"_s));
 }
@@ -107,7 +107,7 @@ JSC_DEFINE_HOST_FUNCTION(callIntlDisplayNames, (JSGlobalObject* globalObject, Ca
 JSC_DEFINE_HOST_FUNCTION(intlDisplayNamesConstructorSupportedLocalesOf, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     // Intl.DisplayNames.supportedLocalesOf(locales [, options]) (ECMA-402 2.0)
     // https://tc39.es/proposal-intl-displaynames/#sec-Intl.DisplayNames.supportedLocalesOf
 

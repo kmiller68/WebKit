@@ -84,7 +84,7 @@ public:
 
     ALWAYS_INLINE static JSCellButterfly* createFromArray(JSGlobalObject* globalObject, VM& vm, JSArray* array)
     {
-        auto throwScope = DECLARE_THROW_SCOPE(vm);
+        auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
         IndexingType indexingType = array->indexingType() & IndexingShapeMask;
         unsigned length = array->length();

@@ -67,7 +67,7 @@ JSObject* TemporalCalendar::toTemporalCalendarWithISODefault(JSGlobalObject* glo
 JSObject* TemporalCalendar::getTemporalCalendarWithISODefault(JSGlobalObject* globalObject, JSValue itemValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (itemValue.inherits<TemporalPlainDate>())
         return jsCast<TemporalPlainDate*>(itemValue)->calendar();
@@ -98,7 +98,7 @@ static std::optional<CalendarID> parseTemporalCalendarString(JSGlobalObject* glo
 {
     // FIXME: Implement parsing temporal calendar string, which requires full ISO 8601 parser.
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     throwRangeError(globalObject, scope, "invalid calendar ID"_s);
     return std::nullopt;
 }
@@ -107,7 +107,7 @@ static std::optional<CalendarID> parseTemporalCalendarString(JSGlobalObject* glo
 JSObject* TemporalCalendar::from(JSGlobalObject* globalObject, JSValue calendarLike)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (calendarLike.isObject()) {
         // FIXME: Also support PlainMonthDay, PlainYearMonth, ZonedDateTime.
@@ -152,7 +152,7 @@ JSObject* TemporalCalendar::from(JSGlobalObject* globalObject, JSValue calendarL
 ISO8601::PlainDate TemporalCalendar::isoDateFromFields(JSGlobalObject* globalObject, JSObject* temporalDateLike, TemporalOverflow overflow)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue dayProperty = temporalDateLike->get(globalObject, vm.propertyNames->day);
     RETURN_IF_EXCEPTION(scope, { });
@@ -230,7 +230,7 @@ ISO8601::PlainDate TemporalCalendar::isoDateFromFields(JSGlobalObject* globalObj
     ASSERT(isInteger(day) && day > 0);
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (overflow == TemporalOverflow::Constrain) {
         month = std::min<unsigned>(month, 12);
@@ -269,7 +269,7 @@ ISO8601::PlainDate TemporalCalendar::balanceISODate(JSGlobalObject* globalObject
 ISO8601::PlainDate TemporalCalendar::addDurationToDate(JSGlobalObject* globalObject, const ISO8601::PlainDate& plainDate, const ISO8601::Duration& duration, TemporalOverflow overflow)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto dateDuration = TemporalDuration::toDateDurationRecordWithoutTime(globalObject, duration);
     RETURN_IF_EXCEPTION(scope, { });
@@ -280,7 +280,7 @@ ISO8601::PlainDate TemporalCalendar::addDurationToDate(JSGlobalObject* globalObj
 ISO8601::PlainDate TemporalCalendar::isoDateAdd(JSGlobalObject* globalObject, const ISO8601::PlainDate& plainDate, const ISO8601::Duration& duration, TemporalOverflow overflow)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double years = plainDate.year() + duration.years();
     double months = plainDate.month() + duration.months();
@@ -334,7 +334,7 @@ int32_t TemporalCalendar::isoDateCompare(const ISO8601::PlainDate& d1, const ISO
 bool TemporalCalendar::equals(JSGlobalObject* globalObject, TemporalCalendar* other)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (other == this)
         return true;

@@ -25,9 +25,9 @@
 
 #include "BuiltinNames.h"
 #include "BytecodeCacheError.h"
-#include "CatchScope.h"
 #include "CodeCache.h"
 #include "Exception.h"
+#include "ExceptionScope.h"
 #include "IdentifierInlines.h"
 #include "Interpreter.h"
 #include "JSGlobalObject.h"
@@ -128,7 +128,7 @@ JSValue evaluate(JSGlobalObject* globalObject, const SourceCode& source, JSValue
 {
     VM& vm = globalObject->vm();
     JSLockHolder lock(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     RELEASE_ASSERT(vm.atomStringTable() == Thread::currentSingleton().atomStringTable());
     RELEASE_ASSERT(!vm.isCollectorBusyOnCurrentThread());
 
@@ -139,7 +139,7 @@ JSValue evaluate(JSGlobalObject* globalObject, const SourceCode& source, JSValue
 
     if (scope.exception()) [[unlikely]] {
         returnedException = scope.exception();
-        scope.clearException();
+        (void)scope.tryClearException();
         return jsUndefined();
     }
 
@@ -177,7 +177,7 @@ static Symbol* createSymbolForEntrypointModule(VM& vm)
     return Symbol::create(vm, privateName.uid());
 }
 
-static JSInternalPromise* rejectPromise(ThrowScope& scope, JSGlobalObject* globalObject)
+static JSInternalPromise* rejectPromise(ExceptionScope& scope, JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
     JSInternalPromise* promise = JSInternalPromise::create(vm, globalObject->internalPromiseStructure());
@@ -208,7 +208,7 @@ JSInternalPromise* loadAndEvaluateModule(JSGlobalObject* globalObject, const Sou
 {
     VM& vm = globalObject->vm();
     JSLockHolder lock(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     RELEASE_ASSERT(vm.atomStringTable() == Thread::currentSingleton().atomStringTable());
     RELEASE_ASSERT(!vm.isCollectorBusyOnCurrentThread());
 
@@ -234,7 +234,7 @@ JSInternalPromise* loadModule(JSGlobalObject* globalObject, const SourceCode& so
 {
     VM& vm = globalObject->vm();
     JSLockHolder lock(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     RELEASE_ASSERT(vm.atomStringTable() == Thread::currentSingleton().atomStringTable());
     RELEASE_ASSERT(!vm.isCollectorBusyOnCurrentThread());
 
@@ -272,7 +272,7 @@ UncheckedKeyHashMap<RefPtr<UniquedStringImpl>, String> retrieveImportAttributesF
     // https://tc39.es/proposal-import-attributes/#sec-evaluate-import-call
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (options.isUndefined())
         return { };
@@ -328,7 +328,7 @@ UncheckedKeyHashMap<RefPtr<UniquedStringImpl>, String> retrieveImportAttributesF
 std::optional<ScriptFetchParameters::Type> retrieveTypeImportAttribute(JSGlobalObject* globalObject, const UncheckedKeyHashMap<RefPtr<UniquedStringImpl>, String>& attributes)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (attributes.isEmpty())
         return { };

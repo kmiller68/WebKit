@@ -64,7 +64,7 @@ public:
     static JSC::EncodedJSValue call(JSC::JSGlobalObject& lexicalGlobalObject, JSC::CallFrame& callFrame, const char* operationName)
     {
         auto& vm = JSC::getVM(&lexicalGlobalObject);
-        auto throwScope = DECLARE_THROW_SCOPE(vm);
+        auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
         auto thisValue = callFrame.thisValue().toThis(&lexicalGlobalObject, JSC::ECMAMode::strict());
         auto thisObject = jsEventTargetCast(vm, thisValue.isUndefinedOrNull() ? JSC::JSValue(&lexicalGlobalObject) : thisValue);

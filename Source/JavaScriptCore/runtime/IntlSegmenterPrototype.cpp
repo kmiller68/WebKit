@@ -77,7 +77,7 @@ void IntlSegmenterPrototype::finishCreation(VM& vm)
 JSC_DEFINE_HOST_FUNCTION(intlSegmenterPrototypeFuncSegment, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* segmenter = jsDynamicCast<IntlSegmenter*>(callFrame->thisValue());
     if (!segmenter) [[unlikely]]
@@ -90,7 +90,7 @@ JSC_DEFINE_HOST_FUNCTION(intlSegmenterPrototypeFuncSegment, (JSGlobalObject* glo
 JSC_DEFINE_HOST_FUNCTION(intlSegmenterPrototypeFuncResolvedOptions, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* segmenter = jsDynamicCast<IntlSegmenter*>(callFrame->thisValue());
     if (!segmenter) [[unlikely]]

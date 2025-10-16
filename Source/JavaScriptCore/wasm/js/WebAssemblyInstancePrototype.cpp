@@ -41,7 +41,7 @@ const ClassInfo WebAssemblyInstancePrototype::s_info = { "WebAssembly.Instance"_
 
 static ALWAYS_INLINE JSWebAssemblyInstance* getInstance(JSGlobalObject* globalObject, VM& vm, JSValue v)
 {
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     JSWebAssemblyInstance* result = jsDynamicCast<JSWebAssemblyInstance*>(v);
     if (!result) {
         throwException(globalObject, throwScope, 
@@ -54,7 +54,7 @@ static ALWAYS_INLINE JSWebAssemblyInstance* getInstance(JSGlobalObject* globalOb
 JSC_DEFINE_HOST_FUNCTION(webAssemblyInstanceProtoGetterExports, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSWebAssemblyInstance* instance = getInstance(globalObject, vm, callFrame->thisValue());
     RETURN_IF_EXCEPTION(scope, { });
     RELEASE_AND_RETURN(scope, JSValue::encode(instance->moduleRecord()->exportsObject()));

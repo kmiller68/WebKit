@@ -26,8 +26,8 @@
 #ifndef APIUtils_h
 #define APIUtils_h
 
-#include "CatchScope.h"
 #include "Exception.h"
+#include "ExceptionScope.h"
 #include "JSCJSValue.h"
 #include "JSGlobalObjectInspectorController.h"
 #include "JSValueRef.h"
@@ -37,14 +37,16 @@ enum class ExceptionStatus {
     DidNotThrow
 };
 
-inline ExceptionStatus handleExceptionIfNeeded(JSC::CatchScope& scope, JSContextRef ctx, JSValueRef* returnedExceptionRef)
+inline ExceptionStatus handleExceptionIfNeeded(JSC::ExceptionScope& scope, JSContextRef ctx, JSValueRef* returnedExceptionRef)
 {
+    // Don't simulate an exception here. We're returning to API user code and we have no idea what they're going to do.
+    scope.noRethrow();
     JSC::JSGlobalObject* globalObject = toJS(ctx);
     if (scope.exception()) [[unlikely]] {
         JSC::Exception* exception = scope.exception();
         if (returnedExceptionRef)
             *returnedExceptionRef = toRef(globalObject, exception->value());
-        scope.clearException();
+        scope.clearExceptionIncludingTermination();
 #if ENABLE(REMOTE_INSPECTOR)
         globalObject->inspectorController().reportAPIException(globalObject, exception);
 #endif

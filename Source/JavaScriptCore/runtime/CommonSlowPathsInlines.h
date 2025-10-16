@@ -202,7 +202,7 @@ ALWAYS_INLINE JSCellButterfly* trySpreadFast(JSGlobalObject* globalObject, JSCel
 inline void opEnumeratorPutByVal(JSGlobalObject* globalObject, JSValue baseValue, JSValue propertyNameValue, JSValue value, ECMAMode ecmaMode, unsigned index, JSPropertyNameEnumerator::Flag mode, JSPropertyNameEnumerator* enumerator, ArrayProfile* arrayProfile = nullptr, uint8_t* enumeratorMetadata = nullptr)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     switch (mode) {
     case JSPropertyNameEnumerator::IndexedMode: {

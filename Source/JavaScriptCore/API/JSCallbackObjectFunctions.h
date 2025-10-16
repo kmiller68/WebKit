@@ -143,7 +143,7 @@ template <class Parent>
 bool JSCallbackObject<Parent>::getOwnPropertySlot(JSObject* object, JSGlobalObject* globalObject, PropertyName propertyName, PropertySlot& slot)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSCallbackObject* thisObject = jsCast<JSCallbackObject*>(object);
     JSContextRef ctx = toRef(globalObject);
@@ -229,7 +229,7 @@ template <class Parent>
 EncodedJSValue JSCallbackObject<Parent>::customToPrimitive(JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSCallbackObject* thisObject = jsDynamicCast<JSCallbackObject*>(callFrame->thisValue());
     if (!thisObject)
@@ -263,7 +263,7 @@ template <class Parent>
 bool JSCallbackObject<Parent>::put(JSCell* cell, JSGlobalObject* globalObject, PropertyName propertyName, JSValue value, PutPropertySlot& slot)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSCallbackObject* thisObject = jsCast<JSCallbackObject*>(cell);
     JSContextRef ctx = toRef(globalObject);
@@ -333,7 +333,7 @@ template <class Parent>
 bool JSCallbackObject<Parent>::putByIndex(JSCell* cell, JSGlobalObject* globalObject, unsigned propertyIndex, JSValue value, bool shouldThrow)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSCallbackObject* thisObject = jsCast<JSCallbackObject*>(cell);
     JSContextRef ctx = toRef(globalObject);
@@ -393,7 +393,7 @@ template <class Parent>
 bool JSCallbackObject<Parent>::deleteProperty(JSCell* cell, JSGlobalObject* globalObject, PropertyName propertyName, DeletePropertySlot& slot)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSCallbackObject* thisObject = jsCast<JSCallbackObject*>(cell);
     JSContextRef ctx = toRef(globalObject);
@@ -470,7 +470,7 @@ template <class Parent>
 EncodedJSValue JSCallbackObject<Parent>::constructImpl(JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* constructor = callFrame->jsCallee();
     JSContextRef execRef = toRef(globalObject);
@@ -504,7 +504,7 @@ template <class Parent>
 bool JSCallbackObject<Parent>::customHasInstance(JSObject* object, JSGlobalObject* globalObject, JSValue value)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSCallbackObject* thisObject = jsCast<JSCallbackObject*>(object);
     JSContextRef execRef = toRef(globalObject);
@@ -548,7 +548,7 @@ template <class Parent>
 EncodedJSValue JSCallbackObject<Parent>::callImpl(JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSContextRef execRef = toRef(globalObject);
     JSObjectRef functionRef = toRef(callFrame->jsCallee());
@@ -647,7 +647,7 @@ template <class Parent>
 JSValue JSCallbackObject<Parent>::getStaticValue(JSGlobalObject* globalObject, PropertyName propertyName)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObjectRef thisRef = toRef(jsCast<JSObject*>(this));
     
@@ -681,7 +681,7 @@ template <class Parent>
 EncodedJSValue JSCallbackObject<Parent>::staticFunctionGetterImpl(JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName propertyName)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSCallbackObject* thisObj = asCallbackObject(thisValue);
     
@@ -714,7 +714,7 @@ template <class Parent>
 EncodedJSValue JSCallbackObject<Parent>::callbackGetterImpl(JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName propertyName)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSCallbackObject* thisObj = asCallbackObject(thisValue);
     

@@ -67,13 +67,13 @@ private:
         Ref vm = globalObject->vm();
 
         JSC::JSLockHolder lock(vm);
-        auto scope = DECLARE_CATCH_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         auto result = protectedCallback()->invokeRethrowingException(m_accumulator.getValue(), value, m_index++);
 
         JSC::Exception* exception = scope.exception();
         if (exception) [[unlikely]] {
-            scope.clearException();
+            TRY_CLEAR_EXCEPTION(scope, void());
             auto value = exception->value();
             protectedPromise()->reject<IDLAny>(value);
             Ref { m_signal }->signalAbort(value);

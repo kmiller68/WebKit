@@ -136,7 +136,7 @@ void JSEventListener::handleEvent(ScriptExecutionContext& scriptExecutionContext
 
     VM& vm = scriptExecutionContext.vm();
     JSLockHolder lock(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // See https://dom.spec.whatwg.org/#dispatching-events spec on calling handleEvent.
     // "If this throws an exception, report the exception." It should not propagate the
@@ -205,7 +205,7 @@ void JSEventListener::handleEvent(ScriptExecutionContext& scriptExecutionContext
         handleEventFunction = jsFunction->get(lexicalGlobalObject, builtinNames(vm).handleEventPublicName());
         if (scope.exception()) [[unlikely]] {
             auto* exception = scope.exception();
-            scope.clearException();
+            TRY_CLEAR_EXCEPTION(scope, void());
             event.protectedTarget()->uncaughtExceptionInEventHandler();
             reportException(jsFunctionGlobalObject, exception);
             return;

@@ -82,7 +82,7 @@ static inline bool abstractAccess(JSGlobalObject* globalObject, JSScope* scope, 
         if (scope->type() == ModuleEnvironmentType) {
             JSModuleEnvironment* moduleEnvironment = jsCast<JSModuleEnvironment*>(scope);
             AbstractModuleRecord* moduleRecord = moduleEnvironment->moduleRecord();
-            auto catchScope = DECLARE_CATCH_SCOPE(vm);
+            auto catchScope = DECLARE_EXCEPTION_SCOPE(vm);
             AbstractModuleRecord::Resolution resolution = moduleRecord->resolveImport(globalObject, ident);
             catchScope.releaseAssertNoException();
             if (resolution.type == AbstractModuleRecord::Resolution::Type::Resolved) {
@@ -209,7 +209,7 @@ JSObject* JSScope::objectAtScope(JSScope* scope)
 static inline bool isUnscopable(JSGlobalObject* globalObject, JSScope* scope, JSObject* object, const Identifier& ident)
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     if (scope->type() != WithScopeType)
         return false;
 
@@ -227,7 +227,7 @@ template<typename ReturnPredicateFunctor, typename SkipPredicateFunctor>
 ALWAYS_INLINE JSObject* JSScope::resolve(JSGlobalObject* globalObject, JSScope* scope, const Identifier& ident, ReturnPredicateFunctor returnPredicate, SkipPredicateFunctor skipPredicate)
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     ScopeChainIterator end = scope->end();
     ScopeChainIterator it = scope->begin();
     while (1) {
@@ -271,7 +271,7 @@ ALWAYS_INLINE JSObject* JSScope::resolve(JSGlobalObject* globalObject, JSScope* 
 JSValue JSScope::resolveScopeForHoistingFuncDeclInEval(JSGlobalObject* globalObject, JSScope* scope, const Identifier& ident)
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto returnPredicate = [&] (JSScope* scope) -> bool {
         return scope->isVarScope();

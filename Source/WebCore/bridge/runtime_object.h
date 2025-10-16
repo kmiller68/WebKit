@@ -32,7 +32,7 @@
 namespace JSC {
 namespace Bindings {
 
-Exception* throwRuntimeObjectInvalidAccessError(JSGlobalObject*, ThrowScope&);
+Exception* throwRuntimeObjectInvalidAccessError(JSGlobalObject*, ExceptionScope&);
 
 class WEBCORE_EXPORT RuntimeObject : public JSNonFinalObject {
 public:

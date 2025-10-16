@@ -261,7 +261,7 @@ std::optional<TemporalUnit> temporalUnitType(StringView unit)
 std::optional<TemporalUnit> temporalLargestUnit(JSGlobalObject* globalObject, JSObject* options, std::initializer_list<TemporalUnit> disallowedUnits, TemporalUnit autoValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     String largestUnit = intlStringOption(globalObject, options, vm.propertyNames->largestUnit, { }, { }, { });
     RETURN_IF_EXCEPTION(scope, std::nullopt);
@@ -291,7 +291,7 @@ std::optional<TemporalUnit> temporalLargestUnit(JSGlobalObject* globalObject, JS
 std::optional<TemporalUnit> temporalSmallestUnit(JSGlobalObject* globalObject, JSObject* options, std::initializer_list<TemporalUnit> disallowedUnits)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     String smallestUnit = intlStringOption(globalObject, options, vm.propertyNames->smallestUnit, { }, { }, { });
     RETURN_IF_EXCEPTION(scope, std::nullopt);
@@ -323,7 +323,7 @@ std::tuple<TemporalUnit, TemporalUnit, RoundingMode, double> extractDifferenceOp
     };
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* options = intlGetOptionsObject(globalObject, optionsValue);
     RETURN_IF_EXCEPTION(scope, { });
@@ -356,7 +356,7 @@ std::tuple<TemporalUnit, TemporalUnit, RoundingMode, double> extractDifferenceOp
 std::optional<unsigned> temporalFractionalSecondDigits(JSGlobalObject* globalObject, JSObject* options)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!options)
         return std::nullopt;
@@ -391,7 +391,7 @@ std::optional<unsigned> temporalFractionalSecondDigits(JSGlobalObject* globalObj
 PrecisionData secondsStringPrecision(JSGlobalObject* globalObject, JSObject* options)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto smallestUnit = temporalSmallestUnit(globalObject, options, { TemporalUnit::Year, TemporalUnit::Month, TemporalUnit::Week, TemporalUnit::Day, TemporalUnit::Hour });
     RETURN_IF_EXCEPTION(scope, { });
@@ -540,7 +540,7 @@ static double doubleNumberOption(JSGlobalObject* globalObject, JSObject* options
     // https://tc39.es/proposal-temporal/#sec-getoption
     // 'number' case.
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!options)
         return defaultValue;
@@ -567,7 +567,7 @@ static double doubleNumberOption(JSGlobalObject* globalObject, JSObject* options
 double temporalRoundingIncrement(JSGlobalObject* globalObject, JSObject* options, std::optional<double> dividend, bool inclusive)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double maximum;
     if (!dividend)
@@ -723,7 +723,7 @@ TemporalOverflow toTemporalOverflow(JSGlobalObject* globalObject, JSObject* opti
 TemporalOverflow toTemporalOverflow(JSGlobalObject* globalObject, JSValue val)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* options = intlGetOptionsObject(globalObject, val);
     RETURN_IF_EXCEPTION(scope, { });
@@ -741,7 +741,7 @@ String toTemporalCalendarName(JSGlobalObject* globalObject, JSObject* options)
 void rejectObjectWithCalendarOrTimeZone(JSGlobalObject* globalObject, JSObject* object)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // FIXME: Also support PlainMonthDay, PlainYearMonth, ZonedDateTime.
     if (object->inherits<TemporalPlainDate>()

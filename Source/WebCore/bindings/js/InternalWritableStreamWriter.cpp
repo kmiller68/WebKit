@@ -38,7 +38,7 @@ static ExceptionOr<JSC::JSValue> invokeWritableStreamWriterFunction(JSC::JSGloba
     JSC::VM& vm = globalObject.vm();
     JSC::JSLockHolder lock(vm);
 
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto function = globalObject.get(&globalObject, identifier);
     ASSERT(!!scope.exception() || function.isCallable());

@@ -61,7 +61,7 @@ void RuntimeMethod::finishCreation(VM& vm, const String& ident)
 
 JSC_DEFINE_CUSTOM_GETTER(methodLengthGetter, (JSGlobalObject* exec, EncodedJSValue thisValue, PropertyName))
 {
-    auto scope = DECLARE_THROW_SCOPE(exec->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(exec->vm());
 
     RuntimeMethod* thisObject = jsDynamicCast<RuntimeMethod*>(JSValue::decode(thisValue));
     if (!thisObject)
@@ -88,7 +88,7 @@ GCClient::IsoSubspace* RuntimeMethod::subspaceForImpl(VM& vm)
 
 JSC_DEFINE_HOST_FUNCTION(callRuntimeMethod, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
-    auto scope = DECLARE_THROW_SCOPE(globalObject->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
 
     RuntimeMethod* method = static_cast<RuntimeMethod*>(callFrame->jsCallee());
 

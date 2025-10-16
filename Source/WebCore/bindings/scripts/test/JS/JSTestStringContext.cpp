@@ -209,7 +209,7 @@ void JSTestStringContext::destroy(JSC::JSCell* cell)
 JSC_DEFINE_CUSTOM_GETTER(jsTestStringContextConstructor, (JSGlobalObject* lexicalGlobalObject, EncodedJSValue thisValue, PropertyName))
 {
     auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* prototype = jsDynamicCast<JSTestStringContextPrototype*>(JSValue::decode(thisValue));
     if (!prototype) [[unlikely]]
         return throwVMTypeError(lexicalGlobalObject, throwScope);
@@ -219,7 +219,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestStringContextConstructor, (JSGlobalObject* lexica
 static inline JSValue jsTestStringContext_attributeWithStringContextTrustedHTMLGetter(JSGlobalObject& lexicalGlobalObject, JSTestStringContext& thisObject)
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLStringContextTrustedHTMLAdaptor<IDLDOMString>>(lexicalGlobalObject, throwScope, impl.attributeWithStringContextTrustedHTML())));
 }
@@ -233,7 +233,7 @@ static inline bool setJSTestStringContext_attributeWithStringContextTrustedHTMLS
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& impl = thisObject.wrapped();
     auto nativeValueConversionResult = convert<IDLStringContextTrustedHTMLAdaptor<IDLDOMString>>(lexicalGlobalObject, value, "TestStringContext attributeWithStringContextTrustedHTML"_s);
     if (nativeValueConversionResult.hasException(throwScope)) [[unlikely]]
@@ -252,7 +252,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestStringContext_attributeWithStringContextTruste
 static inline JSValue jsTestStringContext_attributeWithStringContextTrustedScriptGetter(JSGlobalObject& lexicalGlobalObject, JSTestStringContext& thisObject)
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLStringContextTrustedScriptAdaptor<IDLDOMString>>(lexicalGlobalObject, throwScope, impl.attributeWithStringContextTrustedScript())));
 }
@@ -266,7 +266,7 @@ static inline bool setJSTestStringContext_attributeWithStringContextTrustedScrip
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& impl = thisObject.wrapped();
     auto nativeValueConversionResult = convert<IDLStringContextTrustedScriptAdaptor<IDLDOMString>>(lexicalGlobalObject, value, "TestStringContext attributeWithStringContextTrustedScript"_s);
     if (nativeValueConversionResult.hasException(throwScope)) [[unlikely]]
@@ -285,7 +285,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestStringContext_attributeWithStringContextTruste
 static inline JSValue jsTestStringContext_attributeWithStringContextTrustedScriptURLGetter(JSGlobalObject& lexicalGlobalObject, JSTestStringContext& thisObject)
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLStringContextTrustedScriptURLAdaptor<IDLUSVString>>(lexicalGlobalObject, throwScope, impl.attributeWithStringContextTrustedScriptURL())));
 }
@@ -299,7 +299,7 @@ static inline bool setJSTestStringContext_attributeWithStringContextTrustedScrip
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& impl = thisObject.wrapped();
     auto nativeValueConversionResult = convert<IDLStringContextTrustedScriptURLAdaptor<IDLUSVString>>(lexicalGlobalObject, value, "TestStringContext attributeWithStringContextTrustedScriptURL"_s);
     if (nativeValueConversionResult.hasException(throwScope)) [[unlikely]]
@@ -318,7 +318,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestStringContext_attributeWithStringContextTruste
 static inline JSValue jsTestStringContext_attributeWithStringContextTrustedHTMLAndLegacyNullToEmptyStringGetter(JSGlobalObject& lexicalGlobalObject, JSTestStringContext& thisObject)
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLLegacyNullToEmptyStringStringContextTrustedHTMLAdaptor<IDLDOMString>>(lexicalGlobalObject, throwScope, impl.attributeWithStringContextTrustedHTMLAndLegacyNullToEmptyString())));
 }
@@ -332,7 +332,7 @@ static inline bool setJSTestStringContext_attributeWithStringContextTrustedHTMLA
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& impl = thisObject.wrapped();
     auto nativeValueConversionResult = convert<IDLLegacyNullToEmptyStringStringContextTrustedHTMLAdaptor<IDLDOMString>>(lexicalGlobalObject, value, "TestStringContext attributeWithStringContextTrustedHTMLAndLegacyNullToEmptyString"_s);
     if (nativeValueConversionResult.hasException(throwScope)) [[unlikely]]
@@ -351,7 +351,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestStringContext_attributeWithStringContextTruste
 static inline JSValue jsTestStringContext_attributeWithStringContextTrustedScriptAndLegacyNullToEmptyStringGetter(JSGlobalObject& lexicalGlobalObject, JSTestStringContext& thisObject)
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLLegacyNullToEmptyStringStringContextTrustedScriptAdaptor<IDLDOMString>>(lexicalGlobalObject, throwScope, impl.attributeWithStringContextTrustedScriptAndLegacyNullToEmptyString())));
 }
@@ -365,7 +365,7 @@ static inline bool setJSTestStringContext_attributeWithStringContextTrustedScrip
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& impl = thisObject.wrapped();
     auto nativeValueConversionResult = convert<IDLLegacyNullToEmptyStringStringContextTrustedScriptAdaptor<IDLDOMString>>(lexicalGlobalObject, value, "TestStringContext attributeWithStringContextTrustedScriptAndLegacyNullToEmptyString"_s);
     if (nativeValueConversionResult.hasException(throwScope)) [[unlikely]]
@@ -384,7 +384,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestStringContext_attributeWithStringContextTruste
 static inline JSValue jsTestStringContext_attributeWithStringContextTrustedScriptURLAndLegacyNullToEmptyStringGetter(JSGlobalObject& lexicalGlobalObject, JSTestStringContext& thisObject)
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLLegacyNullToEmptyStringStringContextTrustedScriptURLAdaptor<IDLUSVString>>(lexicalGlobalObject, throwScope, impl.attributeWithStringContextTrustedScriptURLAndLegacyNullToEmptyString())));
 }
@@ -398,7 +398,7 @@ static inline bool setJSTestStringContext_attributeWithStringContextTrustedScrip
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& impl = thisObject.wrapped();
     auto nativeValueConversionResult = convert<IDLLegacyNullToEmptyStringStringContextTrustedScriptURLAdaptor<IDLUSVString>>(lexicalGlobalObject, value, "TestStringContext attributeWithStringContextTrustedScriptURLAndLegacyNullToEmptyString"_s);
     if (nativeValueConversionResult.hasException(throwScope)) [[unlikely]]
@@ -417,7 +417,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestStringContext_attributeWithStringContextTruste
 static inline JSValue jsTestStringContext_reflectedAttributeWithStringContextTrustedHTMLGetter(JSGlobalObject& lexicalGlobalObject, JSTestStringContext& thisObject)
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLAtomStringStringContextTrustedHTMLAdaptor<IDLDOMString>>(lexicalGlobalObject, throwScope, impl.attributeWithoutSynchronization(WebCore::HTMLNames::reflectedattributewithstringcontexttrustedhtmlAttr))));
 }
@@ -431,7 +431,7 @@ static inline bool setJSTestStringContext_reflectedAttributeWithStringContextTru
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& impl = thisObject.wrapped();
     auto nativeValueConversionResult = convert<IDLAtomStringStringContextTrustedHTMLAdaptor<IDLDOMString>>(lexicalGlobalObject, value, "TestStringContext reflectedAttributeWithStringContextTrustedHTML"_s);
     if (nativeValueConversionResult.hasException(throwScope)) [[unlikely]]
@@ -450,7 +450,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestStringContext_reflectedAttributeWithStringCont
 static inline JSValue jsTestStringContext_reflectedAttributeWithStringContextTrustedScriptGetter(JSGlobalObject& lexicalGlobalObject, JSTestStringContext& thisObject)
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLAtomStringStringContextTrustedScriptAdaptor<IDLDOMString>>(lexicalGlobalObject, throwScope, impl.attributeWithoutSynchronization(WebCore::HTMLNames::reflectedattributewithstringcontexttrustedscriptAttr))));
 }
@@ -464,7 +464,7 @@ static inline bool setJSTestStringContext_reflectedAttributeWithStringContextTru
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& impl = thisObject.wrapped();
     auto nativeValueConversionResult = convert<IDLAtomStringStringContextTrustedScriptAdaptor<IDLDOMString>>(lexicalGlobalObject, value, "TestStringContext reflectedAttributeWithStringContextTrustedScript"_s);
     if (nativeValueConversionResult.hasException(throwScope)) [[unlikely]]
@@ -483,7 +483,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestStringContext_reflectedAttributeWithStringCont
 static inline JSValue jsTestStringContext_reflectedAttributeWithStringContextTrustedScriptURLGetter(JSGlobalObject& lexicalGlobalObject, JSTestStringContext& thisObject)
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLAtomStringStringContextTrustedScriptURLAdaptor<IDLUSVString>>(lexicalGlobalObject, throwScope, impl.attributeWithoutSynchronization(WebCore::HTMLNames::reflectedattributewithstringcontexttrustedscripturlAttr))));
 }
@@ -497,7 +497,7 @@ static inline bool setJSTestStringContext_reflectedAttributeWithStringContextTru
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& impl = thisObject.wrapped();
     auto nativeValueConversionResult = convert<IDLAtomStringStringContextTrustedScriptURLAdaptor<IDLUSVString>>(lexicalGlobalObject, value, "TestStringContext reflectedAttributeWithStringContextTrustedScriptURL"_s);
     if (nativeValueConversionResult.hasException(throwScope)) [[unlikely]]
@@ -516,7 +516,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestStringContext_reflectedAttributeWithStringCont
 static inline JSValue jsTestStringContext_reflectedUrlAttributeWithStringContextTrustedHTMLGetter(JSGlobalObject& lexicalGlobalObject, JSTestStringContext& thisObject)
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLAtomStringStringContextTrustedHTMLAdaptor<IDLDOMString>>(lexicalGlobalObject, throwScope, impl.getURLAttributeForBindings(WebCore::HTMLNames::reflectedurlattributewithstringcontexttrustedhtmlAttr))));
 }
@@ -530,7 +530,7 @@ static inline bool setJSTestStringContext_reflectedUrlAttributeWithStringContext
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& impl = thisObject.wrapped();
     auto nativeValueConversionResult = convert<IDLAtomStringStringContextTrustedHTMLAdaptor<IDLDOMString>>(lexicalGlobalObject, value, "TestStringContext reflectedUrlAttributeWithStringContextTrustedHTML"_s);
     if (nativeValueConversionResult.hasException(throwScope)) [[unlikely]]
@@ -549,7 +549,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestStringContext_reflectedUrlAttributeWithStringC
 static inline JSValue jsTestStringContext_reflectedUrlAttributeWithStringContextTrustedScriptGetter(JSGlobalObject& lexicalGlobalObject, JSTestStringContext& thisObject)
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLAtomStringStringContextTrustedScriptAdaptor<IDLDOMString>>(lexicalGlobalObject, throwScope, impl.getURLAttributeForBindings(WebCore::HTMLNames::reflectedurlattributewithstringcontexttrustedscriptAttr))));
 }
@@ -563,7 +563,7 @@ static inline bool setJSTestStringContext_reflectedUrlAttributeWithStringContext
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& impl = thisObject.wrapped();
     auto nativeValueConversionResult = convert<IDLAtomStringStringContextTrustedScriptAdaptor<IDLDOMString>>(lexicalGlobalObject, value, "TestStringContext reflectedUrlAttributeWithStringContextTrustedScript"_s);
     if (nativeValueConversionResult.hasException(throwScope)) [[unlikely]]
@@ -582,7 +582,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestStringContext_reflectedUrlAttributeWithStringC
 static inline JSValue jsTestStringContext_reflectedUrlAttributeWithStringContextTrustedScriptURLGetter(JSGlobalObject& lexicalGlobalObject, JSTestStringContext& thisObject)
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLAtomStringStringContextTrustedScriptURLAdaptor<IDLUSVString>>(lexicalGlobalObject, throwScope, impl.getURLAttributeForBindings(WebCore::HTMLNames::reflectedurlattributewithstringcontexttrustedscripturlAttr))));
 }
@@ -596,7 +596,7 @@ static inline bool setJSTestStringContext_reflectedUrlAttributeWithStringContext
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto& impl = thisObject.wrapped();
     auto nativeValueConversionResult = convert<IDLAtomStringStringContextTrustedScriptURLAdaptor<IDLUSVString>>(lexicalGlobalObject, value, "TestStringContext reflectedUrlAttributeWithStringContextTrustedScriptURL"_s);
     if (nativeValueConversionResult.hasException(throwScope)) [[unlikely]]
@@ -615,7 +615,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestStringContext_reflectedUrlAttributeWithStringC
 static inline JSC::EncodedJSValue jsTestStringContextPrototypeFunction_methodWithStringContextTrustedHTMLBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestStringContext>::ClassParameter castedThis)
 {
     auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     auto& impl = castedThis->wrapped();
@@ -636,7 +636,7 @@ JSC_DEFINE_HOST_FUNCTION(jsTestStringContextPrototypeFunction_methodWithStringCo
 static inline JSC::EncodedJSValue jsTestStringContextPrototypeFunction_methodWithStringContextTrustedScriptBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestStringContext>::ClassParameter castedThis)
 {
     auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     auto& impl = castedThis->wrapped();
@@ -657,7 +657,7 @@ JSC_DEFINE_HOST_FUNCTION(jsTestStringContextPrototypeFunction_methodWithStringCo
 static inline JSC::EncodedJSValue jsTestStringContextPrototypeFunction_methodWithStringContextTrustedScriptURLBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestStringContext>::ClassParameter castedThis)
 {
     auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     auto& impl = castedThis->wrapped();
@@ -678,7 +678,7 @@ JSC_DEFINE_HOST_FUNCTION(jsTestStringContextPrototypeFunction_methodWithStringCo
 static inline JSC::EncodedJSValue jsTestStringContextPrototypeFunction_methodWithStringContextTrustedHTMLAndLegacyNullToEmptyStringBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestStringContext>::ClassParameter castedThis)
 {
     auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     auto& impl = castedThis->wrapped();
@@ -699,7 +699,7 @@ JSC_DEFINE_HOST_FUNCTION(jsTestStringContextPrototypeFunction_methodWithStringCo
 static inline JSC::EncodedJSValue jsTestStringContextPrototypeFunction_methodWithStringContextTrustedScriptAndLegacyNullToEmptyStringBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestStringContext>::ClassParameter castedThis)
 {
     auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     auto& impl = castedThis->wrapped();
@@ -720,7 +720,7 @@ JSC_DEFINE_HOST_FUNCTION(jsTestStringContextPrototypeFunction_methodWithStringCo
 static inline JSC::EncodedJSValue jsTestStringContextPrototypeFunction_methodWithStringContextTrustedScriptURLAndLegacyNullToEmptyStringBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestStringContext>::ClassParameter castedThis)
 {
     auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     auto& impl = castedThis->wrapped();

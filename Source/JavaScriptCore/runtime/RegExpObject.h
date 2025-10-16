@@ -20,9 +20,9 @@
 
 #pragma once
 
+#include <JavaScriptCore/ExceptionScope.h>
 #include <JavaScriptCore/JSObject.h>
 #include <JavaScriptCore/RegExp.h>
-#include <JavaScriptCore/ThrowScope.h>
 #include <JavaScriptCore/TypeError.h>
 
 namespace JSC {
@@ -74,7 +74,7 @@ public:
     bool setLastIndex(JSGlobalObject* globalObject, size_t lastIndex)
     {
         VM& vm = getVM(globalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         if (lastIndexIsWritable()) [[likely]] {
             m_lastIndex.setWithoutWriteBarrier(jsNumber(lastIndex));
@@ -86,7 +86,7 @@ public:
     bool setLastIndex(JSGlobalObject* globalObject, JSValue lastIndex, bool shouldThrow)
     {
         VM& vm = getVM(globalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         if (lastIndexIsWritable()) [[likely]] {
             m_lastIndex.set(vm, this, lastIndex);

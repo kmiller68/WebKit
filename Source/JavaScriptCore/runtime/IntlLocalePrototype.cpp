@@ -119,7 +119,7 @@ void IntlLocalePrototype::finishCreation(VM& vm)
 JSC_DEFINE_HOST_FUNCTION(intlLocalePrototypeFuncMaximize, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* locale = jsDynamicCast<IntlLocale*>(callFrame->thisValue());
     if (!locale) [[unlikely]]
@@ -135,7 +135,7 @@ JSC_DEFINE_HOST_FUNCTION(intlLocalePrototypeFuncMaximize, (JSGlobalObject* globa
 JSC_DEFINE_HOST_FUNCTION(intlLocalePrototypeFuncMinimize, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* locale = jsDynamicCast<IntlLocale*>(callFrame->thisValue());
     if (!locale) [[unlikely]]
@@ -151,7 +151,7 @@ JSC_DEFINE_HOST_FUNCTION(intlLocalePrototypeFuncMinimize, (JSGlobalObject* globa
 JSC_DEFINE_HOST_FUNCTION(intlLocalePrototypeFuncToString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* locale = jsDynamicCast<IntlLocale*>(callFrame->thisValue());
     if (!locale) [[unlikely]]
@@ -165,7 +165,7 @@ JSC_DEFINE_HOST_FUNCTION(intlLocalePrototypeFuncToString, (JSGlobalObject* globa
 JSC_DEFINE_CUSTOM_GETTER(intlLocalePrototypeGetterBaseName, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* locale = jsDynamicCast<IntlLocale*>(JSValue::decode(thisValue));
     if (!locale) [[unlikely]]
@@ -179,7 +179,7 @@ JSC_DEFINE_CUSTOM_GETTER(intlLocalePrototypeGetterBaseName, (JSGlobalObject* glo
 JSC_DEFINE_CUSTOM_GETTER(intlLocalePrototypeGetterCalendar, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* locale = jsDynamicCast<IntlLocale*>(JSValue::decode(thisValue));
     if (!locale) [[unlikely]]
@@ -193,7 +193,7 @@ JSC_DEFINE_CUSTOM_GETTER(intlLocalePrototypeGetterCalendar, (JSGlobalObject* glo
 JSC_DEFINE_HOST_FUNCTION(intlLocalePrototypeFuncGetCalendars, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* locale = jsDynamicCast<IntlLocale*>(callFrame->thisValue());
     if (!locale) [[unlikely]]
@@ -206,7 +206,7 @@ JSC_DEFINE_HOST_FUNCTION(intlLocalePrototypeFuncGetCalendars, (JSGlobalObject* g
 JSC_DEFINE_CUSTOM_GETTER(intlLocalePrototypeGetterCaseFirst, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* locale = jsDynamicCast<IntlLocale*>(JSValue::decode(thisValue));
     if (!locale) [[unlikely]]
@@ -220,7 +220,7 @@ JSC_DEFINE_CUSTOM_GETTER(intlLocalePrototypeGetterCaseFirst, (JSGlobalObject* gl
 JSC_DEFINE_CUSTOM_GETTER(intlLocalePrototypeGetterCollation, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* locale = jsDynamicCast<IntlLocale*>(JSValue::decode(thisValue));
     if (!locale) [[unlikely]]
@@ -234,7 +234,7 @@ JSC_DEFINE_CUSTOM_GETTER(intlLocalePrototypeGetterCollation, (JSGlobalObject* gl
 JSC_DEFINE_HOST_FUNCTION(intlLocalePrototypeFuncGetCollations, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* locale = jsDynamicCast<IntlLocale*>(callFrame->thisValue());
     if (!locale) [[unlikely]]
@@ -247,7 +247,7 @@ JSC_DEFINE_HOST_FUNCTION(intlLocalePrototypeFuncGetCollations, (JSGlobalObject* 
 JSC_DEFINE_CUSTOM_GETTER(intlLocalePrototypeGetterFirstDayOfWeek, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* locale = jsDynamicCast<IntlLocale*>(JSValue::decode(thisValue));
     if (!locale) [[unlikely]]
@@ -261,7 +261,7 @@ JSC_DEFINE_CUSTOM_GETTER(intlLocalePrototypeGetterFirstDayOfWeek, (JSGlobalObjec
 JSC_DEFINE_CUSTOM_GETTER(intlLocalePrototypeGetterHourCycle, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* locale = jsDynamicCast<IntlLocale*>(JSValue::decode(thisValue));
     if (!locale) [[unlikely]]
@@ -275,7 +275,7 @@ JSC_DEFINE_CUSTOM_GETTER(intlLocalePrototypeGetterHourCycle, (JSGlobalObject* gl
 JSC_DEFINE_HOST_FUNCTION(intlLocalePrototypeFuncGetHourCycles, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* locale = jsDynamicCast<IntlLocale*>(callFrame->thisValue());
     if (!locale) [[unlikely]]
@@ -288,7 +288,7 @@ JSC_DEFINE_HOST_FUNCTION(intlLocalePrototypeFuncGetHourCycles, (JSGlobalObject* 
 JSC_DEFINE_CUSTOM_GETTER(intlLocalePrototypeGetterNumeric, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* locale = jsDynamicCast<IntlLocale*>(JSValue::decode(thisValue));
     if (!locale) [[unlikely]]
@@ -301,7 +301,7 @@ JSC_DEFINE_CUSTOM_GETTER(intlLocalePrototypeGetterNumeric, (JSGlobalObject* glob
 JSC_DEFINE_CUSTOM_GETTER(intlLocalePrototypeGetterNumberingSystem, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* locale = jsDynamicCast<IntlLocale*>(JSValue::decode(thisValue));
     if (!locale) [[unlikely]]
@@ -315,7 +315,7 @@ JSC_DEFINE_CUSTOM_GETTER(intlLocalePrototypeGetterNumberingSystem, (JSGlobalObje
 JSC_DEFINE_HOST_FUNCTION(intlLocalePrototypeFuncGetNumberingSystems, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* locale = jsDynamicCast<IntlLocale*>(callFrame->thisValue());
     if (!locale) [[unlikely]]
@@ -328,7 +328,7 @@ JSC_DEFINE_HOST_FUNCTION(intlLocalePrototypeFuncGetNumberingSystems, (JSGlobalOb
 JSC_DEFINE_CUSTOM_GETTER(intlLocalePrototypeGetterLanguage, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* locale = jsDynamicCast<IntlLocale*>(JSValue::decode(thisValue));
     if (!locale) [[unlikely]]
@@ -342,7 +342,7 @@ JSC_DEFINE_CUSTOM_GETTER(intlLocalePrototypeGetterLanguage, (JSGlobalObject* glo
 JSC_DEFINE_CUSTOM_GETTER(intlLocalePrototypeGetterScript, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* locale = jsDynamicCast<IntlLocale*>(JSValue::decode(thisValue));
     if (!locale) [[unlikely]]
@@ -356,7 +356,7 @@ JSC_DEFINE_CUSTOM_GETTER(intlLocalePrototypeGetterScript, (JSGlobalObject* globa
 JSC_DEFINE_CUSTOM_GETTER(intlLocalePrototypeGetterRegion, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* locale = jsDynamicCast<IntlLocale*>(JSValue::decode(thisValue));
     if (!locale) [[unlikely]]
@@ -370,7 +370,7 @@ JSC_DEFINE_CUSTOM_GETTER(intlLocalePrototypeGetterRegion, (JSGlobalObject* globa
 JSC_DEFINE_CUSTOM_GETTER(intlLocalePrototypeGetterVariants, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* locale = jsDynamicCast<IntlLocale*>(JSValue::decode(thisValue));
     if (!locale) [[unlikely]]
@@ -384,7 +384,7 @@ JSC_DEFINE_CUSTOM_GETTER(intlLocalePrototypeGetterVariants, (JSGlobalObject* glo
 JSC_DEFINE_HOST_FUNCTION(intlLocalePrototypeFuncGetTimeZones, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* locale = jsDynamicCast<IntlLocale*>(callFrame->thisValue());
     if (!locale) [[unlikely]]
@@ -397,7 +397,7 @@ JSC_DEFINE_HOST_FUNCTION(intlLocalePrototypeFuncGetTimeZones, (JSGlobalObject* g
 JSC_DEFINE_HOST_FUNCTION(intlLocalePrototypeFuncGetTextInfo, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* locale = jsDynamicCast<IntlLocale*>(callFrame->thisValue());
     if (!locale) [[unlikely]]
@@ -410,7 +410,7 @@ JSC_DEFINE_HOST_FUNCTION(intlLocalePrototypeFuncGetTextInfo, (JSGlobalObject* gl
 JSC_DEFINE_HOST_FUNCTION(intlLocalePrototypeFuncGetWeekInfo, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* locale = jsDynamicCast<IntlLocale*>(callFrame->thisValue());
     if (!locale) [[unlikely]]

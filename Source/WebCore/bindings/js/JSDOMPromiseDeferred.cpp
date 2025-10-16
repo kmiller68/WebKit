@@ -60,7 +60,7 @@ void DeferredPromise::callFunction(JSGlobalObject& lexicalGlobalObject, ResolveM
         return;
 
     JSC::VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto handleExceptionIfNeeded = makeScopeExit([&] {
         if (scope.exception()) [[unlikely]]
@@ -115,7 +115,7 @@ void DeferredPromise::whenSettled(Function<void()>&& callback)
         auto* globalObject = this->globalObject();
         auto& vm = globalObject->vm();
         JSC::JSLockHolder locker(vm);
-        auto scope = DECLARE_CATCH_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         DOMPromise::whenPromiseIsSettled(globalObject, deferred(), WTFMove(callback));
         DEFERRED_PROMISE_HANDLE_AND_RETURN_IF_EXCEPTION(scope, globalObject);
     }
@@ -162,14 +162,14 @@ void DeferredPromise::reject(Exception exception, RejectAsHandled rejectAsHandle
     auto& lexicalGlobalObject = *m_globalObject;
     JSC::VM& vm = lexicalGlobalObject.vm();
     JSC::JSLockHolder locker(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (exception.code() == ExceptionCode::ExistingExceptionError) {
         EXCEPTION_ASSERT(scope.exception());
         auto error = scope.exception()->value();
         bool isTerminating = handleTerminationExceptionIfNeeded(scope, lexicalGlobalObject);
         if (!isTerminating) {
-            scope.clearException();
+            TRY_CLEAR_EXCEPTION(scope, void());
             reject<IDLAny>(error, rejectAsHandled);
         }
         return;
@@ -199,14 +199,14 @@ void DeferredPromise::reject(ExceptionCode ec, const String& message, RejectAsHa
     auto& lexicalGlobalObject = *m_globalObject;
     JSC::VM& vm = lexicalGlobalObject.vm();
     JSC::JSLockHolder locker(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (ec == ExceptionCode::ExistingExceptionError) {
         EXCEPTION_ASSERT(scope.exception());
         auto error = scope.exception()->value();
         bool isTerminating = handleTerminationExceptionIfNeeded(scope, lexicalGlobalObject);
         if (!isTerminating) {
-            scope.clearException();
+            TRY_CLEAR_EXCEPTION(scope, void());
             reject<IDLAny>(error, rejectAsHandled);
         }
         return;
@@ -223,16 +223,14 @@ void DeferredPromise::reject(ExceptionCode ec, const String& message, RejectAsHa
         handleUncaughtException(scope, lexicalGlobalObject);
 }
 
-void rejectPromiseWithExceptionIfAny(JSC::JSGlobalObject& lexicalGlobalObject, JSDOMGlobalObject& globalObject, JSPromise& promise, JSC::CatchScope& catchScope)
+void rejectPromiseWithExceptionIfAny(JSC::JSGlobalObject& lexicalGlobalObject, JSDOMGlobalObject& globalObject, JSPromise& promise, JSC::ExceptionScope& catchScope)
 {
     UNUSED_PARAM(lexicalGlobalObject);
     if (!catchScope.exception()) [[likely]]
         return;
-    if (catchScope.vm().hasPendingTerminationException())
-        return;
 
     JSValue error = catchScope.exception()->value();
-    catchScope.clearException();
+    TRY_CLEAR_EXCEPTION(catchScope, void());
 
     DeferredPromise::create(globalObject, promise)->reject<IDLAny>(error);
 }
@@ -293,7 +291,7 @@ void fulfillPromiseWithUint8ArrayFromSpan(Ref<DeferredPromise>&& promise, std::s
     fulfillPromiseWithUint8Array(WTFMove(promise), Uint8Array::tryCreate(data).get());
 }
 
-bool DeferredPromise::handleTerminationExceptionIfNeeded(CatchScope& scope, JSDOMGlobalObject& lexicalGlobalObject)
+bool DeferredPromise::handleTerminationExceptionIfNeeded(ExceptionScope& scope, JSDOMGlobalObject& lexicalGlobalObject)
 {
     auto* exception = scope.exception();
     VM& vm = scope.vm();
@@ -311,7 +309,7 @@ bool DeferredPromise::handleTerminationExceptionIfNeeded(CatchScope& scope, JSDO
     return false;
 }
 
-void DeferredPromise::handleUncaughtException(CatchScope& scope, JSDOMGlobalObject& lexicalGlobalObject)
+void DeferredPromise::handleUncaughtException(ExceptionScope& scope, JSDOMGlobalObject& lexicalGlobalObject)
 {
     auto* exception = scope.exception();
     handleTerminationExceptionIfNeeded(scope, lexicalGlobalObject);

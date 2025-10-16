@@ -62,7 +62,7 @@ Structure* JSTypedArrayViewConstructor::createStructure(
 JSC_DEFINE_HOST_FUNCTION(constructTypedArrayView, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return throwVMTypeError(globalObject, scope, "%TypedArray% should not be called directly"_s);
 }
 

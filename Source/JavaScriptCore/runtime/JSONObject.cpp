@@ -182,7 +182,7 @@ static inline JSValue unwrapBoxedPrimitive(JSGlobalObject* globalObject, JSValue
 static inline String gap(JSGlobalObject* globalObject, JSValue space)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     constexpr unsigned maxGapLength = 10;
     space = unwrapBoxedPrimitive(globalObject, space);
@@ -246,7 +246,7 @@ Stringifier::Stringifier(JSGlobalObject* globalObject, JSValue replacer, JSValue
     , m_arrayReplacerPropertyNames(globalObject->vm(), PropertyNameMode::Strings, PrivateSymbolMode::Exclude)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (m_replacer.isObject()) {
         JSObject* replacerObject = asObject(m_replacer);
@@ -284,7 +284,7 @@ Stringifier::Stringifier(JSGlobalObject* globalObject, JSValue replacer, JSValue
 String Stringifier::stringify(JSGlobalObject& globalObject, JSValue value, JSValue replacer, JSValue space)
 {
     VM& vm = globalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Stringifier stringifier(&globalObject, replacer, space);
     RETURN_IF_EXCEPTION(scope, { });
@@ -315,7 +315,7 @@ String Stringifier::stringify(JSGlobalObject& globalObject, JSValue value, JSVal
 ALWAYS_INLINE JSValue Stringifier::toJSON(JSValue baseValue, const PropertyNameForFunctionCall& propertyName)
 {
     VM& vm = m_globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     scope.assertNoException();
 
     JSValue toJSONFunction;
@@ -348,7 +348,7 @@ constexpr unsigned maximumSideStackRecursion = 40000;
 Stringifier::StringifyResult Stringifier::appendStringifiedValue(StringBuilder& builder, JSValue value, const Holder& holder, const PropertyNameForFunctionCall& propertyName)
 {
     VM& vm = m_globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // Recursion is avoided by !holderStackWasEmpty check and do/while loop at the end of this method.
     // We're having this recursion check here as a fail safe in case the code
@@ -525,7 +525,7 @@ bool Stringifier::Holder::appendNextProperty(Stringifier& stringifier, StringBui
 
     JSGlobalObject* globalObject = stringifier.m_globalObject;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // First time through, initialize.
     if (!m_index) {
@@ -993,7 +993,7 @@ inline void FastStringifier<CharType, bufferMode>::recordFastPropertyEnumeration
 template<typename CharType, BufferMode bufferMode>
 String FastStringifier<CharType, bufferMode>::firstGetterSetterPropertyName(JSObject& object) const
 {
-    auto scope = DECLARE_THROW_SCOPE(m_vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(m_vm);
     PropertyNameArray names(m_vm, PropertyNameMode::Strings, PrivateSymbolMode::Include);
     JSObject::getOwnPropertyNames(&object, &m_globalObject, names, DontEnumPropertiesMode::Include);
     CLEAR_AND_RETURN_IF_EXCEPTION(scope, "getOwnPropertyNames exception occurred"_s);
@@ -1553,7 +1553,7 @@ private:
     JSValue callReviver(JSObject* thisObj, JSValue property, JSValue unfiltered, const JSONRanges::Entry* range)
     {
         VM& vm = m_globalObject->vm();
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         JSObject* context = nullptr;
         if (m_sourceRanges) {
@@ -1588,7 +1588,7 @@ enum WalkerState { StateUnknown, ArrayStartState, ArrayStartVisitMember, ArrayEn
 NEVER_INLINE JSValue Walker::walk(JSValue unfiltered)
 {
     VM& vm = m_globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Vector<PropertyNameArray, 16, UnsafeVectorOverflow> propertyStack;
     Vector<uint32_t, 16, UnsafeVectorOverflow> indexStack;
@@ -1814,7 +1814,7 @@ NEVER_INLINE JSValue Walker::walk(JSValue unfiltered)
 static NEVER_INLINE JSValue jsonParseSlow(JSGlobalObject* globalObject, JSString* string, StringView view, CallData callData, JSObject* function)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSONRanges ranges;
     JSValue unfiltered;
@@ -1847,7 +1847,7 @@ static NEVER_INLINE JSValue jsonParseSlow(JSGlobalObject* globalObject, JSString
 JSC_DEFINE_HOST_FUNCTION(jsonProtoFuncParse, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* string = callFrame->argument(0).toString(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
     auto view = string->view(globalObject);
@@ -1905,7 +1905,7 @@ JSValue JSONParse(JSGlobalObject* globalObject, StringView json)
 JSValue JSONParseWithException(JSGlobalObject* globalObject, StringView json)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (json.isNull())
         return JSValue();
@@ -1948,7 +1948,7 @@ JSC_DEFINE_HOST_FUNCTION(jsonProtoFuncRawJSON, (JSGlobalObject* globalObject, Ca
     // https://tc39.es/proposal-json-parse-with-source/#sec-json.rawjson
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSString* jsString = callFrame->argument(0).toString(globalObject);
     RETURN_IF_EXCEPTION(scope, { });

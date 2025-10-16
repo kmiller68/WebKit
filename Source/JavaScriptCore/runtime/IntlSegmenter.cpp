@@ -57,7 +57,7 @@ IntlSegmenter::IntlSegmenter(VM& vm, Structure* structure)
 void IntlSegmenter::initializeSegmenter(JSGlobalObject* globalObject, JSValue locales, JSValue optionsValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto requestedLocales = canonicalizeLocaleList(globalObject, locales);
     RETURN_IF_EXCEPTION(scope, void());
@@ -111,7 +111,7 @@ void IntlSegmenter::initializeSegmenter(JSGlobalObject* globalObject, JSValue lo
 JSValue IntlSegmenter::segment(JSGlobalObject* globalObject, JSValue stringValue) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSString* jsString = stringValue.toString(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
@@ -167,7 +167,7 @@ ASCIILiteral IntlSegmenter::granularityString(Granularity granularity)
 JSObject* IntlSegmenter::createSegmentDataObject(JSGlobalObject* globalObject, JSString* string, int32_t startIndex, int32_t endIndex, UBreakIterator& segmenter, Granularity granularity)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSObject* result = constructEmptyObject(globalObject);
     JSString* substring = jsSubstring(globalObject, string, startIndex, endIndex - startIndex);
     RETURN_IF_EXCEPTION(scope, nullptr);

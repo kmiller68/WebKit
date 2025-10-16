@@ -147,7 +147,7 @@ void StreamingCompiler::didComplete()
             JSPromise* promise = jsCast<JSPromise*>(ticket->target());
             JSGlobalObject* globalObject = jsCast<JSGlobalObject*>(ticket->dependencies()[0]);
             VM& vm = globalObject->vm();
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
             if (!result.has_value()) [[unlikely]] {
                 throwException(globalObject, scope, createJSWebAssemblyCompileError(globalObject, vm, result.error()));
@@ -170,7 +170,7 @@ void StreamingCompiler::didComplete()
             JSGlobalObject* globalObject = jsCast<JSGlobalObject*>(ticket->dependencies()[0]);
             JSObject* importObject = jsCast<JSObject*>(ticket->dependencies()[1]);
             VM& vm = globalObject->vm();
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
             if (!result.has_value()) [[unlikely]] {
                 throwException(globalObject, scope, createJSWebAssemblyCompileError(globalObject, vm, result.error()));

@@ -35,7 +35,7 @@
 #include "RenderTheme.h"
 #include "ScriptController.h"
 #include "ScriptSourceCode.h"
-#include <JavaScriptCore/CatchScope.h>
+#include <JavaScriptCore/ExceptionScope.h>
 #include <wtf/TZoneMallocInlines.h>
 
 namespace WebCore {
@@ -97,7 +97,7 @@ bool DocumentMediaElement::ensureMediaControlsScript()
 
     m_haveParsedMediaControlsScript = setupAndCallJS([mediaControlsScripts = WTFMove(mediaControlsScripts)](JSDOMGlobalObject& globalObject, JSC::JSGlobalObject&, ScriptController& scriptController, DOMWrapperWorld& world) {
         auto& vm = globalObject.vm();
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         for (auto& mediaControlsScript : mediaControlsScripts) {
             if (mediaControlsScript.isEmpty())
@@ -124,12 +124,12 @@ bool DocumentMediaElement::setupAndCallJS(NOESCAPE const JSSetupFunction& task)
         return false;
     auto& vm = globalObject->vm();
     JSC::JSLockHolder lock(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* lexicalGlobalObject = globalObject;
 
     auto reportExceptionAndReturnFalse = [&] () -> bool {
         auto* exception = scope.exception();
-        scope.clearException();
+        TRY_CLEAR_EXCEPTION(scope, false);
         reportException(globalObject, exception);
         return false;
     };

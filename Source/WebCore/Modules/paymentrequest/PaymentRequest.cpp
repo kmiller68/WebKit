@@ -52,8 +52,8 @@
 #include "PaymentValidationErrors.h"
 #include "ScriptController.h"
 #include <JavaScriptCore/ConsoleTypes.h>
+#include <JavaScriptCore/ExceptionScope.h>
 #include <JavaScriptCore/JSONObject.h>
-#include <JavaScriptCore/ThrowScope.h>
 #include <wtf/ASCIICType.h>
 #include <wtf/RunLoop.h>
 #include <wtf/Scope.h>
@@ -80,7 +80,7 @@ static ExceptionOr<String> checkAndCanonicalizeData(ScriptExecutionContext& cont
     String serializedData;
     if (value.data) {
         auto* globalObject = context.globalObject();
-        auto scope = DECLARE_THROW_SCOPE(globalObject->vm());
+        auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
         serializedData = JSONStringify(globalObject, value.data.get(), 0);
         if (scope.exception())
             return Exception { ExceptionCode::ExistingExceptionError };
@@ -282,7 +282,7 @@ static ExceptionOr<std::tuple<String, Vector<String>>> checkAndCanonicalizeDetai
 
 static ExceptionOr<JSC::JSValue> parse(ScriptExecutionContext& context, const String& string)
 {
-    auto scope = DECLARE_THROW_SCOPE(context.vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(context.vm());
     JSC::JSValue data = JSONParse(context.globalObject(), string);
     if (scope.exception())
         return Exception { ExceptionCode::ExistingExceptionError };
@@ -324,7 +324,7 @@ ExceptionOr<Ref<PaymentRequest>> PaymentRequest::create(Document& document, Vect
 
         String serializedData;
         if (paymentMethod.data) {
-            auto scope = DECLARE_THROW_SCOPE(document.globalObject()->vm());
+            auto scope = DECLARE_EXCEPTION_SCOPE(document.globalObject()->vm());
             serializedData = JSONStringify(document.globalObject(), paymentMethod.data.get(), 0);
             if (scope.exception())
                 return Exception { ExceptionCode::ExistingExceptionError };
@@ -675,7 +675,7 @@ void PaymentRequest::settleDetailsPromise(UpdateReason reason)
     Ref activePaymentHandler = *this->activePaymentHandler();
 
     Ref context = *detailsPromise->scriptExecutionContext();
-    auto throwScope = DECLARE_THROW_SCOPE(context->vm());
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(context->vm());
     auto detailsUpdateConversion = convertDictionary<PaymentDetailsUpdate>(*context->globalObject(), detailsPromise->result());
     if (detailsUpdateConversion.hasException(throwScope)) {
         abortWithException(Exception { ExceptionCode::ExistingExceptionError });

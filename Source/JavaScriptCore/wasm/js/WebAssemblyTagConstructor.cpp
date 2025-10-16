@@ -44,7 +44,7 @@ static JSC_DECLARE_HOST_FUNCTION(constructJSWebAssemblyTag);
 JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyTag, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     
     if (callFrame->argumentCount() < 1)
         return throwVMTypeError(globalObject, scope, "WebAssembly.Tag constructor expects the tag type as the first argument."_s);
@@ -58,7 +58,7 @@ JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyTag, (JSGlobalObject* globalObjec
 
     Vector<Wasm::Type, 16> parameters;
     forEachInIterable(globalObject, signatureObject, [&] (auto& vm, auto* globalObject, JSValue nextType) -> void {
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         Wasm::Type type;
         String valueString = nextType.toWTFString(globalObject);
@@ -95,7 +95,7 @@ JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyTag, (JSGlobalObject* globalObjec
 JSC_DEFINE_HOST_FUNCTION(callJSWebAssemblyTag, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "WebAssembly.Tag"_s));
 }
 

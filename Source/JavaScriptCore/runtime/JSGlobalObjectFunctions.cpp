@@ -62,7 +62,7 @@ template<typename CharacterType>
 static JSValue encode(JSGlobalObject* globalObject, const WTF::BitSet<256>& doNotEscape, std::span<const CharacterType> characters)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 18.2.6.1.1 Runtime Semantics: Encode ( string, unescapedSet )
     // https://tc39.github.io/ecma262/#sec-encode
@@ -154,7 +154,7 @@ ALWAYS_INLINE
 static JSValue decode(JSGlobalObject* globalObject, std::span<const CharType> characters, const WTF::BitSet<256>& doNotUnescape, bool strict)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     StringBuilder builder(OverflowPolicy::RecordOverflow);
     size_t k = 0;
@@ -454,7 +454,7 @@ static double parseFloat(StringView s)
 JSC_DEFINE_HOST_FUNCTION(globalFuncEval, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue x = callFrame->argument(0);
     String programSource;
@@ -549,7 +549,7 @@ JSC_DEFINE_HOST_FUNCTION(globalFuncParseInt, (JSGlobalObject* globalObject, Call
 JSC_DEFINE_HOST_FUNCTION(globalFuncParseFloat, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue value = callFrame->argument(0);
     if (value.isNumber()) {
@@ -615,7 +615,7 @@ JSC_DEFINE_HOST_FUNCTION(globalFuncEscape, (JSGlobalObject* globalObject, CallFr
         );
 
         VM& vm = globalObject->vm();
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         StringBuilder builder(OverflowPolicy::RecordOverflow);
         if (view.is8Bit()) {
@@ -653,7 +653,7 @@ JSC_DEFINE_HOST_FUNCTION(globalFuncUnescape, (JSGlobalObject* globalObject, Call
         int length = view.length();
 
         VM& vm = globalObject->vm();
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         StringBuilder builder(OverflowPolicy::RecordOverflow);
         builder.reserveCapacity(length);
@@ -710,14 +710,14 @@ JSC_DEFINE_HOST_FUNCTION(globalFuncUnescape, (JSGlobalObject* globalObject, Call
 JSC_DEFINE_HOST_FUNCTION(globalFuncThrowTypeError, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return throwVMTypeError(globalObject, scope);
 }
 
 JSC_DEFINE_HOST_FUNCTION(globalFuncThrowTypeErrorArgumentsCalleeAndCaller, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return throwVMTypeError(globalObject, scope, RestrictedPropertyAccessError);
 }
 
@@ -736,7 +736,7 @@ JSC_DEFINE_HOST_FUNCTION(globalFuncProtoGetter, (JSGlobalObject* globalObject, C
 JSC_DEFINE_HOST_FUNCTION(globalFuncProtoSetter, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue().toThis(globalObject, ECMAMode::strict());
     if (thisValue.isUndefinedOrNull())
@@ -776,7 +776,7 @@ JSC_DEFINE_HOST_FUNCTION(globalFuncSetPrototypeDirect, (JSGlobalObject* globalOb
 JSC_DEFINE_HOST_FUNCTION(globalFuncSetPrototypeDirectOrThrow, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue value = callFrame->uncheckedArgument(0);
     if (!value.isObject() && !value.isNull())
@@ -805,7 +805,7 @@ JSC_DEFINE_HOST_FUNCTION(globalFuncImportModule, (JSGlobalObject* globalObject, 
 
     auto* promise = JSPromise::create(vm, globalObject->promiseStructure());
 
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto sourceOrigin = callFrame->callerSourceOrigin(vm);
     RELEASE_ASSERT(callFrame->argumentCount() >= 1);
@@ -849,7 +849,7 @@ static CodeBlock* getCallerCodeBlock(CallFrame* callFrame)
 JSC_DEFINE_HOST_FUNCTION(globalFuncCopyDataProperties, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSFinalObject* target = jsCast<JSFinalObject*>(callFrame->thisValue());
     ASSERT(target->isStructureExtensible());
@@ -970,7 +970,7 @@ JSC_DEFINE_HOST_FUNCTION(globalFuncCopyDataProperties, (JSGlobalObject* globalOb
 JSC_DEFINE_HOST_FUNCTION(globalFuncCloneObject, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue sourceValue = callFrame->thisValue();
     if (sourceValue.isUndefinedOrNull())
@@ -1053,7 +1053,7 @@ JSC_DEFINE_HOST_FUNCTION(globalFuncCloneObject, (JSGlobalObject* globalObject, C
 JSC_DEFINE_HOST_FUNCTION(globalFuncHandleNegativeProxyHasTrapResult, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* target = asObject(callFrame->uncheckedArgument(0));
 
@@ -1069,7 +1069,7 @@ JSC_DEFINE_HOST_FUNCTION(globalFuncHandleNegativeProxyHasTrapResult, (JSGlobalOb
 JSC_DEFINE_HOST_FUNCTION(globalFuncHandleProxyGetTrapResult, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue trapResult = callFrame->uncheckedArgument(0);
     JSObject* target = asObject(callFrame->uncheckedArgument(1));
@@ -1086,7 +1086,7 @@ JSC_DEFINE_HOST_FUNCTION(globalFuncHandleProxyGetTrapResult, (JSGlobalObject* gl
 JSC_DEFINE_HOST_FUNCTION(globalFuncHandlePositiveProxySetTrapResult, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* target = asObject(callFrame->uncheckedArgument(0));
 

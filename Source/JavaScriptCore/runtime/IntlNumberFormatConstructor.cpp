@@ -81,7 +81,7 @@ void IntlNumberFormatConstructor::finishCreation(VM& vm, IntlNumberFormatPrototy
 JSC_DEFINE_HOST_FUNCTION(constructIntlNumberFormat, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     // 11.1.2 Intl.NumberFormat ([locales [, options]]) (ECMA-402 2.0)
     // 1. If NewTarget is undefined, let newTarget be the active function object, else let newTarget be NewTarget.
     // 2. Let numberFormat be OrdinaryCreateFromConstructor(newTarget, %NumberFormatPrototype%).
@@ -122,7 +122,7 @@ JSC_DEFINE_HOST_FUNCTION(callIntlNumberFormat, (JSGlobalObject* globalObject, Ca
 JSC_DEFINE_HOST_FUNCTION(intlNumberFormatConstructorFuncSupportedLocalesOf, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     // 11.2.2 Intl.NumberFormat.supportedLocalesOf(locales [, options]) (ECMA-402 2.0)
 
     // 1. Let availableLocales be %NumberFormat%.[[availableLocales]].

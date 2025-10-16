@@ -55,7 +55,7 @@ ALWAYS_INLINE bool canPerformFastPropertyNameEnumerationForJSONStringifyWithSide
 ALWAYS_INLINE void objectAssignIndexedPropertiesFast(JSGlobalObject* globalObject, JSObject* target, JSObject* source)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     source->forEachOwnIndexedProperty<>(globalObject, [&](unsigned index, JSValue value) {
         target->putDirectIndex(globalObject, index, value);
@@ -298,7 +298,7 @@ ALWAYS_INLINE bool objectAssignFast(JSGlobalObject* globalObject, JSFinalObject*
 
     // Do not clear since Vector::clear shrinks the backing store.
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     properties.shrink(0);
     values.clear();
 

@@ -42,7 +42,7 @@ static JSC_DECLARE_HOST_FUNCTION(callJSWebAssemblyArray);
 JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyArray, (JSGlobalObject* globalObject, CallFrame*))
 {
     auto& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     return throwVMTypeError(globalObject, scope, "WebAssembly.Array constructor should not be exposed currently"_s);
 }
@@ -50,7 +50,7 @@ JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyArray, (JSGlobalObject* globalObj
 JSC_DEFINE_HOST_FUNCTION(callJSWebAssemblyArray, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "WebAssembly.Array"_s));
 }
 

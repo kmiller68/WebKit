@@ -82,7 +82,7 @@ void IntlPluralRulesConstructor::finishCreation(VM& vm, IntlPluralRulesPrototype
 JSC_DEFINE_HOST_FUNCTION(constructIntlPluralRules, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 13.2.1 Intl.PluralRules ([ locales [ , options ] ])
     // https://tc39.github.io/ecma402/#sec-intl.pluralrules
@@ -101,7 +101,7 @@ JSC_DEFINE_HOST_FUNCTION(constructIntlPluralRules, (JSGlobalObject* globalObject
 JSC_DEFINE_HOST_FUNCTION(callIntlPluralRules, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 13.2.1 Intl.PluralRules ([ locales [ , options ] ])
     // https://tc39.github.io/ecma402/#sec-intl.pluralrules
@@ -111,7 +111,7 @@ JSC_DEFINE_HOST_FUNCTION(callIntlPluralRules, (JSGlobalObject* globalObject, Cal
 JSC_DEFINE_HOST_FUNCTION(intlPluralRulesConstructorFuncSupportedLocalesOf, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 13.3.2 Intl.PluralRules.supportedLocalesOf (locales [, options ])
     // https://tc39.github.io/ecma402/#sec-intl.pluralrules.supportedlocalesof

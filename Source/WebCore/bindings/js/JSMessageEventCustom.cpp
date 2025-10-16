@@ -44,16 +44,16 @@ namespace WebCore {
 
 JSC::JSValue JSMessageEvent::ports(JSC::JSGlobalObject& lexicalGlobalObject) const
 {
-    auto throwScope = DECLARE_THROW_SCOPE(lexicalGlobalObject.vm());
-    return cachedPropertyValue(throwScope, lexicalGlobalObject, *this, wrapped().cachedPorts(), [&](JSC::ThrowScope& throwScope) {
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject.vm());
+    return cachedPropertyValue(throwScope, lexicalGlobalObject, *this, wrapped().cachedPorts(), [&](JSC::ExceptionScope& throwScope) {
         return toJS<IDLFrozenArray<IDLInterface<MessagePort>>>(lexicalGlobalObject, *globalObject(), throwScope, wrapped().ports());
     });
 }
 
 JSC::JSValue JSMessageEvent::data(JSC::JSGlobalObject& lexicalGlobalObject) const
 {
-    auto throwScope = DECLARE_THROW_SCOPE(lexicalGlobalObject.vm());
-    return cachedPropertyValue(throwScope, lexicalGlobalObject, *this, wrapped().cachedData(), [this, &lexicalGlobalObject](JSC::ThrowScope&) {
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject.vm());
+    return cachedPropertyValue(throwScope, lexicalGlobalObject, *this, wrapped().cachedData(), [this, &lexicalGlobalObject](JSC::ExceptionScope&) {
         return WTF::switchOn(wrapped().data(), [this] (MessageEvent::JSValueTag) -> JSC::JSValue {
             return wrapped().jsData().getValue(JSC::jsNull());
         }, [this, &lexicalGlobalObject] (const Ref<SerializedScriptValue>& data) {

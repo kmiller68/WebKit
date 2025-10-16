@@ -26,7 +26,7 @@
 #include "config.h"
 #include "CallData.h"
 
-#include "CatchScope.h"
+#include "ExceptionScope.h"
 #include "Interpreter.h"
 #include "JSObjectInlines.h"
 #include "ScriptProfilingScope.h"
@@ -45,7 +45,7 @@ JSValue call(JSGlobalObject* globalObject, JSValue functionObject, const ArgList
 JSValue call(JSGlobalObject* globalObject, JSValue functionObject, JSValue thisValue, const ArgList& args, ASCIILiteral errorMessage)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto callData = JSC::getCallDataInline(functionObject);
     if (callData.type == CallData::Type::None)
@@ -72,11 +72,11 @@ JSValue call(JSGlobalObject* globalObject, JSValue functionObject, const CallDat
 JSValue call(JSGlobalObject* globalObject, JSValue functionObject, const CallData& callData, JSValue thisValue, const ArgList& args, NakedPtr<Exception>& returnedException)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue result = call(globalObject, functionObject, callData, thisValue, args);
     if (scope.exception()) [[unlikely]] {
         returnedException = scope.exception();
-        scope.clearException();
+        (void)scope.tryClearException();
         return jsUndefined();
     }
     RELEASE_ASSERT(result);
@@ -86,7 +86,7 @@ JSValue call(JSGlobalObject* globalObject, JSValue functionObject, const CallDat
 JSValue callMicrotask(JSGlobalObject* globalObject, JSValue functionObject, JSValue thisValue, JSCell* context, const ArgList& args, ASCIILiteral errorMessage)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto callData = JSC::getCallDataInline(functionObject);
     if (callData.type == CallData::Type::None)

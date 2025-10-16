@@ -82,7 +82,7 @@ JSIteratorConstructor::JSIteratorConstructor(VM& vm, Structure* structure)
 JSC_DEFINE_HOST_FUNCTION(callIterator, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "Iterator"_s));
 }
 
@@ -90,7 +90,7 @@ JSC_DEFINE_HOST_FUNCTION(callIterator, (JSGlobalObject* globalObject, CallFrame*
 JSC_DEFINE_HOST_FUNCTION(constructIterator, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* newTarget = asObject(callFrame->newTarget());
     JSIteratorConstructor* iteratorConstructor = jsCast<JSIteratorConstructor*>(callFrame->jsCallee());

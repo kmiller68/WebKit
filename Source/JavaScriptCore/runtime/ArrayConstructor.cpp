@@ -76,7 +76,7 @@ void ArrayConstructor::finishCreation(VM& vm, JSGlobalObject* globalObject, Arra
 JSArray* constructArrayWithSizeQuirk(JSGlobalObject* globalObject, ArrayAllocationProfile* profile, JSValue length, JSValue newTarget)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     if (!length.isNumber())
         RELEASE_AND_RETURN(scope, constructArrayNegativeIndexed(globalObject, profile, &length, 1, newTarget));
     
@@ -113,7 +113,7 @@ JSC_DEFINE_HOST_FUNCTION(callArrayConstructor, (JSGlobalObject* globalObject, Ca
 static ALWAYS_INLINE bool isArraySlowInline(JSGlobalObject* globalObject, ProxyObject* proxy)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     while (true) {
         if (proxy->isRevoked()) [[unlikely]] {
@@ -160,7 +160,7 @@ JSC_DEFINE_HOST_FUNCTION(arrayConstructorPrivateFuncIsArraySlow, (JSGlobalObject
 ALWAYS_INLINE JSArray* fastArrayOf(JSGlobalObject* globalObject, CallFrame* callFrame, size_t length)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!length)
         RELEASE_AND_RETURN(scope, constructEmptyArray(globalObject, nullptr));
@@ -208,7 +208,7 @@ ALWAYS_INLINE JSArray* fastArrayOf(JSGlobalObject* globalObject, CallFrame* call
 JSC_DEFINE_HOST_FUNCTION(arrayConstructorOf, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue().toThis(globalObject, ECMAMode::strict());
     size_t length = callFrame->argumentCount();

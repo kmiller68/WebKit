@@ -104,7 +104,7 @@ public:
     JS_EXPORT_PRIVATE void rejectAsHandled(VM&, JSGlobalObject*, Exception*);
     JS_EXPORT_PRIVATE void performPromiseThenExported(VM&, JSGlobalObject*, JSValue onFulfilled, JSValue onRejected, JSValue, JSValue = jsUndefined());
 
-    JS_EXPORT_PRIVATE JSPromise* rejectWithCaughtException(JSGlobalObject*, ThrowScope&);
+    JS_EXPORT_PRIVATE JSPromise* rejectWithCaughtException(JSGlobalObject*, ExceptionScope&);
 
     JSValue reactionsOrResult() const { return internalField(Field::ReactionsOrResult).get(); };
     void setReactionsOrResult(VM& vm, JSValue value) { internalField(Field::ReactionsOrResult).set(vm, this, value); };

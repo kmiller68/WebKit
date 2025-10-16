@@ -184,7 +184,7 @@ template<typename OutputCharacterType, typename SeparatorCharacterType>
 static inline String joinStrings(JSGlobalObject* globalObject, const WriteBarrier<Unknown>* strings, unsigned size, std::span<const SeparatorCharacterType> separator, unsigned joinedLength)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!joinedLength)
         return emptyString();
@@ -246,7 +246,7 @@ static inline String joinStrings(JSGlobalObject* globalObject, const WriteBarrie
 inline unsigned JSStringJoiner::joinedLength(JSGlobalObject* globalObject) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!m_stringsCount)
         return 0;
@@ -264,7 +264,7 @@ inline unsigned JSStringJoiner::joinedLength(JSGlobalObject* globalObject) const
 JSString* JSStringJoiner::joinImpl(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (m_hasOverflowed) [[unlikely]] {
         throwOutOfMemoryError(globalObject, scope);
@@ -299,7 +299,7 @@ JSString* JSStringJoiner::joinImpl(JSGlobalObject* globalObject)
 JSString* JSOnlyStringsAndInt32sJoiner::joinImpl(JSGlobalObject* globalObject, const WriteBarrier<Unknown>* data, unsigned length)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!length)
         return jsEmptyString(vm);

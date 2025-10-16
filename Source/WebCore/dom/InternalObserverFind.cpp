@@ -66,13 +66,13 @@ private:
 
             // The exception is not reported, instead it is forwarded to the
             // abort signal and promise rejection.
-            auto scope = DECLARE_CATCH_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
             auto result = m_callback->invokeRethrowingException(value, m_idx++);
 
             JSC::Exception* exception = scope.exception();
             if (exception) [[unlikely]] {
-                scope.clearException();
+                TRY_CLEAR_EXCEPTION(scope, void());
                 auto value = exception->value();
                 m_promise->reject<IDLAny>(value);
                 m_signal->signalAbort(value);

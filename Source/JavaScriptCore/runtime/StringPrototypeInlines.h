@@ -116,7 +116,7 @@ ALWAYS_INLINE JSString* stringSubstring(JSGlobalObject* globalObject, JSString* 
 ALWAYS_INLINE JSString* jsSpliceSubstringsWithSeparators(JSGlobalObject* globalObject, JSString* sourceVal, const String& source, const Range<int32_t>* substringRanges, int rangeCount, const String* separators, int separatorCount)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (rangeCount == 1 && separatorCount == 0) {
         int sourceSize = source.length();
@@ -205,7 +205,7 @@ ALWAYS_INLINE JSString* jsSpliceSubstringsWithSeparators(JSGlobalObject* globalO
 ALWAYS_INLINE JSString* jsSpliceSubstringsWithSeparator(JSGlobalObject* globalObject, JSString* sourceVal, const String& source, const Range<int32_t>* substringRanges, int rangeCount, const String& separator, int separatorCount)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (rangeCount == 1 && separatorCount == 0) {
         int sourceSize = source.length();
@@ -309,7 +309,7 @@ template<StringReplaceSubstitutions substitutions, StringReplaceUseTable useTabl
 ALWAYS_INLINE JSString* stringReplaceStringString(JSGlobalObject* globalObject, JSString* stringCell, const String& string, const String& search, const String& replacement, const TableType* table)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     size_t matchStart;
     if constexpr (useTable == StringReplaceUseTable::Yes)
@@ -336,7 +336,7 @@ template<StringReplaceSubstitutions substitutions, StringReplaceUseTable useTabl
 ALWAYS_INLINE JSString* stringReplaceAllStringString(JSGlobalObject* globalObject, JSString* stringCell, const String& string, const String& search, const String& replacement, const TableType* table)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Vector<size_t, 16> matchStarts;
     size_t searchLength = search.length();
@@ -389,7 +389,7 @@ enum class StringReplaceMode : bool { Single, Global };
 template <StringReplaceMode mode>
 inline JSString* replaceUsingStringSearch(VM& vm, JSGlobalObject* globalObject, JSString* jsString, const String& string, const String& searchString, JSValue replaceValue)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CallData callData;
     String replaceString;
@@ -475,7 +475,7 @@ template<DollarCheck check = DollarCheck::Yes>
 inline JSString* tryReplaceOneCharUsingString(JSGlobalObject* globalObject, JSString* string, JSString* search, JSString* replacement)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // FIXME: Substring should be supported. However, substring of substring is not allowed at the moment.
     if (!string->isNonSubstringRope() || string->length() < 0x128)
@@ -499,7 +499,7 @@ inline JSString* tryReplaceOneCharUsingString(JSGlobalObject* globalObject, JSSt
 static ALWAYS_INLINE JSString* jsSpliceSubstrings(JSGlobalObject* globalObject, JSString* sourceVal, const String& source, std::span<const Range<int32_t>> substringRanges)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (substringRanges.size() == 1) {
         int sourceSize = source.length();
@@ -569,7 +569,7 @@ static ALWAYS_INLINE JSString* jsSpliceSubstrings(JSGlobalObject* globalObject, 
 
 static ALWAYS_INLINE JSString* removeAllUsingRegExpSearch(VM& vm, JSGlobalObject* globalObject, JSString* string, const String& source, RegExp* regExp)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     SuperSamplerScope superSamplerScope(false);
 
     size_t lastIndex = 0;
@@ -691,7 +691,7 @@ static ALWAYS_INLINE JSString* removeAllUsingRegExpSearch(VM& vm, JSGlobalObject
 
 ALWAYS_INLINE JSCellButterfly* addToRegExpSearchCache(VM& vm, JSGlobalObject* globalObject, JSString* string, const String& source, RegExp* regExp)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (auto* entry = vm.stringReplaceCache.get(source, regExp)) {
         auto lastMatch = entry->m_lastMatch;
@@ -760,7 +760,7 @@ ALWAYS_INLINE JSCellButterfly* addToRegExpSearchCache(VM& vm, JSGlobalObject* gl
 
 static ALWAYS_INLINE JSString* replaceAllWithCacheUsingRegExpSearchThreeArguments(VM& vm, JSGlobalObject* globalObject, JSString* string, const String& source, RegExp* regExp, JSFunction* replaceFunction, JSCellButterfly* result)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned sourceLen = source.length();
     unsigned cachedCount = regExp->numSubpatterns() + 2;
@@ -891,7 +891,7 @@ static ALWAYS_INLINE JSString* replaceAllWithCacheUsingRegExpSearchThreeArgument
 
 static ALWAYS_INLINE JSString* replaceAllWithCacheUsingRegExpSearch(VM& vm, JSGlobalObject* globalObject, JSString* string, const String& source, RegExp* regExp, JSFunction* replaceFunction)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     SuperSamplerScope superSamplerScope(true);
 
     ASSERT(!string->isRope()); // This is already resolved.
@@ -1125,7 +1125,7 @@ static ALWAYS_INLINE JSString* tryTrimSpaces(VM& vm, JSGlobalObject* globalObjec
 
 ALWAYS_INLINE JSString* replaceAllWithStringUsingRegExpSearchNoBackreferences(VM& vm, JSGlobalObject* globalObject, JSString* string, const String& source, RegExp* regExp, const String& replacementString)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     size_t lastIndex = 0;
     unsigned startPosition = 0;
@@ -1174,7 +1174,7 @@ ALWAYS_INLINE JSString* replaceAllWithStringUsingRegExpSearchNoBackreferences(VM
 
 ALWAYS_INLINE JSString* replaceAllWithStringUsingRegExpSearch(VM& vm, JSGlobalObject* globalObject, JSString* string, const String& source, RegExp* regExp, const String& replacementString)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     size_t dollarPos = replacementString.find('$');
     if (dollarPos == notFound)
@@ -1231,7 +1231,7 @@ ALWAYS_INLINE JSString* replaceAllWithStringUsingRegExpSearch(VM& vm, JSGlobalOb
 
 ALWAYS_INLINE JSString* replaceOneWithStringUsingRegExpSearch(VM& vm, JSGlobalObject* globalObject, JSString* string, const String& source, RegExp* regExp, const String& replacementString)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     int* ovector;
     MatchResult result = globalObject->regExpGlobalData().performMatch(globalObject, regExp, string, source, 0, &ovector);
@@ -1262,7 +1262,7 @@ ALWAYS_INLINE JSString* replaceOneWithStringUsingRegExpSearch(VM& vm, JSGlobalOb
 
 ALWAYS_INLINE JSString* replaceUsingRegExpSearch(VM& vm, JSGlobalObject* globalObject, JSString* string, JSValue searchValue, const CallData& callData, const String& replacementString, JSValue replaceValue)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto source = string->value(globalObject);
     RETURN_IF_EXCEPTION(scope, nullptr);
@@ -1511,7 +1511,7 @@ ALWAYS_INLINE JSString* replaceUsingRegExpSearch(VM& vm, JSGlobalObject* globalO
 
 ALWAYS_INLINE JSString* replaceUsingRegExpSearch(VM& vm, JSGlobalObject* globalObject, JSString* string, JSValue searchValue, JSValue replaceValue)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     String replacementString;
     auto callData = JSC::getCallDataInline(replaceValue);
@@ -1541,7 +1541,7 @@ inline bool checkObjectCoercible(JSValue thisValue)
 template<StringReplaceMode replaceMode>
 ALWAYS_INLINE JSString* replace(VM& vm, JSGlobalObject* globalObject, JSValue thisValue, JSValue searchValue, JSValue replaceValue)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!checkObjectCoercible(thisValue)) [[unlikely]] {
         throwVMTypeError(globalObject, scope);

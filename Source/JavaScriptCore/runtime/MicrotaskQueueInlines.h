@@ -25,8 +25,8 @@
 
 #pragma once
 
-#include <JavaScriptCore/CatchScope.h>
 #include <JavaScriptCore/Debugger.h>
+#include <JavaScriptCore/ExceptionScope.h>
 #include <JavaScriptCore/MicrotaskQueue.h>
 
 namespace JSC {
@@ -34,21 +34,21 @@ namespace JSC {
 template<bool useCallOnEachMicrotask>
 inline void MicrotaskQueue::performMicrotaskCheckpoint(VM& vm, NOESCAPE const Invocable<QueuedTask::Result(QueuedTask&)> auto& functor)
 {
-    auto catchScope = DECLARE_CATCH_SCOPE(vm);
+    auto catchScope = DECLARE_EXCEPTION_SCOPE(vm);
     if (vm.executionForbidden()) [[unlikely]]
         clear();
     else {
         while (!m_queue.isEmpty()) {
             auto task = m_queue.dequeue();
             auto result = functor(task);
-            if (!catchScope.clearExceptionExceptTermination()) [[unlikely]] {
+            if (!catchScope.tryClearException()) [[unlikely]] {
                 clear();
                 break;
             }
 
             if constexpr (useCallOnEachMicrotask) {
                 vm.callOnEachMicrotaskTick();
-                if (!catchScope.clearExceptionExceptTermination()) [[unlikely]] {
+                if (!catchScope.tryClearException()) [[unlikely]] {
                     clear();
                     break;
                 }

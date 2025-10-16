@@ -74,7 +74,7 @@ JSValue convertNSStringToString(JSGlobalObject* lexicalGlobalObject, NSString *n
 JSValue convertObjcValueToValue(JSGlobalObject*, void* buffer, ObjcValueType, RootObject*);
 ObjcValueType objcValueTypeForType(const char *type);
 
-Exception *throwError(JSGlobalObject*, ThrowScope&, NSString *message);
+Exception *throwError(JSGlobalObject*, ExceptionScope&, NSString *message);
 
 } // namespace Bindings
 } // namespace JSC

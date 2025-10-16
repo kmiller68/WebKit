@@ -50,7 +50,7 @@ static ConversionResult<IDL> enforceRange(JSGlobalObject& lexicalGlobalObject, d
     using T = typename IDL::ImplementationType;
 
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (std::isnan(x) || std::isinf(x)) {
         throwTypeError(&lexicalGlobalObject, scope, rangeErrorString(x, minimum, maximum));
@@ -100,7 +100,7 @@ static inline ConversionResult<IDL> toSmallerInt(JSGlobalObject& lexicalGlobalOb
     using LimitsTrait = IntTypeLimits<T>;
 
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     static_assert(std::is_signed<T>::value && std::is_integral<T>::value, "Should only be used for signed integral types");
 
@@ -144,7 +144,7 @@ static inline ConversionResult<IDL> toSmallerUInt(JSGlobalObject& lexicalGlobalO
     using LimitsTrait = IntTypeLimits<T>;
 
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     static_assert(std::is_unsigned<T>::value && std::is_integral<T>::value, "Should only be used for unsigned integral types");
 
@@ -245,7 +245,7 @@ template<> ConversionResult<IDLLong> convertToIntegerEnforceRange<IDLLong>(JSC::
         return value.asInt32();
 
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double x = value.toNumber(&lexicalGlobalObject);
 
@@ -260,7 +260,7 @@ template<> ConversionResult<IDLUnsignedLong> convertToIntegerEnforceRange<IDLUns
         return value.asUInt32();
 
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double x = value.toNumber(&lexicalGlobalObject);
 
@@ -275,7 +275,7 @@ template<> ConversionResult<IDLLong> convertToIntegerClamp<IDLLong>(JSC::JSGloba
         return value.asInt32();
 
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double x = value.toNumber(&lexicalGlobalObject);
 
@@ -290,7 +290,7 @@ template<> ConversionResult<IDLUnsignedLong> convertToIntegerClamp<IDLUnsignedLo
         return value.asUInt32();
 
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double x = value.toNumber(&lexicalGlobalObject);
 
@@ -302,7 +302,7 @@ template<> ConversionResult<IDLUnsignedLong> convertToIntegerClamp<IDLUnsignedLo
 template<> ConversionResult<IDLLong> convertToInteger<IDLLong>(JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value)
 {
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto x = value.toInt32(&lexicalGlobalObject);
 
@@ -314,7 +314,7 @@ template<> ConversionResult<IDLLong> convertToInteger<IDLLong>(JSC::JSGlobalObje
 template<> ConversionResult<IDLUnsignedLong> convertToInteger<IDLUnsignedLong>(JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value)
 {
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto x = value.toUInt32(&lexicalGlobalObject);
 
@@ -329,7 +329,7 @@ template<> ConversionResult<IDLLongLong> convertToIntegerEnforceRange<IDLLongLon
         return value.asInt32();
 
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double x = value.toNumber(&lexicalGlobalObject);
 
@@ -344,7 +344,7 @@ template<> ConversionResult<IDLUnsignedLongLong> convertToIntegerEnforceRange<ID
         return value.asUInt32();
 
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double x = value.toNumber(&lexicalGlobalObject);
 
@@ -359,7 +359,7 @@ template<> ConversionResult<IDLLongLong> convertToIntegerClamp<IDLLongLong>(JSC:
         return value.asInt32();
 
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double x = value.toNumber(&lexicalGlobalObject);
 
@@ -374,7 +374,7 @@ template<> ConversionResult<IDLUnsignedLongLong> convertToIntegerClamp<IDLUnsign
         return value.asUInt32();
 
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double x = value.toNumber(&lexicalGlobalObject);
 
@@ -389,7 +389,7 @@ template<> ConversionResult<IDLLongLong> convertToInteger<IDLLongLong>(JSC::JSGl
         return value.asInt32();
 
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double x = value.toNumber(&lexicalGlobalObject);
 
@@ -407,7 +407,7 @@ template<> ConversionResult<IDLUnsignedLongLong> convertToInteger<IDLUnsignedLon
         return value.asUInt32();
 
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double x = value.toNumber(&lexicalGlobalObject);
 

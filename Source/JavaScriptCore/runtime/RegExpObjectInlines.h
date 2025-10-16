@@ -41,7 +41,7 @@ inline Structure* RegExpObject::createStructure(VM& vm, JSGlobalObject* globalOb
 ALWAYS_INLINE unsigned getRegExpObjectLastIndexAsUnsigned(JSGlobalObject* globalObject, RegExpObject* regExpObject, StringView input)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue jsLastIndex = regExpObject->getLastIndex();
     unsigned lastIndex;
     if (jsLastIndex.isUInt32()) [[likely]] {
@@ -61,7 +61,7 @@ ALWAYS_INLINE unsigned getRegExpObjectLastIndexAsUnsigned(JSGlobalObject* global
 ALWAYS_INLINE JSValue RegExpObject::execInline(JSGlobalObject* globalObject, JSString* string)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     RegExp* regExp = this->regExp();
     auto input = string->view(globalObject);
@@ -100,7 +100,7 @@ ALWAYS_INLINE JSValue RegExpObject::execInline(JSGlobalObject* globalObject, JSS
 ALWAYS_INLINE MatchResult RegExpObject::matchInline(JSGlobalObject* globalObject, JSString* string)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     RegExp* regExp = this->regExp();
     auto input = string->view(globalObject);
@@ -145,7 +145,7 @@ inline unsigned advanceStringUnicode(StringView s, unsigned length, unsigned cur
 template<typename FixEndFunc>
 JSValue collectMatches(VM& vm, JSGlobalObject* globalObject, JSString* string, StringView s, RegExp* regExp, const FixEndFunc& fixEnd)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     MatchResult result = globalObject->regExpGlobalData().performMatch(globalObject, regExp, string, s, 0);
     RETURN_IF_EXCEPTION(scope, { });
@@ -243,7 +243,7 @@ ALWAYS_INLINE size_t genericMatches(VM& vm, std::span<const SubjectChar> input, 
 ALWAYS_INLINE JSValue collectGlobalAtomMatches(JSGlobalObject* globalObject, JSString* string, RegExp* regExp)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     size_t numberOfMatches = 0;
     auto input = string->view(globalObject);

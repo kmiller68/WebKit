@@ -78,7 +78,7 @@ template<typename IDL> struct IntegerConverter : DefaultConverter<IDL> {
     }
 
 
-    static inline Result convert(JSC::JSGlobalObject&, JSC::ThrowScope&, double number)
+    static inline Result convert(JSC::JSGlobalObject&, JSC::ExceptionScope&, double number)
         requires std::same_as<IDL, IDLLong>
     {
         return JSC::toInt32(number);
@@ -178,7 +178,7 @@ template<> struct JSConverter<IDLUnrestrictedFloat> : Detail::JSNumberConverter<
 template<> struct Converter<IDLFloat> : DefaultConverter<IDLFloat> {
     using Result = ConversionResult<IDLFloat>;
 
-    static inline Result convert(JSC::JSGlobalObject& lexicalGlobalObject, JSC::ThrowScope& scope, double number)
+    static inline Result convert(JSC::JSGlobalObject& lexicalGlobalObject, JSC::ExceptionScope& scope, double number)
     {
         if (!std::isfinite(number)) [[unlikely]] {
             throwNonFiniteTypeError(lexicalGlobalObject, scope);
@@ -190,7 +190,7 @@ template<> struct Converter<IDLFloat> : DefaultConverter<IDLFloat> {
     static Result convert(JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value)
     {
         JSC::VM& vm = JSC::getVM(&lexicalGlobalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         double number = value.toNumber(&lexicalGlobalObject);
         RETURN_IF_EXCEPTION(scope, Result::exception());
         if (!std::isfinite(number)) [[unlikely]] {
@@ -208,7 +208,7 @@ template<> struct Converter<IDLFloat> : DefaultConverter<IDLFloat> {
 template<> struct Converter<IDLUnrestrictedFloat> : DefaultConverter<IDLUnrestrictedFloat> {
     using Result = ConversionResult<IDLUnrestrictedFloat>;
 
-    static inline Result convert(JSC::JSGlobalObject&, JSC::ThrowScope&, double number)
+    static inline Result convert(JSC::JSGlobalObject&, JSC::ExceptionScope&, double number)
     {
         return static_cast<float>(number);
     }
@@ -216,7 +216,7 @@ template<> struct Converter<IDLUnrestrictedFloat> : DefaultConverter<IDLUnrestri
     static Result convert(JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value)
     {
         JSC::VM& vm = JSC::getVM(&lexicalGlobalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         double number = value.toNumber(&lexicalGlobalObject);
 
@@ -233,7 +233,7 @@ template<> struct Converter<IDLUnrestrictedFloat> : DefaultConverter<IDLUnrestri
 template<> struct Converter<IDLDouble> : DefaultConverter<IDLDouble> {
     using Result = ConversionResult<IDLDouble>;
 
-    static inline Result convert(JSC::JSGlobalObject& lexicalGlobalObject, JSC::ThrowScope& scope, double number)
+    static inline Result convert(JSC::JSGlobalObject& lexicalGlobalObject, JSC::ExceptionScope& scope, double number)
     {
         if (!std::isfinite(number)) [[unlikely]] {
             throwNonFiniteTypeError(lexicalGlobalObject, scope);
@@ -245,7 +245,7 @@ template<> struct Converter<IDLDouble> : DefaultConverter<IDLDouble> {
     static Result convert(JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value)
     {
         JSC::VM& vm = JSC::getVM(&lexicalGlobalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         double number = value.toNumber(&lexicalGlobalObject);
 
@@ -275,7 +275,7 @@ template<> struct JSConverter<IDLDouble> {
 template<> struct Converter<IDLUnrestrictedDouble> : DefaultConverter<IDLUnrestrictedDouble> {
     using Result = ConversionResult<IDLUnrestrictedDouble>;
 
-    static inline Result convert(JSC::JSGlobalObject&, JSC::ThrowScope&, double number)
+    static inline Result convert(JSC::JSGlobalObject&, JSC::ExceptionScope&, double number)
     {
         return number;
     }
@@ -283,7 +283,7 @@ template<> struct Converter<IDLUnrestrictedDouble> : DefaultConverter<IDLUnrestr
     static Result convert(JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value)
     {
         JSC::VM& vm = JSC::getVM(&lexicalGlobalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         double number = value.toNumber(&lexicalGlobalObject);
 

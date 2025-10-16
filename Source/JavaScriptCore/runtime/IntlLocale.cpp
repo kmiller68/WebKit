@@ -234,7 +234,7 @@ String IntlLocale::keywordValue(ASCIILiteral key, bool isBoolean) const
 void IntlLocale::initializeLocale(JSGlobalObject* globalObject, JSValue tagValue, JSValue optionsValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     String tag = tagValue.inherits<IntlLocale>() ? jsCast<IntlLocale*>(tagValue)->toString() : tagValue.toWTFString(globalObject);
     RETURN_IF_EXCEPTION(scope, void());
@@ -268,7 +268,7 @@ static StringView weekdayToString(StringView fw)
 void IntlLocale::initializeLocale(JSGlobalObject* globalObject, const String& tag, JSValue optionsValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* options = intlCoerceOptionsToObject(globalObject, optionsValue);
     RETURN_IF_EXCEPTION(scope, void());
@@ -657,7 +657,7 @@ TriState IntlLocale::numeric()
 JSArray* IntlLocale::calendars(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Vector<String, 1> elements;
 
@@ -695,7 +695,7 @@ JSArray* IntlLocale::calendars(JSGlobalObject* globalObject)
 JSArray* IntlLocale::collations(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Vector<String, 1> elements;
 
@@ -736,7 +736,7 @@ JSArray* IntlLocale::collations(JSGlobalObject* globalObject)
 JSArray* IntlLocale::hourCycles(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Vector<String, 1> elements;
 
@@ -791,7 +791,7 @@ JSArray* IntlLocale::hourCycles(JSGlobalObject* globalObject)
 JSArray* IntlLocale::numberingSystems(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Vector<String, 1> elements;
     String preferred = numberingSystem();
@@ -814,7 +814,7 @@ JSArray* IntlLocale::numberingSystems(JSGlobalObject* globalObject)
 JSValue IntlLocale::timeZones(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Vector<String, 1> elements;
 
@@ -845,7 +845,7 @@ JSValue IntlLocale::timeZones(JSGlobalObject* globalObject)
 JSObject* IntlLocale::textInfo(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     UErrorCode status = U_ZERO_ERROR;
     ULayoutType layout = uloc_getCharacterOrientation(m_localeID.data(), &status);
@@ -879,7 +879,7 @@ JSObject* IntlLocale::textInfo(JSGlobalObject* globalObject)
 JSObject* IntlLocale::weekInfo(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     UErrorCode status = U_ZERO_ERROR;
     auto calendar = std::unique_ptr<UCalendar, ICUDeleter<ucal_close>>(ucal_open(nullptr, 0, m_localeID.data(), UCAL_DEFAULT, &status));

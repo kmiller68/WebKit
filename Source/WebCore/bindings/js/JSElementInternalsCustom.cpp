@@ -46,7 +46,7 @@ JSValue JSElementInternals::setFormValue(JSGlobalObject& lexicalGlobalObject, Ca
     using JSCustomElementFormValue = IDLUnion<IDLNull, IDLInterface<File>, IDLUSVString, IDLInterface<DOMFormData>>;
 
     auto& vm = lexicalGlobalObject.vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     if (callFrame.argumentCount() < 1) [[unlikely]] {
         throwException(&lexicalGlobalObject, throwScope, createNotEnoughArgumentsError(&lexicalGlobalObject));
         return { };
@@ -78,7 +78,7 @@ JSValue JSElementInternals::setFormValue(JSGlobalObject& lexicalGlobalObject, Ca
 static JSValue getElementsArrayAttribute(JSGlobalObject& lexicalGlobalObject, const JSElementInternals& thisObject, const QualifiedName& attributeName)
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* cachedObject = nullptr;
     JSValue cachedObjectValue = thisObject.getDirect(vm, builtinNames(vm).cachedAttrAssociatedElementsPrivateName());

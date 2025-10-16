@@ -122,7 +122,7 @@ bool GenericArgumentsImpl<Type>::put(JSCell* cell, JSGlobalObject* globalObject,
 {
     Type* thisObject = jsCast<Type*>(cell);
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!thisObject->overrodeThings()
         && (ident == vm.propertyNames->length
@@ -167,7 +167,7 @@ bool GenericArgumentsImpl<Type>::deleteProperty(JSCell* cell, JSGlobalObject* gl
 {
     Type* thisObject = jsCast<Type*>(cell);
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!thisObject->overrodeThings()
         && (ident == vm.propertyNames->length
@@ -187,7 +187,7 @@ template<typename Type>
 bool GenericArgumentsImpl<Type>::deletePropertyByIndex(JSCell* cell, JSGlobalObject* globalObject, unsigned index)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Type* thisObject = jsCast<Type*>(cell);
 
@@ -218,7 +218,7 @@ bool GenericArgumentsImpl<Type>::defineOwnProperty(JSObject* object, JSGlobalObj
 {
     Type* thisObject = jsCast<Type*>(object);
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (ident == vm.propertyNames->length
         || ident == vm.propertyNames->callee
@@ -273,7 +273,7 @@ template<typename Type>
 void GenericArgumentsImpl<Type>::initModifiedArgumentsDescriptor(JSGlobalObject* globalObject, unsigned argsLength)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     RELEASE_ASSERT(!m_modifiedArgumentsDescriptor);
 
@@ -301,7 +301,7 @@ template<typename Type>
 void GenericArgumentsImpl<Type>::setModifiedArgumentDescriptor(JSGlobalObject* globalObject, unsigned index, unsigned length)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     initModifiedArgumentsDescriptorIfNecessary(globalObject, length);
     RETURN_IF_EXCEPTION(scope, void());
@@ -323,7 +323,7 @@ template<typename Type>
 void GenericArgumentsImpl<Type>::copyToArguments(JSGlobalObject* globalObject, JSValue* firstElementDest, unsigned offset, unsigned length)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Type* thisObject = static_cast<Type*>(this);
     for (unsigned i = 0; i < length; ++i) {

@@ -316,7 +316,7 @@ static inline ExceptionOr<KeyframeEffect::KeyframeLikeObject> processKeyframeLik
     // https://drafts.csswg.org/web-animations-1/#process-a-keyframe-like-object
 
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 1. Run the procedure to convert an ECMAScript value to a dictionary type [WEBIDL] with keyframe input as the ECMAScript value as follows:
     // 
@@ -513,7 +513,7 @@ static inline ExceptionOr<void> processIterableKeyframes(JSGlobalObject& lexical
     // 1. Let iter be GetIterator(object, method).
     forEachInIterable(lexicalGlobalObject, keyframesInput.get(), method, [&parsedKeyframes, &document, &parserContext](VM& vm, JSGlobalObject& lexicalGlobalObject, JSValue nextValue) -> ExceptionOr<void> {
         // Steps 2 through 5 are already implemented by forEachInIterable().
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         // 6. If Type(nextItem) is not Undefined, Null or Object, then throw a TypeError and abort these steps.
         if (!nextValue.isUndefinedOrNull() && !nextValue.isObject()) {
@@ -1114,7 +1114,7 @@ ExceptionOr<void> KeyframeEffect::processKeyframes(JSGlobalObject& lexicalGlobal
         return { };
 
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 2. Let processed keyframes be an empty sequence of keyframes.
     Vector<ParsedKeyframe> parsedKeyframes;

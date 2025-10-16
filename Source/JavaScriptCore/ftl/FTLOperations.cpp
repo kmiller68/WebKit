@@ -80,7 +80,7 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationPopulateObjectInOSR, void, (JSGlobalO
 
     switch (materialization->type()) {
     case PhantomNewArrayWithButterfly: {
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         // This might be unnecessary because operationMaterializeObjectInOSR does DeferGCForAWhile but its better to be safe.
         JSArray* array = jsCast<JSArray*>(JSValue::decode(*encodedValue));
         for (unsigned i = materialization->properties().size(); i--;) {
@@ -251,7 +251,7 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationMaterializeObjectInOSR, HeapCell*, (J
 
     switch (materialization->type()) {
     case PhantomNewButterflyWithSize: {
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         size_t size = UINT64_MAX;
         for (unsigned i = 0; i < materialization->properties().size(); ++i) {
@@ -845,7 +845,7 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationSwitchStringAndGetIndex, UCPUStrictIn
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned length = string->length();
     if (length < unlinkedTable->minLength() || length > unlinkedTable->maxLength())

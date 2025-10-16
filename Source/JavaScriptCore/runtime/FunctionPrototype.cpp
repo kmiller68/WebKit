@@ -78,7 +78,7 @@ void FunctionPrototype::addFunctionProperties(VM& vm, JSGlobalObject* globalObje
 JSC_DEFINE_HOST_FUNCTION(functionProtoFuncToString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     if (thisValue.inherits<JSFunction>()) {
@@ -106,7 +106,7 @@ JSC_DEFINE_HOST_FUNCTION(functionProtoFuncToString, (JSGlobalObject* globalObjec
 JSC_DEFINE_HOST_FUNCTION(functionProtoFuncBind, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     if (!thisValue.isCallable()) [[unlikely]]
@@ -216,7 +216,7 @@ static JSValue retrieveArguments(VM& vm, CallFrame* callFrame, JSFunction* funct
 JSC_DEFINE_CUSTOM_GETTER(argumentsGetter, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSFunction* thisObj = jsDynamicCast<JSFunction*>(JSValue::decode(thisValue));
     if (!thisObj || !isAllowedReceiverFunctionForCallerAndArguments(thisObj))
@@ -287,7 +287,7 @@ static JSValue retrieveCallerFunction(VM& vm, CallFrame* callFrame, JSFunction* 
 JSC_DEFINE_CUSTOM_GETTER(callerGetter, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSFunction* thisObj = jsDynamicCast<JSFunction*>(JSValue::decode(thisValue));
     if (!thisObj || !isAllowedReceiverFunctionForCallerAndArguments(thisObj))
@@ -319,7 +319,7 @@ JSC_DEFINE_CUSTOM_GETTER(callerGetter, (JSGlobalObject* globalObject, EncodedJSV
 JSC_DEFINE_CUSTOM_SETTER(callerAndArgumentsSetter, (JSGlobalObject* globalObject, EncodedJSValue thisValue, EncodedJSValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSFunction* thisObj = jsDynamicCast<JSFunction*>(JSValue::decode(thisValue));
     if (!thisObj || !isAllowedReceiverFunctionForCallerAndArguments(thisObj))

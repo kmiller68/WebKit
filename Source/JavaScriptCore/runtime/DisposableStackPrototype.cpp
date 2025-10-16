@@ -56,7 +56,7 @@ void DisposableStackPrototype::finishCreation(VM& vm, JSGlobalObject* globalObje
 JSC_DEFINE_HOST_FUNCTION(disposableStackProtoDisposedGetter, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     auto* disposableStack = jsDynamicCast<JSDisposableStack*>(thisValue);

@@ -140,7 +140,7 @@ String InternalFunction::calculatedDisplayName(VM& vm)
 Structure* InternalFunction::createSubclassStructure(JSGlobalObject* globalObject, JSObject* newTarget, Structure* baseClass)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSGlobalObject* baseGlobalObject = baseClass->globalObject();
 
     ASSERT(baseClass->hasMonoProto());
@@ -192,7 +192,7 @@ InternalFunction* InternalFunction::createFunctionThatMasqueradesAsUndefined(VM&
 JSGlobalObject* getFunctionRealm(JSGlobalObject* globalObject, JSObject* object)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(object->isCallable());
 

@@ -100,7 +100,7 @@ private:
     static Result convertRecord(JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value, Args&& ...args)
     {
         auto& vm = JSC::getVM(&lexicalGlobalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         // 1. Let result be a new empty instance of record<K, V>.
         // 2. If Type(O) is Undefined or Null, return result.

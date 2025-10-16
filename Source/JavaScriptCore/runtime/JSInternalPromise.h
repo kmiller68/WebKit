@@ -51,7 +51,7 @@ public:
 
     JS_EXPORT_PRIVATE JSInternalPromise* then(JSGlobalObject*, JSFunction*, JSFunction*);
 
-    JS_EXPORT_PRIVATE JSInternalPromise* rejectWithCaughtException(JSGlobalObject*, ThrowScope&);
+    JS_EXPORT_PRIVATE JSInternalPromise* rejectWithCaughtException(JSGlobalObject*, ExceptionScope&);
 
 private:
     JSInternalPromise(VM&, Structure*);

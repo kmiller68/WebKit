@@ -170,7 +170,7 @@ JSString* FunctionExecutable::toStringSlow(JSGlobalObject* globalObject)
     VM& vm = getVM(globalObject);
     ASSERT(m_rareData && !m_rareData->m_asString);
 
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     const auto& cache = [&](JSString* asString) {
         WTF::storeStoreFence();

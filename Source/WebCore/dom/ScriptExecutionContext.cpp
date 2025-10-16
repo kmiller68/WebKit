@@ -39,6 +39,7 @@
 #include "DatabaseContext.h"
 #include "Document.h"
 #include "DocumentPage.h"
+#include "DocumentInlines.h"
 #include "EmptyScriptExecutionContext.h"
 #include "ErrorEvent.h"
 #include "FontLoadRequest.h"
@@ -80,9 +81,9 @@
 #include "WorkerThread.h"
 #include "WorkletGlobalScope.h"
 #include <JavaScriptCore/CallFrame.h>
-#include <JavaScriptCore/CatchScope.h>
 #include <JavaScriptCore/DeferredWorkTimer.h>
 #include <JavaScriptCore/Exception.h>
+#include <JavaScriptCore/ExceptionScope.h>
 #include <JavaScriptCore/JSPromise.h>
 #include <JavaScriptCore/ScriptCallStack.h>
 #include <JavaScriptCore/SourceTaintedOrigin.h>
@@ -514,7 +515,7 @@ void ScriptExecutionContext::reportUnhandledPromiseRejection(JSC::JSGlobalObject
         return;
 
     Ref vm = state.vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSC::JSValue result = promise.result();
     String resultMessage = retrieveErrorMessage(state, vm, result, scope);
     String errorMessage;

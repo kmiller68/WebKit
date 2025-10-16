@@ -818,7 +818,7 @@ inline void* throwWasmToJSException(CallFrame* callFrame, Wasm::ExceptionType ty
     VM& vm = globalObject->vm();
 
     do {
-        auto throwScope = DECLARE_THROW_SCOPE(vm);
+        auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
         JSObject* error;
         if (type == ExceptionType::Termination) {

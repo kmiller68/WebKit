@@ -154,7 +154,7 @@ void JSTestIndexedSetterNoIdentifier::destroy(JSC::JSCell* cell)
 bool JSTestIndexedSetterNoIdentifier::legacyPlatformObjectGetOwnProperty(JSObject* object, JSGlobalObject* lexicalGlobalObject, PropertyName propertyName, PropertySlot& slot, bool ignoreNamedProperties)
 {
     UNUSED_PARAM(ignoreNamedProperties);
-    auto throwScope = DECLARE_THROW_SCOPE(JSC::getVM(lexicalGlobalObject));
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(JSC::getVM(lexicalGlobalObject));
     auto* thisObject = jsCast<JSTestIndexedSetterNoIdentifier*>(object);
     ASSERT_GC_OBJECT_INHERITS(thisObject, info());
     if (auto index = parseIndex(propertyName)) {
@@ -177,7 +177,7 @@ bool JSTestIndexedSetterNoIdentifier::getOwnPropertySlot(JSObject* object, JSGlo
 bool JSTestIndexedSetterNoIdentifier::getOwnPropertySlotByIndex(JSObject* object, JSGlobalObject* lexicalGlobalObject, unsigned index, PropertySlot& slot)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* thisObject = jsCast<JSTestIndexedSetterNoIdentifier*>(object);
     ASSERT_GC_OBJECT_INHERITS(thisObject, info());
     if (index <= MAX_ARRAY_INDEX) [[likely]] {
@@ -208,7 +208,7 @@ bool JSTestIndexedSetterNoIdentifier::put(JSCell* cell, JSGlobalObject* lexicalG
 
     if (thisObject != putPropertySlot.thisValue()) [[unlikely]]
         return JSObject::put(thisObject, lexicalGlobalObject, propertyName, value, putPropertySlot);
-    auto throwScope = DECLARE_THROW_SCOPE(lexicalGlobalObject->vm());
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject->vm());
 
     if (auto index = parseIndex(propertyName)) {
         auto nativeValue = convert<IDLDOMString>(*lexicalGlobalObject, value);
@@ -228,7 +228,7 @@ bool JSTestIndexedSetterNoIdentifier::putByIndex(JSCell* cell, JSGlobalObject* l
     ASSERT_GC_OBJECT_INHERITS(thisObject, info());
 
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (index <= MAX_ARRAY_INDEX) [[likely]] {
         auto nativeValue = convert<IDLDOMString>(*lexicalGlobalObject, value);
@@ -249,7 +249,7 @@ bool JSTestIndexedSetterNoIdentifier::defineOwnProperty(JSObject* object, JSGlob
     auto* thisObject = jsCast<JSTestIndexedSetterNoIdentifier*>(object);
     ASSERT_GC_OBJECT_INHERITS(thisObject, info());
 
-    auto throwScope = DECLARE_THROW_SCOPE(lexicalGlobalObject->vm());
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject->vm());
 
     if (auto index = parseIndex(propertyName)) {
         if (!propertyDescriptor.isDataDescriptor())
@@ -300,7 +300,7 @@ bool JSTestIndexedSetterNoIdentifier::deletePropertyByIndex(JSCell* cell, JSGlob
 JSC_DEFINE_CUSTOM_GETTER(jsTestIndexedSetterNoIdentifierConstructor, (JSGlobalObject* lexicalGlobalObject, EncodedJSValue thisValue, PropertyName))
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* prototype = jsDynamicCast<JSTestIndexedSetterNoIdentifierPrototype*>(JSValue::decode(thisValue));
     if (!prototype) [[unlikely]]
         return throwVMTypeError(lexicalGlobalObject, throwScope);

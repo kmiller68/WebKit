@@ -148,7 +148,7 @@ void JSArray::setLengthWritable(JSGlobalObject* globalObject, bool writable)
 bool JSArray::defineOwnProperty(JSObject* object, JSGlobalObject* globalObject, PropertyName propertyName, const PropertyDescriptor& descriptor, bool throwException)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSArray* array = jsCast<JSArray*>(object);
 
@@ -241,7 +241,7 @@ bool JSArray::getOwnPropertySlot(JSObject* object, JSGlobalObject* globalObject,
 bool JSArray::put(JSCell* cell, JSGlobalObject* globalObject, PropertyName propertyName, JSValue value, PutPropertySlot& slot)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSArray* thisObject = jsCast<JSArray*>(cell);
     thisObject->ensureWritable(vm);
@@ -418,7 +418,7 @@ bool JSArray::unshiftCountSlowCase(const AbstractLocker&, VM& vm, DeferGC&, bool
 bool JSArray::setLengthWithArrayStorage(JSGlobalObject* globalObject, unsigned newLength, bool throwException, ArrayStorage* storage)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned length = storage->length();
     
@@ -741,7 +741,7 @@ JSArray* JSArray::fastWith(JSGlobalObject* globalObject, uint32_t index, JSValue
 std::optional<bool> JSArray::fastIncludes(JSGlobalObject* globalObject, JSValue searchElement, uint64_t index64, uint64_t length64)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     bool canDoFastPath = this->canDoFastIndexedAccess()
         && this->getArrayLength() == length64 // The effects in getting `index` could have changed the length of this array.
@@ -993,7 +993,7 @@ JSArray* JSArray::fastToSpliced(JSGlobalObject* globalObject, CallFrame* callFra
 JSString* JSArray::fastToString(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned length = this->length();
 
@@ -1043,7 +1043,7 @@ JSString* JSArray::fastToString(JSGlobalObject* globalObject)
 
 bool JSArray::appendMemcpy(JSGlobalObject* globalObject, VM& vm, unsigned startIndex, IndexingType otherType, std::span<const EncodedJSValue> values)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (isCopyOnWrite(indexingMode()))
         convertFromCopyOnWrite(vm);
@@ -1112,7 +1112,7 @@ bool JSArray::appendMemcpy(JSGlobalObject* globalObject, VM& vm, unsigned startI
 
 bool JSArray::appendMemcpy(JSGlobalObject* globalObject, VM& vm, unsigned startIndex, JSC::JSArray* otherArray)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!canFastAppend(otherArray))
         return false;
@@ -1179,7 +1179,7 @@ bool JSArray::appendMemcpy(JSGlobalObject* globalObject, VM& vm, unsigned startI
 bool JSArray::setLength(JSGlobalObject* globalObject, unsigned newLength, bool throwException)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Butterfly* butterfly = this->butterfly();
     switch (indexingMode()) {
@@ -1255,7 +1255,7 @@ bool JSArray::setLength(JSGlobalObject* globalObject, unsigned newLength, bool t
 JSValue JSArray::pop(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ensureWritable(vm);
 
@@ -1653,7 +1653,7 @@ bool JSArray::shiftCountWithAnyIndexingType(JSGlobalObject* globalObject, unsign
 bool JSArray::unshiftCountWithArrayStorage(JSGlobalObject* globalObject, unsigned startIndex, unsigned count, ArrayStorage* storage)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned length = storage->length();
 
@@ -1711,7 +1711,7 @@ bool JSArray::unshiftCountWithArrayStorage(JSGlobalObject* globalObject, unsigne
 bool JSArray::unshiftCountWithAnyIndexingType(JSGlobalObject* globalObject, unsigned startIndex, unsigned count)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ensureWritable(vm);
 
@@ -1901,7 +1901,7 @@ void JSArray::fillArgList(JSGlobalObject* globalObject, MarkedArgumentBuffer& ar
 void JSArray::copyToArguments(JSGlobalObject* globalObject, JSValue* firstElementDest, unsigned offset, unsigned length)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned i = offset;
     WriteBarrier<Unknown>* vector;
@@ -2060,7 +2060,7 @@ JSArray* constructArray(JSGlobalObject* globalObject, Structure* arrayStructure,
 JSArray* constructArrayNegativeIndexed(JSGlobalObject* globalObject, Structure* arrayStructure, const JSValue* values, unsigned length)
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     ObjectInitializationScope scope(vm);
 
     JSArray* array = constructArray<AllocationFailureMode::ReturnNull>(scope, arrayStructure, length);
@@ -2087,7 +2087,7 @@ JSArray* tryCloneArrayFromFast(JSGlobalObject* globalObject, JSValue arrayValue)
 
     VM& vm = globalObject->vm();
 
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* array = jsCast<JSArray*>(arrayValue);
     if (!array->isIteratorProtocolFastAndNonObservable()) [[unlikely]]

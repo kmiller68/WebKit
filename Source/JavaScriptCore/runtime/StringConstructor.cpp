@@ -79,7 +79,7 @@ StringConstructor* StringConstructor::create(VM& vm, Structure* structure, Strin
 JSC_DEFINE_HOST_FUNCTION(stringFromCharCode, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned length = callFrame->argumentCount();
     if (length == 1) [[likely]] {
@@ -119,7 +119,7 @@ JSString* stringFromCharCode(JSGlobalObject* globalObject, int32_t arg)
 JSC_DEFINE_HOST_FUNCTION(stringFromCodePoint, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned length = callFrame->argumentCount();
     StringBuilder builder;
@@ -148,7 +148,7 @@ JSC_DEFINE_HOST_FUNCTION(stringFromCodePoint, (JSGlobalObject* globalObject, Cal
 JSC_DEFINE_HOST_FUNCTION(constructWithStringConstructor, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* newTarget = asObject(callFrame->newTarget());
     Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, stringObjectStructure, newTarget, callFrame->jsCallee());
@@ -164,7 +164,7 @@ JSC_DEFINE_HOST_FUNCTION(constructWithStringConstructor, (JSGlobalObject* global
 JSString* stringConstructor(JSGlobalObject* globalObject, JSValue argument)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (argument.isSymbol()) {
         auto description = asSymbol(argument)->tryGetDescriptiveString();

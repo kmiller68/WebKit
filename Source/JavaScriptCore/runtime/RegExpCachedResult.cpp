@@ -49,7 +49,7 @@ DEFINE_VISIT_AGGREGATE(RegExpCachedResult);
 JSArray* RegExpCachedResult::lastResult(JSGlobalObject* globalObject, JSObject* owner)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!m_reified) {
         m_reifiedInput.set(vm, owner, m_lastInput.get());
@@ -97,7 +97,7 @@ JSString* RegExpCachedResult::leftContext(JSGlobalObject* globalObject, JSObject
 {
     // Make sure we're reified.
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     lastResult(globalObject, owner);
     RETURN_IF_EXCEPTION(scope, nullptr);
@@ -114,7 +114,7 @@ JSString* RegExpCachedResult::rightContext(JSGlobalObject* globalObject, JSObjec
 {
     // Make sure we're reified.
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     lastResult(globalObject, owner);
     RETURN_IF_EXCEPTION(scope, nullptr);
@@ -132,7 +132,7 @@ void RegExpCachedResult::setInput(JSGlobalObject* globalObject, JSObject* owner,
 {
     // Make sure we're reified, otherwise m_reifiedInput will be ignored.
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     lastResult(globalObject, owner);
     RETURN_IF_EXCEPTION(scope, void());

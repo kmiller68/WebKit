@@ -57,7 +57,7 @@ void AsyncDisposableStackPrototype::finishCreation(VM& vm, JSGlobalObject* globa
 JSC_DEFINE_HOST_FUNCTION(asyncDisposableStackProtoDisposedGetter, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue thisValue = callFrame->thisValue();
     auto* asyncDisposableStack = jsDynamicCast<JSAsyncDisposableStack*>(thisValue);

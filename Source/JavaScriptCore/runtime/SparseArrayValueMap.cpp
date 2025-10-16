@@ -92,7 +92,7 @@ void SparseArrayValueMap::remove(unsigned i)
 bool SparseArrayValueMap::putEntry(JSGlobalObject* globalObject, JSObject* array, unsigned i, JSValue value, bool shouldThrow)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     ASSERT(value);
     
     AddResult result = add(array, i);
@@ -112,7 +112,7 @@ bool SparseArrayValueMap::putEntry(JSGlobalObject* globalObject, JSObject* array
 bool SparseArrayValueMap::putDirect(JSGlobalObject* globalObject, JSObject* array, unsigned i, JSValue value, unsigned attributes, PutDirectIndexMode mode)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     ASSERT(value);
     
     bool shouldThrow = (mode == PutDirectIndexShouldThrow);
@@ -186,7 +186,7 @@ JSValue SparseArrayEntry::getConcurrently() const
 bool SparseArrayEntry::put(JSGlobalObject* globalObject, JSValue thisValue, SparseArrayValueMap* map, JSValue value, bool shouldThrow)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!(m_attributes & PropertyAttribute::Accessor)) {
         if (m_attributes & PropertyAttribute::ReadOnly)

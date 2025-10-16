@@ -40,7 +40,7 @@ using namespace JSC;
 JSC::EncodedJSValue constructJSExtendableMessageEvent(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame& callFrame)
 {
     VM& vm = lexicalGlobalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (callFrame.argumentCount() < 1) [[unlikely]]
         return throwVMError(lexicalGlobalObject, throwScope, createNotEnoughArgumentsError(lexicalGlobalObject));
@@ -61,8 +61,8 @@ JSC::EncodedJSValue constructJSExtendableMessageEvent(JSC::JSGlobalObject* lexic
 
 JSC::JSValue JSExtendableMessageEvent::ports(JSC::JSGlobalObject& lexicalGlobalObject) const
 {
-    auto throwScope = DECLARE_THROW_SCOPE(lexicalGlobalObject.vm());
-    return cachedPropertyValue(throwScope, lexicalGlobalObject, *this, wrapped().cachedPorts(), [&](JSC::ThrowScope& throwScope) {
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject.vm());
+    return cachedPropertyValue(throwScope, lexicalGlobalObject, *this, wrapped().cachedPorts(), [&](JSC::ExceptionScope& throwScope) {
         return toJS<IDLFrozenArray<IDLInterface<MessagePort>>>(lexicalGlobalObject, *globalObject(), throwScope, wrapped().ports());
     });
 }

@@ -191,7 +191,7 @@ void WorkerOrWorkletScriptController::setException(JSC::Exception* exception)
 {
     JSC::JSGlobalObject* lexicalGlobalObject = m_globalScopeWrapper.get();
     VM& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     throwException(lexicalGlobalObject, scope, exception);
 }
 
@@ -326,7 +326,7 @@ bool WorkerOrWorkletScriptController::loadModuleSynchronously(WorkerScriptFetche
     auto& globalObject = *m_globalScopeWrapper.get();
     VM& vm = globalObject.vm();
     JSLockHolder lock { vm };
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Ref protector { scriptFetcher };
     {
@@ -337,7 +337,7 @@ bool WorkerOrWorkletScriptController::loadModuleSynchronously(WorkerScriptFetche
         auto& fulfillHandler = *JSNativeStdFunction::create(vm, &globalObject, 1, String(), [protector](JSGlobalObject* globalObject, CallFrame* callFrame) -> JSC::EncodedJSValue {
             VM& vm = globalObject->vm();
             JSLockHolder lock { vm };
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
             Identifier moduleKey = jsValueToModuleKey(globalObject, callFrame->argument(0));
             RETURN_IF_EXCEPTION(scope, { });
             protector->notifyLoadCompleted(*moduleKey.impl());
@@ -348,7 +348,7 @@ bool WorkerOrWorkletScriptController::loadModuleSynchronously(WorkerScriptFetche
             VM& vm = globalObject->vm();
             JSLockHolder lock { vm };
             JSValue errorValue = callFrame->argument(0);
-            auto scope = DECLARE_CATCH_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
             if (errorValue.isObject()) {
                 auto* object = JSC::asObject(errorValue);
                 if (JSValue failureKindValue = object->getDirect(vm, vm.propertyNames->builtinNames().moduleFetchFailureKindPrivateName())) {
@@ -415,6 +415,8 @@ bool WorkerOrWorkletScriptController::loadModuleSynchronously(WorkerScriptFetche
 
     RefPtr globalScope = m_globalScope.get();
     globalScope->eventLoop().performMicrotaskCheckpoint();
+    scope.assertNoExceptionExceptTermination();
+    RETURN_IF_EXCEPTION(scope, false);
 
     // Drive RunLoop until we get either of "Worker is terminated", "Loading is done", or "Loading is failed".
     WorkerRunLoop& runLoop = globalScope->workerOrWorkletThread()->runLoop();
@@ -432,8 +434,11 @@ bool WorkerOrWorkletScriptController::loadModuleSynchronously(WorkerScriptFetche
     bool success = true;
     while ((!protector->isLoaded() && !protector->wasCanceled()) && success) {
         success = runLoop.runInMode(globalScope.get(), taskMode, allowEventLoopTasks);
-        if (success)
+        if (success) {
             globalScope->eventLoop().performMicrotaskCheckpoint();
+            scope.assertNoExceptionExceptTermination();
+            RETURN_IF_EXCEPTION(scope, false);
+        }
     }
 
     return success;
@@ -506,7 +511,7 @@ void WorkerOrWorkletScriptController::loadAndEvaluateModule(const URL& moduleURL
             // task->run(std::nullopt);
             VM& vm = globalObject->vm();
             JSLockHolder lock { vm };
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
             Identifier moduleKey = jsValueToModuleKey(globalObject, callFrame->argument(0));
             RETURN_IF_EXCEPTION(scope, { });
@@ -549,7 +554,7 @@ void WorkerOrWorkletScriptController::loadAndEvaluateModule(const URL& moduleURL
             if (errorValue.isObject()) {
                 auto* object = JSC::asObject(errorValue);
                 if (JSValue failureKindValue = object->getDirect(vm, vm.propertyNames->builtinNames().moduleFetchFailureKindPrivateName())) {
-                    auto catchScope = DECLARE_CATCH_SCOPE(vm);
+                    auto catchScope = DECLARE_EXCEPTION_SCOPE(vm);
                     String message = retrieveErrorMessageWithoutName(*globalObject, vm, object, catchScope);
                     switch (static_cast<ModuleFetchFailureKind>(failureKindValue.asInt32())) {
                     case ModuleFetchFailureKind::WasFetchError:
@@ -567,13 +572,13 @@ void WorkerOrWorkletScriptController::loadAndEvaluateModule(const URL& moduleURL
                     auto* error = jsCast<ErrorInstance*>(object);
                     switch (error->errorType()) {
                     case ErrorType::TypeError: {
-                        auto catchScope = DECLARE_CATCH_SCOPE(vm);
+                        auto catchScope = DECLARE_EXCEPTION_SCOPE(vm);
                         String message = retrieveErrorMessageWithoutName(*globalObject, vm, error, catchScope);
                         task->run(Exception { ExceptionCode::TypeError, message });
                         return JSValue::encode(jsUndefined());
                     }
                     case ErrorType::SyntaxError: {
-                        auto catchScope = DECLARE_CATCH_SCOPE(vm);
+                        auto catchScope = DECLARE_EXCEPTION_SCOPE(vm);
                         String message = retrieveErrorMessageWithoutName(*globalObject, vm, error, catchScope);
                         task->run(Exception { ExceptionCode::JSSyntaxError, message });
                         return JSValue::encode(jsUndefined());
@@ -584,7 +589,7 @@ void WorkerOrWorkletScriptController::loadAndEvaluateModule(const URL& moduleURL
                 }
             }
 
-            auto catchScope = DECLARE_CATCH_SCOPE(vm);
+            auto catchScope = DECLARE_EXCEPTION_SCOPE(vm);
             String message = retrieveErrorMessageWithoutName(*globalObject, vm, errorValue, catchScope);
             task->run(Exception { ExceptionCode::AbortError, message });
             return JSValue::encode(jsUndefined());

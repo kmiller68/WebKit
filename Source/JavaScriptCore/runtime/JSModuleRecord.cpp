@@ -90,7 +90,7 @@ DEFINE_VISIT_CHILDREN(JSModuleRecord);
 Synchronousness JSModuleRecord::link(JSGlobalObject* globalObject, JSValue scriptFetcher)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (SourceProfiler::g_profilerHook) [[unlikely]]
         SourceProfiler::profile(SourceProfiler::Type::Module, sourceCode());
@@ -108,7 +108,7 @@ Synchronousness JSModuleRecord::link(JSGlobalObject* globalObject, JSValue scrip
 void JSModuleRecord::instantiateDeclarations(JSGlobalObject* globalObject, ModuleProgramExecutable* moduleProgramExecutable, JSValue scriptFetcher)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // http://www.ecma-international.org/ecma-262/6.0/#sec-moduledeclarationinstantiation
 

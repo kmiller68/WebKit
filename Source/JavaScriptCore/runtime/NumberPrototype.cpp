@@ -109,7 +109,7 @@ static ALWAYS_INLINE bool toThisNumber(JSValue thisValue, double& x)
     return false;
 }
 
-static ALWAYS_INLINE EncodedJSValue throwVMToThisNumberError(JSGlobalObject* globalObject, ThrowScope& scope, JSValue thisValue)
+static ALWAYS_INLINE EncodedJSValue throwVMToThisNumberError(JSGlobalObject* globalObject, ExceptionScope& scope, JSValue thisValue)
 {
     auto typeString = jsTypeStringForValue(globalObject, thisValue)->value(globalObject);
     scope.assertNoException();
@@ -392,7 +392,7 @@ String toStringWithRadix(double doubleValue, int32_t radix)
 JSC_DEFINE_HOST_FUNCTION(numberProtoFuncToExponential, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double x;
     if (!toThisNumber(callFrame->thisValue(), x))
@@ -430,7 +430,7 @@ JSC_DEFINE_HOST_FUNCTION(numberProtoFuncToExponential, (JSGlobalObject* globalOb
 JSC_DEFINE_HOST_FUNCTION(numberProtoFuncToFixed, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double x;
     if (!toThisNumber(callFrame->thisValue(), x))
@@ -464,7 +464,7 @@ JSC_DEFINE_HOST_FUNCTION(numberProtoFuncToFixed, (JSGlobalObject* globalObject, 
 JSC_DEFINE_HOST_FUNCTION(numberProtoFuncToPrecision, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double x;
     if (!toThisNumber(callFrame->thisValue(), x))
@@ -612,7 +612,7 @@ JSString* numberToString(VM& vm, double doubleValue, int32_t radix)
 JSC_DEFINE_HOST_FUNCTION(numberProtoFuncToString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double doubleValue;
     if (!toThisNumber(callFrame->thisValue(), doubleValue))
@@ -627,7 +627,7 @@ JSC_DEFINE_HOST_FUNCTION(numberProtoFuncToString, (JSGlobalObject* globalObject,
 JSC_DEFINE_HOST_FUNCTION(numberProtoFuncToLocaleString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double x;
     if (!toThisNumber(callFrame->thisValue(), x))
@@ -650,7 +650,7 @@ JSC_DEFINE_HOST_FUNCTION(numberProtoFuncToLocaleString, (JSGlobalObject* globalO
 JSC_DEFINE_HOST_FUNCTION(numberProtoFuncValueOf, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double x;
     JSValue thisValue = callFrame->thisValue();
@@ -659,7 +659,7 @@ JSC_DEFINE_HOST_FUNCTION(numberProtoFuncValueOf, (JSGlobalObject* globalObject, 
     return JSValue::encode(jsNumber(x));
 }
 
-int32_t extractToStringRadixArgument(JSGlobalObject* globalObject, JSValue radixValue, ThrowScope& throwScope)
+int32_t extractToStringRadixArgument(JSGlobalObject* globalObject, JSValue radixValue, ExceptionScope& throwScope)
 {
     if (radixValue.isUndefined())
         return 10;

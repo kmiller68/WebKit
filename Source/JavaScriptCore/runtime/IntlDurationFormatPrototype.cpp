@@ -80,7 +80,7 @@ void IntlDurationFormatPrototype::finishCreation(VM& vm)
 JSC_DEFINE_HOST_FUNCTION(intlDurationFormatPrototypeFuncFormat, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* durationFormat = jsDynamicCast<IntlDurationFormat*>(callFrame->thisValue());
     if (!durationFormat) [[unlikely]]
@@ -100,7 +100,7 @@ JSC_DEFINE_HOST_FUNCTION(intlDurationFormatPrototypeFuncFormat, (JSGlobalObject*
 JSC_DEFINE_HOST_FUNCTION(intlDurationFormatPrototypeFuncFormatToParts, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* durationFormat = jsDynamicCast<IntlDurationFormat*>(callFrame->thisValue());
     if (!durationFormat) [[unlikely]]
@@ -120,7 +120,7 @@ JSC_DEFINE_HOST_FUNCTION(intlDurationFormatPrototypeFuncFormatToParts, (JSGlobal
 JSC_DEFINE_HOST_FUNCTION(intlDurationFormatPrototypeFuncResolvedOptions, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* durationFormat = jsDynamicCast<IntlDurationFormat*>(callFrame->thisValue());
     if (!durationFormat) [[unlikely]]

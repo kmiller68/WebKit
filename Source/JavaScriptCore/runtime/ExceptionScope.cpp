@@ -43,11 +43,38 @@ ExceptionScope::ExceptionScope(VM& vm, ExceptionEventLocation location)
     , m_recursionDepth(m_previousScope ? m_previousScope->m_recursionDepth + 1 : 0)
 {
     m_vm.m_topExceptionScope = this;
+    m_vm.verifyExceptionCheckNeedIsSatisfied(m_recursionDepth, m_location);
 }
 
 ExceptionScope::~ExceptionScope()
 {
     RELEASE_ASSERT(m_vm.m_topExceptionScope);
+
+    if (m_state == Normal)
+        m_vm.verifyExceptionCheckNeedIsSatisfied(m_recursionDepth, m_location);
+    else {
+        // If we released the scope, that means we're letting our callers do the
+        // exception check. However, because our caller may be a LLInt or JIT
+        // function (which always checks for exceptions but won't clear the
+        // m_needExceptionCheck bit), we should clear m_needExceptionCheck here
+        // and let code below decide if we need to simulate a re-throw.
+        m_vm.m_needExceptionCheck = false;
+    }
+
+    bool willBeHandleByLLIntOrJIT = false;
+    const void* previousScopeStackPosition = m_previousScope ? m_previousScope->stackPosition() : nullptr;
+    void* topEntryFrame = m_vm.topEntryFrame;
+
+    // If the topEntryFrame was pushed on the stack after the previousScope was instantiated,
+    // then this ExceptionScope will be returning to LLInt or JIT code that always do an exception
+    // check. In that case, skip the simulated throw because the LLInt and JIT will be
+    // checking for the exception their own way instead of calling ExceptionScope::exception().
+    if (topEntryFrame && previousScopeStackPosition > topEntryFrame)
+        willBeHandleByLLIntOrJIT = true;
+
+    if (!willBeHandleByLLIntOrJIT && m_state != NoRethrow)
+        simulateThrow();
+
     m_vm.m_topExceptionScope = m_previousScope;
 }
 
@@ -71,6 +98,35 @@ CString ExceptionScope::unexpectedExceptionMessage()
         out.println("non-Error Exception: ", exception()->value());
 
     return out.toCString();
+}
+
+Exception* ExceptionScope::throwException(JSGlobalObject* globalObject, Exception* exception)
+{
+    if (m_vm.exception() && m_vm.exception() != exception)
+        m_vm.verifyExceptionCheckNeedIsSatisfied(m_recursionDepth, m_location);
+
+    return m_vm.throwException(globalObject, exception);
+}
+
+Exception* ExceptionScope::throwException(JSGlobalObject* globalObject, JSValue error)
+{
+    if (!error.isCell() || error.isObject() || !jsDynamicCast<Exception*>(error.asCell()))
+        m_vm.verifyExceptionCheckNeedIsSatisfied(m_recursionDepth, m_location);
+
+    return m_vm.throwException(globalObject, error);
+}
+
+void ExceptionScope::simulateThrow()
+{
+    RELEASE_ASSERT(m_vm.m_topExceptionScope);
+    if (m_vm.m_forbidExceptionThrowing)
+        return;
+
+    m_vm.m_simulatedThrowPointLocation = m_location;
+    m_vm.m_simulatedThrowPointRecursionDepth = m_recursionDepth;
+    m_vm.m_needExceptionCheck = true;
+    if (Options::dumpSimulatedThrows()) [[unlikely]]
+        m_vm.m_nativeStackTraceOfLastSimulatedThrow = StackTrace::captureStackTrace(Options::unexpectedExceptionStackTraceLimit());
 }
 
 #endif // ENABLE(EXCEPTION_SCOPE_VERIFICATION)

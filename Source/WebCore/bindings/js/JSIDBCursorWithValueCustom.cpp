@@ -35,8 +35,8 @@ using namespace JSC;
 
 JSC::JSValue JSIDBCursorWithValue::value(JSC::JSGlobalObject& lexicalGlobalObject) const
 {
-    auto throwScope = DECLARE_THROW_SCOPE(lexicalGlobalObject.vm());
-    return cachedPropertyValue(throwScope, lexicalGlobalObject, *this, wrapped().valueWrapper(), [&](JSC::ThrowScope&) {
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject.vm());
+    return cachedPropertyValue(throwScope, lexicalGlobalObject, *this, wrapped().valueWrapper(), [&](JSC::ExceptionScope&) {
         auto result = deserializeIDBValueWithKeyInjection(lexicalGlobalObject, wrapped().value(), wrapped().primaryKey(), wrapped().primaryKeyPath());
         return result ? result.value() : jsNull();
     });

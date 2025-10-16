@@ -80,7 +80,7 @@ void SymbolConstructor::finishCreation(VM& vm, SymbolPrototype* prototype)
 JSC_DEFINE_HOST_FUNCTION(callSymbol, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue description = callFrame->argument(0);
     if (description.isUndefined())
@@ -94,14 +94,14 @@ JSC_DEFINE_HOST_FUNCTION(callSymbol, (JSGlobalObject* globalObject, CallFrame* c
 JSC_DEFINE_HOST_FUNCTION(constructSymbol, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return throwVMError(globalObject, scope, createNotAConstructorError(globalObject, callFrame->jsCallee()));
 }
 
 JSC_DEFINE_HOST_FUNCTION(symbolConstructorFor, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSString* stringKey = callFrame->argument(0).toString(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
@@ -116,7 +116,7 @@ const ASCIILiteral SymbolKeyForTypeError { "Symbol.keyFor requires that the firs
 JSC_DEFINE_HOST_FUNCTION(symbolConstructorKeyFor, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue symbolValue = callFrame->argument(0);
     if (!symbolValue.isSymbol())

@@ -80,7 +80,7 @@ void IntlPluralRulesPrototype::finishCreation(VM& vm, JSGlobalObject* globalObje
 JSC_DEFINE_HOST_FUNCTION(intlPluralRulesPrototypeFuncSelect, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 13.4.3 Intl.PluralRules.prototype.select (value)
     // https://tc39.github.io/ecma402/#sec-intl.pluralrules.prototype.select
@@ -98,7 +98,7 @@ JSC_DEFINE_HOST_FUNCTION(intlPluralRulesPrototypeFuncSelect, (JSGlobalObject* gl
 JSC_DEFINE_HOST_FUNCTION(intlPluralRulesPrototypeFuncSelectRange, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // https://tc39.es/proposal-intl-numberformat-v3/out/pluralrules/diff.html#sec-intl.pluralrules.prototype.selectrange
     IntlPluralRules* pluralRules = jsDynamicCast<IntlPluralRules*>(callFrame->thisValue());
@@ -123,7 +123,7 @@ JSC_DEFINE_HOST_FUNCTION(intlPluralRulesPrototypeFuncSelectRange, (JSGlobalObjec
 JSC_DEFINE_HOST_FUNCTION(intlPluralRulesPrototypeFuncResolvedOptions, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 13.4.4 Intl.PluralRules.prototype.resolvedOptions ()
     // https://tc39.github.io/ecma402/#sec-intl.pluralrules.prototype.resolvedoptions

@@ -397,7 +397,7 @@ bool CodeBlock::finishCreation(VM& vm, ScriptExecutable* ownerExecutable, Unlink
 
     ASSERT(vm.heap.isDeferred());
 
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (m_unlinkedCode->wasCompiledWithTypeProfilerOpcodes() || m_unlinkedCode->wasCompiledWithControlFlowProfilerOpcodes())
         vm.functionHasExecutedCache()->removeUnexecutedRange(ownerExecutable->sourceID(), ownerExecutable->typeProfilingStartOffset(), ownerExecutable->typeProfilingEndOffset());
@@ -1091,7 +1091,7 @@ Vector<unsigned> CodeBlock::setConstantRegisters(const FixedVector<WriteBarrier<
 
 void CodeBlock::initializeTemplateObjects(ScriptExecutable* topLevelExecutable, const Vector<unsigned>& templateObjectIndices)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm());
     for (unsigned i : templateObjectIndices) {
         auto* descriptor = jsCast<JSTemplateObjectDescriptor*>(m_constantRegisters[i].get());
         auto* templateObject = topLevelExecutable->createTemplateObject(globalObject(), descriptor);

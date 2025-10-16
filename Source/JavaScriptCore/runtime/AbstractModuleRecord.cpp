@@ -150,7 +150,7 @@ auto AbstractModuleRecord::Resolution::ambiguous() -> Resolution
 AbstractModuleRecord* AbstractModuleRecord::hostResolveImportedModule(JSGlobalObject* globalObject, const Identifier& moduleName)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue moduleNameValue = identifierToJSValue(vm, moduleName);
     JSValue entry = m_dependenciesMap->JSMap::get(globalObject, moduleNameValue);
     RETURN_IF_EXCEPTION(scope, nullptr);
@@ -160,7 +160,7 @@ AbstractModuleRecord* AbstractModuleRecord::hostResolveImportedModule(JSGlobalOb
 auto AbstractModuleRecord::resolveImport(JSGlobalObject* globalObject, const Identifier& localName) -> Resolution
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     std::optional<ImportEntry> optionalImportEntry = tryGetImportEntry(localName.impl());
     if (!optionalImportEntry)
@@ -257,7 +257,7 @@ void AbstractModuleRecord::cacheResolution(UniquedStringImpl* exportName, const 
 auto AbstractModuleRecord::resolveExportImpl(JSGlobalObject* globalObject, const ResolveQuery& root) -> Resolution
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (AbstractModuleRecordInternal::verbose)
         dataLog("Resolving ", root, "\n");
@@ -534,7 +534,7 @@ auto AbstractModuleRecord::resolveExportImpl(JSGlobalObject* globalObject, const
         // If the "default" name is not resolved in the current module, we need to throw an error and stop resolution immediately,
         // Rationale to this error: A default export cannot be provided by an export *.
         VM& vm = globalObject->vm();
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         if (query.exportName == vm.propertyNames->defaultKeyword.impl())
             return false;
 
@@ -718,7 +718,7 @@ auto AbstractModuleRecord::resolveExport(JSGlobalObject* globalObject, const Ide
 static void getExportedNames(JSGlobalObject* globalObject, AbstractModuleRecord* root, IdentifierSet& exportedNames)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     UncheckedKeyHashSet<AbstractModuleRecord*> exportStarSet;
     Vector<AbstractModuleRecord*, 8> pendingModules;
@@ -748,7 +748,7 @@ static void getExportedNames(JSGlobalObject* globalObject, AbstractModuleRecord*
 JSModuleNamespaceObject* AbstractModuleRecord::getModuleNamespace(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // http://www.ecma-international.org/ecma-262/6.0/#sec-getmodulenamespace
     if (m_moduleNamespaceObject)
@@ -800,7 +800,7 @@ JSModuleNamespaceObject* AbstractModuleRecord::getModuleNamespace(JSGlobalObject
 void AbstractModuleRecord::setModuleEnvironment(JSGlobalObject* globalObject, JSModuleEnvironment* moduleEnvironment)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(!m_moduleEnvironment);
     // If module namespace object is materialized, we will materialize *namespace* slot too.
@@ -833,7 +833,7 @@ Synchronousness AbstractModuleRecord::link(JSGlobalObject* globalObject, JSValue
 JS_EXPORT_PRIVATE JSValue AbstractModuleRecord::evaluate(JSGlobalObject* globalObject, JSValue sentValue, JSValue resumeMode)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (auto* jsModuleRecord = jsDynamicCast<JSModuleRecord*>(this))
         RELEASE_AND_RETURN(scope, jsModuleRecord->evaluate(globalObject, sentValue, resumeMode));

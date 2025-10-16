@@ -83,7 +83,7 @@ ExceptionOr<void> AudioWorkletGlobalScope::registerProcessor(String&& name, Ref<
     JSC::JSObject* jsConstructor = processorConstructor->callbackData()->callback();
     auto* globalObject = jsConstructor->globalObject();
     auto& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!jsConstructor->isConstructor())
         return Exception { ExceptionCode::TypeError, "Class definition passed to registerProcessor() is not a constructor"_s };
@@ -150,7 +150,7 @@ RefPtr<AudioWorkletProcessor> AudioWorkletGlobalScope::createProcessor(const Str
 
     auto* globalObject = constructor->callbackData()->globalObject();
     JSC::VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSC::JSLockHolder lock { globalObject };
 
     m_pendingProcessorConstructionData = makeUnique<AudioWorkletProcessorConstructionData>(String { name }, MessagePort::entangle(*this, WTFMove(port)));

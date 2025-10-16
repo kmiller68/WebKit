@@ -141,13 +141,11 @@ WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
     if (!apiGlobalObject)
         return [JSValue valueWithNewPromiseRejectedWithReason:[JSValue valueWithNewErrorFromMessage:@"Context does not support module loading" inContext:self] inContext:self];
 
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSC::JSValue result = apiGlobalObject->loadAndEvaluateJSScriptModule(locker, script);
     if (scope.exception()) {
         JSValueRef exceptionValue = toRef(apiGlobalObject, scope.exception()->value());
-        scope.clearException();
-        // FIXME: We should not clearException if it is the TerminationException.
-        // https://bugs.webkit.org/show_bug.cgi?id=220821
+        TRY_CLEAR_EXCEPTION(scope, [JSValue valueWithUndefinedInContext:self]);
         return [JSValue valueWithNewPromiseRejectedWithReason:[JSValue valueWithJSValueRef:exceptionValue inContext:self] inContext:self];
     }
     return [JSValue valueWithJSValueRef:toRef(vm, result) inContext:self];
@@ -164,11 +162,11 @@ WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
         return [JSValue valueWithUndefinedInContext:self];
     }
 
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSC::JSArray* result = globalObject->moduleLoader()->dependencyKeysIfEvaluated(globalObject, JSC::jsString(vm, String([[script sourceURL] absoluteString])));
     if (scope.exception()) {
         JSValueRef exceptionValue = toRef(globalObject, scope.exception()->value());
-        scope.clearException();
+        TRY_CLEAR_EXCEPTION(scope, [JSValue valueWithUndefinedInContext:self]);
         return [self valueFromNotifyException:exceptionValue];
     }
 

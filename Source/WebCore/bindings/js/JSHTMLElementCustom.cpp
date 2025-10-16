@@ -48,7 +48,7 @@ using namespace JSC;
 EncodedJSValue constructJSHTMLElement(JSGlobalObject* lexicalGlobalObject, CallFrame& callFrame)
 {
     VM& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* jsConstructor = jsCast<JSDOMConstructorBase*>(callFrame.jsCallee());
     ASSERT(jsConstructor);

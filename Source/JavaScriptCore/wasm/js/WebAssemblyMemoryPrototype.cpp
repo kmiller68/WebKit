@@ -63,7 +63,7 @@ const ClassInfo WebAssemblyMemoryPrototype::s_info = { "WebAssembly.Memory"_s, &
 
 ALWAYS_INLINE JSWebAssemblyMemory* getMemory(JSGlobalObject* globalObject, VM& vm, JSValue value)
 {
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSWebAssemblyMemory* memory = jsDynamicCast<JSWebAssemblyMemory*>(value); 
     if (!memory) {
@@ -77,7 +77,7 @@ ALWAYS_INLINE JSWebAssemblyMemory* getMemory(JSGlobalObject* globalObject, VM& v
 JSC_DEFINE_HOST_FUNCTION(webAssemblyMemoryProtoFuncGrow, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSWebAssemblyMemory* memory = getMemory(globalObject, vm, callFrame->thisValue()); 
     RETURN_IF_EXCEPTION(throwScope, { });
@@ -94,7 +94,7 @@ JSC_DEFINE_HOST_FUNCTION(webAssemblyMemoryProtoFuncGrow, (JSGlobalObject* global
 JSC_DEFINE_HOST_FUNCTION(webAssemblyMemoryProtoFuncToFixedLengthBuffer, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSWebAssemblyMemory* memory = getMemory(globalObject, vm, callFrame->thisValue());
     RETURN_IF_EXCEPTION(throwScope, { });
@@ -104,7 +104,7 @@ JSC_DEFINE_HOST_FUNCTION(webAssemblyMemoryProtoFuncToFixedLengthBuffer, (JSGloba
 JSC_DEFINE_HOST_FUNCTION(webAssemblyMemoryProtoFuncToResizableBuffer, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSWebAssemblyMemory* memory = getMemory(globalObject, vm, callFrame->thisValue());
     RETURN_IF_EXCEPTION(throwScope, { });
@@ -114,7 +114,7 @@ JSC_DEFINE_HOST_FUNCTION(webAssemblyMemoryProtoFuncToResizableBuffer, (JSGlobalO
 JSC_DEFINE_CUSTOM_GETTER(webAssemblyMemoryProtoGetterBuffer, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSWebAssemblyMemory* memory = getMemory(globalObject, vm, JSValue::decode(thisValue)); 
     RETURN_IF_EXCEPTION(throwScope, { });
@@ -124,7 +124,7 @@ JSC_DEFINE_CUSTOM_GETTER(webAssemblyMemoryProtoGetterBuffer, (JSGlobalObject* gl
 JSC_DEFINE_HOST_FUNCTION(webAssemblyMemoryProtoFuncType, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSWebAssemblyMemory* memory = getMemory(globalObject, vm, callFrame->thisValue());
     RETURN_IF_EXCEPTION(throwScope, { });

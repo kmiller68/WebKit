@@ -41,7 +41,7 @@ template<> struct Converter<IDLDate> : DefaultConverter<IDLDate> {
     static Result convert(JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value)
     {
         auto& vm = lexicalGlobalObject.vm();
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         auto result = valueToDate(lexicalGlobalObject, value);
         RETURN_IF_EXCEPTION(scope, Result::exception());

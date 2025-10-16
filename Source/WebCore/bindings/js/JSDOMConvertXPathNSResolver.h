@@ -45,7 +45,7 @@ template<> struct Converter<IDLInterface<XPathNSResolver>> : DefaultConverter<ID
     static Result convert(JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value, ExceptionThrower&& exceptionThrower = ExceptionThrower())
     {
         JSC::VM& vm = JSC::getVM(&lexicalGlobalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         if (!value.isObject()) {
             exceptionThrower(lexicalGlobalObject, scope);
             return Result::exception();

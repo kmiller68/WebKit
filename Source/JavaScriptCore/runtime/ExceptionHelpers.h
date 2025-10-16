@@ -31,8 +31,8 @@
 #include <JavaScriptCore/DeferTermination.h>
 #include <JavaScriptCore/ErrorInstance.h>
 #include <JavaScriptCore/Exception.h>
+#include <JavaScriptCore/ExceptionScope.h>
 #include <JavaScriptCore/JSObject.h>
-#include <JavaScriptCore/ThrowScope.h>
 
 namespace JSC {
 
@@ -62,9 +62,9 @@ JSObject* createInvalidPrivateNameError(JSGlobalObject*);
 JSObject* createRedefinedPrivateNameError(JSGlobalObject*);
 String errorDescriptionForValue(JSGlobalObject*, JSValue);
 
-JS_EXPORT_PRIVATE Exception* throwOutOfMemoryError(JSGlobalObject*, ThrowScope&);
-JS_EXPORT_PRIVATE Exception* throwOutOfMemoryError(JSGlobalObject*, ThrowScope&, const String&);
-JS_EXPORT_PRIVATE Exception* throwStackOverflowError(JSGlobalObject*, ThrowScope&);
+JS_EXPORT_PRIVATE Exception* throwOutOfMemoryError(JSGlobalObject*, ExceptionScope&);
+JS_EXPORT_PRIVATE Exception* throwOutOfMemoryError(JSGlobalObject*, ExceptionScope&, const String&);
+JS_EXPORT_PRIVATE Exception* throwStackOverflowError(JSGlobalObject*, ExceptionScope&);
 
 #if ASSERT_ENABLED
 

@@ -118,7 +118,7 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationThrowStackOverflowError, void, (CodeB
     VM& vm = codeBlock->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     callFrame->convertToZombieFrame(vm, codeBlock);
     throwStackOverflowError(codeBlock->globalObject(), scope);
 }
@@ -128,7 +128,7 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationThrowStackOverflowErrorFromThunk, voi
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     throwStackOverflowError(globalObject, scope);
     genericUnwind(vm, callFrame);
     ASSERT(vm.targetMachinePCForThrow);
@@ -139,7 +139,7 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationThrowOutOfMemoryError, void, (VM* vmP
     VM& vm = *vmPointer;
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CodeBlock* codeBlock = callFrame->codeBlock();
     if (JSC::JITCode::isOptimizingJIT(codeBlock->jitType()))
@@ -152,7 +152,7 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationThrowOutOfMemoryError, void, (VM* vmP
 static JSValue getWrappedValue(JSGlobalObject* globalObject, JSGlobalObject* targetGlobalObject, JSValue value)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!value.isObject())
         RELEASE_AND_RETURN(scope, value);
@@ -171,7 +171,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetWrappedValueForTarget, EncodedJSValue, (JSR
 
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     ASSERT(isRemoteFunction(callee));
 
     JSGlobalObject* targetGlobalObject = callee->targetFunction()->globalObject();
@@ -185,7 +185,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetWrappedValueForCaller, EncodedJSValue, (JSR
 
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     ASSERT(isRemoteFunction(callee));
 
     OPERATION_RETURN(scope, JSValue::encode(getWrappedValue(globalObject, globalObject, JSValue::decode(encodedValue))));
@@ -193,7 +193,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetWrappedValueForCaller, EncodedJSValue, (JSR
 
 static inline UGPRPair materializeTargetCode(VM& vm, JSFunction* targetFunction)
 {
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ExecutableBase* executable = targetFunction->executable();
 
@@ -217,7 +217,7 @@ JSC_DEFINE_JIT_OPERATION(operationMaterializeBoundFunctionTargetCode, UGPRPair, 
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* targetFunction = jsCast<JSFunction*>(callee->targetFunction()); // We call this function only when JSBoundFunction's target is JSFunction.
     OPERATION_RETURN(scope, materializeTargetCode(vm, targetFunction));
 }
@@ -228,7 +228,7 @@ JSC_DEFINE_JIT_OPERATION(operationMaterializeRemoteFunctionTargetCode, UGPRPair,
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     ASSERT(isRemoteFunction(callee));
     auto* targetFunction = jsCast<JSFunction*>(callee->targetFunction()); // We call this function only when JSRemoteFunction's target is JSFunction.
     OPERATION_RETURN(scope, materializeTargetCode(vm, targetFunction));
@@ -241,7 +241,7 @@ JSC_DEFINE_JIT_OPERATION(operationThrowRemoteFunctionException, EncodedJSValue, 
 
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     ASSERT(isRemoteFunction(callee));
 
     Exception* exception = scope.exception();
@@ -249,21 +249,14 @@ JSC_DEFINE_JIT_OPERATION(operationThrowRemoteFunctionException, EncodedJSValue, 
     // We should only be here when "rethrowing" an exception
     RELEASE_ASSERT(exception);
 
-    if (vm.isTerminationException(exception)) [[unlikely]] {
+    if (!scope.tryClearException()) [[unlikely]]
+        OPERATION_RETURN(scope, encodedJSValue());
+
+    String exceptionString = exception->value().toWTFString(globalObject);
+    if (!scope.tryClearException()) [[unlikely]] {
         scope.release();
         OPERATION_RETURN(scope, encodedJSValue());
     }
-
-    JSValue exceptionValue = exception->value();
-    scope.clearException();
-
-    String exceptionString = exceptionValue.toWTFString(globalObject);
-    Exception* toStringException = scope.exception();
-    if (toStringException && vm.isTerminationException(toStringException)) [[unlikely]] {
-        scope.release();
-        OPERATION_RETURN(scope, encodedJSValue());
-    }
-    scope.clearException();
 
     if (exceptionString.length())
         OPERATION_RETURN(scope, throwVMTypeError(globalObject, scope, exceptionString));
@@ -276,7 +269,7 @@ JSC_DEFINE_JIT_OPERATION(operationThrowIteratorResultIsNotObject, void, (JSGloba
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     throwTypeError(globalObject, scope, "Iterator result interface is not an object."_s);
     OPERATION_RETURN(scope);
@@ -288,7 +281,7 @@ JSC_DEFINE_JIT_OPERATION(operationTryGetByIdGaveUp, EncodedJSValue, (EncodedJSVa
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
 
     stubInfo->tookSlowPath = true;
@@ -307,7 +300,7 @@ JSC_DEFINE_JIT_OPERATION(operationTryGetByIdGeneric, EncodedJSValue, (JSGlobalOb
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
 
@@ -324,7 +317,7 @@ JSC_DEFINE_JIT_OPERATION(operationTryGetByIdOptimize, EncodedJSValue, (EncodedJS
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CacheableIdentifier identifier = stubInfo->identifier();
 
@@ -347,7 +340,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdDirectGaveUp, EncodedJSValue, (EncodedJ
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     stubInfo->tookSlowPath = true;
 
@@ -367,7 +360,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdDirectGeneric, EncodedJSValue, (JSGloba
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
 
@@ -386,7 +379,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdDirectOptimize, EncodedJSValue, (Encode
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CacheableIdentifier identifier = stubInfo->identifier();
 
@@ -481,7 +474,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdMegamorphic, EncodedJSValue, (EncodedJS
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(base);
     CacheableIdentifier identifier = stubInfo->identifier();
@@ -494,7 +487,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdMegamorphicGeneric, EncodedJSValue, (JS
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(base);
     CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
@@ -510,7 +503,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdGaveUp, EncodedJSValue, (EncodedJSValue
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     
     stubInfo->tookSlowPath = true;
     
@@ -531,7 +524,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdGeneric, EncodedJSValue, (JSGlobalObjec
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     
     JSValue baseValue = JSValue::decode(base);
     PropertySlot slot(baseValue, PropertySlot::InternalMethodType::Get);
@@ -551,7 +544,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdOptimize, EncodedJSValue, (EncodedJSVal
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CacheableIdentifier identifier = stubInfo->identifier();
 
@@ -576,7 +569,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdWithThisGaveUp, EncodedJSValue, (Encode
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     stubInfo->tookSlowPath = true;
 
@@ -596,7 +589,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdWithThisGeneric, EncodedJSValue, (JSGlo
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
 
@@ -615,7 +608,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdWithThisOptimize, EncodedJSValue, (Enco
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CacheableIdentifier identifier = stubInfo->identifier();
 
@@ -639,7 +632,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdWithThisMegamorphic, EncodedJSValue, (E
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CacheableIdentifier identifier = stubInfo->identifier();
 
@@ -651,7 +644,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByIdWithThisMegamorphicGeneric, EncodedJSVa
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
 
@@ -666,7 +659,7 @@ JSC_DEFINE_JIT_OPERATION(operationInByIdGaveUp, EncodedJSValue, (EncodedJSValue 
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     stubInfo->tookSlowPath = true;
 
@@ -694,7 +687,7 @@ JSC_DEFINE_JIT_OPERATION(operationInByIdOptimize, EncodedJSValue, (EncodedJSValu
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CacheableIdentifier identifier = stubInfo->identifier();
 
@@ -719,7 +712,7 @@ JSC_DEFINE_JIT_OPERATION(operationInByIdOptimize, EncodedJSValue, (EncodedJSValu
 static ALWAYS_INLINE JSValue inByIdMegamorphic(JSGlobalObject* globalObject, VM& vm, CallFrame* callFrame, StructureStubInfo* stubInfo, JSValue baseValue, CacheableIdentifier identifier)
 {
     constexpr bool verbose = false;
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* uid = identifier.uid();
     PropertySlot slot(baseValue, PropertySlot::InternalMethodType::HasProperty);
@@ -807,7 +800,7 @@ JSC_DEFINE_JIT_OPERATION(operationInByIdMegamorphic, EncodedJSValue, (EncodedJSV
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(base);
     CacheableIdentifier identifier = stubInfo->identifier();
@@ -820,7 +813,7 @@ JSC_DEFINE_JIT_OPERATION(operationInByIdMegamorphicGeneric, EncodedJSValue, (JSG
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(base);
     CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
@@ -836,7 +829,7 @@ JSC_DEFINE_JIT_OPERATION(operationInByValOptimize, EncodedJSValue, (EncodedJSVal
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBase);
     JSValue key = JSValue::decode(encodedKey);
@@ -888,7 +881,7 @@ JSC_DEFINE_JIT_OPERATION(operationInByValGaveUp, EncodedJSValue, (EncodedJSValue
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     stubInfo->tookSlowPath = true;
 
@@ -898,7 +891,7 @@ JSC_DEFINE_JIT_OPERATION(operationInByValGaveUp, EncodedJSValue, (EncodedJSValue
 static ALWAYS_INLINE JSValue inByValMegamorphic(JSGlobalObject* globalObject, VM& vm, CallFrame* callFrame, StructureStubInfo* stubInfo, ArrayProfile* profile, JSValue baseValue, JSValue subscript)
 {
     constexpr bool verbose = false;
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!baseValue.isObject() || !(subscript.isString() && CacheableIdentifier::isCacheableIdentifierCell(subscript))) [[unlikely]] {
         dataLogLnIf(verbose, " ", __LINE__);
@@ -997,7 +990,7 @@ JSC_DEFINE_JIT_OPERATION(operationInByValMegamorphic, EncodedJSValue, (EncodedJS
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBase);
     JSValue subscript = JSValue::decode(encodedSubscript);
@@ -1009,7 +1002,7 @@ JSC_DEFINE_JIT_OPERATION(operationInByValMegamorphicGeneric, EncodedJSValue, (JS
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue baseValue = JSValue::decode(encodedBase);
     OPERATION_RETURN(scope, JSValue::encode(inByValMegamorphic(globalObject, vm, callFrame, nullptr, nullptr, baseValue, JSValue::decode(encodedSubscript))));
 }
@@ -1022,7 +1015,7 @@ JSC_DEFINE_JIT_OPERATION(operationHasPrivateNameOptimize, EncodedJSValue, (Encod
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBase);
     if (!baseValue.isObject()) {
@@ -1056,7 +1049,7 @@ JSC_DEFINE_JIT_OPERATION(operationHasPrivateNameGaveUp, EncodedJSValue, (Encoded
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     stubInfo->tookSlowPath = true;
 
@@ -1082,7 +1075,7 @@ JSC_DEFINE_JIT_OPERATION(operationHasPrivateBrandOptimize, EncodedJSValue, (Enco
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBase);
     if (!baseValue.isObject()) {
@@ -1111,7 +1104,7 @@ JSC_DEFINE_JIT_OPERATION(operationHasPrivateBrandGaveUp, EncodedJSValue, (Encode
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     stubInfo->tookSlowPath = true;
 
@@ -1132,7 +1125,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdStrictGaveUp, void, (EncodedJSValue enc
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     
     stubInfo->tookSlowPath = true;
     
@@ -1153,7 +1146,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdSloppyGaveUp, void, (EncodedJSValue enc
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     
     stubInfo->tookSlowPath = true;
     
@@ -1168,7 +1161,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdSloppyGaveUp, void, (EncodedJSValue enc
 
 ALWAYS_INLINE static void putByIdMegamorphic(JSGlobalObject* globalObject, VM& vm, CallFrame* callFrame, StructureStubInfo* stubInfo, JSValue baseValue, JSValue value, CacheableIdentifier identifier, PutByKind kind)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* uid = identifier.uid();
     bool isStrict = kind == PutByKind::ByIdStrict;
@@ -1255,7 +1248,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdStrictMegamorphic, void, (EncodedJSValu
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBase);
     JSValue value = JSValue::decode(encodedValue);
@@ -1272,7 +1265,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdStrictMegamorphicGeneric, void, (JSGlob
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBase);
     JSValue value = JSValue::decode(encodedValue);
@@ -1290,7 +1283,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdSloppyMegamorphic, void, (EncodedJSValu
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBase);
     JSValue value = JSValue::decode(encodedValue);
@@ -1307,7 +1300,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdSloppyMegamorphicGeneric, void, (JSGlob
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBase);
     JSValue value = JSValue::decode(encodedValue);
@@ -1323,7 +1316,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByMegamorphicReallocating, void, (VM* vmPoi
     VM& vm = *vmPointer;
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Structure* oldStructure = WTF::opaque(baseObject->structure());
     Structure* newStructure = WTF::opaque(entry->m_newStructureID.decode());
@@ -1350,7 +1343,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdDirectStrictGaveUp, void, (EncodedJSVal
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     
     stubInfo->tookSlowPath = true;
     
@@ -1371,7 +1364,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdDirectSloppyGaveUp, void, (EncodedJSVal
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     
     stubInfo->tookSlowPath = true;
     
@@ -1392,7 +1385,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdStrictOptimize, void, (EncodedJSValue e
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CacheableIdentifier identifier = stubInfo->identifier();
     AccessType accessType = static_cast<AccessType>(stubInfo->accessType);
@@ -1425,7 +1418,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdSloppyOptimize, void, (EncodedJSValue e
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CacheableIdentifier identifier = stubInfo->identifier();
     AccessType accessType = static_cast<AccessType>(stubInfo->accessType);
@@ -1458,7 +1451,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdDirectStrictOptimize, void, (EncodedJSV
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     
     CacheableIdentifier identifier = stubInfo->identifier();
     AccessType accessType = static_cast<AccessType>(stubInfo->accessType);
@@ -1490,7 +1483,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdDirectSloppyOptimize, void, (EncodedJSV
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     
     CacheableIdentifier identifier = stubInfo->identifier();
     AccessType accessType = static_cast<AccessType>(stubInfo->accessType);
@@ -1517,7 +1510,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdDirectSloppyOptimize, void, (EncodedJSV
 template<typename PutPrivateFieldCallback>
 ALWAYS_INLINE static void setPrivateField(VM& vm, JSGlobalObject* globalObject, CallFrame* callFrame, JSValue baseValue, CacheableIdentifier identifier, JSValue value, PutPrivateFieldCallback callback)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(identifier.isPrivateName());
 
@@ -1536,7 +1529,7 @@ ALWAYS_INLINE static void setPrivateField(VM& vm, JSGlobalObject* globalObject, 
 template<typename PutPrivateFieldCallback>
 ALWAYS_INLINE static void definePrivateField(VM& vm, JSGlobalObject* globalObject, CallFrame* callFrame, JSValue baseValue, CacheableIdentifier identifier, JSValue value, PutPrivateFieldCallback callback)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(identifier.isPrivateName());
 
@@ -1558,7 +1551,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdDefinePrivateFieldStrictGaveUp, void, (
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     stubInfo->tookSlowPath = true;
 
@@ -1577,7 +1570,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdDefinePrivateFieldStrictOptimize, void,
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CacheableIdentifier identifier = stubInfo->identifier();
     AccessType accessType = static_cast<AccessType>(stubInfo->accessType);
@@ -1602,7 +1595,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdSetPrivateFieldStrictGaveUp, void, (Enc
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     stubInfo->tookSlowPath = true;
 
@@ -1621,7 +1614,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdSetPrivateFieldStrictOptimize, void, (E
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CacheableIdentifier identifier = stubInfo->identifier();
     AccessType accessType = static_cast<AccessType>(stubInfo->accessType);
@@ -1643,7 +1636,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByIdSetPrivateFieldStrictOptimize, void, (E
 static ALWAYS_INLINE void putByVal(JSGlobalObject* globalObject, JSValue baseValue, JSValue subscript, JSValue value, ArrayProfile* arrayProfile, ECMAMode ecmaMode)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     if (std::optional<uint32_t> index = subscript.tryGetAsUint32Index()) {
         uint32_t i = *index;
         if (baseValue.isObject()) {
@@ -1690,7 +1683,7 @@ static ALWAYS_INLINE void putByVal(JSGlobalObject* globalObject, JSValue baseVal
 static void directPutByVal(JSGlobalObject* globalObject, JSObject* baseObject, JSValue subscript, JSValue value, ArrayProfile* arrayProfile, ECMAMode ecmaMode)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (std::optional<uint32_t> maybeIndex = subscript.tryGetAsUint32Index()) {
         uint32_t index = *maybeIndex;
@@ -1739,7 +1732,7 @@ enum class OptimizationResult {
 static ALWAYS_INLINE void putByValOptimize(JSGlobalObject* globalObject, CodeBlock* codeBlock, JSValue baseValue, JSValue subscript, JSValue value, StructureStubInfo* stubInfo, ArrayProfile* profile, PutByKind kind)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     bool isStrict = kind == PutByKind::ByValStrict;
 
     if (baseValue.isObject()) {
@@ -1783,7 +1776,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByValStrictOptimize, void, (EncodedJSValue 
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBaseValue);
     JSValue subscript = JSValue::decode(encodedSubscript);
@@ -1799,7 +1792,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByValSloppyOptimize, void, (EncodedJSValue 
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBaseValue);
     JSValue subscript = JSValue::decode(encodedSubscript);
@@ -1812,7 +1805,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByValSloppyOptimize, void, (EncodedJSValue 
 static ALWAYS_INLINE void directPutByValOptimize(JSGlobalObject* globalObject, CodeBlock* codeBlock, JSValue baseValue, JSValue subscript, JSValue value, StructureStubInfo* stubInfo, ArrayProfile* profile, PutByKind kind)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     bool isStrict = kind == PutByKind::ByValDirectStrict;
 
     RELEASE_ASSERT(baseValue.isObject());
@@ -1859,7 +1852,7 @@ JSC_DEFINE_JIT_OPERATION(operationDirectPutByValStrictOptimize, void, (EncodedJS
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBaseValue);
     JSValue subscript = JSValue::decode(encodedSubscript);
@@ -1875,7 +1868,7 @@ JSC_DEFINE_JIT_OPERATION(operationDirectPutByValSloppyOptimize, void, (EncodedJS
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBaseValue);
     JSValue subscript = JSValue::decode(encodedSubscript);
@@ -1891,7 +1884,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByValStrictGaveUp, void, (EncodedJSValue en
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     stubInfo->tookSlowPath = true;
 
@@ -1908,7 +1901,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByValStrictGeneric, void, (JSGlobalObject* 
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBaseValue);
     JSValue subscript = JSValue::decode(encodedSubscript);
@@ -1924,7 +1917,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByValSloppyGaveUp, void, (EncodedJSValue en
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     stubInfo->tookSlowPath = true;
 
@@ -1941,7 +1934,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByValSloppyGeneric, void, (JSGlobalObject* 
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBaseValue);
     JSValue subscript = JSValue::decode(encodedSubscript);
@@ -1957,7 +1950,7 @@ JSC_DEFINE_JIT_OPERATION(operationDirectPutByValStrictGaveUp, void, (EncodedJSVa
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     stubInfo->tookSlowPath = true;
 
@@ -1975,7 +1968,7 @@ JSC_DEFINE_JIT_OPERATION(operationDirectPutByValStrictGeneric, void, (JSGlobalOb
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBaseValue);
     JSValue subscript = JSValue::decode(encodedSubscript);
@@ -1988,7 +1981,7 @@ JSC_DEFINE_JIT_OPERATION(operationDirectPutByValStrictGeneric, void, (JSGlobalOb
 
 ALWAYS_INLINE static void putByValMegamorphic(JSGlobalObject* globalObject, VM& vm, CallFrame* callFrame, StructureStubInfo* stubInfo, ArrayProfile* profile, JSValue baseValue, JSValue subscript, JSValue value, PutByKind kind)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     bool isStrict = kind == PutByKind::ByValStrict;
 
     if (!baseValue.isObject() || !(subscript.isString() && CacheableIdentifier::isCacheableIdentifierCell(subscript))) [[unlikely]] {
@@ -2076,7 +2069,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByValStrictMegamorphic, void, (EncodedJSVal
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBaseValue);
     JSValue subscript = JSValue::decode(encodedSubscript);
@@ -2091,7 +2084,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByValStrictMegamorphicGeneric, void, (JSGlo
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBaseValue);
     JSValue subscript = JSValue::decode(encodedSubscript);
@@ -2107,7 +2100,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByValSloppyMegamorphic, void, (EncodedJSVal
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBaseValue);
     JSValue subscript = JSValue::decode(encodedSubscript);
@@ -2122,7 +2115,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByValSloppyMegamorphicGeneric, void, (JSGlo
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBaseValue);
     JSValue subscript = JSValue::decode(encodedSubscript);
@@ -2138,7 +2131,7 @@ JSC_DEFINE_JIT_OPERATION(operationDirectPutByValSloppyGaveUp, void, (EncodedJSVa
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     stubInfo->tookSlowPath = true;
 
@@ -2156,7 +2149,7 @@ JSC_DEFINE_JIT_OPERATION(operationDirectPutByValSloppyGeneric, void, (JSGlobalOb
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBaseValue);
     JSValue subscript = JSValue::decode(encodedSubscript);
@@ -2173,7 +2166,7 @@ JSC_DEFINE_JIT_OPERATION(operationSetPrivateBrandOptimize, void, (EncodedJSValue
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBaseValue);
     JSValue brand = JSValue::decode(encodedBrand);
@@ -2201,7 +2194,7 @@ JSC_DEFINE_JIT_OPERATION(operationSetPrivateBrandGaveUp, void, (EncodedJSValue e
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     stubInfo->tookSlowPath = true;
 
@@ -2222,7 +2215,7 @@ JSC_DEFINE_JIT_OPERATION(operationCheckPrivateBrandOptimize, void, (EncodedJSVal
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBaseValue);
     JSValue brand = JSValue::decode(encodedBrand);
@@ -2250,7 +2243,7 @@ JSC_DEFINE_JIT_OPERATION(operationCheckPrivateBrandGaveUp, void, (EncodedJSValue
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     stubInfo->tookSlowPath = true;
 
@@ -2270,7 +2263,7 @@ template<bool define>
 static ALWAYS_INLINE void putPrivateNameOptimize(JSGlobalObject* globalObject, CodeBlock* codeBlock, JSValue baseValue, JSValue subscript, JSValue value, StructureStubInfo* stubInfo)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto baseObject = baseValue.toObject(globalObject);
     RETURN_IF_EXCEPTION(scope, void());
@@ -2304,7 +2297,7 @@ template<bool define>
 static ALWAYS_INLINE void putPrivateName(JSGlobalObject* globalObject, JSValue baseValue, JSValue subscript, JSValue value)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto baseObject = baseValue.toObject(globalObject);
     RETURN_IF_EXCEPTION(scope, void());
@@ -2330,7 +2323,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByValDefinePrivateFieldOptimize, void, (Enc
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CodeBlock* codeBlock = callFrame->codeBlock();
     JSValue baseValue = JSValue::decode(encodedBaseValue);
@@ -2346,7 +2339,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByValSetPrivateFieldOptimize, void, (Encode
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CodeBlock* codeBlock = callFrame->codeBlock();
     JSValue baseValue = JSValue::decode(encodedBaseValue);
@@ -2362,7 +2355,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByValDefinePrivateFieldGaveUp, void, (Encod
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     stubInfo->tookSlowPath = true;
 
@@ -2379,7 +2372,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByValDefinePrivateFieldGeneric, void, (JSGl
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBaseValue);
     JSValue subscript = JSValue::decode(encodedSubscript);
@@ -2395,7 +2388,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByValSetPrivateFieldGaveUp, void, (EncodedJ
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     stubInfo->tookSlowPath = true;
 
@@ -2412,7 +2405,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutByValSetPrivateFieldGeneric, void, (JSGloba
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBaseValue);
     JSValue subscript = JSValue::decode(encodedSubscript);
@@ -2429,7 +2422,7 @@ JSC_DEFINE_JIT_OPERATION(operationCallDirectEvalSloppy, EncodedJSValue, (void* f
     // We can't trust our callee since it could be garbage but our caller's should be ok.
     VM& vm = callFrame->deprecatedVM();
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     calleeFrame->setCodeBlock(nullptr);
 
     OPERATION_RETURN(scope, JSValue::encode(eval(calleeFrame, JSValue::decode(encodedThisValue), callerScopeChain, callerBaselineCodeBlock, BytecodeIndex::fromBits(bytecodeIndexBits), NoLexicallyScopedFeatures)));
@@ -2442,7 +2435,7 @@ JSC_DEFINE_JIT_OPERATION(operationCallDirectEvalStrict, EncodedJSValue, (void* f
     // We can't trust our callee since it could be garbage but our caller's should be ok.
     VM& vm = callFrame->deprecatedVM();
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     calleeFrame->setCodeBlock(nullptr);
 
     OPERATION_RETURN(scope, JSValue::encode(eval(calleeFrame, JSValue::decode(encodedThisValue), callerScopeChain, callerBaselineCodeBlock, BytecodeIndex::fromBits(bytecodeIndexBits), StrictModeLexicallyScopedFeature)));
@@ -2455,7 +2448,7 @@ JSC_DEFINE_JIT_OPERATION(operationCallDirectEvalSloppyTaintedByWithScope, Encode
     // We can't trust our callee since it could be garbage but our caller's should be ok.
     VM& vm = callFrame->deprecatedVM();
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     calleeFrame->setCodeBlock(nullptr);
 
     OPERATION_RETURN(scope, JSValue::encode(eval(calleeFrame, JSValue::decode(encodedThisValue), callerScopeChain, callerBaselineCodeBlock, BytecodeIndex::fromBits(bytecodeIndexBits), TaintedByWithScopeLexicallyScopedFeature)));
@@ -2468,7 +2461,7 @@ JSC_DEFINE_JIT_OPERATION(operationCallDirectEvalStrictTaintedByWithScope, Encode
     // We can't trust our callee since it could be garbage but our caller's should be ok.
     VM& vm = callFrame->deprecatedVM();
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     calleeFrame->setCodeBlock(nullptr);
 
     OPERATION_RETURN(scope, JSValue::encode(eval(calleeFrame, JSValue::decode(encodedThisValue), callerScopeChain, callerBaselineCodeBlock, BytecodeIndex::fromBits(bytecodeIndexBits), StrictModeLexicallyScopedFeature | TaintedByWithScopeLexicallyScopedFeature)));
@@ -2480,7 +2473,7 @@ JSC_DEFINE_JIT_OPERATION(operationPolymorphicCall, UCPURegister, (CallFrame* cal
     VM& vm = owner->vm();
     NativeCallFrameTracer tracer(vm, calleeFrame);
     sanitizeStackForVM(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     calleeFrame->setCodeBlock(nullptr);
     JSCell* calleeAsFunctionCell;
     void* callTarget = virtualForWithFunction(vm, owner, calleeFrame, callLinkInfo, calleeAsFunctionCell);
@@ -2500,7 +2493,7 @@ JSC_DEFINE_JIT_OPERATION(operationVirtualCall, UCPURegister, (CallFrame* calleeF
     VM& vm = owner->vm();
     NativeCallFrameTracer tracer(vm, calleeFrame);
     sanitizeStackForVM(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     calleeFrame->setCodeBlock(nullptr);
     JSCell* calleeAsFunctionCell;
     void* callTarget = virtualForWithFunction(vm, owner, calleeFrame, callLinkInfo, calleeAsFunctionCell);
@@ -2517,7 +2510,7 @@ JSC_DEFINE_JIT_OPERATION(operationDefaultCall, UCPURegister, (CallFrame* calleeF
     VM& vm = owner->vm();
     NativeCallFrameTracer tracer(vm, calleeFrame);
     sanitizeStackForVM(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     calleeFrame->setCodeBlock(nullptr);
     void* callTarget = linkFor(vm, owner, calleeFrame, callLinkInfo);
     // Keep owner alive explicitly. Now this function can be called from tail-call. This means that CallFrame for that owner already goes away, so we should keep it alive if we would like to use it.
@@ -2532,7 +2525,7 @@ JSC_DEFINE_JIT_OPERATION(operationCompareLess, size_t, (JSGlobalObject* globalOb
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     
     OPERATION_RETURN(scope, jsLess<true>(globalObject, JSValue::decode(encodedOp1), JSValue::decode(encodedOp2)));
 }
@@ -2542,7 +2535,7 @@ JSC_DEFINE_JIT_OPERATION(operationCompareLessEq, size_t, (JSGlobalObject* global
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     OPERATION_RETURN(scope, jsLessEq<true>(globalObject, JSValue::decode(encodedOp1), JSValue::decode(encodedOp2)));
 }
@@ -2552,7 +2545,7 @@ JSC_DEFINE_JIT_OPERATION(operationCompareGreater, size_t, (JSGlobalObject* globa
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     OPERATION_RETURN(scope, jsLess<false>(globalObject, JSValue::decode(encodedOp2), JSValue::decode(encodedOp1)));
 }
@@ -2562,7 +2555,7 @@ JSC_DEFINE_JIT_OPERATION(operationCompareGreaterEq, size_t, (JSGlobalObject* glo
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     OPERATION_RETURN(scope, jsLessEq<false>(globalObject, JSValue::decode(encodedOp2), JSValue::decode(encodedOp1)));
 }
@@ -2572,7 +2565,7 @@ JSC_DEFINE_JIT_OPERATION(operationCompareEq, size_t, (JSGlobalObject* globalObje
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     OPERATION_RETURN(scope, JSValue::equalSlowCaseInline(globalObject, JSValue::decode(encodedOp1), JSValue::decode(encodedOp2)));
 }
@@ -2586,7 +2579,7 @@ JSC_DEFINE_JIT_OPERATION(operationCompareStringEq, size_t, (JSGlobalObject* glob
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     bool result = asString(left)->equalInline(globalObject, asString(right));
 #if USE(JSVALUE64)
@@ -2601,7 +2594,7 @@ JSC_DEFINE_JIT_OPERATION(operationCompareStrictEq, size_t, (JSGlobalObject* glob
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue src1 = JSValue::decode(encodedOp1);
     JSValue src2 = JSValue::decode(encodedOp2);
@@ -2615,7 +2608,7 @@ JSC_DEFINE_JIT_OPERATION(operationCompareEqHeapBigIntToInt32, size_t, (JSGlobalO
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(heapBigInt->isHeapBigInt());
 
@@ -2628,7 +2621,7 @@ JSC_DEFINE_JIT_OPERATION(operationNewArrayWithProfile, EncodedJSValue, (JSGlobal
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     OPERATION_RETURN(scope, JSValue::encode(constructArrayNegativeIndexed(globalObject, profile, values, size)));
 }
 
@@ -2637,7 +2630,7 @@ JSC_DEFINE_JIT_OPERATION(operationNewArrayWithSizeAndProfile, EncodedJSValue, (J
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue sizeValue = JSValue::decode(size);
     OPERATION_RETURN(scope, JSValue::encode(constructArrayWithSizeQuirk(globalObject, profile, sizeValue)));
 }
@@ -2647,7 +2640,7 @@ JSC_DEFINE_JIT_OPERATION(operationCreateLexicalEnvironmentTDZ, EncodedJSValue, (
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     OPERATION_RETURN(scope, JSValue::encode(JSLexicalEnvironment::create(vm, globalObject->activationStructure(), environment, table, jsTDZValue())));
 }
 
@@ -2656,7 +2649,7 @@ JSC_DEFINE_JIT_OPERATION(operationCreateLexicalEnvironmentUndefined, EncodedJSVa
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     OPERATION_RETURN(scope, JSValue::encode(JSLexicalEnvironment::create(vm, globalObject->activationStructure(), environment, table, jsUndefined())));
 }
 
@@ -2665,7 +2658,7 @@ JSC_DEFINE_JIT_OPERATION(operationCreateDirectArgumentsBaseline, EncodedJSValue,
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     OPERATION_RETURN(scope, JSValue::encode(DirectArguments::createByCopying(globalObject, callFrame)));
 }
 
@@ -2674,7 +2667,7 @@ JSC_DEFINE_JIT_OPERATION(operationCreateScopedArgumentsBaseline, EncodedJSValue,
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     ScopedArgumentsTable* table = environment->symbolTable()->arguments();
     OPERATION_RETURN(scope, JSValue::encode(ScopedArguments::createByCopying(globalObject, callFrame, table, environment)));
 }
@@ -2684,7 +2677,7 @@ JSC_DEFINE_JIT_OPERATION(operationCreateClonedArgumentsBaseline, EncodedJSValue,
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     OPERATION_RETURN(scope, JSValue::encode(ClonedArguments::createWithMachineFrame(globalObject, callFrame, ArgumentsMode::Cloned)));
 }
 
@@ -2703,7 +2696,7 @@ JSC_DEFINE_JIT_OPERATION(operationNewFunction, EncodedJSValue, (JSGlobalObject* 
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     constexpr bool isInvalidated = false;
     OPERATION_RETURN(scope, newFunctionCommon<JSFunction, isInvalidated>(vm, globalObject, environment, functionExecutable, JSFunction::selectStructureForNewFuncExp(globalObject, jsCast<FunctionExecutable*>(functionExecutable))));
 }
@@ -2713,7 +2706,7 @@ JSC_DEFINE_JIT_OPERATION(operationNewFunctionWithInvalidatedReallocationWatchpoi
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     constexpr bool isInvalidated = true;
     OPERATION_RETURN(scope, newFunctionCommon<JSFunction, isInvalidated>(vm, globalObject, environment, functionExecutable, JSFunction::selectStructureForNewFuncExp(globalObject, jsCast<FunctionExecutable*>(functionExecutable))));
 }
@@ -2723,7 +2716,7 @@ JSC_DEFINE_JIT_OPERATION(operationNewSloppyFunction, EncodedJSValue, (JSGlobalOb
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     constexpr bool isInvalidated = false;
     constexpr bool isBuiltin = false;
     if (jsCast<FunctionExecutable*>(functionExecutable)->hasPrototypeProperty())
@@ -2736,7 +2729,7 @@ JSC_DEFINE_JIT_OPERATION(operationNewSloppyFunctionWithInvalidatedReallocationWa
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     constexpr bool isInvalidated = true;
     constexpr bool isBuiltin = false;
     if (jsCast<FunctionExecutable*>(functionExecutable)->hasPrototypeProperty())
@@ -2749,7 +2742,7 @@ JSC_DEFINE_JIT_OPERATION(operationNewStrictFunction, EncodedJSValue, (JSGlobalOb
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     constexpr bool isInvalidated = false;
     constexpr bool isBuiltin = false;
     if (jsCast<FunctionExecutable*>(functionExecutable)->hasPrototypeProperty())
@@ -2762,7 +2755,7 @@ JSC_DEFINE_JIT_OPERATION(operationNewStrictFunctionWithInvalidatedReallocationWa
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     constexpr bool isInvalidated = true;
     constexpr bool isBuiltin = false;
     if (jsCast<FunctionExecutable*>(functionExecutable)->hasPrototypeProperty())
@@ -2775,7 +2768,7 @@ JSC_DEFINE_JIT_OPERATION(operationNewArrowFunction, EncodedJSValue, (JSGlobalObj
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     constexpr bool isInvalidated = false;
     constexpr bool isBuiltin = false;
     OPERATION_RETURN(scope, newFunctionCommon<JSFunction, isInvalidated>(vm, globalObject, environment, functionExecutable, globalObject->arrowFunctionStructure(isBuiltin)));
@@ -2786,7 +2779,7 @@ JSC_DEFINE_JIT_OPERATION(operationNewArrowFunctionWithInvalidatedReallocationWat
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     constexpr bool isInvalidated = true;
     constexpr bool isBuiltin = false;
     OPERATION_RETURN(scope, newFunctionCommon<JSFunction, isInvalidated>(vm, globalObject, environment, functionExecutable, globalObject->arrowFunctionStructure(isBuiltin)));
@@ -2797,7 +2790,7 @@ JSC_DEFINE_JIT_OPERATION(operationNewGeneratorFunction, EncodedJSValue, (JSGloba
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     constexpr bool isInvalidated = false;
     OPERATION_RETURN(scope, newFunctionCommon<JSGeneratorFunction, isInvalidated>(vm, globalObject, environment, functionExecutable, globalObject->generatorFunctionStructure()));
 }
@@ -2807,7 +2800,7 @@ JSC_DEFINE_JIT_OPERATION(operationNewGeneratorFunctionWithInvalidatedReallocatio
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     constexpr bool isInvalidated = true;
     OPERATION_RETURN(scope, newFunctionCommon<JSGeneratorFunction, isInvalidated>(vm, globalObject, environment, functionExecutable, globalObject->generatorFunctionStructure()));
 }
@@ -2817,7 +2810,7 @@ JSC_DEFINE_JIT_OPERATION(operationNewAsyncFunction, EncodedJSValue, (JSGlobalObj
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     constexpr bool isInvalidated = false;
     OPERATION_RETURN(scope, newFunctionCommon<JSAsyncFunction, isInvalidated>(vm, globalObject, environment, functionExecutable, globalObject->asyncFunctionStructure()));
 }
@@ -2827,7 +2820,7 @@ JSC_DEFINE_JIT_OPERATION(operationNewAsyncFunctionWithInvalidatedReallocationWat
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     constexpr bool isInvalidated = true;
     OPERATION_RETURN(scope, newFunctionCommon<JSAsyncFunction, isInvalidated>(vm, globalObject, environment, functionExecutable, globalObject->asyncFunctionStructure()));
 }
@@ -2837,7 +2830,7 @@ JSC_DEFINE_JIT_OPERATION(operationNewAsyncGeneratorFunction, EncodedJSValue, (JS
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     constexpr bool isInvalidated = false;
     OPERATION_RETURN(scope, newFunctionCommon<JSAsyncGeneratorFunction, isInvalidated>(vm, globalObject, environment, functionExecutable, globalObject->asyncGeneratorFunctionStructure()));
 }
@@ -2847,7 +2840,7 @@ JSC_DEFINE_JIT_OPERATION(operationNewAsyncGeneratorFunctionWithInvalidatedReallo
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     constexpr bool isInvalidated = true;
     OPERATION_RETURN(scope, newFunctionCommon<JSAsyncGeneratorFunction, isInvalidated>(vm, globalObject, environment, functionExecutable, globalObject->asyncGeneratorFunctionStructure()));
 }
@@ -2857,7 +2850,7 @@ JSC_DEFINE_JIT_OPERATION(operationSetFunctionName, void, (JSGlobalObject* global
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSFunction* func = jsCast<JSFunction*>(funcCell);
     JSValue name = JSValue::decode(encodedName);
@@ -2870,7 +2863,7 @@ JSC_DEFINE_JIT_OPERATION(operationNewObject, JSCell*, (VM* vmPointer, Structure*
     VM& vm = *vmPointer;
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     OPERATION_RETURN(scope, constructEmptyObject(vm, structure));
 }
@@ -2880,7 +2873,7 @@ JSC_DEFINE_JIT_OPERATION(operationNewPromise, JSCell*, (VM* vmPointer, Structure
     VM& vm = *vmPointer;
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     OPERATION_RETURN(scope, JSPromise::create(vm, structure));
 }
@@ -2890,7 +2883,7 @@ JSC_DEFINE_JIT_OPERATION(operationNewInternalPromise, JSCell*, (VM* vmPointer, S
     VM& vm = *vmPointer;
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     OPERATION_RETURN(scope, JSInternalPromise::create(vm, structure));
 }
@@ -2900,7 +2893,7 @@ JSC_DEFINE_JIT_OPERATION(operationNewGenerator, JSCell*, (VM* vmPointer, Structu
     VM& vm = *vmPointer;
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     OPERATION_RETURN(scope, JSGenerator::create(vm, structure));
 }
@@ -2910,7 +2903,7 @@ JSC_DEFINE_JIT_OPERATION(operationNewAsyncGenerator, JSCell*, (VM* vmPointer, St
     VM& vm = *vmPointer;
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     OPERATION_RETURN(scope, JSAsyncGenerator::create(vm, structure));
 }
@@ -2921,7 +2914,7 @@ JSC_DEFINE_JIT_OPERATION(operationNewRegExp, JSCell*, (JSGlobalObject* globalObj
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     RegExp* regexp = static_cast<RegExp*>(regexpPtr);
     static constexpr bool areLegacyFeaturesEnabled = true;
@@ -2937,7 +2930,7 @@ JSC_DEFINE_JIT_OPERATION(operationHandleTraps, UnusedPtr, (JSGlobalObject* globa
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     ASSERT(vm.traps().needHandling(VMTraps::AsyncEvents));
     vm.traps().handleTraps(VMTraps::AsyncEvents);
     OPERATION_RETURN(scope, nullptr);
@@ -2948,7 +2941,7 @@ JSC_DEFINE_JIT_OPERATION(operationDebug, void, (VM* vmPointer, int32_t debugHook
     VM& vm = *vmPointer;
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     vm.interpreter.debug(callFrame, static_cast<DebugHookType>(debugHookType), JSValue::decode(encodedData));
     OPERATION_RETURN(scope);
@@ -2966,7 +2959,7 @@ JSC_DEFINE_JIT_OPERATION(operationOptimize, UGPRPair, (VM* vmPointer, uint32_t b
     VM& vm = *vmPointer;
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     BytecodeIndex bytecodeIndex = BytecodeIndex::fromBits(bytecodeIndexBits);
 
     // Defer GC for a while so that it doesn't run between when we enter into this
@@ -3198,7 +3191,7 @@ JSC_DEFINE_JIT_OPERATION(operationTryOSREnterAtCatchAndValueProfile, UGPRPair, (
     VM& vm = *vmPointer;
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     BytecodeIndex bytecodeIndex = BytecodeIndex::fromBits(bytecodeIndexBits);
 
     CodeBlock* codeBlock = callFrame->codeBlock();
@@ -3236,7 +3229,7 @@ enum class AccessorType {
 static void putAccessorByVal(JSGlobalObject* globalObject, JSObject* base, JSValue subscript, int32_t attribute, JSObject* accessor, AccessorType accessorType)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto propertyKey = subscript.toPropertyKey(globalObject);
     RETURN_IF_EXCEPTION(scope, void());
 
@@ -3252,7 +3245,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutGetterById, void, (JSGlobalObject* globalOb
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(object && object->isObject());
     JSObject* baseObj = object->getObject();
@@ -3267,7 +3260,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutSetterById, void, (JSGlobalObject* globalOb
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(object && object->isObject());
     JSObject* baseObj = object->getObject();
@@ -3282,7 +3275,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutGetterByVal, void, (JSGlobalObject* globalO
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     putAccessorByVal(globalObject, asObject(base), JSValue::decode(encodedSubscript), attribute, asObject(getter), AccessorType::Getter);
     OPERATION_RETURN(scope);
@@ -3293,7 +3286,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutSetterByVal, void, (JSGlobalObject* globalO
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     putAccessorByVal(globalObject, asObject(base), JSValue::decode(encodedSubscript), attribute, asObject(setter), AccessorType::Setter);
     OPERATION_RETURN(scope);
@@ -3305,7 +3298,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutGetterSetter, void, (JSGlobalObject* global
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(object && object->isObject());
     JSObject* baseObject = asObject(object);
@@ -3324,7 +3317,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutGetterSetter, void, (JSGlobalObject* global
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(object && object->isObject());
     JSObject* baseObject = asObject(object);
@@ -3343,7 +3336,7 @@ JSC_DEFINE_JIT_OPERATION(operationInstanceOfCustom, size_t, (JSGlobalObject* glo
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue value = JSValue::decode(encodedValue);
     JSValue hasInstanceValue = JSValue::decode(encodedHasInstance);
@@ -3360,7 +3353,7 @@ JSC_DEFINE_JIT_OPERATION(operationIteratorNextTryFast, UGPRPair, (JSGlobalObject
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto& metadata = *std::bit_cast<OpIteratorNext::Metadata*>(metadataPointer);
     metadata.m_iterableProfile.observeStructureID(array->structureID());
@@ -3392,7 +3385,7 @@ ALWAYS_INLINE static JSValue getByVal(JSGlobalObject* globalObject, CallFrame* c
 {
     UNUSED_PARAM(callFrame);
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (subscript.isString()) {
         auto propertyName = asString(subscript)->toAtomString(globalObject);
@@ -3467,7 +3460,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByValGaveUp, EncodedJSValue, (EncodedJSValu
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     stubInfo->tookSlowPath = true;
 
@@ -3483,7 +3476,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByValOptimize, EncodedJSValue, (EncodedJSVa
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBase);
     JSValue subscript = JSValue::decode(encodedSubscript);
@@ -3523,7 +3516,7 @@ ALWAYS_INLINE static JSValue getByValWithThis(JSGlobalObject* globalObject, Call
 {
     UNUSED_PARAM(callFrame);
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     PropertySlot slot(thisValue, PropertySlot::PropertySlot::InternalMethodType::Get);
 
@@ -3592,7 +3585,7 @@ ALWAYS_INLINE static JSValue getByValWithThis(JSGlobalObject* globalObject, Call
 
 static ALWAYS_INLINE JSValue getByValMegamorphic(JSGlobalObject* globalObject, VM& vm, CallFrame* callFrame, StructureStubInfo* stubInfo, ArrayProfile* profile, JSValue baseValue, JSValue thisValue, JSValue subscript, GetByKind kind)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!baseValue.isObject() || !(subscript.isString() && CacheableIdentifier::isCacheableIdentifierCell(subscript))) [[unlikely]] {
         if (stubInfo && stubInfo->considerRepatchingCacheMegamorphic(vm))
@@ -3704,7 +3697,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByValMegamorphic, EncodedJSValue, (EncodedJ
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBase);
     OPERATION_RETURN(scope, JSValue::encode(getByValMegamorphic(globalObject, vm, callFrame, stubInfo, profile, baseValue, baseValue, JSValue::decode(encodedSubscript), GetByKind::ByVal)));
@@ -3715,7 +3708,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByValMegamorphicGeneric, EncodedJSValue, (J
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue baseValue = JSValue::decode(encodedBase);
     OPERATION_RETURN(scope, JSValue::encode(getByValMegamorphic(globalObject, vm, callFrame, nullptr, nullptr, baseValue, baseValue, JSValue::decode(encodedSubscript), GetByKind::ByVal)));
 }
@@ -3725,7 +3718,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByValGeneric, EncodedJSValue, (JSGlobalObje
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBase);
     JSValue subscript = JSValue::decode(encodedSubscript);
@@ -3739,7 +3732,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByValWithThisGaveUp, EncodedJSValue, (Encod
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     stubInfo->tookSlowPath = true;
 
@@ -3756,7 +3749,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByValWithThisOptimize, EncodedJSValue, (Enc
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBase);
     JSValue subscript = JSValue::decode(encodedSubscript);
@@ -3798,7 +3791,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByValWithThisGeneric, EncodedJSValue, (JSGl
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBase);
     JSValue property = JSValue::decode(encodedProperty);
@@ -3837,7 +3830,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByValWithThisMegamorphic, EncodedJSValue, (
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     OPERATION_RETURN(scope, JSValue::encode(getByValMegamorphic(globalObject, vm, callFrame, stubInfo, profile, JSValue::decode(encodedBase), JSValue::decode(encodedThis), JSValue::decode(encodedSubscript), GetByKind::ByValWithThis)));
 }
@@ -3847,7 +3840,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetByValWithThisMegamorphicGeneric, EncodedJSV
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     OPERATION_RETURN(scope, JSValue::encode(getByValMegamorphic(globalObject, vm, callFrame, nullptr, nullptr, JSValue::decode(encodedBase), JSValue::decode(encodedThis), JSValue::decode(encodedSubscript), GetByKind::ByValWithThis)));
 }
 
@@ -3855,7 +3848,7 @@ ALWAYS_INLINE static JSValue getPrivateName(JSGlobalObject* globalObject, CallFr
 {
     UNUSED_PARAM(callFrame);
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* base = baseValue.toObject(globalObject);
     RETURN_IF_EXCEPTION(scope, JSValue());
@@ -3874,7 +3867,7 @@ ALWAYS_INLINE static JSValue getPrivateName(JSGlobalObject* globalObject, CallFr
     ASSERT(fieldName.isPrivateName());
     UNUSED_PARAM(callFrame);
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     baseValue.requireObjectCoercible(globalObject);
     RETURN_IF_EXCEPTION(scope, JSValue());
@@ -3895,7 +3888,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetPrivateNameOptimize, EncodedJSValue, (Encod
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBase);
     JSValue fieldNameValue = JSValue::decode(encodedFieldName);
@@ -3932,7 +3925,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetPrivateNameGaveUp, EncodedJSValue, (Encoded
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     stubInfo->tookSlowPath = true;
 
@@ -3947,7 +3940,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetPrivateNameGeneric, EncodedJSValue, (JSGlob
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBase);
     JSValue fieldNameValue = JSValue::decode(encodedFieldName);
@@ -3963,7 +3956,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetPrivateNameByIdGaveUp, EncodedJSValue, (Enc
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     stubInfo->tookSlowPath = true;
 
@@ -3985,7 +3978,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetPrivateNameByIdOptimize, EncodedJSValue, (E
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CacheableIdentifier identifier = stubInfo->identifier();
     JSValue baseValue = JSValue::decode(base);
@@ -4015,7 +4008,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetPrivateNameByIdGeneric, EncodedJSValue, (JS
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(base);
     CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
@@ -4029,7 +4022,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetPrivateNameByIdGeneric, EncodedJSValue, (JS
 
 static bool deleteById(JSGlobalObject* globalObject, VM& vm, DeletePropertySlot& slot, JSValue base, PropertyName propertyName, ECMAMode ecmaMode)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* baseObj = base.toObject(globalObject);
     RETURN_IF_EXCEPTION(scope, false);
@@ -4044,7 +4037,7 @@ static bool deleteById(JSGlobalObject* globalObject, VM& vm, DeletePropertySlot&
 
 static ALWAYS_INLINE size_t deleteByIdOptimize(JSGlobalObject* globalObject, VM& vm, CallFrame* callFrame, StructureStubInfo* stubInfo, JSValue baseValue, CacheableIdentifier identifier, ECMAMode ecmaMode)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Structure* oldStructure = baseValue.structureOrNull();
 
@@ -4069,7 +4062,7 @@ JSC_DEFINE_JIT_OPERATION(operationDeleteByIdSloppyOptimize, size_t, (EncodedJSVa
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBase);
     CacheableIdentifier identifier = stubInfo->identifier();
@@ -4083,7 +4076,7 @@ JSC_DEFINE_JIT_OPERATION(operationDeleteByIdStrictOptimize, size_t, (EncodedJSVa
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBase);
     CacheableIdentifier identifier = stubInfo->identifier();
@@ -4097,7 +4090,7 @@ JSC_DEFINE_JIT_OPERATION(operationDeleteByIdSloppyGaveUp, size_t, (EncodedJSValu
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     stubInfo->tookSlowPath = true;
 
@@ -4112,7 +4105,7 @@ JSC_DEFINE_JIT_OPERATION(operationDeleteByIdStrictGaveUp, size_t, (EncodedJSValu
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     stubInfo->tookSlowPath = true;
 
@@ -4126,7 +4119,7 @@ JSC_DEFINE_JIT_OPERATION(operationDeleteByIdSloppyGeneric, size_t, (JSGlobalObje
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
     DeletePropertySlot slot;
     OPERATION_RETURN(scope, deleteById(globalObject, vm, slot, JSValue::decode(encodedBase), identifier, ECMAMode::sloppy()));
@@ -4137,7 +4130,7 @@ JSC_DEFINE_JIT_OPERATION(operationDeleteByIdStrictGeneric, size_t, (JSGlobalObje
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     CacheableIdentifier identifier = CacheableIdentifier::createFromRawBits(rawCacheableIdentifier);
     DeletePropertySlot slot;
     OPERATION_RETURN(scope, deleteById(globalObject, vm, slot, JSValue::decode(encodedBase), identifier, ECMAMode::strict()));
@@ -4145,7 +4138,7 @@ JSC_DEFINE_JIT_OPERATION(operationDeleteByIdStrictGeneric, size_t, (JSGlobalObje
 
 static bool deleteByVal(JSGlobalObject* globalObject, VM& vm, DeletePropertySlot& slot, JSValue base, JSValue key, ECMAMode ecmaMode)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* baseObj = base.toObject(globalObject);
     RETURN_IF_EXCEPTION(scope, false);
@@ -4169,7 +4162,7 @@ static bool deleteByVal(JSGlobalObject* globalObject, VM& vm, DeletePropertySlot
 
 static ALWAYS_INLINE size_t deleteByValOptimize(JSGlobalObject* globalObject, VM& vm, CallFrame* callFrame, JSValue baseValue, JSValue subscript, StructureStubInfo* stubInfo, ECMAMode ecmaMode)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     DeletePropertySlot slot;
     Structure* oldStructure = baseValue.structureOrNull();
@@ -4198,7 +4191,7 @@ JSC_DEFINE_JIT_OPERATION(operationDeleteByValSloppyOptimize, size_t, (EncodedJSV
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBase);
     JSValue subscript = JSValue::decode(encodedSubscript);
@@ -4212,7 +4205,7 @@ JSC_DEFINE_JIT_OPERATION(operationDeleteByValStrictOptimize, size_t, (EncodedJSV
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue baseValue = JSValue::decode(encodedBase);
     JSValue subscript = JSValue::decode(encodedSubscript);
@@ -4226,7 +4219,7 @@ JSC_DEFINE_JIT_OPERATION(operationDeleteByValSloppyGaveUp, size_t, (EncodedJSVal
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     stubInfo->tookSlowPath = true;
 
@@ -4240,7 +4233,7 @@ JSC_DEFINE_JIT_OPERATION(operationDeleteByValStrictGaveUp, size_t, (EncodedJSVal
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     stubInfo->tookSlowPath = true;
 
@@ -4253,7 +4246,7 @@ JSC_DEFINE_JIT_OPERATION(operationDeleteByValSloppyGeneric, size_t, (JSGlobalObj
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     DeletePropertySlot slot;
     OPERATION_RETURN(scope, deleteByVal(globalObject, vm, slot, JSValue::decode(encodedBase), JSValue::decode(encodedSubscript), ECMAMode::sloppy()));
 }
@@ -4263,7 +4256,7 @@ JSC_DEFINE_JIT_OPERATION(operationDeleteByValStrictGeneric, size_t, (JSGlobalObj
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     DeletePropertySlot slot;
     OPERATION_RETURN(scope, deleteByVal(globalObject, vm, slot, JSValue::decode(encodedBase), JSValue::decode(encodedSubscript), ECMAMode::strict()));
 }
@@ -4273,7 +4266,7 @@ JSC_DEFINE_JIT_OPERATION(operationPushWithScope, JSCell*, (JSGlobalObject* globa
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* object = JSValue::decode(objectValue).toObject(globalObject);
     OPERATION_RETURN_IF_EXCEPTION(scope, nullptr);
@@ -4288,7 +4281,7 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationPushWithScopeObject, JSCell*, (JSGlob
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSScope* currentScope = jsCast<JSScope*>(currentScopeCell);
     OPERATION_RETURN(scope, JSWithScope::create(vm, globalObject, currentScope, object));
 }
@@ -4299,7 +4292,7 @@ JSC_DEFINE_JIT_OPERATION(operationInstanceOfGaveUp, EncodedJSValue, (EncodedJSVa
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     stubInfo->tookSlowPath = true;
 
@@ -4315,7 +4308,7 @@ JSC_DEFINE_JIT_OPERATION(operationInstanceOfGeneric, EncodedJSValue, (JSGlobalOb
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue value = JSValue::decode(encodedValue);
     JSValue proto = JSValue::decode(encodedProto);
@@ -4330,7 +4323,7 @@ JSC_DEFINE_JIT_OPERATION(operationInstanceOfOptimize, EncodedJSValue, (EncodedJS
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     ICSlowPathCallFrameTracer tracer(vm, callFrame, stubInfo);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue value = JSValue::decode(encodedValue);
     JSValue proto = JSValue::decode(encodedProto);
@@ -4350,7 +4343,7 @@ JSC_DEFINE_JIT_OPERATION(operationSizeFrameForForwardArguments, size_t, (JSGloba
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     OPERATION_RETURN(scope, sizeFrameForForwardArguments(globalObject, callFrame, vm, numUsedStackSlots));
 }
 
@@ -4359,7 +4352,7 @@ JSC_DEFINE_JIT_OPERATION(operationSizeFrameForVarargs, size_t, (JSGlobalObject* 
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue arguments = JSValue::decode(encodedArguments);
     OPERATION_RETURN(scope, sizeFrameForVarargs(globalObject, callFrame, vm, arguments, numUsedStackSlots, firstVarArgOffset));
 }
@@ -4369,7 +4362,7 @@ JSC_DEFINE_JIT_OPERATION(operationSetupForwardArgumentsFrame, CallFrame*, (JSGlo
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     setupForwardArgumentsFrame(globalObject, callFrame, newCallFrame, length);
     OPERATION_RETURN(scope, newCallFrame);
 }
@@ -4379,7 +4372,7 @@ JSC_DEFINE_JIT_OPERATION(operationSetupVarargsFrame, CallFrame*, (JSGlobalObject
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue arguments = JSValue::decode(encodedArguments);
     setupVarargsFrame(globalObject, callFrame, newCallFrame, arguments, firstVarArgOffset, length);
     OPERATION_RETURN(scope, newCallFrame);
@@ -4390,7 +4383,7 @@ JSC_DEFINE_JIT_OPERATION(operationResolveRope, StringImpl*, (JSGlobalObject* glo
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     OPERATION_RETURN(scope, string->value(globalObject)->impl());
 }
@@ -4400,7 +4393,7 @@ JSC_DEFINE_JIT_OPERATION(operationResolveRopeString, JSString*, (JSGlobalObject*
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     string->resolveRope(globalObject);
     OPERATION_RETURN(scope, string);
@@ -4411,7 +4404,7 @@ JSC_DEFINE_JIT_OPERATION(operationSwitchStringWithUnknownKeyType, char*, (JSGlob
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue key = JSValue::decode(encodedKey);
     CodeBlock* codeBlock = callFrame->codeBlock();
 
@@ -4443,7 +4436,7 @@ JSC_DEFINE_JIT_OPERATION(operationResolveScopeForBaseline, EncodedJSValue, (JSGl
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CodeBlock* codeBlock = callFrame->codeBlock();
 
@@ -4495,7 +4488,7 @@ JSC_DEFINE_JIT_OPERATION(operationGetFromScope, EncodedJSValue, (JSGlobalObject*
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CodeBlock* codeBlock = callFrame->codeBlock();
 
@@ -4537,7 +4530,7 @@ JSC_DEFINE_JIT_OPERATION(operationPutToScope, void, (JSGlobalObject* globalObjec
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CodeBlock* codeBlock = callFrame->codeBlock();
     auto bytecode = pc->as<OpPutToScope>();
@@ -4592,7 +4585,7 @@ JSC_DEFINE_JIT_OPERATION(operationThrow, void, (JSGlobalObject* globalObject, En
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue exceptionValue = JSValue::decode(encodedExceptionValue);
     throwException(globalObject, scope, exceptionValue);
@@ -4607,7 +4600,7 @@ JSC_DEFINE_JIT_OPERATION(operationReallocateButterflyToHavePropertyStorageWithIn
     VM& vm = *vmPointer;
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(!object->structure()->outOfLineCapacity());
     Butterfly* result = object->allocateMoreOutOfLineStorage(vm, 0, initialOutOfLineCapacity);
@@ -4620,7 +4613,7 @@ JSC_DEFINE_JIT_OPERATION(operationReallocateButterflyToGrowPropertyStorage, char
     VM& vm = *vmPointer;
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Butterfly* result = object->allocateMoreOutOfLineStorage(vm, object->structure()->outOfLineCapacity(), newSize);
     object->nukeStructureAndSetButterfly(vm, object->structureID(), result);
@@ -4703,7 +4696,7 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationExceptionFuzz, void, (JSGlobalObject*
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(scope);
     void* returnPC = __builtin_return_address(0);
     // FIXME (see rdar://72897291): Work around a Clang bug where __builtin_return_address()
@@ -4717,7 +4710,7 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationExceptionFuzzWithCallFrame, void, (VM
     VM& vm = *vmPointer;
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(scope);
     void* returnPC = __builtin_return_address(0);
     // FIXME (see rdar://72897291): Work around a Clang bug where __builtin_return_address()
@@ -4731,7 +4724,7 @@ JSC_DEFINE_JIT_OPERATION(operationValueAdd, EncodedJSValue, (JSGlobalObject* glo
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     OPERATION_RETURN(scope, JSValue::encode(jsAdd(globalObject, JSValue::decode(encodedOp1), JSValue::decode(encodedOp2))));
 }
 
@@ -4741,7 +4734,7 @@ JSC_DEFINE_JIT_OPERATION(operationValueAddProfiled, EncodedJSValue, (JSGlobalObj
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     OPERATION_RETURN(scope, JSValue::encode(profiledAdd(globalObject, JSValue::decode(encodedOp1), JSValue::decode(encodedOp2), *arithProfile)));
 }
 
@@ -4750,7 +4743,7 @@ JSC_DEFINE_JIT_OPERATION(operationValueAddProfiledOptimize, EncodedJSValue, (JSG
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     
     JSValue op1 = JSValue::decode(encodedOp1);
     JSValue op2 = JSValue::decode(encodedOp2);
@@ -4776,7 +4769,7 @@ JSC_DEFINE_JIT_OPERATION(operationValueAddProfiledNoOptimize, EncodedJSValue, (J
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     BinaryArithProfile* arithProfile = addIC->arithProfile();
     ASSERT(arithProfile);
@@ -4788,7 +4781,7 @@ JSC_DEFINE_JIT_OPERATION(operationValueAddOptimize, EncodedJSValue, (JSGlobalObj
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue op1 = JSValue::decode(encodedOp1);
     JSValue op2 = JSValue::decode(encodedOp2);
@@ -4810,7 +4803,7 @@ JSC_DEFINE_JIT_OPERATION(operationValueAddNoOptimize, EncodedJSValue, (JSGlobalO
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     
     JSValue op1 = JSValue::decode(encodedOp1);
     JSValue op2 = JSValue::decode(encodedOp2);
@@ -4831,7 +4824,7 @@ ALWAYS_INLINE static EncodedJSValue unprofiledMul(JSGlobalObject* globalObject, 
 ALWAYS_INLINE static EncodedJSValue profiledMul(JSGlobalObject* globalObject, EncodedJSValue encodedOp1, EncodedJSValue encodedOp2, BinaryArithProfile& arithProfile, bool shouldObserveLHSAndRHSTypes = true)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue op1 = JSValue::decode(encodedOp1);
     JSValue op2 = JSValue::decode(encodedOp2);
 
@@ -4849,7 +4842,7 @@ JSC_DEFINE_JIT_OPERATION(operationValueMul, EncodedJSValue, (JSGlobalObject* glo
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     OPERATION_RETURN(scope, unprofiledMul(globalObject, encodedOp1, encodedOp2));
 }
@@ -4859,7 +4852,7 @@ JSC_DEFINE_JIT_OPERATION(operationValueMulNoOptimize, EncodedJSValue, (JSGlobalO
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     OPERATION_RETURN(scope, unprofiledMul(globalObject, encodedOp1, encodedOp2));
 }
@@ -4869,7 +4862,7 @@ JSC_DEFINE_JIT_OPERATION(operationValueMulOptimize, EncodedJSValue, (JSGlobalObj
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto nonOptimizeVariant = operationValueMulNoOptimize;
     if (BinaryArithProfile* arithProfile = mulIC->arithProfile())
@@ -4888,7 +4881,7 @@ JSC_DEFINE_JIT_OPERATION(operationValueMulProfiled, EncodedJSValue, (JSGlobalObj
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(arithProfile);
     OPERATION_RETURN(scope, profiledMul(globalObject, encodedOp1, encodedOp2, *arithProfile));
@@ -4899,7 +4892,7 @@ JSC_DEFINE_JIT_OPERATION(operationValueMulProfiledOptimize, EncodedJSValue, (JSG
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     BinaryArithProfile* arithProfile = mulIC->arithProfile();
     ASSERT(arithProfile);
@@ -4919,7 +4912,7 @@ JSC_DEFINE_JIT_OPERATION(operationValueMulProfiledNoOptimize, EncodedJSValue, (J
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     BinaryArithProfile* arithProfile = mulIC->arithProfile();
     ASSERT(arithProfile);
@@ -4932,7 +4925,7 @@ JSC_DEFINE_JIT_OPERATION(operationArithNegate, EncodedJSValue, (JSGlobalObject* 
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue operand = JSValue::decode(encodedOperand);
 
@@ -4959,7 +4952,7 @@ JSC_DEFINE_JIT_OPERATION(operationArithNegateProfiled, EncodedJSValue, (JSGlobal
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue operand = JSValue::decode(encodedOperand);
     arithProfile->observeArg(operand);
@@ -4995,7 +4988,7 @@ JSC_DEFINE_JIT_OPERATION(operationArithNegateProfiledOptimize, EncodedJSValue, (
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     
     JSValue operand = JSValue::decode(encodedOperand);
 
@@ -5039,7 +5032,7 @@ JSC_DEFINE_JIT_OPERATION(operationArithNegateOptimize, EncodedJSValue, (JSGlobal
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue operand = JSValue::decode(encodedOperand);
 
@@ -5077,7 +5070,7 @@ ALWAYS_INLINE static EncodedJSValue unprofiledSub(JSGlobalObject* globalObject, 
 
 ALWAYS_INLINE static EncodedJSValue profiledSub(VM& vm, JSGlobalObject* globalObject, EncodedJSValue encodedOp1, EncodedJSValue encodedOp2, BinaryArithProfile& arithProfile, bool shouldObserveLHSAndRHSTypes = true)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue op1 = JSValue::decode(encodedOp1);
     JSValue op2 = JSValue::decode(encodedOp2);
@@ -5096,7 +5089,7 @@ JSC_DEFINE_JIT_OPERATION(operationValueSub, EncodedJSValue, (JSGlobalObject* glo
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     OPERATION_RETURN(scope, unprofiledSub(globalObject, encodedOp1, encodedOp2));
 }
 
@@ -5107,7 +5100,7 @@ JSC_DEFINE_JIT_OPERATION(operationValueSubProfiled, EncodedJSValue, (JSGlobalObj
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     OPERATION_RETURN(scope, profiledSub(vm, globalObject, encodedOp1, encodedOp2, *arithProfile));
 }
@@ -5117,7 +5110,7 @@ JSC_DEFINE_JIT_OPERATION(operationValueSubOptimize, EncodedJSValue, (JSGlobalObj
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto nonOptimizeVariant = operationValueSubNoOptimize;
     if (BinaryArithProfile* arithProfile = subIC->arithProfile())
@@ -5136,7 +5129,7 @@ JSC_DEFINE_JIT_OPERATION(operationValueSubNoOptimize, EncodedJSValue, (JSGlobalO
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     OPERATION_RETURN(scope, unprofiledSub(globalObject, encodedOp1, encodedOp2));
 }
@@ -5146,7 +5139,7 @@ JSC_DEFINE_JIT_OPERATION(operationValueSubProfiledOptimize, EncodedJSValue, (JSG
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     BinaryArithProfile* arithProfile = subIC->arithProfile();
     ASSERT(arithProfile);
@@ -5166,7 +5159,7 @@ JSC_DEFINE_JIT_OPERATION(operationValueSubProfiledNoOptimize, EncodedJSValue, (J
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     BinaryArithProfile* arithProfile = subIC->arithProfile();
     ASSERT(arithProfile);
@@ -5210,7 +5203,7 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationRetrieveAndClearExceptionIfCatchable,
     VM& vm = *vmPointer;
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     RELEASE_ASSERT(!!scope.exception());
 
     Exception* exception = scope.exception();
@@ -5222,7 +5215,7 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationRetrieveAndClearExceptionIfCatchable,
     // We want to clear the exception here rather than in the catch prologue
     // JIT code because clearing it also entails clearing a bit in an Atomic
     // bit field in VMTraps.
-    scope.clearException();
+    TRY_CLEAR_EXCEPTION(scope, exception);
     return exception;
 }
 

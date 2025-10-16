@@ -144,7 +144,7 @@ Ref<ScriptCallStack> createScriptCallStackForConsole(JSC::JSGlobalObject* global
 static bool extractSourceInformationFromException(JSC::JSGlobalObject* globalObject, JSObject* exceptionObject, LineColumn* lineColumn, String* sourceURL)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // FIXME: <http://webkit.org/b/115087> Web Inspector: Should not need to evaluate JavaScript handling exceptions
     JSValue lineValue = exceptionObject->getDirect(vm, Identifier::fromString(vm, "line"_s));
@@ -164,7 +164,7 @@ static bool extractSourceInformationFromException(JSC::JSGlobalObject* globalObj
     if (sourceURL->isEmpty())
         *sourceURL = "undefined"_s;
 
-    scope.clearException();
+    TRY_CLEAR_EXCEPTION(scope, false);
     return result;
 }
 

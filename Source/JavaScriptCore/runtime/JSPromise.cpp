@@ -91,7 +91,7 @@ DEFINE_VISIT_CHILDREN(JSPromise);
 JSValue JSPromise::createNewPromiseCapability(JSGlobalObject* globalObject, JSValue constructor)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto [promise, resolve, reject] = newPromiseCapability(globalObject, constructor);
     RETURN_IF_EXCEPTION(scope, { });
@@ -110,7 +110,7 @@ JSValue JSPromise::createPromiseCapability(VM& vm, JSGlobalObject* globalObject,
 std::tuple<JSObject*, JSObject*, JSObject*> JSPromise::newPromiseCapability(JSGlobalObject* globalObject, JSValue constructor)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (constructor == globalObject->promiseConstructor()) {
         auto* promise = JSPromise::create(vm, globalObject->promiseStructure());
@@ -152,7 +152,7 @@ std::tuple<JSObject*, JSObject*, JSObject*> JSPromise::newPromiseCapability(JSGl
 JSPromise::DeferredData JSPromise::createDeferredData(JSGlobalObject* globalObject, JSPromiseConstructor* promiseConstructor)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto [ promiseCapability, resolveCapability, rejectCapability ] = newPromiseCapability(globalObject, promiseConstructor);
     RETURN_IF_EXCEPTION(scope, { });
     auto* promise = jsDynamicCast<JSPromise*>(promiseCapability);
@@ -233,16 +233,13 @@ void JSPromise::rejectAsHandled(VM& vm, JSGlobalObject* lexicalGlobalObject, Exc
     rejectAsHandled(vm, lexicalGlobalObject, reason->value());
 }
 
-JSPromise* JSPromise::rejectWithCaughtException(JSGlobalObject* globalObject, ThrowScope& scope)
+JSPromise* JSPromise::rejectWithCaughtException(JSGlobalObject* globalObject, ExceptionScope& scope)
 {
     VM& vm = globalObject->vm();
     Exception* exception = scope.exception();
     ASSERT(exception);
-    if (vm.isTerminationException(exception)) [[unlikely]] {
-        scope.release();
-        return this;
-    }
-    scope.clearException();
+    TRY_CLEAR_EXCEPTION(scope, this);
+
     scope.release();
     reject(vm, globalObject, exception->value());
     return this;
@@ -336,12 +333,11 @@ void JSPromise::resolvePromise(JSGlobalObject* globalObject, JSValue resolution)
     JSValue then;
     JSValue error;
     {
-        auto catchScope = DECLARE_CATCH_SCOPE(vm);
+        auto catchScope = DECLARE_EXCEPTION_SCOPE(vm);
         then = resolutionObject->get(globalObject, vm.propertyNames->then);
         if (catchScope.exception()) [[unlikely]] {
             error = catchScope.exception()->value();
-            if (!catchScope.clearExceptionExceptTermination()) [[unlikely]]
-                return;
+            TRY_CLEAR_EXCEPTION(catchScope, void());
         }
     }
     if (error) [[unlikely]]
@@ -453,7 +449,7 @@ JSC_DEFINE_HOST_FUNCTION(promiseResolvingFunctionRejectWithoutPromise, (JSGlobal
 JSC_DEFINE_HOST_FUNCTION(promiseCapabilityExecutor, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* callee = jsCast<JSFunctionWithFields*>(callFrame->jsCallee());
     JSValue resolve = callee->getField(JSFunctionWithFields::Field::ExecutorResolve);
@@ -567,12 +563,11 @@ void JSPromise::resolveWithoutPromiseForAsyncAwait(JSGlobalObject* globalObject,
         JSValue constructor;
         JSValue error;
         {
-            auto catchScope = DECLARE_CATCH_SCOPE(vm);
+            auto catchScope = DECLARE_EXCEPTION_SCOPE(vm);
             constructor = promise->get(globalObject, vm.propertyNames->constructor);
             if (catchScope.exception()) [[unlikely]] {
                 error = catchScope.exception()->value();
-                if (!catchScope.clearExceptionExceptTermination()) [[unlikely]]
-                    return;
+                TRY_CLEAR_EXCEPTION(catchScope, void());
             }
         }
         if (error) [[unlikely]] {
@@ -608,12 +603,11 @@ void JSPromise::resolveWithoutPromise(JSGlobalObject* globalObject, JSValue reso
     JSValue then;
     JSValue error;
     {
-        auto catchScope = DECLARE_CATCH_SCOPE(vm);
+        auto catchScope = DECLARE_EXCEPTION_SCOPE(vm);
         then = resolutionObject->get(globalObject, vm.propertyNames->then);
         if (catchScope.exception()) [[unlikely]] {
             error = catchScope.exception()->value();
-            if (!catchScope.clearExceptionExceptTermination()) [[unlikely]]
-                return;
+            TRY_CLEAR_EXCEPTION(catchScope, void());
         }
     }
     if (error) [[unlikely]]
@@ -667,7 +661,7 @@ bool JSPromise::isThenFastAndNonObservable()
 JSObject* promiseSpeciesConstructor(JSGlobalObject* globalObject, JSObject* thisObject)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (auto* promise = jsDynamicCast<JSPromise*>(thisObject)) [[likely]] {
         if (promiseSpeciesWatchpointIsValid(vm, promise)) [[likely]]
@@ -714,7 +708,7 @@ Structure* createPromiseCapabilityObjectStructure(VM& vm, JSGlobalObject& global
 JSObject* JSPromise::then(JSGlobalObject* globalObject, JSValue onFulfilled, JSValue onRejected)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* resultPromise;
     JSValue resultPromiseCapability;
@@ -743,7 +737,7 @@ JSObject* JSPromise::then(JSGlobalObject* globalObject, JSValue onFulfilled, JSV
 JSObject* JSPromise::promiseResolve(JSGlobalObject* globalObject, JSObject* constructor, JSValue argument)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (argument.inherits<JSPromise>()) {
         auto* promise = jsCast<JSPromise*>(argument);
@@ -778,7 +772,7 @@ JSObject* JSPromise::promiseResolve(JSGlobalObject* globalObject, JSObject* cons
 JSObject* JSPromise::promiseReject(JSGlobalObject* globalObject, JSObject* constructor, JSValue argument)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (constructor == globalObject->promiseConstructor()) [[likely]] {
         JSPromise* promise = JSPromise::create(vm, globalObject->promiseStructure());

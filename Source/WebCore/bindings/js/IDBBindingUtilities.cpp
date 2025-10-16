@@ -66,7 +66,7 @@ static bool get(JSGlobalObject& lexicalGlobalObject, JSValue object, const Strin
 {
     VM& vm = lexicalGlobalObject.vm();
 
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (object.isString() && keyPathElement == "length"_s) {
         result = jsNumber(asString(object)->length());
@@ -145,7 +145,7 @@ JSValue toJS(JSGlobalObject& lexicalGlobalObject, JSGlobalObject& globalObject, 
 
     VM& vm = lexicalGlobalObject.vm();
     Locker<JSLock> locker(vm.apiLock());
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     switch (key->type()) {
     case IndexedDB::KeyType::Array: {
@@ -197,7 +197,7 @@ static const size_t maximumDepth = 2000;
 static RefPtr<IDBKey> createIDBKeyFromValue(JSGlobalObject& lexicalGlobalObject, JSValue value, Vector<JSArray*>& stack)
 {
     VM& vm = lexicalGlobalObject.vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (value.isNumber() && !std::isnan(value.asNumber()))
         return IDBKey::createNumber(value.asNumber());
@@ -526,7 +526,7 @@ std::optional<JSC::JSValue> deserializeIDBValueWithKeyInjection(JSGlobalObject& 
 
     JSLockHolder locker(lexicalGlobalObject.vm());
     if (!injectIDBKeyIntoScriptValue(lexicalGlobalObject, key, jsValue, keyPath.value())) {
-        auto throwScope = DECLARE_THROW_SCOPE(lexicalGlobalObject.vm());
+        auto throwScope = DECLARE_EXCEPTION_SCOPE(lexicalGlobalObject.vm());
         propagateException(lexicalGlobalObject, throwScope, Exception(ExceptionCode::UnknownError, "Cannot inject key into script value"_s));
         return std::nullopt;
     }

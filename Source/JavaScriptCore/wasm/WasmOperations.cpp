@@ -91,7 +91,7 @@ JSC_DEFINE_JIT_OPERATION(operationJSToWasmEntryWrapperBuildFrame, JSToWasmCallee
     dataLogLnIf(WasmOperationsInternal::verbose, "operationJSToWasmEntryWrapperBuildFrame setting callee: ", RawHex(CalleeBits::encodeNativeCallee(callee)));
     dataLogLnIf(WasmOperationsInternal::verbose, "operationJSToWasmEntryWrapperBuildFrame wasm callee: ", RawHex(callee->wasmCallee().encodedBits()));
 
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto calleeSPOffsetFromFP = -(static_cast<intptr_t>(callee->frameSize()) + JSToWasmCallee::SpillStackSpaceAligned - JSToWasmCallee::RegisterStackSpaceAligned);
 
@@ -159,7 +159,7 @@ JSC_DEFINE_JIT_OPERATION(operationJSToWasmEntryWrapperBuildReturnFrame, EncodedJ
     auto* callee = uncheckedDowncast<JSToWasmCallee>(uncheckedDowncast<Wasm::Callee>(callFrame->callee().asNativeCallee()));
     ASSERT(callee->compilationMode() == CompilationMode::JSToWasmMode);
 
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     const TypeDefinition& signature = TypeInformation::get(callee->typeIndex()).expand();
     const FunctionSignature& functionSignature = *signature.as<FunctionSignature>();
@@ -314,7 +314,7 @@ JSC_DEFINE_JIT_OPERATION(operationWasmToJSExitMarshalArguments, bool, (void* sp,
     ASSERT(instance->globalObject());
     VM& vm = instance->vm();
 
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* importableFunction = *access.operator()<WasmOrJSImportableFunctionCallLinkInfo*>(cfr, WasmToJSCallableFunctionSlot);
     auto typeIndex = importableFunction->typeIndex;
@@ -459,7 +459,7 @@ JSC_DEFINE_JIT_OPERATION(operationWasmToJSExitMarshalReturnValues, void, (void* 
     void* registerSpace = sp;
 
     WasmOperationPrologueCallFrameTracer tracer(instance->vm(), cfr, OUR_RETURN_ADDRESS);
-    auto scope = DECLARE_THROW_SCOPE(instance->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(instance->vm());
 
     auto* importableFunction = *access.operator()<WasmOrJSImportableFunctionCallLinkInfo*>(cfr, WasmToJSCallableFunctionSlot);
     auto typeIndex = importableFunction->typeIndex;
@@ -633,7 +633,7 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationWasmToJSExitIterateResults, bool, (JS
     VM& vm = instance->vm();
     JSGlobalObject* globalObject = instance->globalObject();
     WasmOperationPrologueCallFrameTracer tracer(vm, callFrame, OUR_RETURN_ADDRESS);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     SUPPRESS_UNCOUNTED_LOCAL const FunctionSignature* signature = type->as<FunctionSignature>();
 
@@ -1336,7 +1336,7 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationConvertToFuncref, EncodedJSValue, (JS
     VM& vm = instance->vm();
     JSGlobalObject* globalObject = instance->globalObject();
     WasmOperationPrologueCallFrameTracer tracer(vm, callFrame, OUR_RETURN_ADDRESS);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue value = JSValue::decode(v);
     WebAssemblyFunction* wasmFunction = nullptr;
@@ -1366,7 +1366,7 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationConvertToAnyref, EncodedJSValue, (JSW
     VM& vm = instance->vm();
     JSGlobalObject* globalObject = instance->globalObject();
     WasmOperationPrologueCallFrameTracer tracer(vm, callFrame, OUR_RETURN_ADDRESS);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     const FunctionSignature* signature = type->as<FunctionSignature>();
     ASSERT(signature->returnCount() == 1);
@@ -1399,7 +1399,7 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationIterateResults, bool, (JSWebAssemblyI
     VM& vm = instance->vm();
     JSGlobalObject* globalObject = instance->globalObject();
     WasmOperationPrologueCallFrameTracer tracer(vm, callFrame, OUR_RETURN_ADDRESS);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     const FunctionSignature* signature = type->as<FunctionSignature>();
 
@@ -1502,7 +1502,7 @@ JSC_DEFINE_JIT_OPERATION(operationAllocateResultsArray, JSArray*, (JSWebAssembly
     VM& vm = instance->vm();
     JSGlobalObject* globalObject = instance->globalObject();
     WasmOperationPrologueCallFrameTracer tracer(vm, callFrame, OUR_RETURN_ADDRESS);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ObjectInitializationScope initializationScope(vm);
     JSArray* result = JSArray::tryCreateUninitializedRestricted(initializationScope, nullptr, globalObject->arrayStructureForIndexingTypeDuringAllocation(indexingType), signature->returnCount());
@@ -1657,7 +1657,7 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationWasmThrow, void*, (JSWebAssemblyInsta
     assertCalleeIsReferenced(callFrame, instance);
     VM& vm = instance->vm();
     WasmOperationPrologueCallFrameTracer tracer(vm, callFrame, OUR_RETURN_ADDRESS);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSGlobalObject* globalObject = instance->globalObject();
 
@@ -1683,7 +1683,7 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationWasmRethrow, void*, (JSWebAssemblyIns
     assertCalleeIsReferenced(callFrame, instance);
     VM& vm = instance->vm();
     WasmOperationPrologueCallFrameTracer tracer(vm, callFrame, OUR_RETURN_ADDRESS);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSGlobalObject* globalObject = instance->globalObject();
 
@@ -1735,7 +1735,7 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationCrashDueToOMGStackOverflow, void, ())
 JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationWasmRetrieveAndClearExceptionIfCatchable, ThrownExceptionInfo, (JSWebAssemblyInstance* instance))
 {
     VM& vm = instance->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     RELEASE_ASSERT(!!throwScope.exception());
 
@@ -1748,7 +1748,7 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationWasmRetrieveAndClearExceptionIfCatcha
     // We want to clear the exception here rather than in the catch prologue
     // JIT code because clearing it also entails clearing a bit in an Atomic
     // bit field in VMTraps.
-    throwScope.clearException();
+    (void)throwScope.tryClearException();
 
     return { JSValue::encode(thrownValue), jumpTarget };
 }
@@ -1757,7 +1757,7 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationWasmRetrieveAndClearExceptionIfCatcha
 JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationWasmRetrieveAndClearExceptionIfCatchable, void*, (JSWebAssemblyInstance* instance, EncodedJSValue* thrownValue))
 {
     VM& vm = instance->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     RELEASE_ASSERT(!!throwScope.exception());
 
@@ -1770,7 +1770,7 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationWasmRetrieveAndClearExceptionIfCatcha
     // We want to clear the exception here rather than in the catch prologue
     // JIT code because clearing it also entails clearing a bit in an Atomic
     // bit field in VMTraps.
-    throwScope.clearException();
+    (void)throwScope.tryClearException();
 
     return jumpTarget;
 }

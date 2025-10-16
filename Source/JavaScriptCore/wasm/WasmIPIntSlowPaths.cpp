@@ -421,7 +421,7 @@ static void copyExceptionPayloadToStack(const Wasm::FunctionSignature& tagType, 
 WASM_IPINT_EXTERN_CPP_DECL(retrieve_and_clear_exception, CallFrame* callFrame, IPIntStackEntry* stackPointer, IPIntLocal* pl)
 {
     VM& vm = instance->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     RELEASE_ASSERT(!!throwScope.exception());
 
     Wasm::IPIntCallee* callee = IPINT_CALLEE(callFrame);
@@ -440,7 +440,7 @@ WASM_IPINT_EXTERN_CPP_DECL(retrieve_and_clear_exception, CallFrame* callFrame, I
     // We want to clear the exception here rather than in the catch prologue
     // JIT code because clearing it also entails clearing a bit in an Atomic
     // bit field in VMTraps.
-    throwScope.clearException();
+    (void)throwScope.tryClearException();
 
     WASM_RETURN_TWO(nullptr, nullptr);
 }
@@ -448,7 +448,7 @@ WASM_IPINT_EXTERN_CPP_DECL(retrieve_and_clear_exception, CallFrame* callFrame, I
 WASM_IPINT_EXTERN_CPP_DECL(retrieve_clear_and_push_exception, CallFrame* callFrame, IPIntStackEntry* stackPointer, IPIntLocal* pl)
 {
     VM& vm = instance->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     RELEASE_ASSERT(!!throwScope.exception());
 
     Wasm::IPIntCallee* callee = IPINT_CALLEE(callFrame);
@@ -463,7 +463,7 @@ WASM_IPINT_EXTERN_CPP_DECL(retrieve_clear_and_push_exception, CallFrame* callFra
     // We want to clear the exception here rather than in the catch prologue
     // JIT code because clearing it also entails clearing a bit in an Atomic
     // bit field in VMTraps.
-    throwScope.clearException();
+    (void)throwScope.tryClearException();
 
     WASM_RETURN_TWO(nullptr, nullptr);
 }
@@ -471,7 +471,7 @@ WASM_IPINT_EXTERN_CPP_DECL(retrieve_clear_and_push_exception, CallFrame* callFra
 WASM_IPINT_EXTERN_CPP_DECL(retrieve_clear_and_push_exception_and_arguments, CallFrame* callFrame, IPIntStackEntry* stackPointer, IPIntLocal* pl)
 {
     VM& vm = instance->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     RELEASE_ASSERT(!!throwScope.exception());
 
     Wasm::IPIntCallee* callee = IPINT_CALLEE(callFrame);
@@ -491,7 +491,7 @@ WASM_IPINT_EXTERN_CPP_DECL(retrieve_clear_and_push_exception_and_arguments, Call
     // We want to clear the exception here rather than in the catch prologue
     // JIT code because clearing it also entails clearing a bit in an Atomic
     // bit field in VMTraps.
-    throwScope.clearException();
+    (void)throwScope.tryClearException();
 
     WASM_RETURN_TWO(nullptr, nullptr);
 }
@@ -501,7 +501,7 @@ WASM_IPINT_EXTERN_CPP_DECL(throw_exception, CallFrame* callFrame, IPIntStackEntr
     VM& vm = instance->vm();
     SlowPathFrameTracer tracer(vm, callFrame);
 
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     RELEASE_ASSERT(!throwScope.exception());
 
     JSGlobalObject* globalObject = instance->globalObject();
@@ -526,7 +526,7 @@ WASM_IPINT_EXTERN_CPP_DECL(rethrow_exception, CallFrame* callFrame, IPIntStackEn
 
     JSGlobalObject* globalObject = instance->globalObject();
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Wasm::IPIntCallee* callee = IPINT_CALLEE(callFrame);
     RELEASE_ASSERT(tryDepth <= callee->rethrowSlots());
@@ -550,7 +550,7 @@ WASM_IPINT_EXTERN_CPP_DECL(throw_ref, CallFrame* callFrame, EncodedJSValue exnre
 
     JSGlobalObject* globalObject = instance->globalObject();
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* exception = jsSecureCast<JSWebAssemblyException*>(JSValue::decode(exnref));
     RELEASE_ASSERT(exception);

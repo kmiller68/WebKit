@@ -70,12 +70,12 @@ class ObjectInitializationScope;
 class PropertyDescriptor;
 class PropertyNameArray;
 class Structure;
-class ThrowScope;
+class ExceptionScope;
 class VM;
 struct HashTable;
 struct HashTableValue;
 
-JS_EXPORT_PRIVATE Exception* throwTypeError(JSGlobalObject*, ThrowScope&, const String&);
+JS_EXPORT_PRIVATE Exception* throwTypeError(JSGlobalObject*, ExceptionScope&, const String&);
 extern JS_EXPORT_PRIVATE const ASCIILiteral NonExtensibleObjectPropertyDefineError;
 extern JS_EXPORT_PRIVATE const ASCIILiteral ReadonlyPropertyWriteError;
 extern JS_EXPORT_PRIVATE const ASCIILiteral ReadonlyPropertyChangeError;

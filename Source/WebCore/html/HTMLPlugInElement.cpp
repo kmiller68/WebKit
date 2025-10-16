@@ -84,7 +84,7 @@
 #include "UserGestureIndicator.h"
 #include "VoidCallback.h"
 #include "Widget.h"
-#include <JavaScriptCore/CatchScope.h>
+#include <JavaScriptCore/ExceptionScope.h>
 #include <JavaScriptCore/JSGlobalObjectInlines.h>
 #include <wtf/TZoneMallocInlines.h>
 

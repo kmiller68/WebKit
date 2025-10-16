@@ -58,7 +58,7 @@ void ErrorConstructor::finishCreation(VM& vm, ErrorPrototype* errorPrototype)
 JSC_DEFINE_HOST_FUNCTION(constructErrorConstructor, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue message = callFrame->argument(0);
     JSValue options = callFrame->argument(1);
 
@@ -111,7 +111,7 @@ bool ErrorConstructor::deleteProperty(JSCell* cell, JSGlobalObject* globalObject
 JSC_DEFINE_HOST_FUNCTION(errorConstructorCaptureStackTrace, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!callFrame->argument(0).isObject()) {
         throwTypeError(globalObject, scope, "captureStackTrace expects the first argument to be an object"_s);

@@ -119,7 +119,7 @@ template<typename U>
 JSC::JSValue jsValueForDecodedArgumentValue(JSC::JSGlobalObject* globalObject, OptionSet<U>&& value)
 {    
     auto& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto result = jsValueForDecodedArgumentValue(globalObject, value.toRaw());
     RETURN_IF_EXCEPTION(scope, JSC::JSValue());
     result.getObject()->putDirect(vm, JSC::Identifier::fromString(vm, "isOptionSet"_s), JSC::jsBoolean(true));
@@ -152,7 +152,7 @@ std::optional<JSC::JSValue> putJSValueForDecodeArgumentInArray(JSC::JSGlobalObje
     if (!value)
         return std::nullopt;
 
-    auto scope = DECLARE_THROW_SCOPE(globalObject->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
     auto jsValue = jsValueForDecodedArgumentValue(globalObject, WTFMove(*value));
     RETURN_IF_EXCEPTION(scope, std::nullopt);
     if (jsValue.isEmpty()) {
@@ -173,7 +173,7 @@ std::optional<JSC::JSValue> putJSValueForDecodeArgumentInArray(JSC::JSGlobalObje
 template<typename T>
 static std::optional<JSC::JSValue> jsValueForDecodedArguments(JSC::JSGlobalObject* globalObject, IPC::Decoder& decoder)
 {
-    auto scope = DECLARE_THROW_SCOPE(globalObject->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
     auto* array = JSC::constructEmptyArray(globalObject, nullptr);
     RETURN_IF_EXCEPTION(scope, JSC::JSValue());
     T* dummyArguments = nullptr;

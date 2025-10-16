@@ -83,7 +83,7 @@ ASCIILiteral functionConstructorPrefix(FunctionConstructionMode functionConstruc
     return ASCIILiteral { };
 }
 
-static String stringifyFunction(JSGlobalObject* globalObject, const ArgList& args, const Identifier& functionName, FunctionConstructionMode functionConstructionMode, ThrowScope& scope, std::optional<int>& functionConstructorParametersEndPosition)
+static String stringifyFunction(JSGlobalObject* globalObject, const ArgList& args, const Identifier& functionName, FunctionConstructionMode functionConstructionMode, ExceptionScope& scope, std::optional<int>& functionConstructorParametersEndPosition)
 {
     ASCIILiteral prefix = functionConstructorPrefix(functionConstructionMode);
 
@@ -171,7 +171,7 @@ static String stringifyFunction(JSGlobalObject* globalObject, const ArgList& arg
 JSObject* constructFunction(JSGlobalObject* globalObject, const ArgList& args, const Identifier& functionName, const SourceOrigin& sourceOrigin, const String& sourceURL, SourceTaintedOrigin taintedOrigin, const TextPosition& position, FunctionConstructionMode functionConstructionMode, JSValue newTarget)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     std::optional<int> functionConstructorParametersEndPosition;
     auto code = stringifyFunction(globalObject, args, functionName, functionConstructionMode, scope, functionConstructorParametersEndPosition);
     EXCEPTION_ASSERT(!!scope.exception() == code.isNull());
@@ -200,7 +200,7 @@ JSObject* constructFunction(JSGlobalObject* globalObject, const ArgList& args, c
 
     if (!globalObject->evalEnabled()) [[unlikely]] {
         if (globalObject->trustedTypesEnforcement() != TrustedTypesEnforcement::EnforcedWithEvalEnabled) {
-            scope.clearException();
+            TRY_CLEAR_EXCEPTION(scope, nullptr);
             globalObject->globalObjectMethodTable()->reportViolationForUnsafeEval(globalObject, !code.isNull() ? WTFMove(code) : nullString());
             throwException(globalObject, scope, createEvalError(globalObject, globalObject->evalDisabledErrorMessage()));
             return nullptr;
@@ -216,7 +216,7 @@ JSObject* constructFunction(JSGlobalObject* globalObject, const ArgList& args, c
 JSObject* constructFunctionSkippingEvalEnabledCheck(JSGlobalObject* globalObject, String&& program, LexicallyScopedFeatures lexicallyScopedFeatures, const Identifier& functionName, const SourceOrigin& sourceOrigin, const String& sourceURL, SourceTaintedOrigin taintedOrigin, const TextPosition& position, int overrideLineNumber, std::optional<int> functionConstructorParametersEndPosition, FunctionConstructionMode functionConstructionMode, JSValue newTarget)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* exception = nullptr;
     FunctionExecutable* function = FunctionExecutable::fromGlobalCode(functionName, globalObject, WTFMove(program), sourceOrigin, taintedOrigin, sourceURL, position, lexicallyScopedFeatures, exception, overrideLineNumber, functionConstructorParametersEndPosition, functionConstructionMode);

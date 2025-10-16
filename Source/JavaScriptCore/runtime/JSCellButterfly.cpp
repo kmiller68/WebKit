@@ -70,7 +70,7 @@ static_assert(JSCellButterfly::offsetOfData() == sizeof(JSCellButterfly), "m_hea
 JSCellButterfly* JSCellButterfly::createFromClonedArguments(JSGlobalObject* globalObject, ClonedArguments* arguments)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned length = arguments->length(globalObject); // This must be side-effect free, and it is ensured by ClonedArguments::isIteratorProtocolFastAndNonObservable.
     unsigned vectorLength = arguments->getVectorLength();
@@ -120,7 +120,7 @@ template<typename Arguments>
 static ALWAYS_INLINE JSCellButterfly* createFromNonClonedArguments(JSGlobalObject* globalObject, Arguments* arguments)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned length = arguments->internalLength();
 
@@ -161,7 +161,7 @@ JSCellButterfly* JSCellButterfly::createFromScopedArguments(JSGlobalObject* glob
 JSCellButterfly* JSCellButterfly::createFromString(JSGlobalObject* globalObject, JSString* string)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto holder = string->view(globalObject);
     RETURN_IF_EXCEPTION(scope, { });

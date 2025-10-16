@@ -65,7 +65,7 @@ void WeakMapPrototype::finishCreation(VM& vm, JSGlobalObject* globalObject)
 ALWAYS_INLINE static JSWeakMap* getWeakMap(JSGlobalObject* globalObject, JSValue value)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!value.isObject()) [[unlikely]] {
         throwTypeError(globalObject, scope, "Called WeakMap function on non-object"_s);
@@ -115,7 +115,7 @@ JSC_DEFINE_HOST_FUNCTION(protoFuncWeakMapHas, (JSGlobalObject* globalObject, Cal
 JSC_DEFINE_HOST_FUNCTION(protoFuncWeakMapSet, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* map = getWeakMap(globalObject, callFrame->thisValue());
     EXCEPTION_ASSERT(!!scope.exception() == !map);
@@ -131,7 +131,7 @@ JSC_DEFINE_HOST_FUNCTION(protoFuncWeakMapSet, (JSGlobalObject* globalObject, Cal
 JSC_DEFINE_HOST_FUNCTION(protoFuncWeakMapGetOrInsert, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* map = getWeakMap(globalObject, callFrame->thisValue());
     EXCEPTION_ASSERT(!!scope.exception() == !map);
@@ -166,7 +166,7 @@ JSC_DEFINE_HOST_FUNCTION(protoFuncWeakMapGetOrInsert, (JSGlobalObject* globalObj
 JSC_DEFINE_HOST_FUNCTION(protoFuncWeakMapGetOrInsertComputed, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* map = getWeakMap(globalObject, callFrame->thisValue());
     EXCEPTION_ASSERT(!!scope.exception() == !map);

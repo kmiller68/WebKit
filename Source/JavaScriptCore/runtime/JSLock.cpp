@@ -195,8 +195,12 @@ void JSLock::willReleaseLock()
             });
 #endif
 
-            if (!m_lockDropDepth || useLegacyDrain)
+            if (!m_lockDropDepth || useLegacyDrain) {
+                auto scope = DECLARE_EXCEPTION_SCOPE(*protectedVM);
+                scope.noRethrow();
                 protectedVM->drainMicrotasks();
+                scope.assertNoExceptionExceptTermination();
+            }
 
             if (!protectedVM->topCallFrame)
                 protectedVM->clearLastException();

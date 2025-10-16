@@ -37,13 +37,13 @@
 #include "BuiltinNames.h"
 #include "Bytecodes.h"
 #include "CallLinkInfo.h"
-#include "CatchScope.h"
 #include "CheckpointOSRExitSideState.h"
 #include "CodeBlock.h"
 #include "Debugger.h"
 #include "DirectArguments.h"
 #include "DirectEvalCodeCache.h"
 #include "EvalCodeBlock.h"
+#include "ExceptionScope.h"
 #include "ExecutableBaseInlines.h"
 #include "FrameTracers.h"
 #include "GlobalObjectMethodTable.h"
@@ -118,7 +118,7 @@ JSValue eval(CallFrame* callFrame, JSValue thisValue, JSScope* callerScopeChain,
         return { };
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto clobberizeValidator = makeScopeExit([&] {
         vm.didEnterVM = true;
@@ -237,7 +237,7 @@ JSValue eval(CallFrame* callFrame, JSValue thisValue, JSScope* callerScopeChain,
 unsigned sizeOfVarargs(JSGlobalObject* globalObject, JSValue arguments, uint32_t firstVarArgOffset)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!arguments.isCell()) [[unlikely]] {
         if (arguments.isUndefinedOrNull())
@@ -288,7 +288,7 @@ unsigned sizeOfVarargs(JSGlobalObject* globalObject, JSValue arguments, uint32_t
 
 unsigned sizeFrameForForwardArguments(JSGlobalObject* globalObject, CallFrame* callFrame, VM& vm, unsigned numUsedStackSlots)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned length = callFrame->argumentCount();
     CallFrame* calleeFrame = calleeFrameForVarargs(callFrame, numUsedStackSlots, length + 1);
@@ -300,7 +300,7 @@ unsigned sizeFrameForForwardArguments(JSGlobalObject* globalObject, CallFrame* c
 
 unsigned sizeFrameForVarargs(JSGlobalObject* globalObject, CallFrame* callFrame, VM& vm, JSValue arguments, unsigned numUsedStackSlots, uint32_t firstVarArgOffset)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned length = sizeOfVarargs(globalObject, arguments, firstVarArgOffset);
     RETURN_IF_EXCEPTION(scope, 0);
@@ -324,7 +324,7 @@ void loadVarargs(JSGlobalObject* globalObject, JSValue* firstElementDest, JSValu
         return;
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSCell* cell = arguments.asCell();
 
     switch (cell->type()) {
@@ -923,7 +923,7 @@ WTF_ALLOW_UNSAFE_BUFFER_USAGE_END
             return;
 
         DeferTermination deferScope(vm);
-        auto catchScope = DECLARE_CATCH_SCOPE(vm);
+        auto catchScope = DECLARE_EXCEPTION_SCOPE(vm);
 
         SuspendExceptionScope scope(vm);
         if (callFrame->isNativeCalleeFrame()
@@ -952,13 +952,13 @@ WTF_ALLOW_UNSAFE_BUFFER_USAGE_END
 static void sanitizeRemoteFunctionException(VM& vm, JSRemoteFunction* remoteFunction, Exception* exception)
 {
     ASSERT(vm.traps().isDeferringTermination());
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     ASSERT(exception);
     ASSERT(!vm.isTerminationException(exception));
 
     JSGlobalObject* globalObject = remoteFunction->globalObject();
     JSValue exceptionValue = exception->value();
-    scope.clearException();
+    TRY_CLEAR_EXCEPTION(scope, void());
 
     // Avoid user-observable ToString()
     String exceptionString;
@@ -1001,7 +1001,6 @@ NEVER_INLINE CatchInfo Interpreter::unwind(VM& vm, CallFrame*& callFrame, Except
     std::optional<DeferTerminationForAWhile> deferScope;
     if (!vm.isTerminationException(exception))
         deferScope.emplace(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
 
     ASSERT(reinterpret_cast<void*>(callFrame) != vm.topEntryFrame);
     CodeBlock* codeBlock = callFrame->isNativeCalleeFrame() ? nullptr : callFrame->codeBlock();
@@ -1014,7 +1013,7 @@ NEVER_INLINE CatchInfo Interpreter::unwind(VM& vm, CallFrame*& callFrame, Except
     if (exceptionValue.isEmpty() || (exceptionValue.isCell() && !exceptionValue.asCell()))
         exceptionValue = jsNull();
 
-    EXCEPTION_ASSERT_UNUSED(scope, scope.exception());
+    ASSERT(vm.exceptionForInspection());
 
     // Calculate an exception handler vPC, unwinding call frames as necessary.
     CatchInfo catchInfo;
@@ -1025,7 +1024,6 @@ NEVER_INLINE CatchInfo Interpreter::unwind(VM& vm, CallFrame*& callFrame, Except
     if (seenRemoteFunction) {
         ASSERT(!vm.isTerminationException(exception));
         sanitizeRemoteFunctionException(vm, seenRemoteFunction, exception);
-        exception = scope.exception(); // clear m_needExceptionCheck
     }
 
     if (vm.hasCheckpointOSRSideState())
@@ -1074,7 +1072,7 @@ NEVER_INLINE JSValue Interpreter::checkVMEntryPermission()
 JSValue Interpreter::executeProgram(const SourceCode& source, JSGlobalObject*, JSObject* thisObj)
 {
     VM& vm = this->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     JSScope* scope = thisObj->globalObject()->globalScope();
     JSGlobalObject* globalObject = scope->globalObject();
     JSCallee* globalCallee = globalObject->globalCallee();
@@ -1287,7 +1285,7 @@ failedJSONP:
 
 JSValue Interpreter::executeBoundCall(VM& vm, JSBoundFunction* function, JSCell* context, const ArgList& args)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(function->boundArgsLength());
 
@@ -1317,7 +1315,7 @@ ALWAYS_INLINE JSValue Interpreter::executeCallImpl(VM& vm, JSObject* function, c
         vm.didEnterVM = true;
     });
 
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     scope.assertNoException();
 
@@ -1410,7 +1408,7 @@ JSValue Interpreter::executeCall(JSObject* function, const CallData& callData, J
 JSObject* Interpreter::executeConstruct(JSObject* constructor, const CallData& constructData, const ArgList& args, JSValue newTarget)
 {
     VM& vm = this->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto clobberizeValidator = makeScopeExit([&] {
         vm.didEnterVM = true;
@@ -1483,7 +1481,7 @@ JSObject* Interpreter::executeConstruct(JSObject* constructor, const CallData& c
 CodeBlock* Interpreter::prepareForCachedCall(CachedCall& cachedCall, JSFunction* function)
 {
     VM& vm = this->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     throwScope.assertNoException();
 
     // Compile the callee:
@@ -1502,7 +1500,7 @@ CodeBlock* Interpreter::prepareForCachedCall(CachedCall& cachedCall, JSFunction*
 JSValue Interpreter::executeEval(EvalExecutable* eval, JSValue thisValue, JSScope* scope)
 {
     VM& vm = this->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto clobberizeValidator = makeScopeExit([&] {
         vm.didEnterVM = true;
@@ -1710,7 +1708,7 @@ JSValue Interpreter::executeEval(EvalExecutable* eval, JSValue thisValue, JSScop
 JSValue Interpreter::executeModuleProgram(JSModuleRecord* record, ModuleProgramExecutable* executable, JSGlobalObject* lexicalGlobalObject, JSModuleEnvironment* scope, JSValue sentValue, JSValue resumeMode)
 {
     VM& vm = this->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto clobberizeValidator = makeScopeExit([&] {
         vm.didEnterVM = true;
@@ -1780,7 +1778,7 @@ NEVER_INLINE void Interpreter::debug(CallFrame* callFrame, DebugHookType debugHo
 {
     VM& vm = this->vm();
     DeferTermination deferScope(vm);
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (Options::debuggerTriggersBreakpointException()) [[unlikely]] {
         if (debugHookType == DidReachDebuggerStatement)

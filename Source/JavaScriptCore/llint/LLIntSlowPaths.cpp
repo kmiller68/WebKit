@@ -82,7 +82,7 @@ namespace JSC { namespace LLInt {
     VM& vm = codeBlock->vm(); \
     SlowPathFrameTracer tracer(vm, callFrame); \
     dataLogLnIf(LLINT_TRACING && Options::traceLLIntSlowPath(), "Calling slow path ", WTF_PRETTY_FUNCTION); \
-    auto throwScope = DECLARE_THROW_SCOPE(vm)
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm)
 
 #ifndef NDEBUG
 #define LLINT_SET_PC_FOR_STUBS() do { \
@@ -616,7 +616,7 @@ extern "C" UGPRPair SYSV_ABI llint_default_call(CallFrame* calleeFrame, CallLink
     VM& vm = owner->vm();
     NativeCallFrameTracer tracer(vm, calleeFrame);
     sanitizeStackForVM(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     calleeFrame->setCodeBlock(nullptr);
     void* callTarget = linkFor(vm, owner, calleeFrame, callLinkInfo);
     ensureStillAliveHere(owner);
@@ -631,7 +631,7 @@ extern "C" UGPRPair SYSV_ABI llint_virtual_call(CallFrame* calleeFrame, CallLink
     VM& vm = owner->vm();
     NativeCallFrameTracer tracer(vm, calleeFrame);
     sanitizeStackForVM(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSCell* calleeAsFunctionCellIgnored;
     calleeFrame->setCodeBlock(nullptr);
     void* callTarget = virtualForWithFunction(vm, owner, calleeFrame, callLinkInfo, calleeAsFunctionCellIgnored);
@@ -647,7 +647,7 @@ extern "C" UGPRPair SYSV_ABI llint_polymorphic_call(CallFrame* calleeFrame, Call
     VM& vm = owner->vm();
     NativeCallFrameTracer tracer(vm, calleeFrame);
     sanitizeStackForVM(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSCell* calleeAsFunctionCell;
     calleeFrame->setCodeBlock(nullptr);
     void* callTarget = virtualForWithFunction(vm, owner, calleeFrame, callLinkInfo, calleeAsFunctionCell);
@@ -901,7 +901,7 @@ static void setupGetByIdPrototypeCache(JSGlobalObject* globalObject, VM& vm, Cod
 static JSValue performLLIntGetByID(BytecodeIndex bytecodeIndex, CodeBlock* codeBlock, JSGlobalObject* globalObject, JSValue baseValue, const Identifier& ident, GetByIdModeMetadata& metadata)
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     PropertySlot slot(baseValue, PropertySlot::PropertySlot::InternalMethodType::Get);
 
     JSValue result = baseValue.get(globalObject, ident, slot);
@@ -1219,7 +1219,7 @@ LLINT_SLOW_PATH_DECL(slow_path_del_by_id)
 
 static ALWAYS_INLINE JSValue getByVal(VM& vm, JSGlobalObject* globalObject, CodeBlock* codeBlock, JSValue baseValue, JSValue subscript, OpGetByVal bytecode)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (baseValue.isCell() && subscript.isString()) [[likely]] {
         Structure& structure = *baseValue.asCell()->structure();
@@ -2058,7 +2058,7 @@ static UGPRPair handleHostCall(CallFrame* calleeFrame, JSValue callee, CodeSpeci
     CodeBlock* callerCodeBlock = callFrame->codeBlock();
     JSGlobalObject* globalObject = callerCodeBlock->globalObject();
     VM& vm = callerCodeBlock->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     calleeFrame->setCodeBlock(nullptr);
     calleeFrame->clearReturnPC();
@@ -2108,7 +2108,7 @@ static inline UGPRPair setUpCall(CallFrame* calleeFrame, CodeSpecializationKind 
     CodeBlock* callerCodeBlock = callFrame->codeBlock();
     JSGlobalObject* globalObject = callerCodeBlock->globalObject();
     VM& vm = callerCodeBlock->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     slowPathLogF("Performing call with recorded PC = %p\n", callFrame->currentVPC());
     
@@ -2474,7 +2474,7 @@ LLINT_SLOW_PATH_DECL(slow_path_retrieve_and_clear_exception_if_catchable)
     // We want to clear the exception here rather than in the catch prologue
     // JIT code because clearing it also entails clearing a bit in an Atomic
     // bit field in VMTraps.
-    throwScope.clearException();
+    throwScope.clearExceptionIncludingTermination();
     LLINT_RETURN_TWO(pc, exception);
 }
 
@@ -2529,7 +2529,7 @@ LLINT_SLOW_PATH_DECL(slow_path_out_of_line_jump_target)
     LLINT_END_IMPL();
 }
 
-static void throwArityCheckStackOverflowError(JSGlobalObject* globalObject, ThrowScope& scope)
+static void throwArityCheckStackOverflowError(JSGlobalObject* globalObject, ExceptionScope& scope)
 {
     JSObject* error = createStackOverflowError(globalObject);
     throwException(globalObject, scope, error);
@@ -2583,7 +2583,7 @@ LLINT_SLOW_PATH_DECL(slow_path_arityCheck)
 template<typename Opcode>
 static void handleVarargsCheckpoint(VM& vm, CallFrame* callFrame, JSGlobalObject* globalObject, const Opcode& bytecode, CheckpointOSRExitSideState& sideState)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     unsigned argumentCountIncludingThis = sideState.tmps[Opcode::argCountIncludingThis].asUInt32();
     unsigned firstVarArg = bytecode.m_firstVarArg;
 
@@ -2610,7 +2610,7 @@ static void handleVarargsCheckpoint(VM& vm, CallFrame* callFrame, JSGlobalObject
 
 static void handleIteratorOpenCheckpoint(VM& vm, CallFrame* callFrame, JSGlobalObject* globalObject, const OpIteratorOpen& bytecode)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue iterator = callFrame->uncheckedR(bytecode.m_iterator).jsValue();
     if (!iterator.isObject()) {
         throwVMTypeError(globalObject, scope, "Iterator result interface is not an object."_s);
@@ -2624,7 +2624,7 @@ static void handleIteratorOpenCheckpoint(VM& vm, CallFrame* callFrame, JSGlobalO
 
 static void handleIteratorNextCheckpoint(VM& vm, CallFrame* callFrame, JSGlobalObject* globalObject, const OpIteratorNext& bytecode, CheckpointOSRExitSideState& sideState)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     unsigned checkpointIndex = sideState.bytecodeIndex.checkpoint();
 
     auto iteratorResultObject = sideState.tmps[OpIteratorNext::nextResult];
@@ -2652,7 +2652,7 @@ static void handleIteratorNextCheckpoint(VM& vm, CallFrame* callFrame, JSGlobalO
 
 static void handleOpInstanceofCheckpoint(VM& vm, CallFrame* callFrame, JSGlobalObject* globalObject, const OpInstanceof& bytecode, CheckpointOSRExitSideState& sideState)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     unsigned checkpointIndex = sideState.bytecodeIndex.checkpoint();
     ASSERT(checkpointIndex != OpInstanceof::getHasInstance);
 
@@ -2680,7 +2680,7 @@ static void handleOpInstanceofCheckpoint(VM& vm, CallFrame* callFrame, JSGlobalO
     dst = jsBoolean(result);
 }
 
-static inline UGPRPair dispatchToNextInstructionDuringExit(ThrowScope& scope, CodeBlock* codeBlock, JSInstructionStream::Ref pc)
+static inline UGPRPair dispatchToNextInstructionDuringExit(ExceptionScope& scope, CodeBlock* codeBlock, JSInstructionStream::Ref pc)
 {
     if (scope.exception())
         return encodeResult(returnToThrow(scope.vm()), nullptr);
@@ -2836,7 +2836,7 @@ extern "C" UGPRPair SYSV_ABI llint_slow_path_checkpoint_osr_exit(CallFrame* call
 extern "C" UGPRPair SYSV_ABI llint_throw_stack_overflow_error(VM* vm, ProtoCallFrame* protoFrame)
 {
     CallFrame* callFrame = vm->topCallFrame;
-    auto scope = DECLARE_THROW_SCOPE(*vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(*vm);
     JSGlobalObject* globalObject = nullptr;
     if (callFrame)
         globalObject = callFrame->lexicalGlobalObject(*vm);

@@ -38,7 +38,7 @@ using namespace WebCore;
 namespace JSC {
 
 // https://webidl.spec.whatwg.org/#observable-array-exotic-object-set-the-length
-static bool observableArraySetLength(JSObservableArray* object, JSGlobalObject* lexicalGlobalObject, ThrowScope& scope, JSValue value)
+static bool observableArraySetLength(JSObservableArray* object, JSGlobalObject* lexicalGlobalObject, ExceptionScope& scope, JSValue value)
 {
     auto length = value.toUInt32(lexicalGlobalObject);
     RETURN_IF_EXCEPTION(scope, false);
@@ -81,7 +81,7 @@ void JSObservableArray::destroy(JSCell* cell)
 JSC_DEFINE_CUSTOM_GETTER(arrayLengthGetter, (JSGlobalObject* lexicalGlobalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObservableArray* thisObject = jsDynamicCast<JSObservableArray*>(JSValue::decode(thisValue));
     if (!thisObject)
@@ -137,7 +137,7 @@ bool JSObservableArray::getOwnPropertySlotByIndex(JSObject* object, JSGlobalObje
 bool JSObservableArray::put(JSCell* cell, JSGlobalObject* lexicalGlobalObject, PropertyName propertyName, JSValue value, PutPropertySlot& slot)
 {
     VM& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* thisObject = jsCast<JSObservableArray*>(cell);
     if (propertyName == vm.propertyNames->length)
@@ -163,7 +163,7 @@ bool JSObservableArray::putByIndex(JSCell* cell, JSGlobalObject* lexicalGlobalOb
 bool JSObservableArray::deleteProperty(JSCell* cell, JSGlobalObject* lexicalGlobalObject, PropertyName propertyName, DeletePropertySlot& slot)
 {
     VM& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (propertyName == vm.propertyNames->length)
         return false;
@@ -190,7 +190,7 @@ bool JSObservableArray::deletePropertyByIndex(JSCell* cell, JSGlobalObject*, uns
 bool JSObservableArray::defineOwnProperty(JSObject* object, JSGlobalObject* globalObject, PropertyName propertyName, const PropertyDescriptor& descriptor, bool throwException)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObservableArray* thisObject = jsCast<JSObservableArray*>(object);
     if (propertyName == vm.propertyNames->length) {

@@ -229,7 +229,7 @@ public:
     ALWAYS_INLINE static Storage* tryCreate(JSGlobalObject* globalObject, TableSize aliveEntryCount = 0, TableSize deletedEntryCount = 0, TableSize capacity = InitialCapacity)
     {
         VM& vm = getVM(globalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         ASSERT(!(capacity & (capacity - 1)));
 
         TableSize length = tableSize(capacity);
@@ -259,7 +259,7 @@ public:
     ALWAYS_INLINE static Storage* copyImpl(JSGlobalObject* globalObject, Storage& base, TableSize newCapacity)
     {
         VM& vm = getVM(globalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         TableSize baseCapacity = capacity(base);
         TableSize baseAliveEntryCount = aliveEntryCount(base);
@@ -322,7 +322,7 @@ public:
     ALWAYS_INLINE static Storage* rehash(JSGlobalObject* globalObject, HashTable* owner, Storage& base, TableSize newCapacity)
     {
         VM& vm = getVM(globalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         Storage* copy = copyImpl<UpdateDeletedEntries::Yes>(globalObject, base, newCapacity);
         RETURN_IF_EXCEPTION(scope, nullptr);
@@ -336,7 +336,7 @@ public:
     ALWAYS_INLINE static void clear(JSGlobalObject* globalObject, HashTable* owner, Storage& base)
     {
         VM& vm = getVM(globalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         Storage* next = tryCreate(globalObject);
         RETURN_IF_EXCEPTION(scope, void());
@@ -358,7 +358,7 @@ public:
     ALWAYS_INLINE static FindResult find(JSGlobalObject* globalObject, Storage& storage, JSValue key)
     {
         VM& vm = getVM(globalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         ASSERT(!isObsolete(storage));
 
         if (!aliveEntryCount(storage))
@@ -414,7 +414,7 @@ public:
     ALWAYS_INLINE static void addImpl(JSGlobalObject* globalObject, HashTable* owner, Storage& base, JSValue key, JSValue value, const FindKeyFunctor& findKeyFunctor)
     {
         VM& vm = getVM(globalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         ASSERT(!isObsolete(base));
 
         auto result = findKeyFunctor();
@@ -432,7 +432,7 @@ public:
     ALWAYS_INLINE static void addImpl(JSGlobalObject* globalObject, HashTable* owner, Storage& base, JSValue key, JSValue value, FindResult& result)
     {
         VM& vm = getVM(globalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         ASSERT(!isObsolete(base));
 
         ASSERT(!isValidTableIndex(result.entryKeyIndex));
@@ -494,7 +494,7 @@ public:
     ALWAYS_INLINE static bool removeImpl(JSGlobalObject* globalObject, HashTable* owner, Storage& storage, const FindKeyFunctor& findKeyFunctor)
     {
         VM& vm = getVM(globalObject);
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         ASSERT(!isObsolete(storage));
 
         auto result = findKeyFunctor();

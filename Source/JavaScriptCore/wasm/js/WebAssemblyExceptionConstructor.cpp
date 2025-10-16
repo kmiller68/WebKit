@@ -46,7 +46,7 @@ static JSC_DECLARE_HOST_FUNCTION(callJSWebAssemblyException);
 JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyException, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     auto& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue tagValue = callFrame->argument(0);
     JSValue tagParameters = callFrame->argument(1);
 
@@ -90,7 +90,7 @@ JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyException, (JSGlobalObject* globa
 JSC_DEFINE_HOST_FUNCTION(callJSWebAssemblyException, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "WebAssembly.Exception"_s));
 }
 

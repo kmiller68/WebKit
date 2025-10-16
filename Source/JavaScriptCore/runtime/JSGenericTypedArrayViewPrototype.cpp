@@ -40,7 +40,7 @@ namespace JSC {
 JSC_DEFINE_HOST_FUNCTION(uint8ArrayPrototypeSetFromBase64, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSUint8Array* uint8Array = jsDynamicCast<JSUint8Array*>(callFrame->thisValue());
     if (!uint8Array) [[unlikely]]
@@ -115,7 +115,7 @@ JSC_DEFINE_HOST_FUNCTION(uint8ArrayPrototypeSetFromBase64, (JSGlobalObject* glob
 JSC_DEFINE_HOST_FUNCTION(uint8ArrayPrototypeSetFromHex, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSUint8Array* uint8Array = jsDynamicCast<JSUint8Array*>(callFrame->thisValue());
     if (!uint8Array) [[unlikely]]
@@ -158,7 +158,7 @@ JSC_DEFINE_HOST_FUNCTION(uint8ArrayPrototypeSetFromHex, (JSGlobalObject* globalO
 JSC_DEFINE_HOST_FUNCTION(uint8ArrayPrototypeToBase64, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSUint8Array* uint8Array = jsDynamicCast<JSUint8Array*>(callFrame->thisValue());
     if (!uint8Array) [[unlikely]]
@@ -211,7 +211,7 @@ JSC_DEFINE_HOST_FUNCTION(uint8ArrayPrototypeToBase64, (JSGlobalObject* globalObj
 JSC_DEFINE_HOST_FUNCTION(uint8ArrayPrototypeToHex, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSUint8Array* uint8Array = jsDynamicCast<JSUint8Array*>(callFrame->thisValue());
     if (!uint8Array) [[unlikely]]

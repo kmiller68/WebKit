@@ -189,7 +189,7 @@ inline JSArrayBufferView* validateTypedArray(JSGlobalObject* globalObject, JSArr
 {
     // https://tc39.es/ecma262/#sec-validatetypedarray
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!isTypedView(typedArray->type())) [[unlikely]] {
         throwTypeError(globalObject, scope, "Argument needs to be a typed array."_s);
@@ -207,7 +207,7 @@ inline JSArrayBufferView* validateTypedArray(JSGlobalObject* globalObject, JSArr
 inline JSArrayBufferView* validateTypedArray(JSGlobalObject* globalObject, JSValue typedArrayValue)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!typedArrayValue.isCell()) [[unlikely]] {
         throwTypeError(globalObject, scope, "Argument needs to be a typed array."_s);

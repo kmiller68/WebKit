@@ -89,7 +89,7 @@ JSValue toJSNewlyCreated(JSGlobalObject*, JSDOMGlobalObject* globalObject, Ref<E
 static JSValue getElementsArrayAttribute(JSGlobalObject& lexicalGlobalObject, const JSElement& thisObject, const QualifiedName& attributeName)
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* cachedObject = nullptr;
     JSValue cachedObjectValue = thisObject.getDirect(vm, builtinNames(vm).cachedAttrAssociatedElementsPrivateName());

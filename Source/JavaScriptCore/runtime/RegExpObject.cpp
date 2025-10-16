@@ -90,7 +90,7 @@ void RegExpObject::getOwnSpecialPropertyNames(JSObject*, JSGlobalObject* globalO
 bool RegExpObject::defineOwnProperty(JSObject* object, JSGlobalObject* globalObject, PropertyName propertyName, const PropertyDescriptor& descriptor, bool shouldThrow)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (propertyName == vm.propertyNames->lastIndex) {
         RegExpObject* regExp = jsCast<RegExpObject*>(object);
@@ -136,7 +136,7 @@ JSC_DEFINE_CUSTOM_SETTER(regExpObjectSetLastIndexSloppy, (JSGlobalObject* global
 bool RegExpObject::put(JSCell* cell, JSGlobalObject* globalObject, PropertyName propertyName, JSValue value, PutPropertySlot& slot)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     RegExpObject* thisObject = jsCast<RegExpObject*>(cell);
 
     if (propertyName == vm.propertyNames->lastIndex) {
@@ -170,7 +170,7 @@ MatchResult RegExpObject::match(JSGlobalObject* globalObject, JSString* string)
 JSValue RegExpObject::matchGlobal(JSGlobalObject* globalObject, JSString* string)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     RegExp* regExp = this->regExp();
 
     ASSERT(regExp->global());

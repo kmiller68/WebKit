@@ -74,7 +74,7 @@ JSObject* Symbol::toObject(JSGlobalObject* globalObject) const
 double Symbol::toNumber(JSGlobalObject* globalObject) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     throwTypeError(globalObject, scope, "Cannot convert a symbol to a number"_s);
     return 0.0;
 }

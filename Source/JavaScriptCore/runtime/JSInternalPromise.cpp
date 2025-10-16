@@ -62,7 +62,7 @@ JSInternalPromise* JSInternalPromise::then(JSGlobalObject* globalObject, JSFunct
     return jsDynamicCast<JSInternalPromise*>(JSPromise::then(globalObject, onFulfilled, onRejected));
 }
 
-JSInternalPromise* JSInternalPromise::rejectWithCaughtException(JSGlobalObject* globalObject, ThrowScope& scope)
+JSInternalPromise* JSInternalPromise::rejectWithCaughtException(JSGlobalObject* globalObject, ExceptionScope& scope)
 {
     return jsCast<JSInternalPromise*>(JSPromise::rejectWithCaughtException(globalObject, scope));
 }

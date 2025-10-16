@@ -82,7 +82,7 @@ ALWAYS_INLINE bool jsTypeofIsFunction(JSGlobalObject* globalObject, JSValue valu
 ALWAYS_INLINE JSString* jsString(JSGlobalObject* globalObject, const String& u1, JSString* s2)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned length1 = u1.length();
     if (!length1)
@@ -118,7 +118,7 @@ ALWAYS_INLINE JSString* jsString(JSGlobalObject* globalObject, const String& u1,
 ALWAYS_INLINE JSString* jsString(JSGlobalObject* globalObject, JSString* s1, const String& u2)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned length1 = s1->length();
     if (!length1)
@@ -151,7 +151,7 @@ ALWAYS_INLINE JSString* jsString(JSGlobalObject* globalObject, JSString* s1, con
 ALWAYS_INLINE JSString* jsString(JSGlobalObject* globalObject, JSString* s1, JSString* s2)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned length1 = s1 ? s1->length() : 0;
     if (!length1)
@@ -171,7 +171,7 @@ ALWAYS_INLINE JSString* jsString(JSGlobalObject* globalObject, JSString* s1, JSS
 ALWAYS_INLINE JSString* jsString(JSGlobalObject* globalObject, JSString* s1, JSString* s2, JSString* s3)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned length1 = s1 ? s1->length() : 0;
     if (!length1)
@@ -197,7 +197,7 @@ ALWAYS_INLINE JSString* jsString(JSGlobalObject* globalObject, JSString* s1, JSS
 ALWAYS_INLINE JSString* jsString(JSGlobalObject* globalObject, const String& u1, const String& u2)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned length1 = u1.length();
     if (!length1)
@@ -227,7 +227,7 @@ ALWAYS_INLINE JSString* jsString(JSGlobalObject* globalObject, const String& u1,
 ALWAYS_INLINE JSString* jsString(JSGlobalObject* globalObject, const String& u1, const String& u2, const String& u3)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned length1 = u1.length();
     unsigned length2 = u2.length();
@@ -267,7 +267,7 @@ ALWAYS_INLINE JSString* jsString(JSGlobalObject* globalObject, const String& u1,
 ALWAYS_INLINE JSValue jsStringFromRegisterArray(JSGlobalObject* globalObject, Register* strings, unsigned count)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSRopeString::RopeBuilder<RecordOverflow> ropeBuilder(vm);
 
     for (unsigned i = 0; i < count; ++i) {
@@ -303,7 +303,7 @@ ALWAYS_INLINE JSBigInt::ComparisonResult compareBigInt(JSValue left, JSValue rig
 ALWAYS_INLINE JSBigInt::ComparisonResult compareBigIntToOtherPrimitive(JSGlobalObject* globalObject, JSBigInt* v1, JSValue primValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(primValue.isPrimitive());
     ASSERT(!primValue.isBigInt());
@@ -334,7 +334,7 @@ ALWAYS_INLINE JSBigInt::ComparisonResult compareBigIntToOtherPrimitive(JSGlobalO
 ALWAYS_INLINE JSBigInt::ComparisonResult compareBigInt32ToOtherPrimitive(JSGlobalObject* globalObject, int32_t v1, JSValue primValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(primValue.isPrimitive());
     ASSERT(!primValue.isBigInt());
@@ -388,7 +388,7 @@ ALWAYS_INLINE bool bigIntCompare(JSGlobalObject* globalObject, JSValue v1, JSVal
     ASSERT(v1.isPrimitive() && v2.isPrimitive());
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (v1.isBigInt() && v2.isBigInt())
         return bigIntCompareResult(compareBigInt(v1, v2), comparisonMode);
@@ -427,7 +427,7 @@ ALWAYS_INLINE bool bigIntCompare(JSGlobalObject* globalObject, JSValue v1, JSVal
 ALWAYS_INLINE bool toPrimitiveNumeric(JSGlobalObject* globalObject, JSValue v, JSValue& p, double& n)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     
     p = v.toPrimitive(globalObject, PreferNumber);
     RETURN_IF_EXCEPTION(scope, false);
@@ -446,7 +446,7 @@ template<bool leftFirst>
 ALWAYS_INLINE bool jsLess(JSGlobalObject* globalObject, JSValue v1, JSValue v2)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (v1.isInt32() && v2.isInt32())
         return v1.asInt32() < v2.asInt32();
@@ -496,7 +496,7 @@ template<bool leftFirst>
 ALWAYS_INLINE bool jsLessEq(JSGlobalObject* globalObject, JSValue v1, JSValue v2)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (v1.isInt32() && v2.isInt32())
         return v1.asInt32() <= v2.asInt32();
@@ -551,7 +551,7 @@ ALWAYS_INLINE bool jsLessEq(JSGlobalObject* globalObject, JSValue v1, JSValue v2
 ALWAYS_INLINE JSValue jsAddNonNumber(JSGlobalObject* globalObject, JSValue v1, JSValue v2)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     ASSERT(!v1.isNumber() || !v2.isNumber());
 
     if (v1.isString() && !v2.isObject()) [[likely]] {
@@ -578,7 +578,7 @@ template<typename DoubleOperation, typename BigIntOp>
 ALWAYS_INLINE JSValue arithmeticBinaryOp(JSGlobalObject* globalObject, JSValue v1, JSValue v2, DoubleOperation&& doubleOp, BigIntOp&& bigIntOp, ASCIILiteral errorMessage)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue leftNumeric = v1.toNumeric(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
@@ -676,7 +676,7 @@ ALWAYS_INLINE JSValue jsPow(JSGlobalObject* globalObject, JSValue v1, JSValue v2
 ALWAYS_INLINE JSValue jsInc(JSGlobalObject* globalObject, JSValue v)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto operandNumeric = v.toNumeric(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
@@ -696,7 +696,7 @@ ALWAYS_INLINE JSValue jsInc(JSGlobalObject* globalObject, JSValue v)
 ALWAYS_INLINE JSValue jsDec(JSGlobalObject* globalObject, JSValue v)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto operandNumeric = v.toNumeric(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
@@ -716,7 +716,7 @@ ALWAYS_INLINE JSValue jsDec(JSGlobalObject* globalObject, JSValue v)
 ALWAYS_INLINE JSValue jsBitwiseNot(JSGlobalObject* globalObject, JSValue v)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto operandNumeric = v.toBigIntOrInt32(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
@@ -737,7 +737,7 @@ template <bool isLeft>
 ALWAYS_INLINE JSValue shift(JSGlobalObject* globalObject, JSValue v1, JSValue v2)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto leftNumeric = v1.toBigIntOrInt32(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
@@ -801,7 +801,7 @@ ALWAYS_INLINE JSValue jsRShift(JSGlobalObject* globalObject, JSValue v1, JSValue
 ALWAYS_INLINE JSValue jsURShift(JSGlobalObject* globalObject, JSValue left, JSValue right)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     std::optional<uint32_t> leftUint32 = left.toUInt32AfterToNumeric(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
@@ -820,7 +820,7 @@ template<typename Int32Operation, typename BigIntOp>
 ALWAYS_INLINE JSValue bitwiseBinaryOp(JSGlobalObject* globalObject, JSValue v1, JSValue v2, Int32Operation&& int32Op, BigIntOp&& bigIntOp, ASCIILiteral errorMessage)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto leftNumeric = v1.toBigIntOrInt32(globalObject);
     RETURN_IF_EXCEPTION(scope, { });

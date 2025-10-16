@@ -56,14 +56,14 @@ SetConstructor::SetConstructor(VM& vm, Structure* structure)
 JSC_DEFINE_HOST_FUNCTION(callSet, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "Set"_s));
 }
 
 JSC_DEFINE_HOST_FUNCTION(constructSet, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* newTarget = asObject(callFrame->newTarget());
     Structure* setStructure = JSC_GET_DERIVED_STRUCTURE(vm, setStructure, newTarget, callFrame->jsCallee());
@@ -156,7 +156,7 @@ JSC_DEFINE_HOST_FUNCTION(setPrivateFuncSetIterationEntryKey, (JSGlobalObject* gl
 JSC_DEFINE_HOST_FUNCTION(setPrivateFuncClone, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(jsDynamicCast<JSSet*>(callFrame->argument(0)));
     JSSet* set = jsCast<JSSet*>(callFrame->uncheckedArgument(0));

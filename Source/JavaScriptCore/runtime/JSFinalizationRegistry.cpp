@@ -165,7 +165,7 @@ void JSFinalizationRegistry::finalizeUnconditionally(VM& vm, CollectionScope)
 void JSFinalizationRegistry::runFinalizationCleanup(JSGlobalObject* globalObject)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     while (JSValue value = takeDeadHoldingsValue()) {
         MarkedArgumentBuffer args;

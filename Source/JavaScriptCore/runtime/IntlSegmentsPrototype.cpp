@@ -77,7 +77,7 @@ void IntlSegmentsPrototype::finishCreation(VM& vm, JSGlobalObject* globalObject)
 JSC_DEFINE_HOST_FUNCTION(intlSegmentsPrototypeFuncContaining, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* segments = jsDynamicCast<IntlSegments*>(callFrame->thisValue());
     if (!segments) [[unlikely]]
@@ -90,7 +90,7 @@ JSC_DEFINE_HOST_FUNCTION(intlSegmentsPrototypeFuncContaining, (JSGlobalObject* g
 JSC_DEFINE_HOST_FUNCTION(intlSegmentsPrototypeFuncIterator, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* segments = jsDynamicCast<IntlSegments*>(callFrame->thisValue());
     if (!segments) [[unlikely]]

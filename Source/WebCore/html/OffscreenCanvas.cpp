@@ -198,7 +198,7 @@ ExceptionOr<std::optional<OffscreenRenderingContext>> OffscreenCanvas::getContex
 
     if (contextType == RenderingContextType::_2d) {
         if (!m_context) {
-            auto scope = DECLARE_THROW_SCOPE(state.vm());
+            auto scope = DECLARE_EXCEPTION_SCOPE(state.vm());
 
             auto settings = convert<IDLDictionary<CanvasRenderingContext2DSettings>>(state, arguments.isEmpty() ? JSC::jsUndefined() : (arguments[0].isObject() ? arguments[0].get() : JSC::jsNull()));
             if (settings.hasException(scope)) [[unlikely]]
@@ -212,7 +212,7 @@ ExceptionOr<std::optional<OffscreenRenderingContext>> OffscreenCanvas::getContex
     }
     if (contextType == RenderingContextType::Bitmaprenderer) {
         if (!m_context) {
-            auto scope = DECLARE_THROW_SCOPE(state.vm());
+            auto scope = DECLARE_EXCEPTION_SCOPE(state.vm());
 
             auto settings = convert<IDLDictionary<ImageBitmapRenderingContextSettings>>(state, arguments.isEmpty() ? JSC::jsUndefined() : (arguments[0].isObject() ? arguments[0].get() : JSC::jsNull()));
             if (settings.hasException(scope)) [[unlikely]]
@@ -228,7 +228,7 @@ ExceptionOr<std::optional<OffscreenRenderingContext>> OffscreenCanvas::getContex
     if (contextType == RenderingContextType::Webgpu) {
 #if HAVE(WEBGPU_IMPLEMENTATION)
         if (!m_context) {
-            auto scope = DECLARE_THROW_SCOPE(state.vm());
+            auto scope = DECLARE_EXCEPTION_SCOPE(state.vm());
             RETURN_IF_EXCEPTION(scope, Exception { ExceptionCode::ExistingExceptionError });
             Ref scriptExecutionContext = *this->scriptExecutionContext();
             if (RefPtr globalScope = dynamicDowncast<WorkerGlobalScope>(scriptExecutionContext)) {
@@ -250,7 +250,7 @@ ExceptionOr<std::optional<OffscreenRenderingContext>> OffscreenCanvas::getContex
     if (contextType == RenderingContextType::Webgl || contextType == RenderingContextType::Webgl2) {
         auto webGLVersion = contextType == RenderingContextType::Webgl ? WebGLVersion::WebGL1 : WebGLVersion::WebGL2;
         if (!m_context) {
-            auto scope = DECLARE_THROW_SCOPE(state.vm());
+            auto scope = DECLARE_EXCEPTION_SCOPE(state.vm());
 
             auto attributes = convert<IDLDictionary<WebGLContextAttributes>>(state, arguments.isEmpty() ? JSC::jsUndefined() : (arguments[0].isObject() ? arguments[0].get() : JSC::jsNull()));
             if (attributes.hasException(scope)) [[unlikely]]

@@ -1859,6 +1859,11 @@ if (ARM64E or ARM64) and ADDRESS64
             frameForCalleeSaveVerification()
         end
         functionPrologue()
+        if ASSERT_ENABLED
+            btbz VM::m_executionForbidden[a1], .ok
+            break
+        .ok:
+        end
         pushCalleeSaves()
         vmEntryRecord(cfr, sp)
         move 0, t9

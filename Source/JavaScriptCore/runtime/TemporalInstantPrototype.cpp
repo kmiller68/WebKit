@@ -106,7 +106,7 @@ static constexpr std::initializer_list<TemporalUnit> disallowedAdditionUnits = {
 JSC_DEFINE_HOST_FUNCTION(temporalInstantPrototypeFuncAdd, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     TemporalInstant* instant = jsDynamicCast<TemporalInstant*>(callFrame->thisValue());
     if (!instant)
@@ -127,7 +127,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalInstantPrototypeFuncAdd, (JSGlobalObject* globa
 JSC_DEFINE_HOST_FUNCTION(temporalInstantPrototypeFuncSubtract, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     TemporalInstant* instant = jsDynamicCast<TemporalInstant*>(callFrame->thisValue());
     if (!instant)
@@ -148,7 +148,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalInstantPrototypeFuncSubtract, (JSGlobalObject* 
 JSC_DEFINE_HOST_FUNCTION(temporalInstantPrototypeFuncUntil, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     TemporalInstant* instant = jsDynamicCast<TemporalInstant*>(callFrame->thisValue());
     if (!instant)
@@ -167,7 +167,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalInstantPrototypeFuncUntil, (JSGlobalObject* glo
 JSC_DEFINE_HOST_FUNCTION(temporalInstantPrototypeFuncSince, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     TemporalInstant* instant = jsDynamicCast<TemporalInstant*>(callFrame->thisValue());
     if (!instant)
@@ -186,7 +186,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalInstantPrototypeFuncSince, (JSGlobalObject* glo
 JSC_DEFINE_HOST_FUNCTION(temporalInstantPrototypeFuncRound, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     TemporalInstant* instant = jsDynamicCast<TemporalInstant*>(callFrame->thisValue());
     if (!instant)
@@ -205,7 +205,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalInstantPrototypeFuncRound, (JSGlobalObject* glo
 JSC_DEFINE_HOST_FUNCTION(temporalInstantPrototypeFuncEquals, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     TemporalInstant* instant = jsDynamicCast<TemporalInstant*>(callFrame->thisValue());
     if (!instant)
@@ -222,7 +222,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalInstantPrototypeFuncEquals, (JSGlobalObject* gl
 JSC_DEFINE_HOST_FUNCTION(temporalInstantPrototypeFuncToString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     TemporalInstant* instant = jsDynamicCast<TemporalInstant*>(callFrame->thisValue());
     if (!instant)
@@ -234,7 +234,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalInstantPrototypeFuncToString, (JSGlobalObject* 
 JSC_DEFINE_HOST_FUNCTION(temporalInstantPrototypeFuncToJSON, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     TemporalInstant* instant = jsDynamicCast<TemporalInstant*>(callFrame->thisValue());
     if (!instant)
@@ -247,7 +247,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalInstantPrototypeFuncToJSON, (JSGlobalObject* gl
 JSC_DEFINE_HOST_FUNCTION(temporalInstantPrototypeFuncToLocaleString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     TemporalInstant* instant = jsDynamicCast<TemporalInstant*>(callFrame->thisValue());
     if (!instant)
@@ -266,7 +266,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalInstantPrototypeFuncToLocaleString, (JSGlobalOb
 JSC_DEFINE_HOST_FUNCTION(temporalInstantPrototypeFuncValueOf, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     return throwVMTypeError(globalObject, scope, "Temporal.Instant.prototype.valueOf must not be called. To compare Instant values, use Temporal.Instant.compare"_s);
 }
@@ -274,7 +274,7 @@ JSC_DEFINE_HOST_FUNCTION(temporalInstantPrototypeFuncValueOf, (JSGlobalObject* g
 JSC_DEFINE_CUSTOM_GETTER(temporalInstantPrototypeGetterEpochMilliseconds, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     TemporalInstant* instant = jsDynamicCast<TemporalInstant*>(JSValue::decode(thisValue));
     if (!instant)
@@ -286,7 +286,7 @@ JSC_DEFINE_CUSTOM_GETTER(temporalInstantPrototypeGetterEpochMilliseconds, (JSGlo
 JSC_DEFINE_CUSTOM_GETTER(temporalInstantPrototypeGetterEpochNanoseconds, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     TemporalInstant* instant = jsDynamicCast<TemporalInstant*>(JSValue::decode(thisValue));
     if (!instant)

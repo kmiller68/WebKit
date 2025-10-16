@@ -55,25 +55,21 @@ QueuedTaskResult DebuggableMicrotaskDispatcher::run(QueuedTask& task)
 {
     auto* globalObject = task.globalObject();
     VM& vm = globalObject->vm();
-    auto catchScope = DECLARE_CATCH_SCOPE(vm);
+    auto catchScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto identifier = task.identifier();
 
     if (auto* debugger = globalObject->debugger(); debugger && identifier) [[unlikely]] {
         DeferTerminationForAWhile deferTerminationForAWhile(vm);
         debugger->willRunMicrotask(globalObject, identifier.value());
-        if (!catchScope.clearExceptionExceptTermination()) [[unlikely]]
-            return QueuedTask::Result::Executed;
+        TRY_CLEAR_EXCEPTION(catchScope, QueuedTask::Result::Executed);
     }
 
     runInternalMicrotask(globalObject, task.job(), task.arguments());
-    if (!catchScope.clearExceptionExceptTermination()) [[unlikely]]
-        return QueuedTask::Result::Executed;
-
+    TRY_CLEAR_EXCEPTION(catchScope, QueuedTask::Result::Executed);
     if (auto* debugger = globalObject->debugger(); debugger && identifier) [[unlikely]] {
         DeferTerminationForAWhile deferTerminationForAWhile(vm);
         debugger->didRunMicrotask(globalObject, identifier.value());
-        if (!catchScope.clearExceptionExceptTermination()) [[unlikely]]
-            return QueuedTask::Result::Executed;
+        TRY_CLEAR_EXCEPTION(catchScope, QueuedTask::Result::Executed);
     }
 
     return QueuedTask::Result::Executed;

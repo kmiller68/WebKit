@@ -77,14 +77,14 @@ DisposableStackConstructor::DisposableStackConstructor(VM& vm, Structure* struct
 JSC_DEFINE_HOST_FUNCTION(callDisposableStack, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "DisposableStack"_s));
 }
 
 JSC_DEFINE_HOST_FUNCTION(constructDisposableStack, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* newTarget = asObject(callFrame->newTarget());
     Structure* disposableStackStructure = JSC_GET_DERIVED_STRUCTURE(vm, disposableStackStructure, newTarget, callFrame->jsCallee());

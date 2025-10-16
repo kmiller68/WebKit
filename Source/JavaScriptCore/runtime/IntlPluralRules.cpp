@@ -89,7 +89,7 @@ Vector<String> IntlPluralRules::localeData(const String&, RelevantExtensionKey)
 void IntlPluralRules::initializePluralRules(JSGlobalObject* globalObject, JSValue locales, JSValue optionsValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Vector<String> requestedLocales = canonicalizeLocaleList(globalObject, locales);
     RETURN_IF_EXCEPTION(scope, void());
@@ -154,7 +154,7 @@ JSObject* IntlPluralRules::resolvedOptions(JSGlobalObject* globalObject) const
     ASSERT(m_pluralRules);
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* options = constructEmptyObject(globalObject);
     options->putDirect(vm, vm.propertyNames->locale, jsNontrivialString(vm, m_locale));
@@ -227,7 +227,7 @@ JSValue IntlPluralRules::select(JSGlobalObject* globalObject, double value) cons
     ASSERT(m_pluralRules);
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!std::isfinite(value))
         return jsNontrivialString(vm, "other"_s);
@@ -252,7 +252,7 @@ JSValue IntlPluralRules::selectRange(JSGlobalObject* globalObject, double start,
     ASSERT(m_numberRangeFormatter);
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (std::isnan(start) || std::isnan(end))
         return throwRangeError(globalObject, scope, "Passed numbers are out of range"_s);

@@ -179,7 +179,7 @@ JSValue JSTestDefaultToJSONInherit::getConstructor(VM& vm, const JSGlobalObject*
 JSC_DEFINE_CUSTOM_GETTER(jsTestDefaultToJSONInheritConstructor, (JSGlobalObject* lexicalGlobalObject, EncodedJSValue thisValue, PropertyName))
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* prototype = jsDynamicCast<JSTestDefaultToJSONInheritPrototype*>(JSValue::decode(thisValue));
     if (!prototype) [[unlikely]]
         return throwVMTypeError(lexicalGlobalObject, throwScope);
@@ -189,7 +189,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestDefaultToJSONInheritConstructor, (JSGlobalObject*
 static inline JSValue jsTestDefaultToJSONInherit_inheritLongAttributeGetter(JSGlobalObject& lexicalGlobalObject, JSTestDefaultToJSONInherit& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLLong>(lexicalGlobalObject, throwScope, impl.inheritLongAttribute())));
 }
@@ -203,7 +203,7 @@ static inline bool setJSTestDefaultToJSONInherit_inheritLongAttributeSetter(JSGl
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     auto nativeValueConversionResult = convert<IDLLong>(lexicalGlobalObject, value);
     if (nativeValueConversionResult.hasException(throwScope)) [[unlikely]]
@@ -222,7 +222,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestDefaultToJSONInherit_inheritLongAttribute, (JS
 static inline EncodedJSValue jsTestDefaultToJSONInheritPrototypeFunction_toJSONBody(JSGlobalObject* lexicalGlobalObject, CallFrame*, JSTestDefaultToJSONInherit* castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = castedThis->wrapped();
     auto* result = constructEmptyObject(lexicalGlobalObject);

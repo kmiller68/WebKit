@@ -49,8 +49,15 @@ JSValueRef JSEvaluateScriptInternal(const JSLockHolder&, JSContextRef ctx, JSObj
 
     // evaluate sets "this" to the global object if it is NULL
     JSGlobalObject* globalObject = toJS(ctx);
+    // This is called by API clients we don't know what they're going to do.
+    auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
+    scope.noRethrow();
     NakedPtr<Exception> evaluationException;
     JSValue returnValue = profiledEvaluate(globalObject, ProfilingReason::API, source, jsThisObject, evaluationException);
+
+    // FIXME: We should not allow our API clients to reenter the VM after we've thrown a termination exception.
+    scope.assertNoExceptionExceptTermination();
+    scope.clearExceptionIncludingTermination();
 
     if (evaluationException) {
         if (exception)

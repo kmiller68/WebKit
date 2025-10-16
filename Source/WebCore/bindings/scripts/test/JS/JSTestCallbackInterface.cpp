@@ -96,7 +96,7 @@ template<> ASCIILiteral expectedEnumerationValues<TestCallbackInterface::Enum>()
 template<> ConversionResult<IDLDictionary<TestCallbackInterface::Dictionary>> convertDictionary<TestCallbackInterface::Dictionary>(JSGlobalObject& lexicalGlobalObject, JSValue value)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     bool isNullOrUndefined = value.isUndefinedOrNull();
     auto* object = isNullOrUndefined ? nullptr : value.getObject();
     if (!isNullOrUndefined && !object) [[unlikely]] {
@@ -237,7 +237,7 @@ CallbackResult<typename IDLUndefined::CallbackReturnType> JSTestCallbackInterfac
     NakedPtr<JSC::Exception> returnedException;
     m_data->invokeCallback(thisValue, args, JSCallbackData::CallbackType::Object, Identifier::fromString(vm, "callbackWithNoParam"_s), returnedException);
     if (returnedException) {
-        auto throwScope = DECLARE_THROW_SCOPE(vm);
+        auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
         throwException(&lexicalGlobalObject, throwScope, returnedException);
         return CallbackResultType::ExceptionThrown;
      }
@@ -293,7 +293,7 @@ CallbackResult<typename IDLUndefined::CallbackReturnType> JSTestCallbackInterfac
     NakedPtr<JSC::Exception> returnedException;
     m_data->invokeCallback(thisValue, args, JSCallbackData::CallbackType::Object, Identifier::fromString(vm, "callbackWithArrayParam"_s), returnedException);
     if (returnedException) {
-        auto throwScope = DECLARE_THROW_SCOPE(vm);
+        auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
         throwException(&lexicalGlobalObject, throwScope, returnedException);
         return CallbackResultType::ExceptionThrown;
      }
@@ -351,7 +351,7 @@ CallbackResult<typename IDLUndefined::CallbackReturnType> JSTestCallbackInterfac
     NakedPtr<JSC::Exception> returnedException;
     m_data->invokeCallback(thisValue, args, JSCallbackData::CallbackType::Object, Identifier::fromString(vm, "callbackWithSerializedScriptValueParam"_s), returnedException);
     if (returnedException) {
-        auto throwScope = DECLARE_THROW_SCOPE(vm);
+        auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
         throwException(&lexicalGlobalObject, throwScope, returnedException);
         return CallbackResultType::ExceptionThrown;
      }
@@ -407,7 +407,7 @@ CallbackResult<typename IDLUndefined::CallbackReturnType> JSTestCallbackInterfac
     NakedPtr<JSC::Exception> returnedException;
     m_data->invokeCallback(thisValue, args, JSCallbackData::CallbackType::Object, Identifier::fromString(vm, "callbackWithStringList"_s), returnedException);
     if (returnedException) {
-        auto throwScope = DECLARE_THROW_SCOPE(vm);
+        auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
         throwException(&lexicalGlobalObject, throwScope, returnedException);
         return CallbackResultType::ExceptionThrown;
      }
@@ -463,7 +463,7 @@ CallbackResult<typename IDLUndefined::CallbackReturnType> JSTestCallbackInterfac
     NakedPtr<JSC::Exception> returnedException;
     m_data->invokeCallback(thisValue, args, JSCallbackData::CallbackType::Object, Identifier::fromString(vm, "callbackWithBoolean"_s), returnedException);
     if (returnedException) {
-        auto throwScope = DECLARE_THROW_SCOPE(vm);
+        auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
         throwException(&lexicalGlobalObject, throwScope, returnedException);
         return CallbackResultType::ExceptionThrown;
      }
@@ -496,7 +496,7 @@ CallbackResult<typename IDLDOMString::CallbackReturnType> JSTestCallbackInterfac
         return CallbackResultType::ExceptionThrown;
      }
 
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto returnValue = convert<IDLDOMString>(lexicalGlobalObject, jsResult);
     if (returnValue.hasException(throwScope)) [[unlikely]]
         return CallbackResultType::ExceptionThrown;
@@ -523,12 +523,12 @@ CallbackResult<typename IDLDOMString::CallbackReturnType> JSTestCallbackInterfac
     NakedPtr<JSC::Exception> returnedException;
     auto jsResult = m_data->invokeCallback(thisValue, args, JSCallbackData::CallbackType::Object, Identifier::fromString(vm, "callbackWithEnum"_s), returnedException);
     if (returnedException) {
-        auto throwScope = DECLARE_THROW_SCOPE(vm);
+        auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
         throwException(&lexicalGlobalObject, throwScope, returnedException);
         return CallbackResultType::ExceptionThrown;
      }
 
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto returnValue = convert<IDLDOMString>(lexicalGlobalObject, jsResult);
     if (returnValue.hasException(throwScope)) [[unlikely]]
         return CallbackResultType::ExceptionThrown;
@@ -585,7 +585,7 @@ CallbackResult<typename IDLUndefined::CallbackReturnType> JSTestCallbackInterfac
     NakedPtr<JSC::Exception> returnedException;
     m_data->invokeCallback(thisValue, args, JSCallbackData::CallbackType::Object, Identifier::fromString(vm, "callbackRequiresThisToPass"_s), returnedException);
     if (returnedException) {
-        auto throwScope = DECLARE_THROW_SCOPE(vm);
+        auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
         throwException(&lexicalGlobalObject, throwScope, returnedException);
         return CallbackResultType::ExceptionThrown;
      }
@@ -617,7 +617,7 @@ CallbackResult<typename IDLDOMString::CallbackReturnType> JSTestCallbackInterfac
         return CallbackResultType::ExceptionThrown;
      }
 
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto returnValue = convert<IDLDOMString>(lexicalGlobalObject, jsResult);
     if (returnValue.hasException(throwScope)) [[unlikely]]
         return CallbackResultType::ExceptionThrown;
@@ -643,12 +643,12 @@ CallbackResult<typename IDLDOMString::CallbackReturnType> JSTestCallbackInterfac
     NakedPtr<JSC::Exception> returnedException;
     auto jsResult = m_data->invokeCallback(thisValue, args, JSCallbackData::CallbackType::Object, Identifier::fromString(vm, "callbackWithAReturnValue"_s), returnedException);
     if (returnedException) {
-        auto throwScope = DECLARE_THROW_SCOPE(vm);
+        auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
         throwException(&lexicalGlobalObject, throwScope, returnedException);
         return CallbackResultType::ExceptionThrown;
      }
 
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto returnValue = convert<IDLDOMString>(lexicalGlobalObject, jsResult);
     if (returnValue.hasException(throwScope)) [[unlikely]]
         return CallbackResultType::ExceptionThrown;
@@ -680,7 +680,7 @@ CallbackResult<typename IDLPromise<IDLUndefined>::CallbackReturnType> JSTestCall
         return { DOMPromise::create(globalObject, *jsPromise) };
      }
 
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto returnValue = convert<IDLPromise<IDLUndefined>>(lexicalGlobalObject, jsResult);
     if (returnValue.hasException(throwScope)) [[unlikely]]
         return CallbackResultType::ExceptionThrown;
@@ -712,7 +712,7 @@ CallbackResult<typename IDLDOMString::CallbackReturnType> JSTestCallbackInterfac
         return CallbackResultType::ExceptionThrown;
      }
 
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto returnValue = convert<IDLDOMString>(lexicalGlobalObject, jsResult);
     if (returnValue.hasException(throwScope)) [[unlikely]]
         return CallbackResultType::ExceptionThrown;
@@ -739,12 +739,12 @@ CallbackResult<typename IDLDOMString::CallbackReturnType> JSTestCallbackInterfac
     NakedPtr<JSC::Exception> returnedException;
     auto jsResult = m_data->invokeCallback(thisValue, args, JSCallbackData::CallbackType::Object, Identifier::fromString(vm, "callbackWithThisObject"_s), returnedException);
     if (returnedException) {
-        auto throwScope = DECLARE_THROW_SCOPE(vm);
+        auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
         throwException(&lexicalGlobalObject, throwScope, returnedException);
         return CallbackResultType::ExceptionThrown;
      }
 
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto returnValue = convert<IDLDOMString>(lexicalGlobalObject, jsResult);
     if (returnValue.hasException(throwScope)) [[unlikely]]
         return CallbackResultType::ExceptionThrown;

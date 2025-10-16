@@ -81,7 +81,7 @@ void IntlDateTimeFormatConstructor::finishCreation(VM& vm, IntlDateTimeFormatPro
 JSC_DEFINE_HOST_FUNCTION(constructIntlDateTimeFormat, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     // 12.1.2 Intl.DateTimeFormat ([locales [, options]]) (ECMA-402 2.0)
     // 1. If NewTarget is undefined, let newTarget be the active function object, else let newTarget be NewTarget.
     // 2. Let dateTimeFormat be OrdinaryCreateFromConstructor(newTarget, %DateTimeFormatPrototype%).
@@ -122,7 +122,7 @@ JSC_DEFINE_HOST_FUNCTION(callIntlDateTimeFormat, (JSGlobalObject* globalObject, 
 JSC_DEFINE_HOST_FUNCTION(intlDateTimeFormatConstructorFuncSupportedLocalesOf, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     // 12.2.2 Intl.DateTimeFormat.supportedLocalesOf(locales [, options]) (ECMA-402 2.0)
 
     // 1. Let availableLocales be %DateTimeFormat%.[[availableLocales]].

@@ -29,10 +29,10 @@
 #include "config.h"
 #include "DebuggerCallFrame.h"
 
-#include "CatchScope.h"
 #include "CodeBlock.h"
 #include "DebuggerEvalEnabler.h"
 #include "DebuggerScope.h"
+#include "ExceptionScope.h"
 #include "Interpreter.h"
 #include "JSFunction.h"
 #include "JSWithScope.h"
@@ -232,7 +232,7 @@ JSValue DebuggerCallFrame::evaluateWithScopeExtension(VM& vm, const String& scri
         return jsUndefined();
 
     JSLockHolder lock(vm);
-    auto catchScope = DECLARE_CATCH_SCOPE(vm);
+    auto catchScope = DECLARE_EXCEPTION_SCOPE(vm);
     
     JSGlobalObject* globalObject = codeBlock->globalObject();
     DebuggerEvalEnabler evalEnabler(globalObject, DebuggerEvalEnabler::Mode::EvalOnGlobalObjectAtDebuggerEntry);
@@ -253,7 +253,7 @@ JSValue DebuggerCallFrame::evaluateWithScopeExtension(VM& vm, const String& scri
     auto* eval = DirectEvalExecutable::create(globalObject, makeSource(script, callFrame->callerSourceOrigin(vm), SourceTaintedOrigin::Untainted), codeBlock->ownerExecutable()->lexicallyScopedFeatures(), codeBlock->unlinkedCodeBlock()->derivedContextType(), codeBlock->unlinkedCodeBlock()->needsClassFieldInitializer(), codeBlock->unlinkedCodeBlock()->privateBrandRequirement(), codeBlock->unlinkedCodeBlock()->isArrowFunction(), codeBlock->ownerExecutable()->isInsideOrdinaryFunction(), evalContextType, &variablesUnderTDZ, &privateNameEnvironment);
     if (catchScope.exception()) [[unlikely]] {
         exception = catchScope.exception();
-        catchScope.clearException();
+        catchScope.clearExceptionIncludingTermination();
         return jsUndefined();
     }
 
@@ -274,7 +274,7 @@ JSValue DebuggerCallFrame::evaluateWithScopeExtension(VM& vm, const String& scri
     }
     if (catchScope.exception()) [[unlikely]] {
         exception = catchScope.exception();
-        catchScope.clearException();
+        catchScope.clearExceptionIncludingTermination();
     }
 
     if (scopeExtensionObject)

@@ -26,11 +26,11 @@
 #include "config.h"
 #include "JSGlobalObjectInspectorController.h"
 
-#include "CatchScope.h"
 #include "Completion.h"
 #include "ConsoleMessage.h"
 #include "ErrorHandlingScope.h"
 #include "Exception.h"
+#include "ExceptionScope.h"
 #include "InjectedScriptHost.h"
 #include "InjectedScriptManager.h"
 #include "InspectorAgent.h"
@@ -182,7 +182,8 @@ void JSGlobalObjectInspectorController::reportAPIException(JSGlobalObject* globa
     if (vm.isTerminationException(exception))
         return;
 
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    DeferTerminationForAWhile deferTermination(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     ErrorHandlingScope errorScope(vm);
 
     Ref<ScriptCallStack> callStack = createScriptCallStackFromException(globalObject, exception);
@@ -192,7 +193,7 @@ void JSGlobalObjectInspectorController::reportAPIException(JSGlobalObject* globa
     // FIXME: <http://webkit.org/b/115087> Web Inspector: Should not evaluate JavaScript handling exceptions
     // If this is a custom exception object, call toString on it to try and get a nice string representation for the exception.
     String errorMessage = exception->value().toWTFString(globalObject);
-    scope.clearException();
+    scope.clearExceptionIncludingTermination();
 
     if (JSGlobalObjectConsoleClient::logToSystemConsole()) {
         if (callStack->size()) {

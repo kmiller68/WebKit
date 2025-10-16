@@ -27,8 +27,8 @@
 #include "JITExceptions.h"
 
 #include "CallFrame.h"
-#include "CatchScope.h"
 #include "CodeBlock.h"
+#include "ExceptionScope.h"
 #include "Interpreter.h"
 #include "JSCJSValueInlines.h"
 #include "LLIntData.h"
@@ -41,7 +41,11 @@ namespace JSC {
 
 void genericUnwind(VM& vm, CallFrame* callFrame)
 {
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    // Don't go through ExceptionScope, that assumes we're going to do normal exception operations.
+    // This is a super special case where we're actually throwing the exception to the VM.
+    Exception* exception = vm.exceptionForInspection();
+    RELEASE_ASSERT(exception);
+
     CallFrame* topJSCallFrame = vm.topJSCallFrame();
     if (Options::breakOnThrow()) [[unlikely]] {
         CodeBlock* codeBlock = topJSCallFrame->isNativeCalleeFrame() ? nullptr : topJSCallFrame->codeBlock();
@@ -52,8 +56,6 @@ void genericUnwind(VM& vm, CallFrame* callFrame)
     if (auto* shadowChicken = vm.shadowChicken())
         shadowChicken->log(vm, topJSCallFrame, ShadowChicken::Packet::throwPacket());
 
-    Exception* exception = scope.exception();
-    RELEASE_ASSERT(exception);
     CatchInfo handler = vm.interpreter.unwind(vm, callFrame, exception); // This may update callFrame.
 
     void* catchRoutine = nullptr;

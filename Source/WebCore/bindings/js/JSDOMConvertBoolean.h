@@ -38,7 +38,7 @@ template<> struct Converter<IDLBoolean> : DefaultConverter<IDLBoolean> {
     static Result convert(JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value)
     {
         auto& vm = lexicalGlobalObject.vm();
-        auto throwScope = DECLARE_THROW_SCOPE(vm);
+        auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
         auto conversionResult = value.toBoolean(&lexicalGlobalObject);
 

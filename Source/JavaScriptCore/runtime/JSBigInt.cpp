@@ -112,7 +112,7 @@ inline JSBigInt* JSBigInt::createWithLength(JSGlobalObject* nullOrGlobalObjectFo
 {
     if (length > maxLength) [[unlikely]] {
         if (nullOrGlobalObjectForOOM) {
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
             throwOutOfMemoryError(nullOrGlobalObjectForOOM, scope, "BigInt generated from this operation is too big"_s);
         }
         return nullptr;
@@ -122,7 +122,7 @@ inline JSBigInt* JSBigInt::createWithLength(JSGlobalObject* nullOrGlobalObjectFo
     void* data = vm.primitiveGigacageAuxiliarySpace().allocate(vm, length * sizeof(Digit), nullptr, AllocationFailureMode::ReturnNull);
     if (!data) [[unlikely]] {
         if (nullOrGlobalObjectForOOM) {
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
             throwOutOfMemoryError(nullOrGlobalObjectForOOM, scope);
         }
         return nullptr;
@@ -173,7 +173,7 @@ JSBigInt* JSBigInt::tryCreateFrom(VM& vm, int32_t value)
 JSBigInt* JSBigInt::createFrom(JSGlobalObject* globalObject, uint32_t value)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!value)
         RELEASE_AND_RETURN(scope, createZero(globalObject));
@@ -187,7 +187,7 @@ JSBigInt* JSBigInt::createFrom(JSGlobalObject* globalObject, uint32_t value)
 inline JSBigInt* JSBigInt::createFromImpl(JSGlobalObject* globalObject, uint64_t value, bool sign)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!value)
         RELEASE_AND_RETURN(scope, createZero(globalObject));
@@ -237,7 +237,7 @@ JSBigInt* JSBigInt::createFrom(JSGlobalObject* globalObject, int64_t value)
 JSBigInt* JSBigInt::createFrom(JSGlobalObject* globalObject, Int128 value)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!value)
         RELEASE_AND_RETURN(scope, createZero(globalObject));
@@ -293,7 +293,7 @@ JSBigInt* JSBigInt::createFrom(JSGlobalObject* globalObject, Int128 value)
 JSBigInt* JSBigInt::createFrom(JSGlobalObject* globalObject, bool value)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!value)
         RELEASE_AND_RETURN(scope, createZero(globalObject));
@@ -307,7 +307,7 @@ JSBigInt* JSBigInt::createFrom(JSGlobalObject* globalObject, bool value)
 JSBigInt* JSBigInt::createFrom(JSGlobalObject* globalObject, double value)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(isInteger(value));
     if (!value)
@@ -561,7 +561,7 @@ template <typename BigIntImpl1, typename BigIntImpl2>
 JSBigInt::ImplResult JSBigInt::exponentiateImpl(JSGlobalObject* globalObject, BigIntImpl1 base, BigIntImpl2 exponent)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (exponent.sign()) {
         throwRangeError(globalObject, scope, "Negative exponent is not allowed"_s);
@@ -682,7 +682,7 @@ template <typename BigIntImpl1, typename BigIntImpl2>
 JSBigInt::ImplResult JSBigInt::multiplyImpl(JSGlobalObject* globalObject, BigIntImpl1 x, BigIntImpl2 y)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (x.isZero())
         return { x };
@@ -721,7 +721,7 @@ JSBigInt::ImplResult JSBigInt::divideImpl(JSGlobalObject* globalObject, BigIntIm
 {
     // 1. If y is 0n, throw a RangeError exception.
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (y.isZero()) {
         throwRangeError(globalObject, scope, "0 is an invalid divisor value."_s);
@@ -777,7 +777,7 @@ template <typename BigIntImpl>
 JSBigInt* JSBigInt::copy(JSGlobalObject* globalObject, BigIntImpl x)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(!x.isZero());
 
@@ -794,7 +794,7 @@ template <typename BigIntImpl>
 JSBigInt::ImplResult JSBigInt::unaryMinusImpl(JSGlobalObject* globalObject, BigIntImpl x)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (x.isZero())
         RELEASE_AND_RETURN(scope, zeroImpl(globalObject));
@@ -816,7 +816,7 @@ JSBigInt::ImplResult JSBigInt::remainderImpl(JSGlobalObject* globalObject, BigIn
 {
     // 1. If y is 0n, throw a RangeError exception.
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     
     if (y.isZero()) {
         throwRangeError(globalObject, scope, "0 is an invalid divisor value."_s);
@@ -873,7 +873,7 @@ template <typename BigIntImpl>
 JSBigInt::ImplResult JSBigInt::incImpl(JSGlobalObject* globalObject, BigIntImpl x)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!x.sign())
         RELEASE_AND_RETURN(scope, absoluteAddOne(globalObject, x, SignOption::Unsigned));
@@ -980,7 +980,7 @@ template <typename BigIntImpl1, typename BigIntImpl2>
 JSBigInt::ImplResult JSBigInt::bitwiseAndImpl(JSGlobalObject* globalObject, BigIntImpl1 x, BigIntImpl2 y)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!x.sign() && !y.sign())
         RELEASE_AND_RETURN(scope, absoluteAnd(globalObject, x, y));
@@ -1032,7 +1032,7 @@ template <typename BigIntImpl1, typename BigIntImpl2>
 JSBigInt::ImplResult JSBigInt::bitwiseOrImpl(JSGlobalObject* globalObject, BigIntImpl1 x, BigIntImpl2 y)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned resultLength = std::max(x.length(), y.length());
 
@@ -1089,7 +1089,7 @@ template <typename BigIntImpl1, typename BigIntImpl2>
 JSBigInt::ImplResult JSBigInt::bitwiseXorImpl(JSGlobalObject* globalObject, BigIntImpl1 x, BigIntImpl2 y)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!x.sign() && !y.sign())
         RELEASE_AND_RETURN(scope, absoluteXor(globalObject, x, y));
@@ -1546,7 +1546,7 @@ template <typename BigIntImpl1, typename BigIntImpl2>
 JSBigInt::ImplResult JSBigInt::absoluteAdd(JSGlobalObject* globalObject, BigIntImpl1 x, BigIntImpl2 y, bool resultSign)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (x.length() < y.length())
         RELEASE_AND_RETURN(scope, absoluteAdd(globalObject, y, x, resultSign));
@@ -1592,7 +1592,7 @@ template <typename BigIntImpl1, typename BigIntImpl2>
 JSBigInt::ImplResult JSBigInt::absoluteSub(JSGlobalObject* globalObject, BigIntImpl1 x, BigIntImpl2 y, bool resultSign)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ComparisonResult comparisonResult = absoluteCompare(x, y);
     ASSERT(x.length() >= y.length());
@@ -1693,7 +1693,7 @@ void JSBigInt::absoluteDivWithBigIntDivisor(JSGlobalObject* globalObject, BigInt
     ASSERT(divisor->length() >= 2);
     ASSERT(dividend.length() >= divisor->length());
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // The unusual variable names inside this function are consistent with
     // Knuth's book, as well as with Go's implementation of this algorithm.
@@ -1862,7 +1862,7 @@ template <typename BigIntImpl>
 JSBigInt* JSBigInt::absoluteLeftShiftAlwaysCopy(JSGlobalObject* globalObject, BigIntImpl x, unsigned shift, LeftShiftMode mode)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(shift < digitBits);
     ASSERT(!x.isZero());
@@ -1915,7 +1915,7 @@ template <typename BigIntImpl1, typename BigIntImpl2, typename BitwiseOp>
 inline JSBigInt* JSBigInt::absoluteBitwiseOp(JSGlobalObject* globalObject, BigIntImpl1 x, BigIntImpl2 y, ExtraDigitsHandling extraDigits, BitwiseOp&& op)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned xLength = x.length();
     unsigned yLength = y.length();
@@ -1975,7 +1975,7 @@ JSBigInt* JSBigInt::absoluteAndNot(JSGlobalObject* globalObject, BigIntImpl1 x, 
     // x & ~y
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned xLength = x.length();
     unsigned yLength = y.length();
@@ -2005,7 +2005,7 @@ template <typename BigIntImpl>
 JSBigInt* JSBigInt::absoluteAddOne(JSGlobalObject* globalObject, BigIntImpl x, SignOption signOption)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned inputLength = x.length();
     // The addition will overflow into a new digit if all existing digits are
@@ -2043,7 +2043,7 @@ JSBigInt* JSBigInt::absoluteSubOne(JSGlobalObject* globalObject, BigIntImpl x, u
     ASSERT(!x.isZero());
     ASSERT(resultLength >= x.length());
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSBigInt* result = createWithLength(globalObject, resultLength);
     RETURN_IF_EXCEPTION(scope, nullptr);
@@ -2066,7 +2066,7 @@ template <typename BigIntImpl1, typename BigIntImpl2>
 JSBigInt::ImplResult JSBigInt::leftShiftByAbsolute(JSGlobalObject* globalObject, BigIntImpl1 x, BigIntImpl2 y)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto optionalShift = toShiftAmount(y);
     if (!optionalShift) {
@@ -2119,7 +2119,7 @@ template <typename BigIntImpl1, typename BigIntImpl2>
 JSBigInt::ImplResult JSBigInt::rightShiftByAbsolute(JSGlobalObject* globalObject, BigIntImpl1 x, BigIntImpl2 y)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     unsigned length = x.length();
     bool sign = x.sign();
@@ -2267,7 +2267,7 @@ String JSBigInt::toStringBasePowerOfTwo(VM& vm, JSGlobalObject* nullOrGlobalObje
 
     if (charsRequired > JSString::MaxLength) {
         if (nullOrGlobalObjectForOOM) {
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
             throwOutOfMemoryError(nullOrGlobalObjectForOOM, scope);
         }
         return String();
@@ -2325,7 +2325,7 @@ String JSBigInt::toStringGeneric(VM& vm, JSGlobalObject* nullOrGlobalObjectForOO
 
     if (maximumCharactersRequired > JSString::MaxLength) {
         if (nullOrGlobalObjectForOOM) {
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
             throwOutOfMemoryError(nullOrGlobalObjectForOOM, scope);
         }
         return String();
@@ -2456,7 +2456,7 @@ JSBigInt* JSBigInt::allocateFor(JSGlobalObject* nullOrGlobalObjectForOOM, VM& vm
     }
 
     if (nullOrGlobalObjectForOOM) {
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         throwOutOfMemoryError(nullOrGlobalObjectForOOM, scope, "BigInt generated from this operation is too big"_s);
     }
 
@@ -2471,7 +2471,7 @@ size_t JSBigInt::estimatedSize(JSCell* cell, VM& vm)
 double JSBigInt::toNumber(JSGlobalObject* globalObject) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     throwTypeError(globalObject, scope, "Conversion from 'BigInt' to 'number' is not allowed."_s);
     return 0.0;
 }
@@ -2517,7 +2517,7 @@ JSValue JSBigInt::parseInt(JSGlobalObject* nullOrGlobalObjectForOOM, VM& vm, std
     if (parseMode != ParseIntMode::AllowEmptyString && startIndex == data.size()) {
         ASSERT(nullOrGlobalObjectForOOM);
         if (errorParseMode == ErrorParseMode::ThrowExceptions) {
-            auto scope = DECLARE_THROW_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
             throwVMError(nullOrGlobalObjectForOOM, scope, createSyntaxError(nullOrGlobalObjectForOOM, "Failed to parse String to BigInt"_s));
         }
         return JSValue();
@@ -2633,7 +2633,7 @@ JSValue JSBigInt::parseInt(JSGlobalObject* nullOrGlobalObjectForOOM, VM& vm, std
                 digit += static_cast<uint64_t>(data[p] - 'A' + 10);
             else {
                 if (errorParseMode == ErrorParseMode::ThrowExceptions) {
-                    auto scope = DECLARE_THROW_SCOPE(vm);
+                    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
                     ASSERT(nullOrGlobalObjectForOOM);
                     throwVMError(nullOrGlobalObjectForOOM, scope, createSyntaxError(nullOrGlobalObjectForOOM, "Failed to parse String to BigInt"_s));
                 }
@@ -3001,7 +3001,7 @@ template <typename BigIntImpl>
 JSBigInt::ImplResult JSBigInt::asIntNImpl(JSGlobalObject* globalObject, uint64_t n, BigIntImpl bigInt)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (bigInt.isZero())
         return { bigInt };
@@ -3053,7 +3053,7 @@ template <typename BigIntImpl>
 JSBigInt::ImplResult JSBigInt::asUintNImpl(JSGlobalObject* globalObject, uint64_t n, BigIntImpl bigInt)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (bigInt.isZero())
         return { bigInt };
@@ -3095,7 +3095,7 @@ template <typename BigIntImpl>
 JSBigInt::ImplResult JSBigInt::truncateToNBits(JSGlobalObject* globalObject, int32_t n, BigIntImpl bigInt)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(n != 0);
     ASSERT(bigInt.length() > n / digitBits);
@@ -3127,7 +3127,7 @@ template <typename BigIntImpl>
 JSBigInt::ImplResult JSBigInt::truncateAndSubFromPowerOfTwo(JSGlobalObject* globalObject, int32_t n, BigIntImpl bigInt, bool resultSign)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(n != 0);
     ASSERT(n <= static_cast<int32_t>(maxLengthBits));

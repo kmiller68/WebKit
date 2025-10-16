@@ -182,6 +182,12 @@ macro doVMEntry(makeCall)
     const vm = a1
     const protoCallFrame = a2
 
+    if ASSERT_ENABLED
+        btbz VM::m_executionForbidden[a1], .ok
+        break
+    .ok:
+    end
+
     vmEntryRecord(cfr, sp)
 
     checkStackPointerAlignment(t4, 0xbad0dc01)

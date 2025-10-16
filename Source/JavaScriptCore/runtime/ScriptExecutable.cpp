@@ -251,7 +251,7 @@ bool ScriptExecutable::hasClearableCode() const
 CodeBlock* ScriptExecutable::newCodeBlockFor(CodeSpecializationKind kind, JSFunction* function, JSScope* scope)
 {
     VM& vm = scope->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     ASSERT(vm.heap.isDeferred());
     ASSERT(endColumn() != UINT_MAX);
@@ -388,7 +388,7 @@ static void setupJIT(VM& vm, CodeBlock* codeBlock)
 
 void ScriptExecutable::prepareForExecutionImpl(VM& vm, JSFunction* function, JSScope* scope, CodeSpecializationKind kind, CodeBlock*& resultCodeBlock)
 {
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     DeferGCForAWhile deferGC(vm);
 
     if (vm.getAndClearFailNextNewCodeBlock()) [[unlikely]] {
@@ -436,7 +436,7 @@ ScriptExecutable* ScriptExecutable::topLevelExecutable()
 JSArray* ScriptExecutable::createTemplateObject(JSGlobalObject* globalObject, JSTemplateObjectDescriptor* descriptor)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     TemplateObjectMap& templateObjectMap = ensureTemplateObjectMap(vm);
     TemplateObjectMap::AddResult result;

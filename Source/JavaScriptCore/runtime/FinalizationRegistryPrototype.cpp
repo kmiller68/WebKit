@@ -51,7 +51,7 @@ void FinalizationRegistryPrototype::finishCreation(VM& vm, JSGlobalObject* globa
 
 ALWAYS_INLINE static JSFinalizationRegistry* getFinalizationRegistry(VM& vm, JSGlobalObject* globalObject, JSValue value)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!value.isObject()) [[unlikely]] {
         throwTypeError(globalObject, scope, "Called FinalizationRegistry function on non-object"_s);
@@ -69,7 +69,7 @@ ALWAYS_INLINE static JSFinalizationRegistry* getFinalizationRegistry(VM& vm, JSG
 JSC_DEFINE_HOST_FUNCTION(protoFuncFinalizationRegistryRegister, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* group = getFinalizationRegistry(vm, globalObject, callFrame->thisValue());
     RETURN_IF_EXCEPTION(scope, { });
@@ -93,7 +93,7 @@ JSC_DEFINE_HOST_FUNCTION(protoFuncFinalizationRegistryRegister, (JSGlobalObject*
 JSC_DEFINE_HOST_FUNCTION(protoFuncFinalizationRegistryUnregister, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* group = getFinalizationRegistry(vm, globalObject, callFrame->thisValue());
     RETURN_IF_EXCEPTION(scope, { });

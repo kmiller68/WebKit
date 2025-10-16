@@ -146,7 +146,7 @@ void Permissions::query(JSC::Strong<JSC::JSObject> permissionDescriptorValue, DO
     }
 
     auto& vm = context->globalObject()->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto permissionDescriptorConversionResult = convert<IDLDictionary<PermissionDescriptor>>(*context->globalObject(), permissionDescriptorValue.get());
     if (permissionDescriptorConversionResult.hasException(scope)) [[unlikely]] {

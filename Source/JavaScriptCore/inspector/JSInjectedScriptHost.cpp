@@ -113,7 +113,7 @@ JSValue JSInjectedScriptHost::savedResultAlias(JSGlobalObject* globalObject) con
 JSValue JSInjectedScriptHost::evaluateWithScopeExtension(JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue scriptValue = callFrame->argument(0);
     if (!scriptValue.isString())
@@ -125,6 +125,7 @@ JSValue JSInjectedScriptHost::evaluateWithScopeExtension(JSGlobalObject* globalO
     NakedPtr<Exception> exception;
     JSObject* scopeExtension = callFrame->argument(1).getObject();
     JSValue result = JSC::evaluateWithScopeExtension(globalObject, makeSource(program, callFrame->callerSourceOrigin(vm), SourceTaintedOrigin::Untainted), scopeExtension, exception);
+    scope.assertNoExceptionExceptTermination();
     if (exception)
         throwException(globalObject, scope, exception);
 
@@ -154,7 +155,7 @@ JSValue JSInjectedScriptHost::isHTMLAllCollection(JSGlobalObject* globalObject, 
 JSValue JSInjectedScriptHost::isPromiseRejectedWithNativeGetterTypeError(JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* promise = jsDynamicCast<JSPromise*>(callFrame->argument(0));
     if (!promise)
@@ -308,7 +309,7 @@ JSValue JSInjectedScriptHost::getOwnPrivatePropertySymbols(JSGlobalObject* globa
         return jsUndefined();
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue value = callFrame->uncheckedArgument(0);
 
     JSArray* result = constructEmptyArray(globalObject, nullptr);
@@ -341,7 +342,7 @@ JSValue JSInjectedScriptHost::getInternalProperties(JSGlobalObject* globalObject
         return jsUndefined();
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue value = callFrame->uncheckedArgument(0);
 
     JSValue internalProperties = impl().getInternalProperties(vm, globalObject, value);
@@ -606,7 +607,7 @@ JSValue JSInjectedScriptHost::weakMapEntries(JSGlobalObject* globalObject, CallF
         return jsUndefined();
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* weakMap = jsDynamicCast<JSWeakMap*>(callFrame->uncheckedArgument(0));
     if (!weakMap)
         return jsUndefined();
@@ -649,7 +650,7 @@ JSValue JSInjectedScriptHost::weakSetEntries(JSGlobalObject* globalObject, CallF
         return jsUndefined();
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* weakSet = jsDynamicCast<JSWeakSet*>(callFrame->uncheckedArgument(0));
     if (!weakSet)
         return jsUndefined();
@@ -681,7 +682,7 @@ static JSObject* cloneArrayIteratorObject(JSGlobalObject* globalObject, VM& vm, 
 
 static JSObject* cloneMapIteratorObject(JSGlobalObject* globalObject, VM& vm, JSMapIterator* iteratorObject)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSMapIterator* clone = JSMapIterator::create(globalObject, globalObject->mapIteratorStructure(), jsCast<JSMap*>(iteratorObject->iteratedObject()), iteratorObject->kind());
     RETURN_IF_EXCEPTION(scope, nullptr);
@@ -692,7 +693,7 @@ static JSObject* cloneMapIteratorObject(JSGlobalObject* globalObject, VM& vm, JS
 
 static JSObject* cloneSetIteratorObject(JSGlobalObject* globalObject, VM& vm, JSSetIterator* iteratorObject)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSSetIterator* clone = JSSetIterator::create(globalObject, globalObject->setIteratorStructure(), jsCast<JSSet*>(iteratorObject->iteratedObject()), iteratorObject->kind());
     RETURN_IF_EXCEPTION(scope, nullptr);
@@ -707,7 +708,7 @@ JSValue JSInjectedScriptHost::iteratorEntries(JSGlobalObject* globalObject, Call
         return jsUndefined();
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue iterator;
     JSValue value = callFrame->uncheckedArgument(0);
@@ -791,7 +792,7 @@ JSValue JSInjectedScriptHost::queryInstances(JSGlobalObject* globalObject, CallF
         return jsUndefined();
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue prototypeOrConstructor = callFrame->uncheckedArgument(0);
     if (!prototypeOrConstructor.isObject())
@@ -1001,7 +1002,7 @@ JSValue JSInjectedScriptHost::queryHolders(JSGlobalObject* globalObject, CallFra
         return jsUndefined();
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue target = callFrame->uncheckedArgument(0);
     if (!target.isObject())

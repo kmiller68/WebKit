@@ -76,7 +76,7 @@ template<ArrayBufferSharingMode sharingMode>
 EncodedJSValue JSGenericArrayBufferConstructor<sharingMode>::constructImpl(JSGlobalObject* globalObject, CallFrame* callFrame)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     double lengthDouble = 0;
     std::optional<size_t> maxByteLength;
@@ -150,7 +150,7 @@ const ClassInfo* JSGenericArrayBufferConstructor<sharingMode>::info()
 JSC_DEFINE_HOST_FUNCTION(callArrayBuffer, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "ArrayBuffer"_s));
 }
 
@@ -167,7 +167,7 @@ JSC_DEFINE_HOST_FUNCTION(constructSharedArrayBuffer, (JSGlobalObject* globalObje
 JSObject* constructArrayBufferWithSize(JSGlobalObject* globalObject, Structure* structure, size_t length)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto buffer = ArrayBuffer::tryCreate(length, 1);
     if (!buffer) [[unlikely]] {

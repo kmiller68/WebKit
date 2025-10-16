@@ -299,7 +299,7 @@ enum class NeedsGCSafeOps {
 template<ArrayFillMode fillMode>
 bool moveArrayElements(JSGlobalObject* globalObject, VM& vm, JSArray* target, unsigned targetOffset, JSArray* source, unsigned sourceLength)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!hasAnyArrayStorage(source->indexingType()) && !source->holesMustForwardToPrototype()) [[likely]] {
         for (unsigned i = 0; i < sourceLength; ++i) {

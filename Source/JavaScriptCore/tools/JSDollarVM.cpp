@@ -476,7 +476,7 @@ public:
     {
         DollarVMAssertScope assertScope;
         VM& vm = globalObject->vm();
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         ImpureGetter* thisObject = jsCast<ImpureGetter*>(object);
         
         if (thisObject->m_delegate) {
@@ -569,7 +569,7 @@ JSC_DEFINE_CUSTOM_GETTER(customGetterValueGetter, (JSGlobalObject* globalObject,
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     CustomGetter* thisObject = jsDynamicCast<CustomGetter*>(JSValue::decode(thisValue));
     if (!thisObject)
@@ -585,7 +585,7 @@ JSC_DEFINE_CUSTOM_GETTER(customGetterAcessorGetter, (JSGlobalObject* globalObjec
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* thisObject = jsDynamicCast<JSObject*>(JSValue::decode(thisValue));
     if (!thisObject)
@@ -716,7 +716,7 @@ JSC_DEFINE_CUSTOM_GETTER(runtimeArrayLengthGetter, (JSGlobalObject* globalObject
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     RuntimeArray* thisObject = jsDynamicCast<RuntimeArray*>(JSValue::decode(thisValue));
     if (!thisObject)
@@ -731,7 +731,7 @@ JSC_DEFINE_CUSTOM_GETTER(testStaticAccessorGetter, (JSGlobalObject* globalObject
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     
     JSObject* thisObject = jsDynamicCast<JSObject*>(JSValue::decode(thisValue));
     if (!thisObject)
@@ -746,7 +746,7 @@ JSC_DEFINE_CUSTOM_SETTER(testStaticAccessorPutter, (JSGlobalObject* globalObject
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     
     JSValue receiver = JSValue::decode(thisValue);
     JSObject* thisObject = receiver.isObject() ? asObject(receiver) : receiver.synthesizePrototype(globalObject);
@@ -840,7 +840,7 @@ JSC_DEFINE_CUSTOM_SETTER(testStaticValuePutter, (JSGlobalObject* globalObject, E
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     
     JSObject* thisObject = jsDynamicCast<JSObject*>(JSValue::decode(thisValue));
     if (!thisObject)
@@ -853,7 +853,7 @@ JSC_DEFINE_CUSTOM_SETTER(testStaticValuePutterSetFlag, (JSGlobalObject* globalOb
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* thisObject = jsDynamicCast<JSObject*>(JSValue::decode(thisValue));
     if (!thisObject)
@@ -1029,7 +1029,7 @@ public:
     {
         DollarVMAssertScope assertScope;
         auto* thisObject = jsCast<ObjectDoingSideEffectPutWithoutCorrectSlotStatus*>(cell);
-        auto throwScope = DECLARE_THROW_SCOPE(globalObject->vm());
+        auto throwScope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
         auto* string = value.toString(globalObject);
         RETURN_IF_EXCEPTION(throwScope, false);
         RELEASE_AND_RETURN(throwScope, Base::put(thisObject, globalObject, propertyName, string, slot));
@@ -1183,7 +1183,7 @@ JSC_DEFINE_CUSTOM_GETTER(domJITGetterCustomGetter, (JSGlobalObject* globalObject
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     DOMJITNode* thisObject = jsDynamicCast<DOMJITNode*>(JSValue::decode(thisValue));
     if (!thisObject)
         return throwVMTypeError(globalObject, scope);
@@ -1196,7 +1196,7 @@ JSC_DEFINE_JIT_OPERATION(domJITGetterSlowCall, EncodedJSValue, (JSGlobalObject* 
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     OPERATION_RETURN(scope, JSValue::encode(jsNumber(static_cast<DOMJITGetter*>(pointer)->value())));
 }
 
@@ -1284,7 +1284,7 @@ JSC_DEFINE_CUSTOM_GETTER(domJITGetterNoEffectCustomGetter, (JSGlobalObject* glob
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     DOMJITNode* thisObject = jsDynamicCast<DOMJITNode*>(JSValue::decode(thisValue));
     if (!thisObject)
         return throwVMTypeError(globalObject, scope);
@@ -1297,7 +1297,7 @@ JSC_DEFINE_JIT_OPERATION(domJITGetterNoEffectSlowCall, EncodedJSValue, (JSGlobal
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     OPERATION_RETURN(scope, JSValue::encode(jsNumber(static_cast<DOMJITGetterNoEffects*>(pointer)->value())));
 }
 
@@ -1388,7 +1388,7 @@ JSC_DEFINE_CUSTOM_GETTER(domJITGetterComplexCustomGetter, (JSGlobalObject* globa
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* thisObject = jsDynamicCast<DOMJITGetterComplex*>(JSValue::decode(thisValue));
     if (!thisObject)
@@ -1404,7 +1404,7 @@ JSC_DEFINE_JIT_OPERATION(domJITGetterComplexSlowCall, EncodedJSValue, (JSGlobalO
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* object = static_cast<DOMJITNode*>(pointer);
     auto* domjitGetterComplex = jsDynamicCast<DOMJITGetterComplex*>(object);
     if (domjitGetterComplex) {
@@ -1481,7 +1481,7 @@ JSC_DEFINE_HOST_FUNCTION(functionDOMJITFunctionObjectWithTypeCheck, (JSGlobalObj
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     DOMJITNode* thisObject = jsDynamicCast<DOMJITNode*>(callFrame->thisValue());
     if (!thisObject)
@@ -1495,7 +1495,7 @@ JSC_DEFINE_JIT_OPERATION(functionDOMJITFunctionObjectWithoutTypeCheck, EncodedJS
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     OPERATION_RETURN(scope, JSValue::encode(jsNumber(node->value())));
 }
 
@@ -1544,7 +1544,7 @@ JSC_DEFINE_HOST_FUNCTION(functionDOMJITCheckJSCastObjectWithTypeCheck, (JSGlobal
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* thisObject = jsDynamicCast<DOMJITCheckJSCastObject*>(callFrame->thisValue());
     if (!thisObject)
@@ -1558,7 +1558,7 @@ JSC_DEFINE_JIT_OPERATION(functionDOMJITCheckJSCastObjectWithoutTypeCheck, Encode
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     OPERATION_RETURN(scope, JSValue::encode(jsNumber(node->value())));
 }
 
@@ -1653,7 +1653,7 @@ JSC_DEFINE_CUSTOM_GETTER(domJITGetterBaseJSObjectCustomGetter, (JSGlobalObject* 
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSObject* thisObject = jsDynamicCast<JSObject*>(JSValue::decode(thisValue));
     if (!thisObject)
         return throwVMTypeError(globalObject, scope);
@@ -1666,7 +1666,7 @@ JSC_DEFINE_JIT_OPERATION(domJITGetterBaseJSObjectSlowCall, EncodedJSValue, (JSGl
     VM& vm = globalObject->vm();
     CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
     JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSObject* object = static_cast<JSObject*>(pointer);
     OPERATION_RETURN(scope, JSValue::encode(object->getPrototypeDirect()));
 }
@@ -2011,7 +2011,7 @@ JSC_DEFINE_HOST_FUNCTION(functionWasmStreamingParserAddBytes, (JSGlobalObject* g
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* thisObject = jsDynamicCast<WasmStreamingParser*>(callFrame->thisValue());
     if (!thisObject)
@@ -2112,7 +2112,7 @@ JSC_DEFINE_HOST_FUNCTION(functionWasmStreamingCompilerAddBytes, (JSGlobalObject*
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* thisObject = jsDynamicCast<WasmStreamingCompiler*>(callFrame->thisValue());
     if (!thisObject)
@@ -2176,6 +2176,7 @@ static JSC_DECLARE_HOST_FUNCTION(functionGetPID);
 static JSC_DECLARE_HOST_FUNCTION(functionVMTaintedState);
 static JSC_DECLARE_HOST_FUNCTION(functionHaveABadTime);
 static JSC_DECLARE_HOST_FUNCTION(functionIsHavingABadTime);
+static JSC_DECLARE_HOST_FUNCTION(functionThrowTerminationException);
 static JSC_DECLARE_HOST_FUNCTION(functionCallWithStackSize);
 static JSC_DECLARE_HOST_FUNCTION(functionCreateGlobalObject);
 static JSC_DECLARE_HOST_FUNCTION(functionCreateProxy);
@@ -2279,7 +2280,7 @@ const ClassInfo JSDollarVM::s_info = { "DollarVM"_s, &Base::s_info, nullptr, nul
 static EncodedJSValue doPrint(JSGlobalObject* globalObject, CallFrame* callFrame, bool addLineFeed)
 {
     DollarVMAssertScope assertScope;
-    auto scope = DECLARE_THROW_SCOPE(globalObject->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
     for (unsigned i = 0; i < callFrame->argumentCount(); ++i) {
         JSValue arg = callFrame->uncheckedArgument(i);
         if (arg.isCell()
@@ -2305,14 +2306,14 @@ JSC_DEFINE_HOST_FUNCTION_WITH_ATTRIBUTES(functionCrash, NO_RETURN_DUE_TO_CRASH, 
     DollarVMAssertScope assertScope;
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     if (callFrame->argumentCount()) {
         dataLogLn("Dumping ", callFrame->argumentCount(), " values before crashing:");
         const bool addLineFeed = true;
         doPrint(globalObject, callFrame, addLineFeed);
         if (scope.exception()) {
             JSValue value = scope.exception()->value();
-            scope.clearException();
+            scope.clearExceptionIncludingTermination();
             dataLogLn("Error thrown while crashing: ", value.toWTFString(globalObject));
         }
     }
@@ -2327,7 +2328,7 @@ JSC_DEFINE_HOST_FUNCTION(functionBreakpoint, (JSGlobalObject* globalObject, Call
     DollarVMAssertScope assertScope;
     // Nothing should throw here but we might as well double check...
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(scope);
     if (!callFrame->argumentCount() || callFrame->argument(0).toBoolean(globalObject))
         WTFBreakpointTrap();
@@ -2987,7 +2988,7 @@ JSC_DEFINE_HOST_FUNCTION(functionHaveABadTime, (JSGlobalObject* globalObject, Ca
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSGlobalObject* target = globalObject;
     if (!callFrame->argument(0).isUndefined()) {
         JSObject* obj = callFrame->argument(0).getObject();
@@ -3006,7 +3007,7 @@ JSC_DEFINE_HOST_FUNCTION(functionIsHavingABadTime, (JSGlobalObject* globalObject
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSGlobalObject* target = globalObject;
     if (!callFrame->argument(0).isUndefined()) {
         JSObject* obj = callFrame->argument(0).getObject();
@@ -3016,6 +3017,20 @@ JSC_DEFINE_HOST_FUNCTION(functionIsHavingABadTime, (JSGlobalObject* globalObject
     }
 
     return JSValue::encode(jsBoolean(target->isHavingABadTime()));
+}
+
+// Throws a termination exception.
+// Usage: $vm.throwTerminationException()
+JSC_DEFINE_HOST_FUNCTION(functionThrowTerminationException, (JSGlobalObject* globalObject, CallFrame*))
+{
+    DollarVMAssertScope assertScope;
+    VM& vm = globalObject->vm();
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
+    vm.ensureTerminationException();
+    vm.setHasTerminationRequest();
+    vm.traps().fireTrap(VMTraps::NeedTermination);
+    RETURN_IF_EXCEPTION(scope, { });
+    RELEASE_ASSERT_NOT_REACHED();
 }
 
 // Calls the specified test function after adjusting the stack to have the specified
@@ -3052,7 +3067,7 @@ JSC_DEFINE_HOST_FUNCTION_WITH_ATTRIBUTES(functionCallWithStackSize, SUPPRESS_ASA
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
     JSLockHolder lock(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
 #if OS(DARWIN) && CPU(X86_64)
     constexpr bool isSupportedByPlatform = true;
@@ -3280,7 +3295,7 @@ JSC_DEFINE_HOST_FUNCTION(functionCreateWasmStreamingCompilerForCompile, (JSGloba
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
     JSLockHolder lock(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto [taintedness, url] = sourceTaintedOriginFromStack(vm, callFrame);
     auto source = makeSource("[wasm code]"_s, SourceOrigin(url), taintedness);
@@ -3294,8 +3309,7 @@ JSC_DEFINE_HOST_FUNCTION(functionCreateWasmStreamingCompilerForCompile, (JSGloba
     args.append(compiler);
     ASSERT(!args.hasOverflowed());
     call(globalObject, callback, jsUndefined(), args, "You shouldn't see this..."_s);
-    if (scope.exception()) [[unlikely]]
-        scope.clearException();
+    TRY_CLEAR_EXCEPTION(scope, { });
     compiler->streamingCompiler().finalize(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
     return JSValue::encode(compiler->promise());
@@ -3306,7 +3320,7 @@ JSC_DEFINE_HOST_FUNCTION(functionCreateWasmStreamingCompilerForInstantiate, (JSG
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
     JSLockHolder lock(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto [taintedness, url] = sourceTaintedOriginFromStack(vm, callFrame);
     auto source = makeSource("[wasm code]"_s, SourceOrigin(url), taintedness);
@@ -3325,8 +3339,7 @@ JSC_DEFINE_HOST_FUNCTION(functionCreateWasmStreamingCompilerForInstantiate, (JSG
     args.append(compiler);
     ASSERT(!args.hasOverflowed());
     call(globalObject, callback, jsUndefined(), args, "You shouldn't see this..."_s);
-    if (scope.exception()) [[unlikely]]
-        scope.clearException();
+    TRY_CLEAR_EXCEPTION(scope, { });
     compiler->streamingCompiler().finalize(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
     return JSValue::encode(compiler->promise());
@@ -3380,7 +3393,7 @@ JSC_DEFINE_HOST_FUNCTION(functionCreateEmptyFunctionWithName, (JSGlobalObject* g
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
     JSLockHolder lock(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     const String name = callFrame->argument(0).toWTFString(globalObject);
     RETURN_IF_EXCEPTION(scope, encodedJSValue());
@@ -3393,7 +3406,7 @@ JSC_DEFINE_HOST_FUNCTION(functionSetImpureGetterDelegate, (JSGlobalObject* globa
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
     JSLockHolder lock(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue base = callFrame->argument(0);
     if (!base.isObject())
@@ -3414,7 +3427,7 @@ JSC_DEFINE_HOST_FUNCTION(functionCreateBuiltin, (JSGlobalObject* globalObject, C
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (callFrame->argumentCount() < 1 || !callFrame->argument(0).isString())
         return JSValue::encode(jsUndefined());
@@ -3432,7 +3445,7 @@ JSC_DEFINE_HOST_FUNCTION(functionRunTaintedString, (JSGlobalObject* globalObject
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (callFrame->argumentCount() < 1 || !callFrame->argument(0).isString())
         return JSValue::encode(jsUndefined());
@@ -3443,6 +3456,7 @@ JSC_DEFINE_HOST_FUNCTION(functionRunTaintedString, (JSGlobalObject* globalObject
     SourceCode source = makeSource(functionText, { }, SourceTaintedOrigin::KnownTainted);
     NakedPtr<Exception> error;
     JSValue result = evaluate(globalObject, source, JSValue(), error);
+    scope.assertNoExceptionExceptTermination();
 
     if (error)
         return throwVMException(globalObject, scope, error.get());
@@ -3454,7 +3468,7 @@ JSC_DEFINE_HOST_FUNCTION(functionGetPrivateProperty, (JSGlobalObject* globalObje
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (callFrame->argumentCount() < 2 || !callFrame->argument(1).isString())
         return encodedJSUndefined();
@@ -3482,7 +3496,7 @@ JSC_DEFINE_HOST_FUNCTION(functionCreateElement, (JSGlobalObject* globalObject, C
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
     JSLockHolder lock(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Root* root = jsDynamicCast<Root*>(callFrame->argument(0));
     if (!root)
@@ -3515,7 +3529,7 @@ JSC_DEFINE_HOST_FUNCTION(functionGetHiddenValue, (JSGlobalObject* globalObject, 
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
     JSLockHolder lock(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     SimpleObject* simpleObject = jsDynamicCast<SimpleObject*>(callFrame->argument(0));
     if (!simpleObject) [[unlikely]] {
@@ -3530,7 +3544,7 @@ JSC_DEFINE_HOST_FUNCTION(functionSetHiddenValue, (JSGlobalObject* globalObject, 
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
     JSLockHolder lock(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     SimpleObject* simpleObject = jsDynamicCast<SimpleObject*>(callFrame->argument(0));
     if (!simpleObject) [[unlikely]] {
@@ -3547,7 +3561,7 @@ JSC_DEFINE_HOST_FUNCTION(functionShadowChickenFunctionsOnStack, (JSGlobalObject*
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
     DeferTermination deferScope(vm);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     if (auto* shadowChicken = vm.shadowChicken()) {
         scope.release();
         return JSValue::encode(shadowChicken->functionsOnStack(globalObject, callFrame));
@@ -3760,7 +3774,7 @@ JSC_DEFINE_HOST_FUNCTION(functionGetGetterSetter, (JSGlobalObject* globalObject,
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue value = callFrame->argument(0);
     if (!value.isObject())
@@ -3790,7 +3804,7 @@ JSC_DEFINE_HOST_FUNCTION(functionLoadGetterFromGetterSetter, (JSGlobalObject* gl
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     GetterSetter* getterSetter = jsDynamicCast<GetterSetter*>(callFrame->argument(0));
     if (!getterSetter) [[unlikely]] {
@@ -3855,7 +3869,7 @@ JSC_DEFINE_HOST_FUNCTION(functionMake16BitStringIfPossible, (JSGlobalObject* glo
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     String string = callFrame->argument(0).toWTFString(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
     string.convertTo16Bit();
@@ -3866,7 +3880,7 @@ JSC_DEFINE_HOST_FUNCTION(functionGetStructureTransitionList, (JSGlobalObject* gl
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSObject* obj = callFrame->argument(0).toObject(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
     if (!obj)
@@ -3903,7 +3917,7 @@ JSC_DEFINE_HOST_FUNCTION(functionGetConcurrently, (JSGlobalObject* globalObject,
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSObject* obj = callFrame->argument(0).toObject(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
     if (!obj)
@@ -3942,7 +3956,7 @@ JSC_DEFINE_HOST_FUNCTION(functionSetUserPreferredLanguages, (JSGlobalObject* glo
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSArray* array = jsDynamicCast<JSArray*>(callFrame->argument(0));
     if (!array)
@@ -4057,7 +4071,7 @@ JSC_DEFINE_HOST_FUNCTION(functionToCacheableDictionary, (JSGlobalObject* globalO
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* object = jsDynamicCast<JSObject*>(callFrame->argument(0));
     if (!object)
@@ -4071,7 +4085,7 @@ JSC_DEFINE_HOST_FUNCTION(functionToUncacheableDictionary, (JSGlobalObject* globa
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* object = jsDynamicCast<JSObject*>(callFrame->argument(0));
     if (!object)
@@ -4123,7 +4137,7 @@ JSC_DEFINE_HOST_FUNCTION(functionEvaluateWithScopeExtension, (JSGlobalObject* gl
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue scriptValue = callFrame->argument(0);
     if (!scriptValue.isString())
@@ -4137,6 +4151,7 @@ JSC_DEFINE_HOST_FUNCTION(functionEvaluateWithScopeExtension, (JSGlobalObject* gl
 
     NakedPtr<Exception> exception;
     JSValue result = evaluateWithScopeExtension(globalObject, source, scopeExtension, exception);
+    scope.assertNoExceptionExceptTermination();
     if (exception)
         return throwVMException(globalObject, scope, exception);
 
@@ -4217,7 +4232,7 @@ JSC_DEFINE_HOST_FUNCTION(functionSetCrashLogMessage, (JSGlobalObject* globalObje
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     String message = callFrame->argument(0).toWTFString(globalObject);
     RETURN_IF_EXCEPTION(scope, { });
@@ -4257,7 +4272,7 @@ JSC_DEFINE_HOST_FUNCTION(functionCallFromCPP, (JSGlobalObject* globalObject, Cal
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue callback = callFrame->argument(0);
     auto callData = JSC::getCallData(callback);
@@ -4291,7 +4306,7 @@ JSC_DEFINE_HOST_FUNCTION(functionCachedCallFromCPP, (JSGlobalObject* globalObjec
 {
     DollarVMAssertScope assertScope;
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSValue callback = callFrame->argument(0);
     auto callData = JSC::getCallData(callback);
@@ -4404,6 +4419,8 @@ void JSDollarVM::finishCreation(VM& vm)
 
     addFunction(vm, "haveABadTime"_s, functionHaveABadTime, 1);
     addFunction(vm, "isHavingABadTime"_s, functionIsHavingABadTime, 1);
+
+    addFunction(vm, "throwTerminationException"_s, functionThrowTerminationException, 0);
 
     addFunction(vm, "callWithStackSize"_s, functionCallWithStackSize, 2);
 

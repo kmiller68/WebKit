@@ -69,7 +69,7 @@ JSC_DEFINE_HOST_FUNCTION(callSuppressedErrorConstructor, (JSGlobalObject* global
 JSC_DEFINE_HOST_FUNCTION(constructSuppressedErrorConstructor, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSValue error = callFrame->argument(0);
     JSValue suppressed = callFrame->argument(1);
     JSValue message = callFrame->argument(2);

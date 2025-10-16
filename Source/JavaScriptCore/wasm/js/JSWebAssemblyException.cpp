@@ -88,7 +88,7 @@ void JSWebAssemblyException::destroy(JSCell* cell)
 JSValue JSWebAssemblyException::getArg(JSGlobalObject* globalObject, unsigned i) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     SUPPRESS_UNCOUNTED_LOCAL const auto& tagType = tag().type();
     ASSERT(i < tagType.argumentCount());

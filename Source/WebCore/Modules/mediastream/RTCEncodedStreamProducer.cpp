@@ -114,7 +114,7 @@ ExceptionOr<void> RTCEncodedStreamProducer::writeFrame(ScriptExecutionContext& c
         return { };
 
     Ref vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto frameConversionResult = convert<IDLUnion<IDLInterface<RTCEncodedAudioFrame>, IDLInterface<RTCEncodedVideoFrame>>>(*globalObject, value);
     if (frameConversionResult.hasException(scope)) [[unlikely]]

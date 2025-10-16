@@ -26,7 +26,7 @@
 #include "config.h"
 #include "ConsoleClient.h"
 
-#include "CatchScope.h"
+#include "ExceptionScope.h"
 #include "JSCJSValueInlines.h"
 #include "JSGlobalObject.h"
 #include "ScriptArguments.h"
@@ -205,6 +205,9 @@ void ConsoleClient::printConsoleMessage(MessageSource source, MessageType type, 
 
 void ConsoleClient::printConsoleMessageWithArguments(MessageSource source, MessageType type, MessageLevel level, JSC::JSGlobalObject* globalObject, Ref<ScriptArguments>&& arguments)
 {
+    DeferTerminationForAWhile deferTermination(globalObject->vm());
+    auto scope = DECLARE_EXCEPTION_SCOPE(globalObject->vm());
+
     bool isTraceMessage = type == MessageType::Trace;
     size_t stackSize = isTraceMessage ? ScriptCallStack::maxCallStackSizeToCapture : 1;
     Ref<ScriptCallStack> callStack = createScriptCallStackForConsole(globalObject, stackSize);
@@ -220,10 +223,8 @@ void ConsoleClient::printConsoleMessageWithArguments(MessageSource source, Messa
     appendMessagePrefix(builder, source, type, level);
     for (size_t i = 0; i < arguments->argumentCount(); ++i) {
         builder.append(' ');
-        auto* globalObject = arguments->globalObject();
-        auto scope = DECLARE_CATCH_SCOPE(globalObject->vm());
         builder.append(arguments->argumentAt(i).toWTFString(globalObject));
-        scope.clearException();
+        scope.clearExceptionIncludingTermination();
     }
 
     if (builder.hasOverflowed())

@@ -34,7 +34,7 @@
 #include "JSDOMBinding.h"
 #include "LocalDOMWindow.h"
 #include "WindowEventLoop.h"
-#include <JavaScriptCore/CatchScope.h>
+#include <JavaScriptCore/ExceptionScope.h>
 #include <JavaScriptCore/Heap.h>
 #include <wtf/NeverDestroyed.h>
 #include <wtf/Ref.h>
@@ -357,16 +357,16 @@ void CustomElementQueue::processQueue(JSC::JSGlobalObject* state)
 
     JSC::Exception* previousException = nullptr;
     {
-        auto catchScope = DECLARE_CATCH_SCOPE(vm);
+        auto catchScope = DECLARE_EXCEPTION_SCOPE(vm);
         previousException = catchScope.exception();
         if (previousException)
-            catchScope.clearException();
+            TRY_CLEAR_EXCEPTION(catchScope, void());
     }
 
     invokeAll();
 
     if (previousException) {
-        auto throwScope = DECLARE_THROW_SCOPE(vm);
+        auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
         throwException(state, throwScope, previousException);
     }
 }

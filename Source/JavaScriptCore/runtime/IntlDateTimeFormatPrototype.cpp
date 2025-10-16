@@ -92,7 +92,7 @@ void IntlDateTimeFormatPrototype::finishCreation(VM& vm, JSGlobalObject* globalO
 static double handleDateTimeValue(JSGlobalObject* globalObject, JSValue x)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (x.isUndefined())
         RELEASE_AND_RETURN(scope, dateNowImpl().toNumber(globalObject));
@@ -111,7 +111,7 @@ static double handleDateTimeValue(JSGlobalObject* globalObject, JSValue x)
 JSC_DEFINE_HOST_FUNCTION(intlDateTimeFormatFuncFormatDateTime, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     // 12.1.7 DateTime Format Functions (ECMA-402)
     // https://tc39.github.io/ecma402/#sec-formatdatetime
 
@@ -129,7 +129,7 @@ JSC_DEFINE_HOST_FUNCTION(intlDateTimeFormatFuncFormatDateTime, (JSGlobalObject* 
 JSC_DEFINE_CUSTOM_GETTER(intlDateTimeFormatPrototypeGetterFormat, (JSGlobalObject* globalObject, EncodedJSValue thisValue, PropertyName))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 12.3.3 Intl.DateTimeFormat.prototype.format (ECMA-402 2.0)
     // 1. Let dtf be this DateTimeFormat object.
@@ -162,7 +162,7 @@ JSC_DEFINE_CUSTOM_GETTER(intlDateTimeFormatPrototypeGetterFormat, (JSGlobalObjec
 JSC_DEFINE_HOST_FUNCTION(intlDateTimeFormatPrototypeFuncFormatToParts, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 15.4 Intl.DateTimeFormat.prototype.formatToParts (ECMA-402 4.0)
     // https://tc39.github.io/ecma402/#sec-Intl.DateTimeFormat.prototype.formatToParts
@@ -183,7 +183,7 @@ JSC_DEFINE_HOST_FUNCTION(intlDateTimeFormatPrototypeFuncFormatToParts, (JSGlobal
 JSC_DEFINE_HOST_FUNCTION(intlDateTimeFormatPrototypeFuncFormatRange, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // Do not use unwrapForOldFunctions.
     auto* dateTimeFormat = jsDynamicCast<IntlDateTimeFormat*>(callFrame->thisValue());
@@ -208,7 +208,7 @@ JSC_DEFINE_HOST_FUNCTION(intlDateTimeFormatPrototypeFuncFormatRange, (JSGlobalOb
 JSC_DEFINE_HOST_FUNCTION(intlDateTimeFormatPrototypeFuncFormatRangeToParts, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // Do not use unwrapForOldFunctions.
     auto* dateTimeFormat = jsDynamicCast<IntlDateTimeFormat*>(callFrame->thisValue());
@@ -232,7 +232,7 @@ JSC_DEFINE_HOST_FUNCTION(intlDateTimeFormatPrototypeFuncFormatRangeToParts, (JSG
 JSC_DEFINE_HOST_FUNCTION(intlDateTimeFormatPrototypeFuncResolvedOptions, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     // 12.3.5 Intl.DateTimeFormat.prototype.resolvedOptions() (ECMA-402 2.0)
 

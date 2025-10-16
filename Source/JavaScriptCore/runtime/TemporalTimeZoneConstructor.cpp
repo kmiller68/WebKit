@@ -80,7 +80,7 @@ void TemporalTimeZoneConstructor::finishCreation(VM& vm, TemporalTimeZonePrototy
 JSC_DEFINE_HOST_FUNCTION(constructTemporalTimeZone, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* newTarget = asObject(callFrame->newTarget());
     Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, timeZoneStructure, newTarget, callFrame->jsCallee());
@@ -104,7 +104,7 @@ JSC_DEFINE_HOST_FUNCTION(constructTemporalTimeZone, (JSGlobalObject* globalObjec
 JSC_DEFINE_HOST_FUNCTION(callTemporalTimeZone, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "TimeZone"_s));
 }

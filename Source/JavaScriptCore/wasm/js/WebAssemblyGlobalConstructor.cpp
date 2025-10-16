@@ -45,7 +45,7 @@ static JSC_DECLARE_HOST_FUNCTION(callJSWebAssemblyGlobal);
 JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyGlobal, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* newTarget = asObject(callFrame->newTarget());
     Structure* webAssemblyGlobalStructure = JSC_GET_DERIVED_STRUCTURE(vm, webAssemblyGlobalStructure, newTarget, callFrame->jsCallee());
@@ -160,7 +160,7 @@ JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyGlobal, (JSGlobalObject* globalOb
 JSC_DEFINE_HOST_FUNCTION(callJSWebAssemblyGlobal, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "WebAssembly.Global"_s));
 }
 

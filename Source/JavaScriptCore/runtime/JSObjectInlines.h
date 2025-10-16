@@ -88,7 +88,7 @@ inline void JSObject::nukeStructureAndSetButterfly(VM& vm, StructureID oldStruct
 inline JSValue JSObject::get(JSGlobalObject* globalObject, PropertyName propertyName) const
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     PropertySlot slot(this, PropertySlot::InternalMethodType::Get);
     bool hasProperty = const_cast<JSObject*>(this)->getPropertySlot(globalObject, propertyName, slot);
 
@@ -104,7 +104,7 @@ inline JSValue JSObject::get(JSGlobalObject* globalObject, PropertyName property
 inline JSValue JSObject::get(JSGlobalObject* globalObject, unsigned propertyName) const
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     PropertySlot slot(this, PropertySlot::InternalMethodType::Get);
     bool hasProperty = const_cast<JSObject*>(this)->getPropertySlot(globalObject, propertyName, slot);
 
@@ -141,7 +141,7 @@ template <typename Functor> // A functor should have a type like: (JSValue) -> b
 void forEachInArrayLike(JSGlobalObject* globalObject, JSObject* arrayLikeObject, Functor functor)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     uint64_t length = toLength(globalObject, arrayLikeObject);
     RETURN_IF_EXCEPTION(scope, void());
     for (uint64_t index = 0; index < length; index++) {
@@ -192,7 +192,7 @@ template<typename CallbackWhenNoException>
 ALWAYS_INLINE typename std::invoke_result<CallbackWhenNoException, bool, PropertySlot&>::type JSObject::getPropertySlot(JSGlobalObject* globalObject, PropertyName propertyName, PropertySlot& slot, CallbackWhenNoException callback) const
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     bool found = const_cast<JSObject*>(this)->getPropertySlot(globalObject, propertyName, slot);
     RETURN_IF_EXCEPTION(scope, { });
     RELEASE_AND_RETURN(scope, callback(found, slot));
@@ -201,7 +201,7 @@ ALWAYS_INLINE typename std::invoke_result<CallbackWhenNoException, bool, Propert
 ALWAYS_INLINE bool JSObject::getPropertySlot(JSGlobalObject* globalObject, unsigned propertyName, PropertySlot& slot)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSObject* object = this;
     while (true) {
         Structure* structure = object->structureID().decode();
@@ -241,7 +241,7 @@ ALWAYS_INLINE bool JSObject::getNonIndexPropertySlot(JSGlobalObject* globalObjec
     ASSERT(!parseIndex(propertyName));
 
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     JSObject* object = this;
     while (true) {
         Structure* structure = object->structureID().decode();
@@ -283,7 +283,7 @@ inline bool JSObject::getOwnPropertySlotInline(JSGlobalObject* globalObject, Pro
 template<typename PropertyNameType> inline JSValue JSObject::getIfPropertyExists(JSGlobalObject* globalObject, const PropertyNameType& propertyName)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     PropertySlot slot(this, PropertySlot::InternalMethodType::HasProperty);
     bool hasProperty = getPropertySlot(globalObject, propertyName, slot);
@@ -397,7 +397,7 @@ ALWAYS_INLINE bool JSObject::putInlineForJSObject(JSCell* cell, JSGlobalObject* 
 ALWAYS_INLINE bool JSObject::putInlineFast(JSGlobalObject* globalObject, PropertyName propertyName, JSValue value, PutPropertySlot& slot)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto error = putDirectInternal<PutModePut>(vm, propertyName, value, 0, slot);
     if (!error.isNull())
@@ -854,7 +854,7 @@ inline bool JSObject::hasPrivateField(JSGlobalObject* globalObject, PropertyName
 inline bool JSObject::getPrivateField(JSGlobalObject* globalObject, PropertyName propertyName, PropertySlot& slot)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     ASSERT(!slot.isVMInquiry());
     if (!JSObject::getPrivateFieldSlot(this, globalObject, propertyName, slot)) {
         throwException(globalObject, scope, createInvalidPrivateNameError(globalObject));
@@ -867,7 +867,7 @@ inline bool JSObject::getPrivateField(JSGlobalObject* globalObject, PropertyName
 inline void JSObject::setPrivateField(JSGlobalObject* globalObject, PropertyName propertyName, JSValue value, PutPropertySlot& putSlot)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     PropertySlot slot(this, PropertySlot::InternalMethodType::HasProperty);
     if (!JSObject::getPrivateFieldSlot(this, globalObject, propertyName, slot)) {
         throwException(globalObject, scope, createInvalidPrivateNameError(globalObject));
@@ -882,7 +882,7 @@ inline void JSObject::setPrivateField(JSGlobalObject* globalObject, PropertyName
 inline void JSObject::definePrivateField(JSGlobalObject* globalObject, PropertyName propertyName, JSValue value, PutPropertySlot& putSlot)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     PropertySlot slot(this, PropertySlot::InternalMethodType::HasProperty);
     if (JSObject::getPrivateFieldSlot(this, globalObject, propertyName, slot)) {
         throwException(globalObject, scope, createRedefinedPrivateNameError(globalObject));
@@ -931,7 +931,7 @@ inline void JSObject::checkPrivateBrand(JSGlobalObject* globalObject, JSValue br
 {
     ASSERT(brand.isSymbol() && asSymbol(brand)->uid().isPrivate());
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Structure* structure = this->structure();
     if (!structure->isBrandedStructure() || !jsCast<BrandedStructure*>(structure)->checkBrand(asSymbol(brand)))
@@ -942,7 +942,7 @@ inline void JSObject::setPrivateBrand(JSGlobalObject* globalObject, JSValue bran
 {
     ASSERT(brand.isSymbol() && asSymbol(brand)->uid().isPrivate());
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     Structure* structure = this->structure();
     if (structure->isBrandedStructure() && jsCast<BrandedStructure*>(structure)->checkBrand(asSymbol(brand))) {
@@ -969,7 +969,7 @@ void JSObject::forEachOwnIndexedProperty(JSGlobalObject* globalObject, const Fun
     ASSERT(structure()->canPerformFastPropertyEnumerationCommon());
     ASSERT(canHaveExistingOwnIndexedProperties() && !canHaveExistingOwnIndexedGetterSetterProperties());
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     switch (indexingType()) {
     case ALL_BLANK_INDEXING_TYPES:

@@ -42,7 +42,7 @@ static ExceptionOr<ApplePayAMSUIRequest> convertAndValidateApplePayAMSUIRequest(
     if (data.isEmpty())
         return Exception { ExceptionCode::TypeError, "Missing payment method data."_s };
 
-    auto throwScope = DECLARE_THROW_SCOPE(document.vm());
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(document.vm());
     auto applePayAMSUIRequestConversionResult = convertDictionary<ApplePayAMSUIRequest>(*document.globalObject(), data);
     if (applePayAMSUIRequestConversionResult.hasException(throwScope))
         return Exception { ExceptionCode::ExistingExceptionError };
@@ -89,7 +89,7 @@ void ApplePayAMSUIPaymentHandler::finishSession(std::optional<bool>&& result)
         JSC::JSLockHolder lock { &lexicalGlobalObject };
 
         JSC::VM& vm = lexicalGlobalObject.vm();
-        auto throwScope = DECLARE_THROW_SCOPE(vm);
+        auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
         auto* object = constructEmptyObject(&lexicalGlobalObject);
         object->putDirect(vm, JSC::Identifier::fromString(vm, "success"_s), JSC::jsBoolean(success));

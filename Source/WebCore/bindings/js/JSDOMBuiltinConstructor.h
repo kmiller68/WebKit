@@ -84,7 +84,7 @@ template<typename JSClass> inline JSC::Structure* JSDOMBuiltinConstructor<JSClas
     if (newTarget == this) [[likely]]
         return getDOMStructure<JSClass>(vm, *globalObject());
 
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* newTargetGlobalObject = JSC::getFunctionRealm(lexicalGlobalObject, newTarget);
     RETURN_IF_EXCEPTION(scope, nullptr);
     auto* baseStructure = getDOMStructure<JSClass>(vm, *JSC::jsCast<JSDOMGlobalObject*>(newTargetGlobalObject));

@@ -138,7 +138,7 @@ Vector<String> IntlCollator::searchLocaleData(const String&, RelevantExtensionKe
 void IntlCollator::initializeCollator(JSGlobalObject* globalObject, JSValue locales, JSValue optionsValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto requestedLocales = canonicalizeLocaleList(globalObject, locales);
     RETURN_IF_EXCEPTION(scope, void());
@@ -287,7 +287,7 @@ UCollationResult IntlCollator::compareStrings(JSGlobalObject* globalObject, Stri
     ASSERT(m_collator);
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     UErrorCode status = U_ZERO_ERROR;
     std::optional<UCollationResult> result = ([&]() -> std::optional<UCollationResult> {

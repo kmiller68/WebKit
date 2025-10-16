@@ -805,7 +805,7 @@ public:
     JSCell** addressOfLastException() { return reinterpret_cast<JSCell**>(&m_lastException); }
 
     // This should only be used for code that wants to check for any pending
-    // exception without interfering with Throw/CatchScopes.
+    // exception without interfering with ExceptionScopes.
     Exception* exceptionForInspection() const { return m_exception; }
 
     void setFailNextNewCodeBlock() { m_failNextNewCodeBlock = true; }
@@ -1192,6 +1192,7 @@ private:
 public:
     SentinelLinkedList<MicrotaskQueue, BasicRawSentinelNode<MicrotaskQueue>> m_microtaskQueues;
 private:
+    bool m_forbidExceptionThrowing { false };
     bool m_failNextNewCodeBlock { false };
     bool m_globalConstRedeclarationShouldThrow { true };
     bool m_shouldBuildPCToCodeOriginMapping { false };
@@ -1256,13 +1257,12 @@ private:
 
     void checkStaticAsserts(); // Not for calling.
 
+    friend class ForbidExceptionScope; // Friend for exception checking purpose only.
     friend class Heap;
-    friend class CatchScope; // Friend for exception checking purpose only.
     friend class ExceptionScope; // Friend for exception checking purpose only.
     friend class JSDollarVMHelper;
     friend class LLIntOffsetsExtractor;
     friend class SuspendExceptionScope;
-    friend class ThrowScope; // Friend for exception checking purpose only.
     friend class VMTraps;
 };
 

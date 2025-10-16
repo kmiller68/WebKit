@@ -41,7 +41,7 @@ using namespace JSC;
 EncodedJSValue constructJSWebAnimation(JSGlobalObject* lexicalGlobalObject, CallFrame& callFrame)
 {
     VM& vm = lexicalGlobalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     auto* jsConstructor = jsCast<JSDOMConstructorBase*>(callFrame.jsCallee());
     ASSERT(jsConstructor);
@@ -50,7 +50,7 @@ EncodedJSValue constructJSWebAnimation(JSGlobalObject* lexicalGlobalObject, Call
         return throwConstructorScriptExecutionContextUnavailableError(*lexicalGlobalObject, throwScope, "Animation"_s);
 
     auto& document = downcast<Document>(*context);
-    auto effect = convert<IDLNullable<IDLInterface<AnimationEffect>>>(*lexicalGlobalObject, callFrame.argument(0), [](JSGlobalObject& lexicalGlobalObject, ThrowScope& scope) {
+    auto effect = convert<IDLNullable<IDLInterface<AnimationEffect>>>(*lexicalGlobalObject, callFrame.argument(0), [](JSGlobalObject& lexicalGlobalObject, ExceptionScope& scope) {
         throwArgumentTypeError(lexicalGlobalObject, scope, 0, "effect"_s, "Animation"_s, nullptr, "AnimationEffect"_s);
     });
     if (effect.hasException(throwScope)) [[unlikely]]
@@ -61,7 +61,7 @@ EncodedJSValue constructJSWebAnimation(JSGlobalObject* lexicalGlobalObject, Call
         return JSValue::encode(toJSNewlyCreated<IDLInterface<WebAnimation>>(*lexicalGlobalObject, *jsConstructor->globalObject(), WTFMove(object)));
     }
 
-    auto timeline = convert<IDLNullable<IDLInterface<AnimationTimeline>>>(*lexicalGlobalObject, callFrame.uncheckedArgument(1), [](JSGlobalObject& lexicalGlobalObject, ThrowScope& scope) {
+    auto timeline = convert<IDLNullable<IDLInterface<AnimationTimeline>>>(*lexicalGlobalObject, callFrame.uncheckedArgument(1), [](JSGlobalObject& lexicalGlobalObject, ExceptionScope& scope) {
         throwArgumentTypeError(lexicalGlobalObject, scope, 1, "timeline"_s, "Animation"_s, nullptr, "AnimationTimeline"_s);
     });
     if (timeline.hasException(throwScope)) [[unlikely]]

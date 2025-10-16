@@ -72,15 +72,18 @@ void injectInternalsObject(JSContextRef context)
 {
     JSGlobalObject* lexicalGlobalObject = toJS(context);
     VM& vm = lexicalGlobalObject->vm();
-    auto scope = DECLARE_CATCH_SCOPE(vm);
     JSLockHolder lock(vm);
+    // FIXME: We could logically receive a termination here but most of our callers expect us to not throw.
+    DeferTerminationForAWhile noTermination(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
+    scope.noRethrow();
     JSDOMGlobalObject* globalObject = jsCast<JSDOMGlobalObject*>(lexicalGlobalObject);
     if (RefPtr document = dynamicDowncast<Document>(*globalObject->scriptExecutionContext())) {
         globalObject->putDirect(vm, Identifier::fromString(vm, Internals::internalsId), toJS(lexicalGlobalObject, globalObject, Internals::create(*document)));
         Options::useDollarVM() = true;
         globalObject->exposeDollarVM(vm);
     }
-    EXCEPTION_ASSERT_UNUSED(scope, !scope.exception());
+    scope.assertNoException();
 }
 
 void resetInternalsObject(JSContextRef context)

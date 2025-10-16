@@ -75,7 +75,7 @@ IntlListFormat::IntlListFormat(VM& vm, Structure* structure)
 void IntlListFormat::initializeListFormat(JSGlobalObject* globalObject, JSValue locales, JSValue optionsValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto requestedLocales = canonicalizeLocaleList(globalObject, locales);
     RETURN_IF_EXCEPTION(scope, void());
@@ -147,7 +147,7 @@ static Vector<String, 4> stringListFromIterable(JSGlobalObject* globalObject, JS
         return result;
 
     forEachInIterable(globalObject, iterable, [&](VM& vm, JSGlobalObject* globalObject, JSValue value) {
-        auto scope = DECLARE_THROW_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
         if (!value.isString()) {
             throwTypeError(globalObject, scope, "Iterable passed to ListFormat includes non String"_s);
             return;
@@ -163,7 +163,7 @@ static Vector<String, 4> stringListFromIterable(JSGlobalObject* globalObject, JS
 JSValue IntlListFormat::format(JSGlobalObject* globalObject, JSValue list) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto stringList = stringListFromIterable(globalObject, list);
     RETURN_IF_EXCEPTION(scope, { });
@@ -182,7 +182,7 @@ JSValue IntlListFormat::format(JSGlobalObject* globalObject, JSValue list) const
 JSValue IntlListFormat::formatToParts(JSGlobalObject* globalObject, JSValue list) const
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto stringList = stringListFromIterable(globalObject, list);
     RETURN_IF_EXCEPTION(scope, { });

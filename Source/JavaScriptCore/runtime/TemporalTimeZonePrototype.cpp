@@ -87,7 +87,7 @@ JSC_DEFINE_CUSTOM_GETTER(temporalTimeZonePrototypeGetterId, (JSGlobalObject* glo
 JSC_DEFINE_HOST_FUNCTION(temporalTimeZonePrototypeFuncToString, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* timeZone = jsDynamicCast<TemporalTimeZone*>(callFrame->thisValue());
     if (!timeZone)

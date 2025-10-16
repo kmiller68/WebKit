@@ -212,7 +212,7 @@ static JSObject* objectForEventTargetListeners(VM& vm, JSGlobalObject* exec, Eve
 
 JSValue WebInjectedScriptHost::getInternalProperties(VM& vm, JSGlobalObject* exec, JSC::JSValue value)
 {
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (RefPtr worker = JSWorker::toWrapped(vm, value)) {
         unsigned index = 0;

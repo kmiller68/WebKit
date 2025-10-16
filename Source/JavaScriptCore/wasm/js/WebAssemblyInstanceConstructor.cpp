@@ -45,7 +45,7 @@ using Wasm::Plan;
 JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyInstance, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto [taintedness, url] = sourceTaintedOriginFromStack(vm, callFrame);
     RefPtr<SourceProvider> provider = StringSourceProvider::create("[wasm code]"_s, SourceOrigin(url), String(), taintedness, TextPosition(), SourceProviderSourceType::Program);
@@ -79,7 +79,7 @@ JSC_DEFINE_HOST_FUNCTION(constructJSWebAssemblyInstance, (JSGlobalObject* global
 JSC_DEFINE_HOST_FUNCTION(callJSWebAssemblyInstance, (JSGlobalObject* globalObject, CallFrame*))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     return JSValue::encode(throwConstructorCannotBeCalledAsFunctionTypeError(globalObject, scope, "WebAssembly.Instance"_s));
 }
 

@@ -37,8 +37,8 @@
 #include "BytecodeGeneratorBaseInlines.h"
 #include "BytecodeGeneratorification.h"
 #include "BytecodeUseDef.h"
-#include "CatchScope.h"
 #include "DefinePropertyAttributes.h"
+#include "ExceptionScope.h"
 #include "Interpreter.h"
 #include "JSAsyncGenerator.h"
 #include "JSBigInt.h"
@@ -3385,11 +3385,9 @@ JSValue BytecodeGenerator::addBigIntConstant(const Identifier& identifier, uint8
 {
     return m_bigIntMap.ensure(BigIntMapEntry(identifier.impl(), radix, sign), [&] {
         VM& vm = this->vm();
-        DeferTermination deferScope(vm);
-        auto scope = DECLARE_CATCH_SCOPE(vm);
+        ForbidExceptionScope noExceptions(vm);
         auto parseIntSign = sign ? JSBigInt::ParseIntSign::Signed : JSBigInt::ParseIntSign::Unsigned;
         JSValue bigIntInMap = JSBigInt::parseInt(nullptr, vm, identifier.string(), radix, JSBigInt::ErrorParseMode::ThrowExceptions, parseIntSign);
-        scope.assertNoException();
         addConstantValue(bigIntInMap);
 
         return bigIntInMap;
@@ -4387,7 +4385,7 @@ void BytecodeGenerator::emitPushCatchScope(VariableEnvironment& environment, Sco
     pushLexicalScopeInternal(environment, TDZCheckOptimization::Optimize, NestedScopeType::IsNotNested, nullptr, TDZRequirement::UnderTDZ, scopeType, ScopeRegisterType::Block);
 }
 
-void BytecodeGenerator::emitPopCatchScope(VariableEnvironment& environment) 
+void BytecodeGenerator::emitPopCatchScope(VariableEnvironment& environment)
 {
     popLexicalScopeInternal(environment);
 }

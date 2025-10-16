@@ -992,7 +992,7 @@ void LocalDOMWindow::processPostMessage(JSC::JSGlobalObject& lexicalGlobalObject
             return;
 
         auto& vm = globalObject->vm();
-        auto scope = DECLARE_CATCH_SCOPE(vm);
+        auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
         UserGestureIndicator userGestureIndicator(userGestureToForward);
         InspectorInstrumentation::willDispatchPostMessage(frame, postMessageIdentifier);

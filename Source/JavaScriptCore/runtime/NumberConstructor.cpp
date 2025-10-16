@@ -98,7 +98,7 @@ void NumberConstructor::finishCreation(VM& vm, NumberPrototype* numberPrototype)
 JSC_DEFINE_HOST_FUNCTION(constructNumberConstructor, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     double n = 0;
     if (callFrame->argumentCount()) {
         JSValue numeric = callFrame->uncheckedArgument(0).toNumeric(globalObject);
@@ -126,7 +126,7 @@ JSC_DEFINE_HOST_FUNCTION(constructNumberConstructor, (JSGlobalObject* globalObje
 JSC_DEFINE_HOST_FUNCTION(callNumberConstructor, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     if (!callFrame->argumentCount())
         return JSValue::encode(jsNumber(0));
     JSValue numeric = callFrame->uncheckedArgument(0).toNumeric(globalObject);

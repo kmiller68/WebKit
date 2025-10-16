@@ -26,7 +26,7 @@
 #include "config.h"
 #include "DeferredWorkTimer.h"
 
-#include "CatchScope.h"
+#include "ExceptionScope.h"
 #include "DeferredWorkTimerInlines.h"
 #include "GlobalObjectMethodTable.h"
 #include "JSGlobalObject.h"
@@ -93,7 +93,6 @@ void DeferredWorkTimer::doWork(VM& vm)
     SUPPRESS_UNCOUNTED_LAMBDA_CAPTURE auto stopRunLoopIfNecessary = makeScopeExit([&] {
         locker.assertIsHolding(m_taskLock);
         if (vm.hasPendingTerminationException()) {
-            vm.setExecutionForbidden();
             if (m_shouldStopRunLoopWhenAllTicketsFinish)
                 RunLoop::currentSingleton().stop();
             return;
@@ -148,21 +147,21 @@ void DeferredWorkTimer::doWork(VM& vm)
             // This is the start of a runloop turn, we can release any weakrefs here.
             vm.finalizeSynchronousJSExecution();
 
-            auto scope = DECLARE_CATCH_SCOPE(vm);
+            auto scope = DECLARE_EXCEPTION_SCOPE(vm);
+            scope.noRethrow();
             task(ticket);
             ticketData = nullptr;
             if (Exception* exception = scope.exception()) {
-                if (scope.clearExceptionExceptTermination())
+                if (scope.tryClearException())
                     globalObject->globalObjectMethodTable()->reportUncaughtExceptionAtEventLoop(globalObject, exception);
                 else if (vm.hasPendingTerminationException()) [[unlikely]]
                     return;
             }
 
             vm.drainMicrotasks();
+            scope.assertNoExceptionExceptTermination();
             if (vm.hasPendingTerminationException()) [[unlikely]]
                 return;
-
-            scope.assertNoException();
         }
     }
 

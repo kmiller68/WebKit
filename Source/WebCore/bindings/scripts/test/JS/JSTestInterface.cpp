@@ -269,7 +269,7 @@ static_assert(TestSupplemental::CONST_IMPL == 2, "CONST_IMPL in TestSupplemental
 template<> EncodedJSValue JSC_HOST_CALL_ATTRIBUTES JSTestInterfaceDOMConstructor::construct(JSGlobalObject* lexicalGlobalObject, CallFrame* callFrame)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = lexicalGlobalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* castedThis = jsCast<JSTestInterfaceDOMConstructor*>(callFrame->jsCallee());
     ASSERT(castedThis);
     if (callFrame->argumentCount() < 1) [[unlikely]]
@@ -518,7 +518,7 @@ void JSTestInterface::destroy(JSC::JSCell* cell)
 JSC_DEFINE_CUSTOM_GETTER(jsTestInterfaceConstructor, (JSGlobalObject* lexicalGlobalObject, EncodedJSValue thisValue, PropertyName))
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto* prototype = jsDynamicCast<JSTestInterfacePrototype*>(JSValue::decode(thisValue));
     if (!prototype) [[unlikely]]
         return throwVMTypeError(lexicalGlobalObject, throwScope);
@@ -529,7 +529,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestInterfaceConstructor, (JSGlobalObject* lexicalGlo
 static inline JSValue jsTestInterface_mixinReadOnlyAttributeGetter(JSGlobalObject& lexicalGlobalObject, JSTestInterface& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLDOMString>(lexicalGlobalObject, throwScope, impl.mixinReadOnlyAttribute())));
 }
@@ -545,7 +545,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestInterface_mixinReadOnlyAttribute, (JSGlobalObject
 static inline JSValue jsTestInterface_mixinAttributeGetter(JSGlobalObject& lexicalGlobalObject, JSTestInterface& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLDOMString>(lexicalGlobalObject, throwScope, impl.mixinAttribute())));
 }
@@ -562,7 +562,7 @@ static inline bool setJSTestInterface_mixinAttributeSetter(JSGlobalObject& lexic
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     auto nativeValueConversionResult = convert<IDLDOMString>(lexicalGlobalObject, value);
     if (nativeValueConversionResult.hasException(throwScope)) [[unlikely]]
@@ -614,7 +614,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestInterface_mixinCustomAttribute, (JSGlobalObjec
 static inline JSValue jsTestInterface_mixinNodeAttributeGetter(JSGlobalObject& lexicalGlobalObject, JSTestInterface& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLInterface<Node>>(lexicalGlobalObject, *thisObject.globalObject(), throwScope, impl.mixinNodeAttribute())));
 }
@@ -631,9 +631,9 @@ static inline bool setJSTestInterface_mixinNodeAttributeSetter(JSGlobalObject& l
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
-    auto nativeValueConversionResult = convert<IDLInterface<Node>>(lexicalGlobalObject, value, [](JSC::JSGlobalObject& lexicalGlobalObject, JSC::ThrowScope& scope) { throwAttributeTypeError(lexicalGlobalObject, scope, "TestInterface"_s, "mixinNodeAttribute"_s, "Node"_s); });
+    auto nativeValueConversionResult = convert<IDLInterface<Node>>(lexicalGlobalObject, value, [](JSC::JSGlobalObject& lexicalGlobalObject, JSC::ExceptionScope& scope) { throwAttributeTypeError(lexicalGlobalObject, scope, "TestInterface"_s, "mixinNodeAttribute"_s, "Node"_s); });
     if (nativeValueConversionResult.hasException(throwScope)) [[unlikely]]
         return false;
     invokeFunctorPropagatingExceptionIfNecessary(lexicalGlobalObject, throwScope, [&] {
@@ -653,7 +653,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestInterface_mixinNodeAttribute, (JSGlobalObject*
 static inline JSValue jsTestInterface_partialMixinAttributeFromPartialGetter(JSGlobalObject& lexicalGlobalObject, JSTestInterface& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLDouble>(lexicalGlobalObject, throwScope, impl.partialMixinAttributeFromPartial())));
 }
@@ -669,7 +669,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestInterface_partialMixinAttributeFromPartial, (JSGl
 static inline JSValue jsTestInterfaceConstructor_supplementalStaticReadOnlyAttrGetter(JSGlobalObject& lexicalGlobalObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     RELEASE_AND_RETURN(throwScope, (toJS<IDLLong>(lexicalGlobalObject, throwScope, WebCore::TestSupplemental::supplementalStaticReadOnlyAttr())));
 }
 
@@ -684,7 +684,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestInterfaceConstructor_supplementalStaticReadOnlyAt
 static inline JSValue jsTestInterfaceConstructor_supplementalStaticAttrGetter(JSGlobalObject& lexicalGlobalObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     RELEASE_AND_RETURN(throwScope, (toJS<IDLDOMString>(lexicalGlobalObject, throwScope, WebCore::TestSupplemental::supplementalStaticAttr())));
 }
 
@@ -700,7 +700,7 @@ static inline bool setJSTestInterfaceConstructor_supplementalStaticAttrSetter(JS
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     auto nativeValueConversionResult = convert<IDLDOMString>(lexicalGlobalObject, value);
     if (nativeValueConversionResult.hasException(throwScope)) [[unlikely]]
         return false;
@@ -721,7 +721,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestInterfaceConstructor_supplementalStaticAttr, (
 static inline JSValue jsTestInterface_supplementalStr1Getter(JSGlobalObject& lexicalGlobalObject, JSTestInterface& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLDOMString>(lexicalGlobalObject, throwScope, WebCore::TestSupplemental::supplementalStr1(impl))));
 }
@@ -737,7 +737,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestInterface_supplementalStr1, (JSGlobalObject* lexi
 static inline JSValue jsTestInterface_supplementalStr2Getter(JSGlobalObject& lexicalGlobalObject, JSTestInterface& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLDOMString>(lexicalGlobalObject, throwScope, WebCore::TestSupplemental::supplementalStr2(impl))));
 }
@@ -754,7 +754,7 @@ static inline bool setJSTestInterface_supplementalStr2Setter(JSGlobalObject& lex
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     auto nativeValueConversionResult = convert<IDLDOMString>(lexicalGlobalObject, value);
     if (nativeValueConversionResult.hasException(throwScope)) [[unlikely]]
@@ -806,7 +806,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestInterface_supplementalStr3, (JSGlobalObject* l
 static inline JSValue jsTestInterface_supplementalNodeGetter(JSGlobalObject& lexicalGlobalObject, JSTestInterface& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLInterface<Node>>(lexicalGlobalObject, *thisObject.globalObject(), throwScope, WebCore::TestSupplemental::supplementalNode(impl))));
 }
@@ -823,9 +823,9 @@ static inline bool setJSTestInterface_supplementalNodeSetter(JSGlobalObject& lex
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
-    auto nativeValueConversionResult = convert<IDLInterface<Node>>(lexicalGlobalObject, value, [](JSC::JSGlobalObject& lexicalGlobalObject, JSC::ThrowScope& scope) { throwAttributeTypeError(lexicalGlobalObject, scope, "TestInterface"_s, "supplementalNode"_s, "Node"_s); });
+    auto nativeValueConversionResult = convert<IDLInterface<Node>>(lexicalGlobalObject, value, [](JSC::JSGlobalObject& lexicalGlobalObject, JSC::ExceptionScope& scope) { throwAttributeTypeError(lexicalGlobalObject, scope, "TestInterface"_s, "supplementalNode"_s, "Node"_s); });
     if (nativeValueConversionResult.hasException(throwScope)) [[unlikely]]
         return false;
     invokeFunctorPropagatingExceptionIfNecessary(lexicalGlobalObject, throwScope, [&] {
@@ -845,7 +845,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestInterface_supplementalNode, (JSGlobalObject* l
 static inline JSValue jsTestInterface_reflectAttributeGetter(JSGlobalObject& lexicalGlobalObject, JSTestInterface& thisObject)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     RELEASE_AND_RETURN(throwScope, (toJS<IDLAtomStringAdaptor<IDLDOMString>>(lexicalGlobalObject, throwScope, impl.attributeWithoutSynchronization(WebCore::HTMLNames::reflectattributeAttr))));
 }
@@ -862,7 +862,7 @@ static inline bool setJSTestInterface_reflectAttributeSetter(JSGlobalObject& lex
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = thisObject.wrapped();
     auto nativeValueConversionResult = convert<IDLAtomStringAdaptor<IDLDOMString>>(lexicalGlobalObject, value);
     if (nativeValueConversionResult.hasException(throwScope)) [[unlikely]]
@@ -884,7 +884,7 @@ JSC_DEFINE_CUSTOM_SETTER(setJSTestInterface_reflectAttribute, (JSGlobalObject* l
 static inline JSC::EncodedJSValue jsTestInterfacePrototypeFunction_mixinOperationBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestInterface>::ClassParameter castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = castedThis->wrapped();
@@ -902,7 +902,7 @@ JSC_DEFINE_HOST_FUNCTION(jsTestInterfacePrototypeFunction_mixinOperation, (JSGlo
 static inline JSC::EncodedJSValue jsTestInterfacePrototypeFunction_mixinComplexOperationBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestInterface>::ClassParameter castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = castedThis->wrapped();
@@ -916,7 +916,7 @@ static inline JSC::EncodedJSValue jsTestInterfacePrototypeFunction_mixinComplexO
     if (strArgConversionResult.hasException(throwScope)) [[unlikely]]
        return encodedJSValue();
     EnsureStillAliveScope argument1 = callFrame->uncheckedArgument(1);
-    auto objArgConversionResult = convert<IDLInterface<TestObj>>(*lexicalGlobalObject, argument1.value(), [](JSC::JSGlobalObject& lexicalGlobalObject, JSC::ThrowScope& scope) { throwArgumentTypeError(lexicalGlobalObject, scope, 1, "objArg"_s, "TestInterface"_s, "mixinComplexOperation"_s, "TestObj"_s); });
+    auto objArgConversionResult = convert<IDLInterface<TestObj>>(*lexicalGlobalObject, argument1.value(), [](JSC::JSGlobalObject& lexicalGlobalObject, JSC::ExceptionScope& scope) { throwArgumentTypeError(lexicalGlobalObject, scope, 1, "objArg"_s, "TestInterface"_s, "mixinComplexOperation"_s, "TestObj"_s); });
     if (objArgConversionResult.hasException(throwScope)) [[unlikely]]
        return encodedJSValue();
     RELEASE_AND_RETURN(throwScope, JSValue::encode(toJS<IDLInterface<TestObj>>(*lexicalGlobalObject, *castedThis->globalObject(), throwScope, impl.mixinComplexOperation(*context, strArgConversionResult.releaseReturnValue(), *objArgConversionResult.releaseReturnValue()))));
@@ -933,7 +933,7 @@ JSC_DEFINE_HOST_FUNCTION(jsTestInterfacePrototypeFunction_mixinComplexOperation,
 static inline JSC::EncodedJSValue jsTestInterfacePrototypeFunction_mixinCustomOperationBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestInterface>::ClassParameter castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     RELEASE_AND_RETURN(throwScope, (JSValue::encode(castedThis->mixinCustomOperation(*lexicalGlobalObject, *callFrame))));
@@ -950,7 +950,7 @@ JSC_DEFINE_HOST_FUNCTION(jsTestInterfacePrototypeFunction_mixinCustomOperation, 
 static inline JSC::EncodedJSValue jsTestInterfacePrototypeFunction_mixinConditionalOperationBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestInterface>::ClassParameter castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = castedThis->wrapped();
@@ -968,7 +968,7 @@ JSC_DEFINE_HOST_FUNCTION(jsTestInterfacePrototypeFunction_mixinConditionalOperat
 static inline JSC::EncodedJSValue jsTestInterfacePrototypeFunction_mixinSettingsConditionalOperationBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestInterface>::ClassParameter castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = castedThis->wrapped();
@@ -986,7 +986,7 @@ JSC_DEFINE_HOST_FUNCTION(jsTestInterfacePrototypeFunction_mixinSettingsCondition
 static inline JSC::EncodedJSValue jsTestInterfacePrototypeFunction_mixinResultFieldOperationBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestInterface>::ClassParameter castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = castedThis->wrapped();
@@ -1005,7 +1005,7 @@ JSC_DEFINE_HOST_FUNCTION(jsTestInterfacePrototypeFunction_mixinResultFieldOperat
 static inline JSC::EncodedJSValue jsTestInterfacePrototypeFunction_partialMixinOperationFromPartialBody(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestInterface>::ClassParameter castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = castedThis->wrapped();
@@ -1023,7 +1023,7 @@ JSC_DEFINE_HOST_FUNCTION(jsTestInterfacePrototypeFunction_partialMixinOperationF
 static inline JSC::EncodedJSValue jsTestInterfacePrototypeFunction_supplementalMethod1Body(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestInterface>::ClassParameter castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = castedThis->wrapped();
@@ -1041,7 +1041,7 @@ JSC_DEFINE_HOST_FUNCTION(jsTestInterfacePrototypeFunction_supplementalMethod1, (
 static inline JSC::EncodedJSValue jsTestInterfacePrototypeFunction_supplementalMethod2Body(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestInterface>::ClassParameter castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     SUPPRESS_UNCOUNTED_LOCAL auto& impl = castedThis->wrapped();
@@ -1055,7 +1055,7 @@ static inline JSC::EncodedJSValue jsTestInterfacePrototypeFunction_supplementalM
     if (strArgConversionResult.hasException(throwScope)) [[unlikely]]
        return encodedJSValue();
     EnsureStillAliveScope argument1 = callFrame->uncheckedArgument(1);
-    auto objArgConversionResult = convert<IDLInterface<TestObj>>(*lexicalGlobalObject, argument1.value(), [](JSC::JSGlobalObject& lexicalGlobalObject, JSC::ThrowScope& scope) { throwArgumentTypeError(lexicalGlobalObject, scope, 1, "objArg"_s, "TestInterface"_s, "supplementalMethod2"_s, "TestObj"_s); });
+    auto objArgConversionResult = convert<IDLInterface<TestObj>>(*lexicalGlobalObject, argument1.value(), [](JSC::JSGlobalObject& lexicalGlobalObject, JSC::ExceptionScope& scope) { throwArgumentTypeError(lexicalGlobalObject, scope, 1, "objArg"_s, "TestInterface"_s, "supplementalMethod2"_s, "TestObj"_s); });
     if (objArgConversionResult.hasException(throwScope)) [[unlikely]]
        return encodedJSValue();
     RELEASE_AND_RETURN(throwScope, JSValue::encode(toJS<IDLInterface<TestObj>>(*lexicalGlobalObject, *castedThis->globalObject(), throwScope, WebCore::TestSupplemental::supplementalMethod2(impl, *context, strArgConversionResult.releaseReturnValue(), *objArgConversionResult.releaseReturnValue()))));
@@ -1072,7 +1072,7 @@ JSC_DEFINE_HOST_FUNCTION(jsTestInterfacePrototypeFunction_supplementalMethod2, (
 static inline JSC::EncodedJSValue jsTestInterfacePrototypeFunction_supplementalMethod3Body(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame, typename IDLOperation<JSTestInterface>::ClassParameter castedThis)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     RELEASE_AND_RETURN(throwScope, (JSValue::encode(castedThis->supplementalMethod3(*lexicalGlobalObject, *callFrame))));
@@ -1089,7 +1089,7 @@ JSC_DEFINE_HOST_FUNCTION(jsTestInterfacePrototypeFunction_supplementalMethod3, (
 static inline JSC::EncodedJSValue jsTestInterfaceConstructorFunction_supplementalMethod4Body(JSC::JSGlobalObject* lexicalGlobalObject, JSC::CallFrame* callFrame)
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
     UNUSED_PARAM(throwScope);
     UNUSED_PARAM(callFrame);
     RELEASE_AND_RETURN(throwScope, JSValue::encode(toJS<IDLUndefined>(*lexicalGlobalObject, throwScope, [&]() -> decltype(auto) { return WebCore::TestSupplemental::supplementalMethod4(); })));

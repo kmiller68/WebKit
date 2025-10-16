@@ -72,7 +72,7 @@ JSValue constructIntlInstanceWithWorkaroundForLegacyIntlConstructor(JSGlobalObje
     // FIXME: Workaround to provide compatibility with ECMA-402 1.0 call/apply patterns.
     // https://bugs.webkit.org/show_bug.cgi?id=153679
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto* instance = factory(vm);
     RETURN_IF_EXCEPTION(scope, JSValue());
@@ -98,7 +98,7 @@ template<typename InstanceType>
 InstanceType* unwrapForLegacyIntlConstructor(JSGlobalObject* globalObject, JSValue thisValue, JSObject* constructor)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSObject* thisObject = jsDynamicCast<JSObject*>(thisValue);
     if (!thisObject) [[unlikely]]
@@ -130,7 +130,7 @@ ResultType intlOption(JSGlobalObject* globalObject, JSObject* options, PropertyN
     ASSERT(values.size() > 0);
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!options)
         return fallback;
@@ -161,7 +161,7 @@ ResultType intlStringOrBooleanOption(JSGlobalObject* globalObject, JSObject* opt
     ASSERT(values.size() > 0);
 
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!options)
         return fallback;
@@ -290,7 +290,7 @@ inline std::optional<UCollationResult> compareASCIIWithUCADUCET(std::span<const 
 inline JSObject* intlGetOptionsObject(JSGlobalObject* globalObject, JSValue options)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     if (options.isUndefined())
         return nullptr;
     if (options.isObject()) [[likely]]
@@ -303,7 +303,7 @@ inline JSObject* intlGetOptionsObject(JSGlobalObject* globalObject, JSValue opti
 inline JSObject* intlCoerceOptionsToObject(JSGlobalObject* globalObject, JSValue optionsValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
     if (optionsValue.isUndefined())
         return nullptr;
     JSObject* options = optionsValue.toObject(globalObject);
@@ -315,7 +315,7 @@ template<typename Container>
 JSArray* createArrayFromStringVector(JSGlobalObject* globalObject, const Container& elements)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSArray* result = JSArray::tryCreate(vm, globalObject->arrayStructureForIndexingTypeDuringAllocation(ArrayWithContiguous), elements.size());
     if (!result) {
@@ -333,7 +333,7 @@ template<typename Container>
 JSArray* createArrayFromIntVector(JSGlobalObject* globalObject, const Container& elements)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSArray* result = JSArray::tryCreate(vm, globalObject->arrayStructureForIndexingTypeDuringAllocation(ArrayWithContiguous), elements.size());
     if (!result) {

@@ -71,7 +71,7 @@ void reportMemoryForDocumentIfFrameless(JSGlobalObject& lexicalGlobalObject, Doc
 void setAdoptedStyleSheetsOnTreeScope(TreeScope& treeScope, JSC::JSGlobalObject& lexicalGlobalObject, JSC::JSValue value)
 {
     auto& vm = JSC::getVM(&lexicalGlobalObject);
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     auto nativeValue = convert<IDLFrozenArray<IDLInterface<CSSStyleSheet>>>(lexicalGlobalObject, value);
     if (nativeValue.hasException(throwScope)) [[unlikely]]

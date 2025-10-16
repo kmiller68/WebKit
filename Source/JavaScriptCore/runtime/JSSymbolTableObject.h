@@ -28,10 +28,10 @@
 
 #pragma once
 
+#include <JavaScriptCore/ExceptionScope.h>
 #include <JavaScriptCore/JSScope.h>
 #include <JavaScriptCore/PropertyDescriptor.h>
 #include <JavaScriptCore/SymbolTable.h>
-#include <JavaScriptCore/ThrowScope.h>
 #include <JavaScriptCore/VariableWriteFireDetail.h>
 
 namespace JSC {
@@ -144,7 +144,7 @@ template<SymbolTablePutMode symbolTablePutMode, typename SymbolTableObjectType>
 inline bool symbolTablePut(SymbolTableObjectType* object, JSGlobalObject* globalObject, PropertyName propertyName, JSValue value, bool shouldThrowReadOnlyError, bool ignoreReadOnlyErrors, bool& putResult)
 {
     VM& vm = getVM(globalObject);
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     WatchpointSet* set = nullptr;
     WriteBarrierBase<Unknown>* reg;

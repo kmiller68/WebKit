@@ -80,7 +80,7 @@ WebAssemblyExceptionPrototype::WebAssemblyExceptionPrototype(VM& vm, Structure* 
 ALWAYS_INLINE static JSWebAssemblyException* getException(JSGlobalObject* globalObject, JSValue thisValue)
 {
     VM& vm = globalObject->vm();
-    auto scope = DECLARE_THROW_SCOPE(vm);
+    auto scope = DECLARE_EXCEPTION_SCOPE(vm);
 
     if (!thisValue.isCell()) [[unlikely]] {
         throwVMError(globalObject, scope, createNotAnObjectError(globalObject, thisValue));
@@ -96,7 +96,7 @@ ALWAYS_INLINE static JSWebAssemblyException* getException(JSGlobalObject* global
 JSC_DEFINE_HOST_FUNCTION(webAssemblyExceptionProtoFuncGetArg, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     const auto& formatMessage = [&](const auto& message) {
         return makeString("WebAssembly.Exception.getArg(): "_s, message);
@@ -127,7 +127,7 @@ JSC_DEFINE_HOST_FUNCTION(webAssemblyExceptionProtoFuncGetArg, (JSGlobalObject* g
 JSC_DEFINE_HOST_FUNCTION(webAssemblyExceptionProtoFuncIs, (JSGlobalObject* globalObject, CallFrame* callFrame))
 {
     VM& vm = globalObject->vm();
-    auto throwScope = DECLARE_THROW_SCOPE(vm);
+    auto throwScope = DECLARE_EXCEPTION_SCOPE(vm);
 
     JSWebAssemblyException* jsException = getException(globalObject, callFrame->thisValue());
     RETURN_IF_EXCEPTION(throwScope, { });
