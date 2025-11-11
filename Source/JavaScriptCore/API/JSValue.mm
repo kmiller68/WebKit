@@ -1185,7 +1185,11 @@ JSValueRef objectToValue(JSContext *context, id object)
     if (task.type == ContainerNone)
         return audit(task.js);
 
-    JSC::JSLockHolder locker(toJS(contextRef));
+    JSC::VM& vm = toJS(contextRef)->vm();
+    JSC::JSLockHolder locker(vm);
+    // This code isn't really structured to handle Termination nor should it enter JS, so just speculatively avoid Termination.
+    JSC::DeferTerminationForAWhile deferTermination(vm);
+
     ObjcContainerConvertor convertor(context);
     convertor.add(task);
     ASSERT(!convertor.isWorkListEmpty());
