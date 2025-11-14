@@ -61,6 +61,10 @@ namespace JSC {
     class StructureChain;
     class StructureStubInfo;
 
+    namespace LOL {
+        class LOLJIT;
+    }
+
     template<typename> struct BaseInstruction;
     struct JSOpcodeTraits;
     using JSInstruction = BaseInstruction<JSOpcodeTraits>;
@@ -159,7 +163,7 @@ namespace JSC {
         friend class JITSlowPathCall;
         friend class JITStubCall;
         friend class JITThunks;
-        friend class LOLJIT;
+        friend class LOL::LOLJIT;
 
         using MacroAssembler::Jump;
         using MacroAssembler::JumpList;

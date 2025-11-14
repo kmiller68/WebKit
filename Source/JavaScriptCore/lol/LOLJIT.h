@@ -168,31 +168,31 @@ public:
     RefPtr<BaselineJITCode> compileAndLinkWithoutFinalizing(JITCompilationEffort effort);
 
 private:
-    struct GPRBank {
-        using JITBackend = LOLJIT;
-        using Register = GPRReg;
-        static constexpr Register invalidRegister = InvalidGPRReg;
-        // FIXME: Make this more precise
-        static constexpr unsigned numberOfRegisters = 32;
-        static constexpr Width defaultWidth = widthForBytes(sizeof(CPURegister));
-    };
-    using SpillHint = uint16_t;
-    using RegisterBinding = VirtualRegister;
-    template<typename> friend class SimpleRegisterAllocator;
+    // struct GPRBank {
+    //     using JITBackend = LOLJIT;
+    //     using Register = GPRReg;
+    //     static constexpr Register invalidRegister = InvalidGPRReg;
+    //     // FIXME: Make this more precise
+    //     static constexpr unsigned numberOfRegisters = 32;
+    //     static constexpr Width defaultWidth = widthForBytes(sizeof(CPURegister));
+    // };
+    // using SpillHint = uint16_t;
+    // using RegisterBinding = VirtualRegister;
 
-    // TODO: Pack this.
-    struct Location {
-        GPRReg gpr() const { return regs.gpr(); }
-        void dumpInContext(PrintStream& out, const SimpleRegisterAllocator<GPRBank>*) const
-        {
-            if (!isFlushed)
-                out.print("!"_s);
-        }
+    // // TODO: Pack this.
+    // struct Location {
+    //     GPRReg gpr() const { return regs.gpr(); }
+    //     void dumpInContext(PrintStream& out, const SimpleRegisterAllocator<GPRBank>*) const
+    //     {
+    //         if (!isFlushed)
+    //             out.print("!"_s);
+    //     }
 
-        JSValueRegs regs { InvalidGPRReg };
-        bool isFlushed { false };
-    };
+    //     JSValueRegs regs { InvalidGPRReg };
+    //     bool isFlushed { false };
+    // };
 
+    template<typename> friend class RegisterAllocator;
     void flush(const Location& location, GPRReg gpr, VirtualRegister binding)
     {
         JIT_COMMENT(*this, "Flushing ", binding);
@@ -332,7 +332,7 @@ private:
     template<typename Op>
     void emitRightShiftFastPath(const JSInstruction* currentInstruction, JITRightShiftGenerator::ShiftType snippetShiftType);
 
-    void silentSpill(auto allocator, auto... excludeGPRs)
+    void silentSpill(auto& allocator, auto... excludeGPRs)
     {
         JIT_COMMENT(*this, "Silent spilling");
         for (Reg reg : allocator.allocatedRegisters()) {
@@ -347,7 +347,7 @@ private:
         }
     }
 
-    void silentFill(auto allocator, auto... excludeGPRs)
+    void silentFill(auto& allocator, auto... excludeGPRs)
     {
         JIT_COMMENT(*this, "Silent filling");
         for (Reg reg : allocator.allocatedRegisters()) {
@@ -384,6 +384,12 @@ private:
     //     silentFill();
     // }
 
+    template<typename Op>
+        requires (LOLJIT::isImplemented(Op::opcodeID))
+    void emitCommonSlowPathSlowCaseCall(const JSInstruction*, Vector<SlowCaseEntry>::iterator&, SlowPathFunction);
+
+    template<typename Op>
+        requires (!LOLJIT::isImplemented(Op::opcodeID))
     void emitCommonSlowPathSlowCaseCall(const JSInstruction*, Vector<SlowCaseEntry>::iterator&, SlowPathFunction);
 
     template<typename Op, typename SnippetGenerator>
@@ -412,127 +418,127 @@ private:
     template<typename Op>
     void emitNewFuncCommon(const JSInstruction*);
 
-    template<unsigned numGPRs>
-    class ScratchScope {
-        WTF_MAKE_NONCOPYABLE(ScratchScope);
-        WTF_FORBID_HEAP_ALLOCATION;
-    public:
-        template<typename... Args>
-        ScratchScope(LOLJIT& generator, Args... locationsToPreserve)
-            : m_generator(generator)
-        {
-            initializedPreservedSet(locationsToPreserve...);
-            for (JSC::Reg reg : m_preserved)
-                preserve(reg.gpr());
+    // template<unsigned numGPRs>
+    // class ScratchScope {
+    //     WTF_MAKE_NONCOPYABLE(ScratchScope);
+    //     WTF_FORBID_HEAP_ALLOCATION;
+    // public:
+    //     template<typename... Args>
+    //     ScratchScope(LOLJIT& generator, Args... locationsToPreserve)
+    //         : m_generator(generator)
+    //     {
+    //         initializedPreservedSet(locationsToPreserve...);
+    //         for (JSC::Reg reg : m_preserved)
+    //             preserve(reg.gpr());
 
-            for (unsigned i = 0; i < numGPRs; i ++) {
-                m_tempGPRs[i] = m_generator.m_allocator.allocate(m_generator, VirtualRegister(), std::nullopt);
-                m_generator.m_allocator.lock(m_tempGPRs[i]);
-            }
-        }
+    //         for (unsigned i = 0; i < numGPRs; i ++) {
+    //             m_tempGPRs[i] = m_generator.m_allocator.allocate(m_generator, VirtualRegister(), std::nullopt);
+    //             m_generator.m_allocator.lock(m_tempGPRs[i]);
+    //         }
+    //     }
 
-        ~ScratchScope()
-        {
-            unbindEarly();
-        }
+    //     ~ScratchScope()
+    //     {
+    //         unbindEarly();
+    //     }
 
-        void unbindEarly()
-        {
-            unbindScratches();
-            unbindPreserved();
-        }
+    //     void unbindEarly()
+    //     {
+    //         unbindScratches();
+    //         unbindPreserved();
+    //     }
 
-        void unbindScratches()
-        {
-            if (m_unboundScratches)
-                return;
+    //     void unbindScratches()
+    //     {
+    //         if (m_unboundScratches)
+    //             return;
 
-            m_unboundScratches = true;
-            for (unsigned i = 0; i < numGPRs; i ++)
-                unbind(m_tempGPRs[i]);
-        }
+    //         m_unboundScratches = true;
+    //         for (unsigned i = 0; i < numGPRs; i ++)
+    //             unbind(m_tempGPRs[i]);
+    //     }
 
-        void unbindPreserved()
-        {
-            if (m_unboundPreserved)
-                return;
+    //     void unbindPreserved()
+    //     {
+    //         if (m_unboundPreserved)
+    //             return;
 
-            m_unboundPreserved = true;
-            for (JSC::Reg reg : m_preserved)
-                unbind(reg.gpr());
-        }
+    //         m_unboundPreserved = true;
+    //         for (JSC::Reg reg : m_preserved)
+    //             unbind(reg.gpr());
+    //     }
 
-        inline GPRReg gpr(unsigned i) const
-        {
-            ASSERT(i < numGPRs);
-            ASSERT(!m_unboundScratches);
-            return m_tempGPRs[i];
-        }
+    //     inline GPRReg gpr(unsigned i) const
+    //     {
+    //         ASSERT(i < numGPRs);
+    //         ASSERT(!m_unboundScratches);
+    //         return m_tempGPRs[i];
+    //     }
 
-    private:
-        // TODO: This could be simplified.
-        GPRReg preserve(GPRReg reg)
-        {
-            if (!m_generator.m_allocator.validRegisters().contains(reg, IgnoreVectors))
-                return reg;
-            const VirtualRegister& binding = m_generator.m_allocator.bindingFor(reg);
-            m_generator.m_allocator.lock(reg);
-            if (m_preserved.contains(reg, IgnoreVectors) && binding.isValid()) {
-                if (Options::verboseBBQJITAllocation()) [[unlikely]]
-                    dataLogLn("LOL\tPreserving GPR ", MacroAssembler::gprName(reg), " currently bound to ", binding);
-                return reg; // If the register is already bound, we don't need to preserve it ourselves.
-            }
-            ASSERT(m_generator.m_allocator.freeRegisters().contains(reg, IgnoreVectors));
-            if (Options::verboseBBQJITAllocation()) [[unlikely]]
-                dataLogLn("LOL\tPreserving scratch GPR ", MacroAssembler::gprName(reg), " currently free");
-            return reg;
-        }
+    // private:
+    //     // TODO: This could be simplified.
+    //     GPRReg preserve(GPRReg reg)
+    //     {
+    //         if (!m_generator.m_allocator.validRegisters().contains(reg, IgnoreVectors))
+    //             return reg;
+    //         const VirtualRegister& binding = m_generator.m_allocator.bindingFor(reg);
+    //         m_generator.m_allocator.lock(reg);
+    //         if (m_preserved.contains(reg, IgnoreVectors) && binding.isValid()) {
+    //             if (Options::verboseBBQJITAllocation()) [[unlikely]]
+    //                 dataLogLn("LOL\tPreserving GPR ", MacroAssembler::gprName(reg), " currently bound to ", binding);
+    //             return reg; // If the register is already bound, we don't need to preserve it ourselves.
+    //         }
+    //         ASSERT(m_generator.m_allocator.freeRegisters().contains(reg, IgnoreVectors));
+    //         if (Options::verboseBBQJITAllocation()) [[unlikely]]
+    //             dataLogLn("LOL\tPreserving scratch GPR ", MacroAssembler::gprName(reg), " currently free");
+    //         return reg;
+    //     }
 
-        void unbind(GPRReg reg)
-        {
-            if (!m_generator.m_allocator.validRegisters().contains(reg, IgnoreVectors))
-                return;
-            const VirtualRegister& binding = m_generator.m_allocator.bindingFor(reg);
-            m_generator.m_allocator.unlock(reg);
-            if (Options::verboseBBQJITAllocation()) [[unlikely]]
-                dataLogLn("LOL\tReleasing GPR ", MacroAssembler::gprName(reg), " preserved? ", m_preserved.contains(reg, IgnoreVectors), " binding: ", binding);
-            if (m_preserved.contains(reg, IgnoreVectors) && binding.isValid())
-                return; // It's okay if the register isn't bound to a scratch if we meant to preserve it - maybe it was just already bound to something.
-            ASSERT(m_generator.m_allocator.freeRegisters().contains(reg, IgnoreVectors));
-        }
+    //     void unbind(GPRReg reg)
+    //     {
+    //         if (!m_generator.m_allocator.validRegisters().contains(reg, IgnoreVectors))
+    //             return;
+    //         const VirtualRegister& binding = m_generator.m_allocator.bindingFor(reg);
+    //         m_generator.m_allocator.unlock(reg);
+    //         if (Options::verboseBBQJITAllocation()) [[unlikely]]
+    //             dataLogLn("LOL\tReleasing GPR ", MacroAssembler::gprName(reg), " preserved? ", m_preserved.contains(reg, IgnoreVectors), " binding: ", binding);
+    //         if (m_preserved.contains(reg, IgnoreVectors) && binding.isValid())
+    //             return; // It's okay if the register isn't bound to a scratch if we meant to preserve it - maybe it was just already bound to something.
+    //         ASSERT(m_generator.m_allocator.freeRegisters().contains(reg, IgnoreVectors));
+    //     }
 
-        template<typename... Args>
-        void initializedPreservedSet(Location location, Args... args)
-        {
-            if (location.gpr() != InvalidGPRReg)
-                m_preserved.add(location.gpr(), IgnoreVectors);
-            initializedPreservedSet(args...);
-        }
+    //     template<typename... Args>
+    //     void initializedPreservedSet(Location location, Args... args)
+    //     {
+    //         if (location.gpr() != InvalidGPRReg)
+    //             m_preserved.add(location.gpr(), IgnoreVectors);
+    //         initializedPreservedSet(args...);
+    //     }
 
-        template<typename... Args>
-        void initializedPreservedSet(RegisterSet registers, Args... args)
-        {
-            for (JSC::Reg reg : registers)
-                initializedPreservedSet(reg);
-            initializedPreservedSet(args...);
-        }
+    //     template<typename... Args>
+    //     void initializedPreservedSet(RegisterSet registers, Args... args)
+    //     {
+    //         for (JSC::Reg reg : registers)
+    //             initializedPreservedSet(reg);
+    //         initializedPreservedSet(args...);
+    //     }
 
-        template<typename... Args>
-        void initializedPreservedSet(JSC::Reg reg, Args... args)
-        {
-            m_preserved.add(reg.gpr(), IgnoreVectors);
-            initializedPreservedSet(args...);
-        }
+    //     template<typename... Args>
+    //     void initializedPreservedSet(JSC::Reg reg, Args... args)
+    //     {
+    //         m_preserved.add(reg.gpr(), IgnoreVectors);
+    //         initializedPreservedSet(args...);
+    //     }
 
-        inline void initializedPreservedSet() { }
+    //     inline void initializedPreservedSet() { }
 
-        LOLJIT& m_generator;
-        std::array<GPRReg, numGPRs> m_tempGPRs;
-        RegisterSet m_preserved;
-        bool m_unboundScratches { false };
-        bool m_unboundPreserved { false };
-    };
-    template<unsigned> friend class ScratchScope;
+    //     LOLJIT& m_generator;
+    //     std::array<GPRReg, numGPRs> m_tempGPRs;
+    //     RegisterSet m_preserved;
+    //     bool m_unboundScratches { false };
+    //     bool m_unboundPreserved { false };
+    // };
+    // template<unsigned> friend class ScratchScope;
 
     // Location& locationOf(VirtualRegister operand)
     // {
@@ -546,15 +552,12 @@ private:
     //     return m_locations[operand.offset() + m_headersOffset];
     // }
 
-    template<typename... Operands>
-    std::array<JSValueRegs, sizeof...(Operands)> regsFor(Operands... operands) { return { locationOf(operands).regs... }; }
+    // template<typename... Operands>
+    // std::array<JSValueRegs, sizeof...(Operands)> regsFor(Operands... operands) { return { locationOf(operands).regs... }; }
 
     Vector<RegisterSet> m_liveTempsForSlowPaths;
     Vector<JSValueRegs> m_slowPathOperandRegs;
     unsigned m_currentSlowPathOperandIndex;
-
-    const uint32_t m_constantsOffset;
-    const uint32_t m_headersOffset;
 
     // This is laid out as [ locals, constants, headers, arguments ]
     // FixedVector<Location> m_locations;

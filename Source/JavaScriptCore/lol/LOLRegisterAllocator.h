@@ -61,9 +61,9 @@ public:
         static constexpr unsigned numberOfRegisters = 32;
         static constexpr Width defaultWidth = widthForBytes(sizeof(CPURegister));
     };
-    using SpillHint = uint16_t;
+    using SpillHint = uint32_t;
     using RegisterBinding = VirtualRegister;
-    template<typename> friend class SimpleRegisterAllocator;
+    template<typename> friend class JSC::SimpleRegisterAllocator;
 
     RegisterAllocator(Backend& backend, CodeBlock* codeBlock)
         : m_numVars(codeBlock->numVars())
@@ -82,9 +82,11 @@ public:
 
     Location locationOf(VirtualRegister operand) const { return const_cast<RegisterAllocator<Backend>*>(this)->locationOf(operand); }
 
-    template<unsigned useCounts, unsigned defCounts>
-    ALWAYS_INLINE std::array<JSValueRegs, useCounts + defCounts> allocateUseDefsImpl(Backend& jit, const auto& instruction, const std::array<VirtualRegister, useCounts>& uses, const std::array<VirtualRegister, defCounts>& defs, BytecodeIndex index)
+    template<size_t useCounts, size_t defCounts>
+    ALWAYS_INLINE std::array<JSValueRegs, useCounts + defCounts> allocateUseDefsImpl(Backend& jit, const auto& instruction, BytecodeIndex index, const std::array<VirtualRegister, useCounts>& uses, const std::array<VirtualRegister, defCounts>& defs)
     {
+        // TODO: Validation.
+        UNUSED_PARAM(instruction);
         // Bump the spill count for our uses so we don't spill them when allocating below.
         // TODO: In theory these lock/unlocks are unnecessary because the LRU spill hint should prevent spilling these. It would only help compile times though and it's unclear if it matters yet, so keeping the locking for debugging.
         for (auto operand : uses) {
@@ -95,7 +97,7 @@ public:
         bool isDef = true;
         auto doAllocate = [&](VirtualRegister operand) ALWAYS_INLINE_LAMBDA {
             ASSERT_IMPLIES(isDef, operand.isLocal());
-            Location& location = locationOf(operand);
+            Location& location = locationOfImpl(operand);
             if (location.regs) {
                 // Uses might be dirty from a previous instruction, so don't touch them.
                 if (isDef)
@@ -122,6 +124,34 @@ public:
             result[i++] = doAllocate(use);
 
         return result;
+    }
+
+    template<size_t useDefCount, size_t scratchCount>
+    ALWAYS_INLINE std::array<JSValueRegs, useDefCount + scratchCount> allocateScratches(Backend& jit, const std::array<JSValueRegs, useDefCount>& useDefs)
+    {
+        std::array<JSValueRegs, useDefCount + scratchCount> result;
+        size_t i = 0;
+        for (auto useDef : useDefs)
+            result[i++] = useDef;
+
+        while (i < result.size())
+            result[i++] = m_allocator.allocate(jit, VirtualRegister(), 0);
+    }
+
+    template<typename Op>
+    auto allocateUnaryOpUseDefs(Backend& jit, const Op& instruction, BytecodeIndex index, VirtualRegister source)
+    {
+        std::array<VirtualRegister, 1> uses = { source };
+        std::array<VirtualRegister, 1> defs = { instruction.m_dst };
+        return allocateUseDefsImpl(jit, instruction, index, uses, defs);
+    }
+
+    template<typename Op>
+    auto allocateBinaryOpUseDefs(Backend& jit, const Op& instruction, BytecodeIndex index)
+    {
+        std::array<VirtualRegister, 2> uses = { instruction.m_lhs, instruction.m_rhs };
+        std::array<VirtualRegister, 1> defs = { instruction.m_dst };
+        return allocateUseDefsImpl(jit, instruction, index, uses, defs);
     }
 
     // returns a std::array<JSValueRegs> with the allocated registers + any scratches (if needed)
@@ -172,17 +202,19 @@ public:
 
     void flushAllRegisters(Backend&) { m_allocator.flushAllRegisters(*this); }
 
+    void dump(PrintStream& out) const { m_allocator.dumpInContext(out, this); }
+
 private:
     friend class SimpleRegisterAllocator<GPRBank>;
     void flush(GPRReg gpr, VirtualRegister binding)
     {
-        Location& location = locationOf(binding);
+        Location& location = locationOfImpl(binding);
         ASSERT(location.gpr() == gpr);
         m_backend.flush(location, gpr, binding);
         location = Location();
     }
 
-    Location& locationOf(VirtualRegister operand)
+    Location& locationOfImpl(VirtualRegister operand)
     {
         ASSERT(operand.isValid());
         if (operand.isLocal())
@@ -206,18 +238,62 @@ private:
 
 class ReplayBackend {
 public:
-    void flush(const Location&, GPRReg, VirtualRegister) { }
-    void fill(VirtualRegister, GPRReg) { }
+    ALWAYS_INLINE void flush(const Location&, GPRReg, VirtualRegister) { }
+    ALWAYS_INLINE void fill(VirtualRegister, GPRReg) { }
 };
 
 using ReplayRegisterAllocator = RegisterAllocator<ReplayBackend>;
 
+#define FOR_EACH_UNARY_OP(macro) \
+    macro(OpToNumber, m_operand) \
+    macro(OpNegate, m_operand) \
+    macro(OpToString, m_operand) \
+    macro(OpToObject, m_operand) \
+    macro(OpToNumeric, m_operand)
+
+#define ALLOCATE_USE_DEFS_FOR_UNARY_OP(Struct, operand) \
+template<typename Backend> \
+auto RegisterAllocator<Backend>::allocateUseDefs(Backend& jit, const Struct& instruction, BytecodeIndex index) \
+{ \
+    return allocateUnaryOpUseDefs(jit, instruction, index, instruction.operand); \
+}
+
+FOR_EACH_UNARY_OP(ALLOCATE_USE_DEFS_FOR_UNARY_OP)
+
+#undef ALLOCATE_USE_DEFS_FOR_UNARY_OP
+#undef FOR_EACH_UNARY_OP
+
+#define FOR_EACH_BINARY_OP(macro) \
+    macro(OpAdd) \
+    macro(OpMul) \
+    macro(OpSub) \
+    macro(OpEq) \
+    macro(OpNeq) \
+    macro(OpLess) \
+    macro(OpLesseq) \
+    macro(OpGreater) \
+    macro(OpGreatereq) \
+    macro(OpLshift) \
+    macro(OpRshift) \
+    macro(OpUrshift)
+
+#define ALLOCATE_USE_DEFS_FOR_BINARY_OP(Struct) \
+template<typename Backend> \
+auto RegisterAllocator<Backend>::allocateUseDefs(Backend& jit, const Struct& instruction, BytecodeIndex index) \
+{ \
+    return allocateBinaryOpUseDefs(jit, instruction, index); \
+}
+
+FOR_EACH_BINARY_OP(ALLOCATE_USE_DEFS_FOR_BINARY_OP)
+
+#undef ALLOCATE_USE_DEFS_FOR_BINARY_OP
+#undef FOR_EACH_BINARY_OP
+
 template<typename Backend>
 auto RegisterAllocator<Backend>::allocateUseDefs(Backend& jit, const OpGetFromScope& instruction, BytecodeIndex index)
 {
-    std::array<VirtualRegister, 1> uses = { instruction.m_scope };
-    std::array<VirtualRegister, 1> defs = { instruction.m_dst };
-    return allocateUseDefsImpl(jit, uses, defs, index);
+    auto useDefs = allocateUnaryOpUseDefs(jit, instruction, index, instruction.m_scope);
+    return allocateScratches<2, 1>(jit, useDefs);
 }
 
 } // namespace JSC
