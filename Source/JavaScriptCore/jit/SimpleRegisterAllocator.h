@@ -170,7 +170,7 @@ public:
     }
 
     void dump(PrintStream& out) const { dumpInContext(out, nullptr); }
-    void dumpInContext(PrintStream& out, JITBackend* context) const
+    void dumpInContext(PrintStream& out, const JITBackend* context) const
     {
         CommaPrinter comma(", "_s, "["_s);
         for (Reg r : allocatedRegisters()) {

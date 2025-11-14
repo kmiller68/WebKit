@@ -49,7 +49,7 @@ auto BaselineJITPlan::compileInThreadImpl(JITCompilationEffort effort) -> Compil
         safepoint.begin(false);
 
         if (Options::useLOLJIT()) {
-            LOLJIT jit(*m_vm, *this, m_codeBlock);
+            LOL::LOLJIT jit(*m_vm, *this, m_codeBlock);
             auto jitCode = jit.compileAndLinkWithoutFinalizing(effort);
             m_jitCode = WTFMove(jitCode);
         } else {
