@@ -48,9 +48,22 @@ struct Location {
     bool isFlushed { false };
 };
 
+template<size_t useCount, size_t defCount, size_t scratchCount = 0>
+struct AllocationBindings {
+    std::array<JSValueRegs, useCount> uses;
+    std::array<JSValueRegs, defCount> defs;
+    std::array<JSValueRegs, scratchCount> scratches;
+};
+
 template<typename Backend>
 class RegisterAllocator {
 public:
+#ifdef NDEBUG
+    static constexpr bool verbose = false;
+#else
+    static constexpr bool verbose = true;
+#endif
+
     static constexpr GPRReg s_scratch = GPRInfo::nonPreservedNonArgumentGPR0;
 
     struct GPRBank {
@@ -77,13 +90,15 @@ public:
         gprs.exclude(RegisterSetBuilder::macroClobberedGPRs());
         gprs.exclude(RegisterSetBuilder::vmCalleeSaveRegisters());
         gprs.remove(s_scratch);
-        m_allocator.initialize(gprs.buildAndValidate(), "LOL"_s);
+        m_allocator.initialize(gprs.buildAndValidate(), verbose ? "LOL"_s : ASCIILiteral());
     }
 
-    Location locationOf(VirtualRegister operand) const { return const_cast<RegisterAllocator<Backend>*>(this)->locationOf(operand); }
+    RegisterSet allocatedRegisters() const { return m_allocator.allocatedRegisters(); }
+    Location locationOf(VirtualRegister operand) const { return const_cast<RegisterAllocator<Backend>*>(this)->locationOfImpl(operand); }
+    VirtualRegister bindingFor(GPRReg reg) const { return m_allocator.bindingFor(reg); }
 
-    template<size_t useCounts, size_t defCounts>
-    ALWAYS_INLINE std::array<JSValueRegs, useCounts + defCounts> allocateUseDefsImpl(Backend& jit, const auto& instruction, BytecodeIndex index, const std::array<VirtualRegister, useCounts>& uses, const std::array<VirtualRegister, defCounts>& defs)
+    template<size_t scratchCount, size_t useCount, size_t defCount>
+    ALWAYS_INLINE AllocationBindings<useCount, defCount, scratchCount> allocateUseDefsImpl(Backend& jit, const auto& instruction, BytecodeIndex index, const std::array<VirtualRegister, useCount>& uses, const std::array<VirtualRegister, defCount>& defs)
     {
         // TODO: Validation.
         UNUSED_PARAM(instruction);
@@ -94,9 +109,8 @@ public:
                 m_allocator.setSpillHint(current.gpr(), index.offset());
         }
 
-        bool isDef = true;
-        auto doAllocate = [&](VirtualRegister operand) ALWAYS_INLINE_LAMBDA {
-            ASSERT_IMPLIES(isDef, operand.isLocal());
+        auto doAllocate = [&](VirtualRegister operand, bool isDef) ALWAYS_INLINE_LAMBDA {
+            ASSERT_IMPLIES(isDef, operand.isLocal() || operand.isArgument());
             Location& location = locationOfImpl(operand);
             if (location.regs) {
                 // Uses might be dirty from a previous instruction, so don't touch them.
@@ -105,57 +119,47 @@ public:
                 return location.regs;
             }
 
-            // TODO: Consider LRU insertion policy here (aka 0 for hint)
-            location.regs = JSValueRegs(m_allocator.allocate(jit, operand, index.offset()));
+            // TODO: Consider LRU insertion policy here (aka 0 for hint). Might need locking so these don't spill on the next allocation in the same bytecode.
+            location.regs = JSValueRegs(m_allocator.allocate(*this, operand, index.offset()));
             location.isFlushed = !isDef;
 
             if (!isDef)
-                jit.fill(operand, location.regs);
+                jit.fill(operand, location.regs.gpr());
             return location.regs;
         };
 
-        std::array<JSValueRegs, useCounts + defCounts> result;
-        size_t i = 0;
-        for (auto def : defs)
-            result[i++] = doAllocate(def);
+        AllocationBindings<useCount, defCount, scratchCount> result;
+        for (size_t i = 0; i < uses.size(); ++i)
+            result.uses[i] = doAllocate(uses[i], false);
 
-        isDef = false;
-        for (auto use : uses)
-            result[i++] = doAllocate(use);
+        for (size_t i = 0; i < defs.size(); ++i)
+            result.defs[i] = doAllocate(defs[i], true);
+
+        // TODO: Maybe lock the register here for debugging purposes.
+        for (size_t i = 0; i < result.scratches.size(); ++i)
+            result.scratches[i] = JSValueRegs(m_allocator.allocate(*this, VirtualRegister(), 0));
 
         return result;
     }
 
-    template<size_t useDefCount, size_t scratchCount>
-    ALWAYS_INLINE std::array<JSValueRegs, useDefCount + scratchCount> allocateScratches(Backend& jit, const std::array<JSValueRegs, useDefCount>& useDefs)
-    {
-        std::array<JSValueRegs, useDefCount + scratchCount> result;
-        size_t i = 0;
-        for (auto useDef : useDefs)
-            result[i++] = useDef;
-
-        while (i < result.size())
-            result[i++] = m_allocator.allocate(jit, VirtualRegister(), 0);
-    }
-
-    template<typename Op>
-    auto allocateUnaryOpUseDefs(Backend& jit, const Op& instruction, BytecodeIndex index, VirtualRegister source)
+    template<size_t scratchCount = 0>
+    ALWAYS_INLINE auto allocateUnaryOpUseDefs(Backend& jit, const auto& instruction, BytecodeIndex index, VirtualRegister source)
     {
         std::array<VirtualRegister, 1> uses = { source };
         std::array<VirtualRegister, 1> defs = { instruction.m_dst };
-        return allocateUseDefsImpl(jit, instruction, index, uses, defs);
+        return allocateUseDefsImpl<scratchCount>(jit, instruction, index, uses, defs);
     }
 
-    template<typename Op>
-    auto allocateBinaryOpUseDefs(Backend& jit, const Op& instruction, BytecodeIndex index)
+    template<size_t scratchCount = 0>
+    ALWAYS_INLINE auto allocateBinaryOpUseDefs(Backend& jit, const auto& instruction, BytecodeIndex index)
     {
         std::array<VirtualRegister, 2> uses = { instruction.m_lhs, instruction.m_rhs };
         std::array<VirtualRegister, 1> defs = { instruction.m_dst };
-        return allocateUseDefsImpl(jit, instruction, index, uses, defs);
+        return allocateUseDefsImpl<scratchCount>(jit, instruction, index, uses, defs);
     }
 
     // returns a std::array<JSValueRegs> with the allocated registers + any scratches (if needed)
-#define DECLARE_SPECIALIZATION(Op) inline auto allocateUseDefs(Backend& jit, const Op& instruction, BytecodeIndex);
+#define DECLARE_SPECIALIZATION(Op) ALWAYS_INLINE auto allocateUseDefs(Backend& jit, const Op& instruction, BytecodeIndex);
     FOR_EACH_BYTECODE_STRUCT(DECLARE_SPECIALIZATION)
 #undef DECLARE_SPECIALIZATION
 
@@ -203,6 +207,16 @@ public:
     void flushAllRegisters(Backend&) { m_allocator.flushAllRegisters(*this); }
 
     void dump(PrintStream& out) const { m_allocator.dumpInContext(out, this); }
+
+    // FIXME: Do I even need this, we could just unbind the scratches immediately after picking them since we can't add more allocations for the same instruction.
+    template<size_t useCount, size_t defCount, size_t scratchCount>
+    ALWAYS_INLINE void releaseScratches(const AllocationBindings<useCount, defCount, scratchCount>& allocations)
+    {
+        for (JSValueRegs scratch : allocations.scratches) {
+            ASSERT(!bindingFor(scratch.gpr()).isValid());
+            m_allocator.unbind(scratch.gpr());
+        }
+    }
 
 private:
     friend class SimpleRegisterAllocator<GPRBank>;
@@ -289,11 +303,11 @@ FOR_EACH_BINARY_OP(ALLOCATE_USE_DEFS_FOR_BINARY_OP)
 #undef ALLOCATE_USE_DEFS_FOR_BINARY_OP
 #undef FOR_EACH_BINARY_OP
 
+// FIXME: Maybe this should be in the unary macro list above.
 template<typename Backend>
 auto RegisterAllocator<Backend>::allocateUseDefs(Backend& jit, const OpGetFromScope& instruction, BytecodeIndex index)
 {
-    auto useDefs = allocateUnaryOpUseDefs(jit, instruction, index, instruction.m_scope);
-    return allocateScratches<2, 1>(jit, useDefs);
+    return allocateUnaryOpUseDefs<1>(jit, instruction, index, instruction.m_scope);
 }
 
 } // namespace JSC

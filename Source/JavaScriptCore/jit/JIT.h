@@ -676,12 +676,12 @@ namespace JSC {
                 iter->from.link(this);
             ++iter;
         }
-        void linkAllSlowCasesForBytecodeIndex(Vector<SlowCaseEntry>& slowCases,
+        void linkAllSlowCasesUpToBytecodeIndex(Vector<SlowCaseEntry>& slowCases,
             Vector<SlowCaseEntry>::iterator&, BytecodeIndex bytecodeOffset);
 
         void linkAllSlowCases(Vector<SlowCaseEntry>::iterator& iter)
         {
-            linkAllSlowCasesForBytecodeIndex(m_slowCases, iter, m_bytecodeIndex);
+            linkAllSlowCasesUpToBytecodeIndex(m_slowCases, iter, m_bytecodeIndex);
         }
 
         bool hasAnySlowCases(Vector<SlowCaseEntry>& slowCases, Vector<SlowCaseEntry>::iterator&, BytecodeIndex bytecodeOffset);

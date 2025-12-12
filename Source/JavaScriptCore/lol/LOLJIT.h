@@ -193,6 +193,12 @@ private:
     // };
 
     template<typename> friend class RegisterAllocator;
+    void fill(VirtualRegister binding, GPRReg gpr)
+    {
+        JIT_COMMENT(*this, "Filling ", binding);
+        emitGetVirtualRegister(binding, gpr);
+    }
+
     void flush(const Location& location, GPRReg gpr, VirtualRegister binding)
     {
         JIT_COMMENT(*this, "Flushing ", binding);
@@ -328,6 +334,24 @@ private:
     FOR_EACH_IMPLEMENTED_OP(DECLARE_EMIT_METHODS)
 #undef DECLARE_EMIT_METHODS
 
+    void nextBytecodeIndexWithFlushForJumpTargetsIfNeeded(auto& allocator, bool shouldSetFastPathResumePoint)
+    {
+        auto next = BytecodeIndex(m_bytecodeIndex.offset() + m_currentInstruction->size());
+        if (m_currentJumpTargetIndex < m_unlinkedCodeBlock->numberOfJumpTargets() && next.offset() == m_unlinkedCodeBlock->jumpTarget(m_currentJumpTargetIndex)) {
+            if (shouldSetFastPathResumePoint) {
+                // We need to set a resume point for slow paths to jump back to prior to flushing since the next instruction wouldn't have the flushes and we don't want to re-emit them in the slow path.
+                // It's ok if a resume point is already set before here, it should still be correct w.r.t. flushing.
+                m_fastPathResumeLabels.add(m_bytecodeIndex, label());
+            }
+
+            JIT_COMMENT(*this, "Flush for jump target at bytecode ", m_bytecodeIndex);
+            allocator.flushAllRegisters(*this);
+            m_currentJumpTargetIndex++;
+        }
+
+        m_bytecodeIndex = next;
+    }
+
     // helpers
     template<typename Op>
     void emitRightShiftFastPath(const JSInstruction* currentInstruction, JITRightShiftGenerator::ShiftType snippetShiftType);
@@ -340,7 +364,10 @@ private:
             if (((gpr == excludeGPRs) || ... || false))
                 continue;
             VirtualRegister binding = allocator.bindingFor(gpr);
-            Location& location = allocator.locationOf(binding);
+            // This is scratch
+            if (!binding.isValid())
+                continue;
+            Location location = allocator.locationOf(binding);
             ASSERT(location.gpr() == gpr);
             if (!location.isFlushed)
                 emitPutVirtualRegister(binding, JSValueRegs(gpr));
@@ -355,6 +382,9 @@ private:
             if (((gpr == excludeGPRs) || ... || false))
                 continue;
             VirtualRegister binding = allocator.bindingFor(gpr);
+            // This is scratch
+            if (!binding.isValid())
+                continue;
             ASSERT(allocator.locationOf(binding).gpr() == gpr);
             emitGetVirtualRegister(binding, JSValueRegs(gpr));
         }
@@ -401,9 +431,9 @@ private:
     void emitMathICFast(JITBinaryMathIC<Generator>*, const JSInstruction*, ProfiledFunction, NonProfiledFunction);
 
     template <typename Op, typename Generator, typename ProfiledRepatchFunction, typename ProfiledFunction, typename RepatchFunction>
-    void emitMathICSlow(JITBinaryMathIC<Generator>*, const JSInstruction*, ProfiledRepatchFunction, ProfiledFunction, RepatchFunction);
+    void emitMathICSlow(JITBinaryMathIC<Generator>*, const JSInstruction*, ProfiledRepatchFunction, ProfiledFunction, RepatchFunction, Vector<SlowCaseEntry>::iterator&);
     template <typename Op, typename Generator, typename ProfiledRepatchFunction, typename ProfiledFunction, typename RepatchFunction>
-    void emitMathICSlow(JITUnaryMathIC<Generator>*, const JSInstruction*, ProfiledRepatchFunction, ProfiledFunction, RepatchFunction);
+    void emitMathICSlow(JITUnaryMathIC<Generator>*, const JSInstruction*, ProfiledRepatchFunction, ProfiledFunction, RepatchFunction, Vector<SlowCaseEntry>::iterator&);
 
     template<typename Op>
     void emitCompare(const JSInstruction*, RelationalCondition);
@@ -558,11 +588,13 @@ private:
     Vector<RegisterSet> m_liveTempsForSlowPaths;
     Vector<JSValueRegs> m_slowPathOperandRegs;
     unsigned m_currentSlowPathOperandIndex;
+    unsigned m_currentJumpTargetIndex;
 
     // This is laid out as [ locals, constants, headers, arguments ]
     // FixedVector<Location> m_locations;
     RegisterAllocator<LOLJIT> m_fastAllocator;
     static constexpr GPRReg s_scratch = RegisterAllocator<LOLJIT>::s_scratch;
+    static constexpr JSValueRegs s_scratchRegs = JSValueRegs { s_scratch };
     ReplayRegisterAllocator m_replayAllocator;
     // SimpleRegisterAllocator<GPRBank> m_allocator;
     const JSInstruction* m_currentInstruction;

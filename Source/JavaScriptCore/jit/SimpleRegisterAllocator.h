@@ -128,7 +128,7 @@ public:
     RegisterSet validRegisters() const { return m_validRegisters; }
     RegisterSet freeRegisters() const { return m_freeRegisters; }
     RegisterSet allocatedRegisters() const { return RegisterSetBuilder(m_validRegisters).exclude(m_freeRegisters).buildAndValidate(); }
-    const RegisterBinding& bindingFor(Register reg) { return m_bindings[reg]; }
+    const RegisterBinding& bindingFor(Register reg) const { return m_bindings[reg]; }
     // FIXME: We should really compress this since it's copied by slow paths to know how to restore the correct state.
     RegisterBindings copyBindings() const { return m_bindings; }
 
@@ -175,8 +175,9 @@ public:
         CommaPrinter comma(", "_s, "["_s);
         for (Reg r : allocatedRegisters()) {
             Register reg = fromJSCReg(r);
-            out.print(comma, m_bindings[reg]);
-            if (context)
+            RegisterBinding binding = m_bindings[reg];
+            out.print(comma, binding);
+            if (context && binding.isValid())
                 out.print(inContext(context->locationOf(m_bindings[reg]), this));
             out.print(": "_s, reg, ConditionalDump(isLocked(reg), "*("_s, m_spiller.m_lockCounts[reg], ")"_s));
         }

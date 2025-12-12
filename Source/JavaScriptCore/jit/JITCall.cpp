@@ -426,7 +426,7 @@ void JIT::emit_op_iterator_open(const JSInstruction* instruction)
 
 void JIT::emitSlow_op_iterator_open(const JSInstruction*, Vector<SlowCaseEntry>::iterator& iter)
 {
-    linkAllSlowCases(iter);
+    linkAllSlowCasesUpToBytecodeIndex(m_slowCases, iter, m_bytecodeIndex.withCheckpoint(OpIteratorOpen::numberOfCheckpoints));
 
     using BaselineJITRegisters::GetById::baseJSR;
     using BaselineJITRegisters::GetById::stubInfoGPR;
@@ -552,6 +552,8 @@ void JIT::emitSlow_op_iterator_next(const JSInstruction*, Vector<SlowCaseEntry>:
     using BaselineJITRegisters::GetById::resultJSR;
     using BaselineJITRegisters::GetById::stubInfoGPR;
 
+    ASSERT_WITH_MESSAGE(!hasAnySlowCases(iter), "iterator next computeNext checkpoint should have no slow cases");
+    m_bytecodeIndex = m_bytecodeIndex.withCheckpoint(OpIteratorNext::getDone);
     linkAllSlowCases(iter);
     loadGlobalObject(argumentGPR0);
     callOperation(operationThrowIteratorResultIsNotObject, argumentGPR0);

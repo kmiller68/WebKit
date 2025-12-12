@@ -176,9 +176,9 @@ ALWAYS_INLINE void JIT::appendCallWithExceptionCheckSetJSValueResultWithProfile(
     emitPutVirtualRegister(dst, returnValueJSR);
 }
 
-ALWAYS_INLINE void JIT::linkAllSlowCasesForBytecodeIndex(Vector<SlowCaseEntry>& slowCases, Vector<SlowCaseEntry>::iterator& iter, BytecodeIndex bytecodeIndex)
+ALWAYS_INLINE void JIT::linkAllSlowCasesUpToBytecodeIndex(Vector<SlowCaseEntry>& slowCases, Vector<SlowCaseEntry>::iterator& iter, BytecodeIndex bytecodeIndex)
 {
-    while (iter != slowCases.end() && iter->to == bytecodeIndex)
+    while (iter != slowCases.end() && iter->to <= bytecodeIndex)
         linkSlowCase(iter);
 }
 

@@ -64,7 +64,11 @@ WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
 namespace JSC::LOL {
 
 namespace LOLJITInternal {
+#ifdef NDEBUG
+static constexpr bool verbose = false;
+#else
 static constexpr bool verbose = true;
+#endif
 }
 
 LOLJIT::LOLJIT(VM& vm, BaselineJITPlan& plan, CodeBlock* codeBlock)
@@ -238,20 +242,13 @@ RefPtr<BaselineJITCode> LOLJIT::compileAndLinkWithoutFinalizing(JITCompilationEf
 
 void LOLJIT::privateCompileMainPass()
 {
-#define NEXT_OPCODE_IN_MAIN(name) \
-    if (previousSlowCasesSize != m_slowCases.size()) { \
-        ASSERT(hasSlowCase(currentInstruction->opcodeID())); \
-        ++m_bytecodeCountHavingSlowCase; \
-    } \
-    m_bytecodeIndex = BytecodeIndex(m_bytecodeIndex.offset() + currentInstruction->size()); \
-    break;
-
 #define DEFINE_SLOW_OP(name) \
     case op_##name: { \
         m_fastAllocator.flushAllRegisters(*this); \
         JITSlowPathCall slowPathCall(this, slow_path_##name); \
         slowPathCall.call(); \
-        NEXT_OPCODE_IN_MAIN(op_##name); \
+        nextBytecodeIndexWithFlushForJumpTargetsIfNeeded(m_fastAllocator, true); \
+        break; \
     }
 
 #define DEFINE_OP(name) \
@@ -259,7 +256,8 @@ void LOLJIT::privateCompileMainPass()
         if (!isImplemented(name)) \
             m_fastAllocator.flushAllRegisters(*this); \
         emit_##name(m_currentInstruction); \
-        NEXT_OPCODE_IN_MAIN(name); \
+        nextBytecodeIndexWithFlushForJumpTargetsIfNeeded(m_fastAllocator, true); \
+        break; \
     }
 
     dataLogIf(LOLJITInternal::verbose, "Compiling ", *m_profiledCodeBlock, "\n");
@@ -271,24 +269,15 @@ void LOLJIT::privateCompileMainPass()
     unsigned instructionCount = m_unlinkedCodeBlock->instructions().size();
 
     m_bytecodeCountHavingSlowCase = 0;
-    unsigned currentJumpTargetIndex = 0;
+    m_currentJumpTargetIndex = 0;
     for (m_bytecodeIndex = BytecodeIndex(0); m_bytecodeIndex.offset() < instructionCount; ) {
         unsigned previousSlowCasesSize = m_slowCases.size();
         auto* currentInstruction = instructions.at(m_bytecodeIndex).ptr();
         m_currentInstruction = currentInstruction;
         ASSERT(m_currentInstruction->size());
 
-        if (currentJumpTargetIndex < m_unlinkedCodeBlock->numberOfJumpTargets() && m_bytecodeIndex.offset() == m_unlinkedCodeBlock->jumpTarget(currentJumpTargetIndex)) {
-            // This instruction is a jump target, we have to flush.
-            if (currentJumpTargetIndex + 1 < m_unlinkedCodeBlock->numberOfJumpTargets())
-                ASSERT(m_unlinkedCodeBlock->jumpTarget(currentJumpTargetIndex) < m_unlinkedCodeBlock->jumpTarget(currentJumpTargetIndex + 1));
-            dataLogLnIf(LOLJITInternal::verbose, "Flushing for jump target: ", m_bytecodeIndex.offset());
-            m_fastAllocator.flushAllRegisters(*this);
-            currentJumpTargetIndex++;
-        }
-
         if (m_disassembler)
-            m_disassembler->setForBytecodeMainPath(m_bytecodeIndex.offset(), label());
+            m_disassembler->setForBytecodeMainPath(m_bytecodeIndex.offset(), label(), toCString("Allocator State: ",m_fastAllocator));
         m_pcToCodeOriginMapBuilder.appendItem(label(), CodeOrigin(m_bytecodeIndex));
         m_labels[m_bytecodeIndex.offset()] = label();
 
@@ -305,6 +294,7 @@ void LOLJIT::privateCompileMainPass()
             sizeMarker = m_vm->jitSizeStatistics->markStart(id, *this);
         }
 
+// TODO: Re-enable this.
 // #if ASSERT_ENABLED
 //         if (opcodeID != op_catch) {
 //             loadPtr(addressFor(CallFrameSlot::codeBlock), regT0);
@@ -548,7 +538,7 @@ void LOLJIT::privateCompileMainPass()
             m_vm->jitSizeStatistics->markEnd(WTFMove(*sizeMarker), *this, m_plan);
 
         if (LOLJITInternal::verbose)
-            dataLogLn("At ", bytecodeOffset, ": ", m_slowCases.size(), " allocator: ", inContext(m_fastAllocator, this));
+            dataLogLn("At ", bytecodeOffset, ": added ", m_slowCases.size() - previousSlowCasesSize, "(", m_slowCases.size(), ") allocator: ", m_fastAllocator);
     }
 
 #undef NEXT_OPCODE_IN_MAIN
@@ -598,50 +588,42 @@ void LOLJIT::privateCompileSlowCases()
     m_delByValIndex = 0;
     m_instanceOfIndex = 0;
     m_privateBrandAccessIndex = 0;
+    m_currentJumpTargetIndex = 0;
 
     auto& instructions = m_unlinkedCodeBlock->instructions();
     unsigned instructionCount = m_unlinkedCodeBlock->instructions().size();
 
-    unsigned bytecodeCountHavingSlowCase = 0;
-    unsigned currentJumpTargetIndex = 0;
     Vector<SlowCaseEntry>::iterator iter = m_slowCases.begin();
     for (m_bytecodeIndex = BytecodeIndex(0); m_bytecodeIndex.offset() < instructionCount; ) {
         if (iter == m_slowCases.end())
             break;
-
-        if (currentJumpTargetIndex < m_unlinkedCodeBlock->numberOfJumpTargets() && m_bytecodeIndex.offset() == m_unlinkedCodeBlock->jumpTarget(currentJumpTargetIndex)) {
-            // This instruction is a jump target, we have to flush.
-            if (currentJumpTargetIndex + 1 < m_unlinkedCodeBlock->numberOfJumpTargets())
-                ASSERT(m_unlinkedCodeBlock->jumpTarget(currentJumpTargetIndex) < m_unlinkedCodeBlock->jumpTarget(currentJumpTargetIndex + 1));
-            dataLogLnIf(LOLJITInternal::verbose, "Flushing for jump target: ", m_bytecodeIndex.offset());
-            m_replayAllocator.flushAllRegisters(*this);
-            currentJumpTargetIndex++;
-        }
 
         auto* currentInstruction = instructions.at(m_bytecodeIndex).ptr();
         m_currentInstruction = currentInstruction;
         OpcodeID opcodeID = currentInstruction->opcodeID();
 
         if (LOLJITInternal::verbose) {
-            dataLogLn("LOL JIT emitting slow code for ", m_bytecodeIndex, " at offset ", (long)debugOffset(), " allocator: ", inContext(m_replayAllocator, this));
+            dataLogLn("LOL JIT emitting slow code for ", m_bytecodeIndex, " at offset ", (long)debugOffset(), " allocator: ", m_replayAllocator);
             m_profiledCodeBlock->dumpBytecode(WTF::dataFile(), m_bytecodeIndex.offset());
         }
 
         ASSERT(currentInstruction->size());
-        if (iter->to != m_bytecodeIndex) {
+        if (iter->to.offset() != m_bytecodeIndex.offset()) {
             if (!isImplemented(opcodeID)) {
+                dataLogLnIf(LOLJITInternal::verbose, "LOL JIT no slow paths to link. Next slow path at ", iter->to);
                 // TODO: This ends up doing a bunch of writes and validations that are unreachable.
                 m_replayAllocator.flushAllRegisters(*this);
-                m_bytecodeIndex = BytecodeIndex(m_bytecodeIndex.offset() + currentInstruction->size());
+                nextBytecodeIndexWithFlushForJumpTargetsIfNeeded(m_replayAllocator, false);
                 continue;
             }
         } else
             m_pcToCodeOriginMapBuilder.appendItem(label(), CodeOrigin(m_bytecodeIndex));
 
-        BytecodeIndex firstTo = m_bytecodeIndex;
+        Vector<SlowCaseEntry>::iterator iterStart = iter;
+        BytecodeIndex firstTo = iter->to;
 
         if (m_disassembler)
-            m_disassembler->setForBytecodeSlowPath(m_bytecodeIndex.offset(), label());
+            m_disassembler->setForBytecodeSlowPath(m_bytecodeIndex.offset(), label(), toCString("Allocator State: ", m_replayAllocator));
 
         std::optional<JITSizeStatistics::Marker> sizeMarker;
         if (Options::dumpBaselineJITSizeStatistics()) [[unlikely]] {
@@ -649,7 +631,7 @@ void LOLJIT::privateCompileSlowCases()
             sizeMarker = m_vm->jitSizeStatistics->markStart(id, *this);
         }
 
-        // TODO: Does this do anything? we usually link in the slow path.
+        // TODO: Does this do anything? we usually link in the emitSlow path.
         if (Options::traceBaselineJITExecution()) [[unlikely]] {
             unsigned bytecodeOffset = m_bytecodeIndex.offset();
             probeDebug([=] (Probe::Context& ctx) {
@@ -752,23 +734,23 @@ void LOLJIT::privateCompileSlowCases()
         }
 
         if (LOLJITInternal::verbose)
-            dataLog("At ", firstTo, " slow: ", iter - m_slowCases.begin(), "\n");
+            dataLogLn("At ", firstTo, " linked ", iter - iterStart, " slow cases");
 
-        RELEASE_ASSERT_WITH_MESSAGE(iter == m_slowCases.end() || firstTo.offset() != iter->to.offset(), "Not enough jumps linked in slow case codegen.");
-        RELEASE_ASSERT_WITH_MESSAGE(firstTo.offset() == (iter - 1)->to.offset(), "Too many jumps linked in slow case codegen.");
+        if (firstTo.offset() == m_bytecodeIndex.offset()) {
+            RELEASE_ASSERT_WITH_MESSAGE(iter == m_slowCases.end() || firstTo.offset() != iter->to.offset(), "Not enough jumps linked in slow case codegen.");
+            RELEASE_ASSERT_WITH_MESSAGE(firstTo.offset() == (iter - 1)->to.offset(), "Too many jumps linked in slow case codegen.");
+        }
 
         jump().linkTo(fastPathResumePoint(), this);
-        ++bytecodeCountHavingSlowCase;
 
         if (sizeMarker) [[unlikely]] {
             m_bytecodeIndex = BytecodeIndex(m_bytecodeIndex.offset() + currentInstruction->size());
             m_vm->jitSizeStatistics->markEnd(WTFMove(*sizeMarker), *this, m_plan);
         }
 
-        m_bytecodeIndex = BytecodeIndex(m_bytecodeIndex.offset() + currentInstruction->size());
+        nextBytecodeIndexWithFlushForJumpTargetsIfNeeded(m_replayAllocator, false);
     }
 
-    RELEASE_ASSERT(bytecodeCountHavingSlowCase == m_bytecodeCountHavingSlowCase);
     RELEASE_ASSERT(m_getByIdIndex == m_getByIds.size());
     RELEASE_ASSERT(m_getByIdWithThisIndex == m_getByIdsWithThis.size());
     RELEASE_ASSERT(m_getByValWithThisIndex == m_getByValsWithThis.size());
@@ -791,12 +773,12 @@ template<typename Op>
 void LOLJIT::emitCommonSlowPathSlowCaseCall(const JSInstruction* currentInstruction, Vector<SlowCaseEntry>::iterator& iter, SlowPathFunction stub)
 {
     auto bytecode = currentInstruction->as<Op>();
-    auto useDefs = m_replayAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
-    JSValueRegs defRegs = useDefs.last();
+    m_replayAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
 
     linkAllSlowCases(iter);
 
-    silentSpill(m_replayAllocator, defRegs.gpr());
+    // If a use is the same as a def we have to spill it before the call.
+    silentSpill(m_replayAllocator);
     JITSlowPathCall slowPathCall(this, stub);
     slowPathCall.call();
     // The slow path will write the result to the stack, so we have silentFill fill it.
@@ -813,9 +795,11 @@ void LOLJIT::emitCommonSlowPathSlowCaseCall(const JSInstruction*, Vector<SlowCas
 void LOLJIT::emit_op_eq(const JSInstruction* currentInstruction)
 {
     auto bytecode = currentInstruction->as<OpEq>();
-    auto [ leftRegs, rightRegs, destRegs ] = m_fastAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto allocations = m_fastAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto [ leftRegs, rightRegs ] = allocations.uses;
+    auto [ destRegs ] = allocations.defs;
 
-    emitJumpSlowCaseIfNotInt(leftRegs.gpr(), rightRegs.gpr(), destRegs.gpr());
+    emitJumpSlowCaseIfNotInt(leftRegs.gpr(), rightRegs.gpr(), s_scratch);
     compare32(Equal, leftRegs.gpr(), rightRegs.gpr(), destRegs.gpr());
     boxBoolean(destRegs.gpr(), destRegs);
     releaseUseDefsAndNotifySlowPaths(currentInstruction);
@@ -824,7 +808,9 @@ void LOLJIT::emit_op_eq(const JSInstruction* currentInstruction)
 void LOLJIT::emitSlow_op_eq(const JSInstruction* currentInstruction, Vector<SlowCaseEntry>::iterator& iter)
 {
     auto bytecode = currentInstruction->as<OpEq>();
-    auto [ leftRegs, rightRegs, destRegs ] = m_replayAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto allocations = m_replayAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto [ leftRegs, rightRegs ] = allocations.uses;
+    auto [ destRegs ] = allocations.defs;
 
     linkAllSlowCases(iter);
 
@@ -839,10 +825,12 @@ void LOLJIT::emitSlow_op_eq(const JSInstruction* currentInstruction, Vector<Slow
 void LOLJIT::emit_op_neq(const JSInstruction* currentInstruction)
 {
     auto bytecode = currentInstruction->as<OpNeq>();
-    auto [ leftRegs, rightRegs, destRegs ] = m_fastAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto allocations = m_fastAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto [ leftRegs, rightRegs ] = allocations.uses;
+    auto [ destRegs ] = allocations.defs;
 
     emitJumpSlowCaseIfNotInt(leftRegs.payloadGPR(), rightRegs.payloadGPR(), s_scratch);
-    compare32(NotEqual, leftRegs.payloadGPR(), leftRegs.payloadGPR(), destRegs.payloadGPR());
+    compare32(NotEqual, leftRegs.payloadGPR(), rightRegs.payloadGPR(), destRegs.payloadGPR());
     boxBoolean(destRegs.payloadGPR(), destRegs);
 }
 
@@ -851,7 +839,9 @@ void LOLJIT::emitSlow_op_neq(const JSInstruction* currentInstruction, Vector<Slo
     linkAllSlowCases(iter);
 
     auto bytecode = currentInstruction->as<OpNeq>();
-    auto [ leftRegs, rightRegs, destRegs ] = m_replayAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto allocations = m_replayAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto [ leftRegs, rightRegs ] = allocations.uses;
+    auto [ destRegs ] = allocations.defs;
 
     silentSpill(m_replayAllocator, destRegs.payloadGPR());
     loadGlobalObject(s_scratch);
@@ -868,13 +858,15 @@ void LOLJIT::emitCompare(const JSInstruction* instruction, RelationalCondition c
     VirtualRegister dst = bytecode.m_dst;
     VirtualRegister op1 = bytecode.m_lhs;
     VirtualRegister op2 = bytecode.m_rhs;
-    auto [ op1Regs, op2Regs, dstRegs ] = allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto allocations = m_fastAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto [ op1Regs, op2Regs ] = allocations.uses;
+    auto [ dstRegs ] = allocations.defs;
     auto emitCompare = [&](RelationalCondition cond, JSValueRegs leftJSR, auto right) {
         GPRReg left = leftJSR.payloadGPR();
         compare32(cond, left, right, dstRegs.payloadGPR());
         boxBoolean(dstRegs.payloadGPR(), dstRegs);
     };
-    emitCompareImpl(op1, op2, condition, emitCompare);
+    emitCompareImpl(op1, op1Regs, op2, op2Regs, condition, emitCompare);
     releaseUseDefsAndNotifySlowPaths(m_currentInstruction);
 }
 
@@ -929,23 +921,23 @@ void LOLJIT::emitCompareSlow(const JSInstruction* instruction, DoubleCondition c
 {
     auto bytecode = instruction->as<Op>();
 
-    VirtualRegister dst = bytecode.m_dst;
     VirtualRegister op1 = bytecode.m_lhs;
     VirtualRegister op2 = bytecode.m_rhs;
-    auto [ op1Regs, op2Regs, dstRegs ] = m_replayAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto allocations = m_replayAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto [ op1Regs, op2Regs ] = allocations.uses;
+    auto [ dstRegs ] = allocations.defs;
 
     auto emitDoubleCompare = [&](FPRReg left, FPRReg right) {
-        compareDouble(condition, left, right, regT0);
-        boxBoolean(regT0, jsRegT10);
-        emitPutVirtualRegister(dst, jsRegT10);
+        compareDouble(condition, left, right, s_scratch);
+        boxBoolean(s_scratch, dstRegs);
     };
     emitCompareSlowImpl(op1, op1Regs, op2, op2Regs, dstRegs, instruction->size(), operation, iter, emitDoubleCompare);
 }
 
 template<typename SlowOperation, typename EmitDoubleCompareFunctor>
-void LOLJIT::emitCompareSlowImpl(VirtualRegister op1, JSValueRegs op1Regs, VirtualRegister op2, JSValueRegs op2Regs, JSValueRegs dstRegs, size_t instructionSize, SlowOperation operation, Vector<SlowCaseEntry>::iterator& iter, const EmitDoubleCompareFunctor& emitDoubleCompare)
+void LOLJIT::emitCompareSlowImpl(VirtualRegister op1, JSValueRegs op1Regs, VirtualRegister op2, JSValueRegs op2Regs, JSValueRegs dstRegs, size_t TODO_REMOVE_instructionSize, SlowOperation operation, Vector<SlowCaseEntry>::iterator& iter, const EmitDoubleCompareFunctor& emitDoubleCompare)
 {
-
+    UNUSED_PARAM(TODO_REMOVE_instructionSize);
     // We generate inline code for the following cases in the slow path:
     // - floating-point number to constant int immediate
     // - constant int immediate to floating-point number
@@ -974,13 +966,13 @@ void LOLJIT::emitCompareSlowImpl(VirtualRegister op1, JSValueRegs op1Regs, Virtu
 
         emitDoubleCompare(fpRegT0, fpRegT1);
 
-        emitJumpSlowToHot(jump(), instructionSize);
+        jump().linkTo(fastPathResumePoint(), this);
 
         fail1.link(this);
 
         silentSpill(m_replayAllocator, dstRegs.payloadGPR());
         loadGlobalObject(s_scratch);
-        callOperation(operation, s_scratch, jsRegT10, jsRegT32);
+        callOperation(operation, s_scratch, op1Regs, op2Regs);
         if (dstRegs)
             boxBoolean(returnValueGPR, dstRegs);
         silentFill(m_replayAllocator, dstRegs.payloadGPR());
@@ -1004,7 +996,7 @@ void LOLJIT::emitCompareSlowImpl(VirtualRegister op1, JSValueRegs op1Regs, Virtu
 
     emitDoubleCompare(fpRegT0, fpRegT1);
 
-    emitJumpSlowToHot(jump(), instructionSize);
+    jump().linkTo(fastPathResumePoint(), this);
 
     slows.link(*this);
 
@@ -1019,22 +1011,22 @@ void LOLJIT::emitCompareSlowImpl(VirtualRegister op1, JSValueRegs op1Regs, Virtu
 
 void LOLJIT::emit_op_less(const JSInstruction* currentInstruction)
 {
-    emit_compare<OpLess>(currentInstruction, LessThan);
+    emitCompare<OpLess>(currentInstruction, LessThan);
 }
 
 void LOLJIT::emit_op_lesseq(const JSInstruction* currentInstruction)
 {
-    emit_compare<OpLesseq>(currentInstruction, LessThanOrEqual);
+    emitCompare<OpLesseq>(currentInstruction, LessThanOrEqual);
 }
 
 void LOLJIT::emit_op_greater(const JSInstruction* currentInstruction)
 {
-    emit_compare<OpGreater>(currentInstruction, GreaterThan);
+    emitCompare<OpGreater>(currentInstruction, GreaterThan);
 }
 
 void LOLJIT::emit_op_greatereq(const JSInstruction* currentInstruction)
 {
-    emit_compare<OpGreatereq>(currentInstruction, GreaterThanOrEqual);
+    emitCompare<OpGreatereq>(currentInstruction, GreaterThanOrEqual);
 }
 
 void LOLJIT::emitSlow_op_less(const JSInstruction* currentInstruction, Vector<SlowCaseEntry>::iterator& iter)
@@ -1062,7 +1054,9 @@ void LOLJIT::emitSlow_op_greatereq(const JSInstruction* currentInstruction, Vect
 void LOLJIT::emit_op_to_number(const JSInstruction* currentInstruction)
 {
     auto bytecode = currentInstruction->as<OpToNumber>();
-    auto [ operand, dst ] = m_fastAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto allocations = m_fastAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto [ operand ] = allocations.uses;
+    auto [ dst ] = allocations.defs;
 
     UnaryArithProfile* arithProfile = &m_unlinkedCodeBlock->unaryArithProfile(bytecode.m_profileIndex);
 
@@ -1078,7 +1072,9 @@ void LOLJIT::emit_op_to_number(const JSInstruction* currentInstruction)
 void LOLJIT::emit_op_to_string(const JSInstruction* currentInstruction)
 {
     auto bytecode = currentInstruction->as<OpToString>();
-    auto [ operandRegs, dstRegs ] = m_fastAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto allocations = m_fastAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto [ operandRegs ] = allocations.uses;
+    auto [ dstRegs ] = allocations.defs;
 
     addSlowCase(branchIfNotCell(operandRegs));
     addSlowCase(branchIfNotString(operandRegs.payloadGPR()));
@@ -1090,7 +1086,9 @@ void LOLJIT::emit_op_to_numeric(const JSInstruction* currentInstruction)
 {
     auto bytecode = currentInstruction->as<OpToNumeric>();
     UnaryArithProfile* arithProfile = &m_unlinkedCodeBlock->unaryArithProfile(bytecode.m_profileIndex);
-    auto [ operandRegs, dstRegs ] = m_fastAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto allocations = m_fastAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto [ operandRegs ] = allocations.uses;
+    auto [ dstRegs ] = allocations.defs;
 
     auto isInt32 = branchIfInt32(operandRegs);
 
@@ -1116,7 +1114,9 @@ void LOLJIT::emit_op_to_numeric(const JSInstruction* currentInstruction)
 void LOLJIT::emit_op_to_object(const JSInstruction* currentInstruction)
 {
     auto bytecode = currentInstruction->as<OpToObject>();
-    auto [ operandRegs, dstRegs ] = m_fastAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto allocations = m_fastAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto [ operandRegs ] = allocations.uses;
+    auto [ dstRegs ] = allocations.defs;
 
     addSlowCase(branchIfNotCell(operandRegs));
     addSlowCase(branchIfNotObject(operandRegs.payloadGPR()));
@@ -1142,7 +1142,9 @@ void LOLJIT::emitRightShiftFastPath(const JSInstruction* currentInstruction, JIT
 {
     // FIXME: This allocates registers for constants but don't even use them if it's a constant.
     auto bytecode = currentInstruction->as<Op>();
-    auto [ leftRegs, rightRegs, destRegs ] = m_fastAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto allocations = m_fastAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto [ leftRegs, rightRegs ] = allocations.uses;
+    auto [ destRegs ] = allocations.defs;
 
     VirtualRegister op1 = bytecode.m_lhs;
     VirtualRegister op2 = bytecode.m_rhs;
@@ -1181,7 +1183,9 @@ void LOLJIT::emit_op_urshift(const JSInstruction* currentInstruction)
 void LOLJIT::emit_op_lshift(const JSInstruction* currentInstruction)
 {
     auto bytecode = currentInstruction->as<OpLshift>();
-    auto [ leftRegs, rightRegs, destRegs ] = m_fastAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto allocations = m_fastAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto [ leftRegs, rightRegs ] = allocations.uses;
+    auto [ destRegs ] = allocations.defs;
 
     VirtualRegister op1 = bytecode.m_lhs;
     VirtualRegister op2 = bytecode.m_rhs;
@@ -1211,7 +1215,9 @@ template <typename Op, typename Generator, typename ProfiledFunction, typename N
 void LOLJIT::emitMathICFast(JITBinaryMathIC<Generator>* mathIC, const JSInstruction* currentInstruction, ProfiledFunction profiledFunction, NonProfiledFunction nonProfiledFunction)
 {
     auto bytecode = currentInstruction->as<Op>();
-    auto [ leftRegs, rightRegs, destRegs ] = m_fastAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto allocations = m_fastAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto [ leftRegs, rightRegs ] = allocations.uses;
+    auto [ destRegs ] = allocations.defs;
 
     VirtualRegister result = bytecode.m_dst;
     VirtualRegister op1 = bytecode.m_lhs;
@@ -1261,13 +1267,20 @@ void LOLJIT::emitMathICFast(JITBinaryMathIC<Generator>* mathIC, const JSInstruct
 }
 
 template <typename Op, typename Generator, typename ProfiledRepatchFunction, typename ProfiledFunction, typename RepatchFunction>
-void LOLJIT::emitMathICSlow(JITBinaryMathIC<Generator>* mathIC, const JSInstruction* currentInstruction, ProfiledRepatchFunction profiledRepatchFunction, ProfiledFunction profiledFunction, RepatchFunction repatchFunction)
+void LOLJIT::emitMathICSlow(JITBinaryMathIC<Generator>* mathIC, const JSInstruction* currentInstruction, ProfiledRepatchFunction profiledRepatchFunction, ProfiledFunction profiledFunction, RepatchFunction repatchFunction, Vector<SlowCaseEntry>::iterator& iter)
 {
+    auto bytecode = currentInstruction->as<Op>();
+    auto allocations = m_replayAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto [ leftRegs, rightRegs ] = allocations.uses;
+    auto [ destRegs ] = allocations.defs;
+
+    if (!hasAnySlowCases(iter))
+        return;
+
+    linkAllSlowCases(iter);
+
     MathICGenerationState& mathICGenerationState = m_instructionToMathICGenerationState.find(currentInstruction)->value.get();
     mathICGenerationState.slowPathStart = label();
-
-    auto bytecode = currentInstruction->as<Op>();
-    auto [ leftRegs, rightRegs, destRegs ] = m_replayAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
 
     VirtualRegister result = bytecode.m_dst;
     VirtualRegister op1 = bytecode.m_lhs;
@@ -1319,7 +1332,9 @@ template <typename Op, typename Generator, typename ProfiledFunction, typename N
 void LOLJIT::emitMathICFast(JITUnaryMathIC<Generator>* mathIC, const JSInstruction* currentInstruction, ProfiledFunction profiledFunction, NonProfiledFunction nonProfiledFunction)
 {
     auto bytecode = currentInstruction->as<Op>();
-    auto [ srcRegs, destRegs ] = m_fastAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto allocations = m_fastAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto [ srcRegs ] = allocations.uses;
+    auto [ destRegs ] = allocations.defs;
 
     VirtualRegister result = bytecode.m_dst;
     VirtualRegister operand = bytecode.m_operand;
@@ -1356,16 +1371,20 @@ void LOLJIT::emitMathICFast(JITUnaryMathIC<Generator>* mathIC, const JSInstructi
 }
 
 template <typename Op, typename Generator, typename ProfiledRepatchFunction, typename ProfiledFunction, typename RepatchFunction>
-void LOLJIT::emitMathICSlow(JITUnaryMathIC<Generator>* mathIC, const JSInstruction* currentInstruction, ProfiledRepatchFunction profiledRepatchFunction, ProfiledFunction profiledFunction, RepatchFunction repatchFunction)
+void LOLJIT::emitMathICSlow(JITUnaryMathIC<Generator>* mathIC, const JSInstruction* currentInstruction, ProfiledRepatchFunction profiledRepatchFunction, ProfiledFunction profiledFunction, RepatchFunction repatchFunction, Vector<SlowCaseEntry>::iterator& iter)
 {
+    auto bytecode = currentInstruction->as<Op>();
+    auto allocations = m_replayAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto [ srcRegs ] = allocations.uses;
+    auto [ destRegs ] = allocations.defs;
+
+    if (!hasAnySlowCases(iter))
+        return;
+
+    linkAllSlowCases(iter);
+
     MathICGenerationState& mathICGenerationState = m_instructionToMathICGenerationState.find(currentInstruction)->value.get();
     mathICGenerationState.slowPathStart = label();
-
-    auto bytecode = currentInstruction->as<Op>();
-    auto [ srcRegs, destRegs ] = m_replayAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
-
-    VirtualRegister result = bytecode.m_dst;
-    VirtualRegister operand = bytecode.m_operand;
 
 #if ENABLE(MATH_IC_STATS)
     auto slowPathStart = label();
@@ -1409,10 +1428,8 @@ void LOLJIT::emit_op_add(const JSInstruction* currentInstruction)
 
 void LOLJIT::emitSlow_op_add(const JSInstruction* currentInstruction, Vector<SlowCaseEntry>::iterator& iter)
 {
-    linkAllSlowCases(iter);
-
     JITAddIC* addIC = std::bit_cast<JITAddIC*>(m_instructionToMathIC.get(currentInstruction));
-    emitMathICSlow<OpAdd>(addIC, currentInstruction, operationValueAddProfiledOptimize, operationValueAddProfiled, operationValueAddOptimize);
+    emitMathICSlow<OpAdd>(addIC, currentInstruction, operationValueAddProfiledOptimize, operationValueAddProfiled, operationValueAddOptimize, iter);
 }
 
 void LOLJIT::emit_op_mul(const JSInstruction* currentInstruction)
@@ -1425,10 +1442,8 @@ void LOLJIT::emit_op_mul(const JSInstruction* currentInstruction)
 
 void LOLJIT::emitSlow_op_mul(const JSInstruction* currentInstruction, Vector<SlowCaseEntry>::iterator& iter)
 {
-    linkAllSlowCases(iter);
-
     JITMulIC* mulIC = std::bit_cast<JITMulIC*>(m_instructionToMathIC.get(currentInstruction));
-    emitMathICSlow<OpMul>(mulIC, currentInstruction, operationValueMulProfiledOptimize, operationValueMulProfiled, operationValueMulOptimize);
+    emitMathICSlow<OpMul>(mulIC, currentInstruction, operationValueMulProfiledOptimize, operationValueMulProfiled, operationValueMulOptimize, iter);
 }
 
 void LOLJIT::emit_op_sub(const JSInstruction* currentInstruction)
@@ -1441,10 +1456,8 @@ void LOLJIT::emit_op_sub(const JSInstruction* currentInstruction)
 
 void LOLJIT::emitSlow_op_sub(const JSInstruction* currentInstruction, Vector<SlowCaseEntry>::iterator& iter)
 {
-    linkAllSlowCases(iter);
-
     JITSubIC* subIC = std::bit_cast<JITSubIC*>(m_instructionToMathIC.get(currentInstruction));
-    emitMathICSlow<OpSub>(subIC, currentInstruction, operationValueSubProfiledOptimize, operationValueSubProfiled, operationValueSubOptimize);
+    emitMathICSlow<OpSub>(subIC, currentInstruction, operationValueSubProfiledOptimize, operationValueSubProfiled, operationValueSubOptimize, iter);
 }
 
 void LOLJIT::emit_op_negate(const JSInstruction* currentInstruction)
@@ -1458,11 +1471,9 @@ void LOLJIT::emit_op_negate(const JSInstruction* currentInstruction)
 
 void LOLJIT::emitSlow_op_negate(const JSInstruction* currentInstruction, Vector<SlowCaseEntry>::iterator& iter)
 {
-    linkAllSlowCases(iter);
-
     JITNegIC* negIC = std::bit_cast<JITNegIC*>(m_instructionToMathIC.get(currentInstruction));
     // FIXME: it would be better to call those operationValueNegate, since the operand can be a BigInt
-    emitMathICSlow<OpNegate>(negIC, currentInstruction, operationArithNegateProfiledOptimize, operationArithNegateProfiled, operationArithNegateOptimize);
+    emitMathICSlow<OpNegate>(negIC, currentInstruction, operationArithNegateProfiledOptimize, operationArithNegateProfiled, operationArithNegateOptimize, iter);
 }
 
 void LOLJIT::emit_op_get_from_scope(const JSInstruction* currentInstruction)
@@ -1477,7 +1488,10 @@ void LOLJIT::emit_op_get_from_scope(const JSInstruction* currentInstruction)
     GPRReg thunkScopeGPR = BaselineJITRegisters::GetFromScope::scopeGPR;
     GPRReg thunkBytecodeOffsetGPR = BaselineJITRegisters::GetFromScope::bytecodeOffsetGPR;
 
-    auto [ scopeRegs, destRegs, scratchRegs ] = m_fastAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto allocations = m_fastAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto [ scopeRegs ] = allocations.uses;
+    auto [ destRegs ] = allocations.defs;
+    auto [ scratchRegs ] = allocations.scratches;
 
     // FIXME: In theory we don't need this scratch if it's a ClosureVar but that complicates the bookkeeping and may change later down the track.
     GPRReg metadataGPR = scratchRegs.gpr();
@@ -1509,9 +1523,9 @@ void LOLJIT::emit_op_get_from_scope(const JSInstruction* currentInstruction)
             load32(structureIDAddress, s_scratch);
             addSlowCase(branch32(NotEqual, Address(scopeGPR, JSCell::structureIDOffset()), s_scratch));
             loadPtr(operandAddress, s_scratch);
-            loadPtr(Address(scopeGPR, JSObject::butterflyOffset()), scopeGPR);
+            loadPtr(Address(scopeGPR, JSObject::butterflyOffset()), destRegs.payloadGPR());
             negPtr(s_scratch);
-            loadValue(BaseIndex(scopeGPR, s_scratch, TimesEight, (firstOutOfLineOffset - 2) * sizeof(EncodedJSValue)), destRegs);
+            loadValue(BaseIndex(destRegs.payloadGPR(), s_scratch, TimesEight, (firstOutOfLineOffset - 2) * sizeof(EncodedJSValue)), destRegs);
             break;
         }
         case GlobalVar: {
@@ -1569,17 +1583,25 @@ void LOLJIT::emit_op_get_from_scope(const JSInstruction* currentInstruction)
     setFastPathResumePoint();
     emitValueProfilingSite(bytecode, destRegs);
     releaseUseDefsAndNotifySlowPaths(currentInstruction);
+    m_fastAllocator.releaseScratches(allocations);
 }
 
 void LOLJIT::emitSlow_op_get_from_scope(const JSInstruction* currentInstruction, Vector<SlowCaseEntry>::iterator& iter)
 {
+    auto bytecode = currentInstruction->as<OpGetFromScope>();
+    auto allocations = m_replayAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
+    auto [ scopeRegs ] = allocations.uses;
+    auto [ destRegs ] = allocations.defs;
+
+    if (!hasAnySlowCases(iter)) {
+        m_replayAllocator.releaseScratches(allocations);
+        return;
+    }
+
     linkAllSlowCases(iter);
 
-    auto bytecode = currentInstruction->as<OpGetFromScope>();
     ResolveType profiledResolveType = bytecode.metadata(m_profiledCodeBlock).m_getPutInfo.resolveType();
     uint32_t bytecodeOffset = m_bytecodeIndex.offset();
-
-    auto [ scopeRegs, destRegs, scratchRegs ] = m_replayAllocator.allocateUseDefs(*this, bytecode, m_bytecodeIndex);
 
     GPRReg scopeGPR = scopeRegs.payloadGPR();
 
@@ -1616,6 +1638,7 @@ void LOLJIT::emitSlow_op_get_from_scope(const JSInstruction* currentInstruction,
     moveValueRegs(returnValueJSR, destRegs);
     silentFill(m_replayAllocator, destRegs.gpr());
     releaseUseDefsAndNotifySlowPaths(currentInstruction);
+    m_replayAllocator.releaseScratches(allocations);
 }
 
 } // namespace JSC
