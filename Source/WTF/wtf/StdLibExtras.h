@@ -358,84 +358,6 @@ bool checkAndSet(T& left, U right)
     return true;
 }
 
-// Clients of these will also need to #include MathExtras.h
-inline unsigned ctz(auto value);
-inline unsigned clz(auto value);
-
-template<typename T>
-bool findBitInWord(T word, size_t& startOrResultIndex, size_t endIndex, bool value)
-{
-    static_assert(std::is_unsigned<T>::value, "Type used in findBitInWord must be unsigned");
-
-    constexpr size_t bitsInWord = sizeof(word) * CHAR_BIT;
-    ASSERT_UNUSED(bitsInWord, startOrResultIndex < bitsInWord && endIndex <= bitsInWord);
-
-    size_t index = startOrResultIndex;
-    word >>= index;
-
-#if CPU(X86_64) || CPU(ARM64)
-    // We should only use ctz() when we know that ctz() is implementated using
-    // a fast hardware instruction. Otherwise, this will actually result in
-    // worse performance.
-
-    word ^= (static_cast<T>(value) - 1);
-    index += ctz(word);
-    if (index < endIndex) {
-        startOrResultIndex = index;
-        return true;
-    }
-#else
-    while (index < endIndex) {
-        if ((word & 1) == static_cast<T>(value)) {
-            startOrResultIndex = index;
-            return true;
-        }
-        index++;
-        word >>= 1;
-    }
-#endif
-
-    startOrResultIndex = endIndex;
-    return false;
-}
-
-template<typename T>
-bool findBitInWordReverse(T word, size_t& startOrResultIndex, size_t endIndexInclusive, bool value)
-{
-    static_assert(std::is_unsigned<T>::value, "Type used in findBitInWordReverse must be unsigned");
-
-    constexpr size_t bitsInWord = sizeof(word) * CHAR_BIT;
-    ASSERT_UNUSED(bitsInWord, startOrResultIndex < bitsInWord && endIndexInclusive < bitsInWord);
-
-    size_t index = startOrResultIndex;
-    word <<= index;
-
-#if CPU(X86_64) || CPU(ARM64)
-    // We should only use clz() when we know that clz() is implementated using
-    // a fast hardware instruction. Otherwise, this will actually result in
-    // worse performance.
-
-    word ^= (static_cast<T>(value) - 1);
-    index -= clz(word);
-    if (index >= endIndexInclusive) {
-        startOrResultIndex = index;
-        return true;
-    }
-#else
-    while (index < endIndex) {
-        if ((word & 1) == static_cast<T>(value)) {
-            startOrResultIndex = index;
-            return true;
-        }
-        index--;
-        word <<= 1;
-    }
-#endif
-
-    startOrResultIndex = endIndexInclusive;
-    return false;
-}
-
 // Used to check if a variadic list of compile time predicates are all true.
 template<bool... Bs> inline constexpr bool all =
     std::is_same_v<std::integer_sequence<bool, true, Bs...>,
@@ -1426,98 +1348,6 @@ template<typename Head, typename... Tail> auto tuple_zip(Head&& head, Tail&& ...
     );
 }
 
-template<typename WordType, std::size_t Extent, typename Func>
-ALWAYS_INLINE constexpr void forEachSetBit(std::span<const WordType, Extent> bits, const Func& func)
-{
-    constexpr size_t wordSize = sizeof(WordType) * CHAR_BIT;
-    for (size_t i = 0; i < bits.size(); ++i) {
-        WordType word = bits[i];
-        if (!word)
-            continue;
-        size_t base = i * wordSize;
-
-#if CPU(X86_64) || CPU(ARM64)
-        // We should only use ctz() when we know that ctz() is implemented using
-        // a fast hardware instruction. Otherwise, this will actually result in
-        // worse performance.
-        while (word) {
-            WordType temp = word & -word;
-            size_t offset = ctz(word);
-            if constexpr (std::is_same_v<IterationStatus, decltype(func(base + offset))>) {
-                if (func(base + offset) == IterationStatus::Done)
-                    return;
-            } else
-                func(base + offset);
-            word ^= temp;
-        }
-#else
-        for (size_t j = 0; j < wordSize; ++j) {
-            if (word & 1) {
-                if constexpr (std::is_same_v<IterationStatus, decltype(func(base + j))>) {
-                    if (func(base + j) == IterationStatus::Done)
-                        return;
-                } else
-                    func(base + j);
-            }
-            word >>= 1;
-        }
-#endif
-    }
-}
-
-template<typename WordType, std::size_t Extent, typename Func>
-ALWAYS_INLINE constexpr void forEachSetBit(std::span<const WordType, Extent> bits, size_t startIndex, const Func& func)
-{
-    constexpr size_t wordSize = sizeof(WordType) * CHAR_BIT;
-    auto iterate = [&](WordType word, size_t i) ALWAYS_INLINE_LAMBDA {
-        size_t base = i * wordSize;
-
-#if CPU(X86_64) || CPU(ARM64)
-        // We should only use ctz() when we know that ctz() is implementated using
-        // a fast hardware instruction. Otherwise, this will actually result in
-        // worse performance.
-        while (word) {
-            WordType temp = word & -word;
-            size_t offset = ctz(word);
-            if constexpr (std::is_same_v<IterationStatus, decltype(func(base + offset))>) {
-                if (func(base + offset) == IterationStatus::Done)
-                    return;
-            } else
-                func(base + offset);
-            word ^= temp;
-        }
-#else
-        for (size_t j = 0; j < wordSize; ++j) {
-            if (word & 1) {
-                if constexpr (std::is_same_v<IterationStatus, decltype(func(base + j))>) {
-                    if (func(base + j) == IterationStatus::Done)
-                        return;
-                } else
-                    func(base + j);
-            }
-            word >>= 1;
-        }
-#endif
-    };
-
-    size_t startWord = startIndex / wordSize;
-    if (startWord >= bits.size())
-        return;
-
-    WordType word = bits[startWord];
-    size_t startIndexInWord = startIndex - startWord * wordSize;
-    WordType masked = word & (~((static_cast<WordType>(1) << startIndexInWord) - 1));
-    if (masked)
-        iterate(masked, startWord);
-
-    for (size_t i = startWord + 1; i < bits.size(); ++i) {
-        WordType word = bits[i];
-        if (!word)
-            continue;
-        iterate(word, i);
-    }
-}
-
 template<typename Object, typename Allocator = FastMalloc, typename... Arguments> std::pair<Object*, void*> createWithTrailingBytes(size_t trailingBytesSize, Arguments... arguments)
 {
     Object* object = static_cast<Object*>(Allocator::malloc(sizeof(Object) + trailingBytesSize));
@@ -1643,8 +1473,6 @@ using WTF::contains;
 using WTF::dropLast;
 using WTF::equalSpans;
 using WTF::find;
-using WTF::findBitInWord;
-using WTF::findBitInWordReverse;
 using WTF::insertIntoBoundedVector;
 using WTF::is8ByteAligned;
 using WTF::isCompilationThread;

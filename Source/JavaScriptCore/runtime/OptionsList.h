@@ -476,7 +476,7 @@ bool hasCapacityToUseLargeGigacage();
     v(Bool, verboseOSRExitFuzz, true, Normal, nullptr) \
     \
     /* LOL options */ \
-    v(Bool, useLOLJIT, true, Normal, "Use LOL instead of Baseline"_s) \
+    v(Bool, useLOLJIT, false, Normal, "Use LOL instead of Baseline"_s) \
     v(Bool, verboseLOLAllocation, false, Normal, "Log info about LOL's register allocation state"_s) \
     \
     v(Unsigned, seedOfVMRandomForFuzzer, 0, Normal, "0 means not fuzzing this; use a cryptographically random seed"_s) \

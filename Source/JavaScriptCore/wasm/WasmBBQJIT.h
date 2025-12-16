@@ -164,8 +164,6 @@ public:
         GPRReg asGPRhi() const;
 
         void dump(PrintStream& out) const;
-        // TODO make this SimpleRegisterAllocator
-        void dumpInContext(PrintStream&, const void*) const { }
 
         bool operator==(Location other) const;
 

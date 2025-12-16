@@ -332,6 +332,8 @@ public:
         WTF_FORBID_HEAP_ALLOCATION;
         using Base = RegisterBitSet::iterator;
     public:
+        // FIXME: It seems like these shouldn't be necessary but Clang complains about them missing for the static_casts in begin()/end() below.
+        constexpr iterator(const Base& base) : Base(base) { }
 
         inline constexpr Reg reg() const { return Reg::fromIndex(Base::operator*()); }
         inline constexpr Reg operator*() const { return reg(); }
@@ -343,8 +345,8 @@ public:
         inline constexpr FPRReg fpr() const { return reg().fpr(); }
     };
 
-    inline constexpr iterator begin() const LIFETIME_BOUND { return iterator(m_bits.begin()); }
-    inline constexpr iterator end() const LIFETIME_BOUND { return iterator(m_bits.end()); }
+    inline constexpr iterator begin() const LIFETIME_BOUND { return static_cast<iterator>(m_bits.begin()); }
+    inline constexpr iterator end() const LIFETIME_BOUND { return static_cast<iterator>(m_bits.end()); }
 
     inline constexpr RegisterSet& add(Reg reg, Width width)
     {

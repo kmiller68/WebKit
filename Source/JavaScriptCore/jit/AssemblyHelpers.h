@@ -1511,6 +1511,10 @@ public:
     {
         unboxDouble(regs.payloadGPR(), resultGPR, fpr);
     }
+    void unboxDouble(JSValueRegs regs, FPRReg fpr)
+    {
+        unboxDouble(regs.payloadGPR(), regs.payloadGPR(), fpr);
+    }
     void boxDouble(FPRReg fpr, JSValueRegs regs, TagRegistersMode mode = HaveTagRegisters)
     {
         boxDouble(fpr, regs.gpr(), mode);

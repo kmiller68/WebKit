@@ -30,8 +30,8 @@
 #include <wtf/DataLog.h>
 #include <wtf/HashFunctions.h>
 #include <wtf/HashTraits.h>
+#include <wtf/MathExtras.h>
 #include <wtf/PrintStream.h>
-#include <wtf/StdLibExtras.h>
 
 #if USE(CF)
 #include <CoreFoundation/CoreFoundation.h>

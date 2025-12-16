@@ -407,6 +407,13 @@ ALWAYS_INLINE void JIT::emitGetVirtualRegisterTag(VirtualRegister src, RegisterI
     }
     load32(tagFor(src), dst);
 }
+
+ALWAYS_INLINE void JIT::emitJumpSlowCaseIfNotInt(JSValueRegs jsr1, JSValueRegs jsr2, RegisterID scratch)
+{
+    and32(tagFor(jsr1), tagFor(jsr2), scratch)
+    addSlowCase(branchIfNotInt32(scratch));
+
+}
 #elif USE(JSVALUE64)
 ALWAYS_INLINE void JIT::emitGetVirtualRegister(VirtualRegister src, RegisterID dst)
 {
@@ -427,6 +434,11 @@ ALWAYS_INLINE JIT::Jump JIT::emitJumpIfNotInt(RegisterID reg1, RegisterID reg2, 
 ALWAYS_INLINE void JIT::emitJumpSlowCaseIfNotInt(RegisterID reg1, RegisterID reg2, RegisterID scratch)
 {
     addSlowCase(emitJumpIfNotInt(reg1, reg2, scratch));
+}
+
+ALWAYS_INLINE void JIT::emitJumpSlowCaseIfNotInt(JSValueRegs jsr1, JSValueRegs jsr2, RegisterID scratch)
+{
+    emitJumpSlowCaseIfNotInt(jsr1.gpr(), jsr2.gpr(), scratch);
 }
 
 ALWAYS_INLINE void JIT::emitJumpSlowCaseIfNotInt(RegisterID gpr)

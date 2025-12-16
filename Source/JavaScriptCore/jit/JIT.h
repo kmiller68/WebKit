@@ -340,6 +340,7 @@ namespace JSC {
         void emitJumpSlowCaseIfNotInt(RegisterID);
 #endif
 
+        void emitJumpSlowCaseIfNotInt(JSValueRegs, JSValueRegs, RegisterID scratch);
         void emitJumpSlowCaseIfNotInt(JSValueRegs);
 
         void emitJumpSlowCaseIfNotJSCell(JSValueRegs);
@@ -652,7 +653,7 @@ namespace JSC {
         template <typename Op, typename Generator, typename ProfiledRepatchFunction, typename ProfiledFunction, typename RepatchFunction>
         void emitMathICSlow(JITUnaryMathIC<Generator>*, const JSInstruction*, ProfiledRepatchFunction, ProfiledFunction, RepatchFunction);
 
-    protected:
+    private:
         static MacroAssemblerCodeRef<JITThunkPtrTag> slow_op_put_to_scopeGenerator(VM&);
         static MacroAssemblerCodeRef<JITThunkPtrTag> op_throw_handlerGenerator(VM&);
         static MacroAssemblerCodeRef<JITThunkPtrTag> op_check_traps_handlerGenerator(VM&);

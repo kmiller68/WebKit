@@ -28,8 +28,8 @@
 #include <string.h>
 #include <wtf/Atomics.h>
 #include <wtf/FastMalloc.h>
+#include <wtf/MathExtras.h>
 #include <wtf/PrintStream.h>
-#include <wtf/StdLibExtras.h>
 
 namespace WTF {
 

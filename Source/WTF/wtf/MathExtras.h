@@ -601,7 +601,7 @@ constexpr unsigned clzConstexpr(T value)
     return zeroCount;
 }
 
-template<typename T>
+template<std::integral T>
 inline unsigned clz(T value)
 {
     constexpr unsigned bitSize = sizeof(T) * CHAR_BIT;
@@ -614,7 +614,7 @@ inline unsigned clz(T value)
     return bitSize;
 }
 
-template<typename T>
+template<std::integral T>
 constexpr unsigned ctzConstexpr(T value)
 {
     constexpr unsigned bitSize = sizeof(T) * CHAR_BIT;
@@ -632,7 +632,7 @@ constexpr unsigned ctzConstexpr(T value)
     return zeroCount;
 }
 
-template<typename T>
+template<std::integral T>
 inline unsigned ctz(T value)
 {
     constexpr unsigned bitSize = sizeof(T) * CHAR_BIT;
@@ -689,6 +689,168 @@ inline uint32_t reverseBits32(uint32_t value)
     value = ((value & 0xff00ff00) >> 8) | ((value & 0x00ff00ff) << 8);
     return (value >> 16) | (value << 16);
 #endif
+}
+
+template<std::unsigned_integral T>
+bool findBitInWord(T word, size_t& startOrResultIndex, size_t endIndex, bool value)
+{
+    constexpr size_t bitsInWord = sizeof(word) * CHAR_BIT;
+    ASSERT_UNUSED(bitsInWord, startOrResultIndex < bitsInWord && endIndex <= bitsInWord);
+
+    size_t index = startOrResultIndex;
+    word >>= index;
+
+#if CPU(X86_64) || CPU(ARM64)
+    // We should only use ctz() when we know that ctz() is implemented using
+    // a fast hardware instruction. Otherwise, this will actually result in
+    // worse performance.
+
+    word ^= (static_cast<T>(value) - 1);
+    index += ctz(word);
+    if (index < endIndex) {
+        startOrResultIndex = index;
+        return true;
+    }
+#else
+    while (index < endIndex) {
+        if ((word & 1) == static_cast<T>(value)) {
+            startOrResultIndex = index;
+            return true;
+        }
+        index++;
+        word >>= 1;
+    }
+#endif
+
+    startOrResultIndex = endIndex;
+    return false;
+}
+
+template<std::unsigned_integral T>
+bool findBitInWordReverse(T word, size_t& startOrResultIndex, size_t endIndexInclusive, bool value)
+{
+    constexpr size_t bitsInWord = sizeof(word) * CHAR_BIT;
+    ASSERT_UNUSED(bitsInWord, startOrResultIndex < bitsInWord && endIndexInclusive < bitsInWord);
+
+    size_t index = startOrResultIndex;
+    word <<= index;
+
+#if CPU(X86_64) || CPU(ARM64)
+    // We should only use clz() when we know that clz() is implemented using
+    // a fast hardware instruction. Otherwise, this will actually result in
+    // worse performance.
+
+    word ^= (static_cast<T>(value) - 1);
+    index -= clz(word);
+    if (index >= endIndexInclusive) {
+        startOrResultIndex = index;
+        return true;
+    }
+#else
+    while (index < endIndex) {
+        if ((word & 1) == static_cast<T>(value)) {
+            startOrResultIndex = index;
+            return true;
+        }
+        index--;
+        word <<= 1;
+    }
+#endif
+
+    startOrResultIndex = endIndexInclusive;
+    return false;
+}
+
+template<typename WordType, std::size_t Extent, typename Func>
+ALWAYS_INLINE constexpr void forEachSetBit(std::span<const WordType, Extent> bits, const Func& func)
+{
+    constexpr size_t wordSize = sizeof(WordType) * CHAR_BIT;
+    for (size_t i = 0; i < bits.size(); ++i) {
+        WordType word = bits[i];
+        if (!word)
+            continue;
+        size_t base = i * wordSize;
+
+#if CPU(X86_64) || CPU(ARM64)
+        // We should only use ctz() when we know that ctz() is implemented using
+        // a fast hardware instruction. Otherwise, this will actually result in
+        // worse performance.
+        while (word) {
+            WordType temp = word & -word;
+            size_t offset = ctz(word);
+            if constexpr (std::is_same_v<IterationStatus, decltype(func(base + offset))>) {
+                if (func(base + offset) == IterationStatus::Done)
+                    return;
+            } else
+                func(base + offset);
+            word ^= temp;
+        }
+#else
+        for (size_t j = 0; j < wordSize; ++j) {
+            if (word & 1) {
+                if constexpr (std::is_same_v<IterationStatus, decltype(func(base + j))>) {
+                    if (func(base + j) == IterationStatus::Done)
+                        return;
+                } else
+                    func(base + j);
+            }
+            word >>= 1;
+        }
+#endif
+    }
+}
+
+template<typename WordType, std::size_t Extent, typename Func>
+ALWAYS_INLINE constexpr void forEachSetBit(std::span<const WordType, Extent> bits, size_t startIndex, const Func& func)
+{
+    constexpr size_t wordSize = sizeof(WordType) * CHAR_BIT;
+    auto iterate = [&](WordType word, size_t i) ALWAYS_INLINE_LAMBDA {
+        size_t base = i * wordSize;
+
+#if CPU(X86_64) || CPU(ARM64)
+        // We should only use ctz() when we know that ctz() is implemented using
+        // a fast hardware instruction. Otherwise, this will actually result in
+        // worse performance.
+        while (word) {
+            WordType temp = word & -word;
+            size_t offset = ctz(word);
+            if constexpr (std::is_same_v<IterationStatus, decltype(func(base + offset))>) {
+                if (func(base + offset) == IterationStatus::Done)
+                    return;
+            } else
+                func(base + offset);
+            word ^= temp;
+        }
+#else
+        for (size_t j = 0; j < wordSize; ++j) {
+            if (word & 1) {
+                if constexpr (std::is_same_v<IterationStatus, decltype(func(base + j))>) {
+                    if (func(base + j) == IterationStatus::Done)
+                        return;
+                } else
+                    func(base + j);
+            }
+            word >>= 1;
+        }
+#endif
+    };
+
+    size_t startWord = startIndex / wordSize;
+    if (startWord >= bits.size())
+        return;
+
+    WordType word = bits[startWord];
+    size_t startIndexInWord = startIndex - startWord * wordSize;
+    WordType masked = word & (~((static_cast<WordType>(1) << startIndexInWord) - 1));
+    if (masked)
+        iterate(masked, startWord);
+
+    for (size_t i = startWord + 1; i < bits.size(); ++i) {
+        WordType word = bits[i];
+        if (!word)
+            continue;
+        iterate(word, i);
+    }
 }
 
 // For use in places where we could negate std::numeric_limits<T>::min and would like to avoid UB.
@@ -847,6 +1009,9 @@ using WTF::clz;
 using WTF::ctz;
 using WTF::getLSBSet;
 using WTF::getMSBSet;
+using WTF::findBitInWord;
+using WTF::findBitInWordReverse;
+using WTF::forEachSetBit;
 using WTF::isNaNConstExpr;
 using WTF::fabsConstExpr;
 using WTF::reverseBits32;

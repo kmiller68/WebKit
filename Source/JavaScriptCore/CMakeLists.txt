@@ -973,6 +973,9 @@ set(JavaScriptCore_PRIVATE_FRAMEWORK_HEADERS
     llint/LLIntPCRanges.h
     llint/LLIntThunks.h
 
+    lol/LOLJIT.h
+    lol/LOLRegisterAllocator.h
+
     parser/Lexer.h
     parser/ParserArena.h
     parser/ParserError.h

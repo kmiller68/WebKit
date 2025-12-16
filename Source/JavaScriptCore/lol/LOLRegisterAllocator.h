@@ -25,7 +25,7 @@
 
 #pragma once
 
-#if ENABLE(JIT)
+#if ENABLE(JIT) && USE(JSVALUE64)
 
 #include "BytecodeStructs.h"
 #include "CodeBlock.h"
@@ -103,7 +103,6 @@ public:
         // TODO: Validation.
         UNUSED_PARAM(instruction);
         // Bump the spill count for our uses so we don't spill them when allocating below.
-        // TODO: In theory these lock/unlocks are unnecessary because the LRU spill hint should prevent spilling these. It would only help compile times though and it's unclear if it matters yet, so keeping the locking for debugging.
         for (auto operand : uses) {
             if (auto current = locationOf(operand).regs)
                 m_allocator.setSpillHint(current.gpr(), index.offset());
@@ -163,47 +162,6 @@ public:
     FOR_EACH_BYTECODE_STRUCT(DECLARE_SPECIALIZATION)
 #undef DECLARE_SPECIALIZATION
 
-    // template<std::derived_from<JSInstruction> Op>
-    // ALWAYS_INLINE auto allocateUseDefs(const Op& currentInstruction, BytecodeIndex index)
-    // {
-    //     // Bump the spill count for our uses so we don't spill them when allocating below.
-    //     // TODO: In theory these lock/unlocks are unnecessary because the LRU spill hint should prevent spilling these. It would only help compile times though and it's unclear if it matters yet, so keeping the locking for debugging.
-    //     ASSERT(!currentInstruction->hasCheckpoints());
-    //     computeUsesForBytecodeIndexImpl(Op::opcodeID, currentInstruction, noCheckpoints, [&](VirtualRegister operand) ALWAYS_INLINE_LAMBDA {
-    //         if (auto current = locationOf(operand).regs) {
-    //             m_allocator.setSpillHint(current.gpr(), index.offset());
-    //         }
-    //     });
-    //     // isDef = true;
-    //     // TODO Figure out checkpoints
-    //     // computeDefsForBytecodeIndex(m_profiledCodeBlock, currentInstruction, noCheckpoints, lock);
-
-    //     bool isDef = true;
-    //     auto doAllocate = [&](VirtualRegister operand) ALWAYS_INLINE_LAMBDA {
-    //         ASSERT_IMPLIES(isDef, operand.isLocal());
-    //         Location& location = locationOf(operand);
-    //         if (location.regs) {
-    //             // Uses might be dirty from a previous instruction, so don't touch them.
-    //             if (isDef) {
-    //                 location.isFlushed = false;
-    //             }
-    //             return;
-    //         }
-
-    //         // TODO: Consider LRU insertion policy here (aka 0 for hint)
-    //         location.regs = JSValueRegs(m_allocator.allocate(m_backend, operand, index.offset()));
-    //         location.isFlushed = !isDef;
-
-    //         if (!isDef)
-    //             m_backend.fill(operand, location.regs);
-    //     };
-
-    //     // Allocate our defs first so that we don't end up flushing any uses them when allocating uses.
-    //     computeDefsForBytecodeIndexImpl(m_numVars, Op::opcodeID, currentInstruction, noCheckpoints, doAllocate);
-    //     isDef = false;
-    //     computeUsesForBytecodeIndexImpl(Op::opcodeID, currentInstruction, noCheckpoints, doAllocate);
-    // }
-
     void flushAllRegisters(Backend&) { m_allocator.flushAllRegisters(*this); }
 
     void dump(PrintStream& out) const { m_allocator.dumpInContext(out, this); }
@@ -231,6 +189,7 @@ private:
     Location& locationOfImpl(VirtualRegister operand)
     {
         ASSERT(operand.isValid());
+        // Locals are first since they are the most common and we want to be able to access them without loading offsets.
         if (operand.isLocal())
             return m_locations[operand.toLocal()];
         if (operand.isConstant())
@@ -252,6 +211,7 @@ private:
 
 class ReplayBackend {
 public:
+    ReplayBackend() = default;
     ALWAYS_INLINE void flush(const Location&, GPRReg, VirtualRegister) { }
     ALWAYS_INLINE void fill(VirtualRegister, GPRReg) { }
 };
