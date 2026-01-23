@@ -240,7 +240,7 @@ void Storage::WriteOperation::invokeMappedBodyHandler(const Data& data)
         m_mappedBodyHandler(data);
 }
 
-class TraverseOperation final : public ThreadSafeRefCounted<TraverseOperation, WTF::DestructionThread::MainRunLoop> {
+class TraverseOperation final : public DeprecatedThreadSafeRefCountedSeqCst<TraverseOperation, WTF::DestructionThread::MainRunLoop> {
 public:
     static Ref<TraverseOperation> create(Storage::TraverseHandler&& handler)
     {

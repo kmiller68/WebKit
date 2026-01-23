@@ -34,7 +34,7 @@
 
 namespace WebCore::ContentExtensions {
 
-class WEBCORE_EXPORT CompiledContentExtension : public ThreadSafeRefCounted<CompiledContentExtension> {
+class WEBCORE_EXPORT CompiledContentExtension : public DeprecatedThreadSafeRefCountedSeqCst<CompiledContentExtension> {
 public:
     virtual ~CompiledContentExtension();
 

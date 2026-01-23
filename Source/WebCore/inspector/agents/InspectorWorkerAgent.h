@@ -74,7 +74,7 @@ protected:
     void connectToWorkerInspectorProxy(WorkerInspectorProxy&);
 
 private:
-    class PageChannel final : public WorkerInspectorProxy::PageChannel, public ThreadSafeRefCounted<PageChannel> {
+    class PageChannel final : public WorkerInspectorProxy::PageChannel, public DeprecatedThreadSafeRefCountedSeqCst<PageChannel> {
         WTF_MAKE_TZONE_ALLOCATED_INLINE(PageChannel);
         WTF_OVERRIDE_DELETE_FOR_CHECKED_PTR(PageChannel);
 

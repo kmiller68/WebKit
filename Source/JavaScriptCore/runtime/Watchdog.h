@@ -37,7 +37,7 @@ class CallFrame;
 class JSGlobalObject;
 class VM;
 
-class Watchdog : public ThreadSafeRefCounted<Watchdog> {
+class Watchdog : public DeprecatedThreadSafeRefCountedSeqCst<Watchdog> {
     WTF_MAKE_TZONE_ALLOCATED(Watchdog);
 public:
     class Scope;

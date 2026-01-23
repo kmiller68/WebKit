@@ -172,7 +172,7 @@ private:
     // Protected state:
     //   Main thread: read-write. Writes must be made with the lock.
     //   Background threads: read only. Reads must be made with the lock.
-    class Task : public ThreadSafeRefCounted<Task> {
+    class Task : public DeprecatedThreadSafeRefCountedSeqCst<Task> {
         WTF_MAKE_NONCOPYABLE(Task);
         WTF_DEPRECATED_MAKE_FAST_ALLOCATED(Task);
     public:

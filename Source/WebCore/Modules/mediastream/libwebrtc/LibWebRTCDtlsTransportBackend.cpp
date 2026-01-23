@@ -55,7 +55,7 @@ static inline RTCDtlsTransportState toRTCDtlsTransportState(webrtc::DtlsTranspor
     RELEASE_ASSERT_NOT_REACHED();
 }
 
-class LibWebRTCDtlsTransportBackendObserver final : public ThreadSafeRefCounted<LibWebRTCDtlsTransportBackendObserver>, public webrtc::DtlsTransportObserverInterface {
+class LibWebRTCDtlsTransportBackendObserver final : public DeprecatedThreadSafeRefCountedSeqCst<LibWebRTCDtlsTransportBackendObserver>, public webrtc::DtlsTransportObserverInterface {
 public:
     static Ref<LibWebRTCDtlsTransportBackendObserver> create(RTCDtlsTransportBackendClient& client, Ref<webrtc::DtlsTransportInterface>&& backend) { return adoptRef(*new LibWebRTCDtlsTransportBackendObserver(client, WTF::move(backend))); }
 

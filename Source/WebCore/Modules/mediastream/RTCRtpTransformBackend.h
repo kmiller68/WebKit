@@ -33,7 +33,7 @@ namespace WebCore {
 class Exception;
 class RTCRtpTransformableFrame;
 
-class RTCRtpTransformBackend : public ThreadSafeRefCounted<RTCRtpTransformBackend, WTF::DestructionThread::Main> {
+class RTCRtpTransformBackend : public DeprecatedThreadSafeRefCountedSeqCst<RTCRtpTransformBackend, WTF::DestructionThread::Main> {
 public:
     virtual ~RTCRtpTransformBackend() = default;
 

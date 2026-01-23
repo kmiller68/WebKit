@@ -59,7 +59,7 @@ class ConvertToBackingContext;
 class DowncastConvertToBackingContext;
 }
 
-class RemoteGPUProxy final : public WebCore::WebGPU::GPU, private IPC::Connection::Client, public ThreadSafeRefCounted<RemoteGPUProxy>, SerialFunctionDispatcher {
+class RemoteGPUProxy final : public WebCore::WebGPU::GPU, private IPC::Connection::Client, public DeprecatedThreadSafeRefCountedSeqCst<RemoteGPUProxy>, SerialFunctionDispatcher {
     WTF_MAKE_TZONE_ALLOCATED(RemoteGPUProxy);
     WTF_OVERRIDE_DELETE_FOR_CHECKED_PTR(RemoteGPUProxy);
 public:
@@ -73,8 +73,8 @@ public:
     IPC::StreamClientConnection& streamClientConnection() { return *m_streamConnection; }
     Ref<IPC::StreamClientConnection> protectedStreamClientConnection() { return *m_streamConnection; }
 
-    void ref() const final { return ThreadSafeRefCounted<RemoteGPUProxy>::ref(); }
-    void deref() const final { return ThreadSafeRefCounted<RemoteGPUProxy>::deref(); }
+    void ref() const final { return DeprecatedThreadSafeRefCountedSeqCst<RemoteGPUProxy>::ref(); }
+    void deref() const final { return DeprecatedThreadSafeRefCountedSeqCst<RemoteGPUProxy>::deref(); }
 
     void paintToCanvas(WebCore::NativeImage&, const WebCore::IntSize&, WebCore::GraphicsContext&) final;
     WebGPUIdentifier backing() const { return m_backing; }

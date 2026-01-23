@@ -40,7 +40,7 @@ enum class MediaPlaybackTargetType : uint8_t {
     Serialized = 1 << 3,
 };
 
-class MediaPlaybackTarget : public ThreadSafeRefCounted<MediaPlaybackTarget> {
+class MediaPlaybackTarget : public DeprecatedThreadSafeRefCountedSeqCst<MediaPlaybackTarget> {
 public:
     using Type = MediaPlaybackTargetType;
 

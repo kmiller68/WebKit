@@ -59,7 +59,7 @@ class WebAutomationSessionProxy : public IPC::MessageReceiver
 #if ENABLE(WEBDRIVER_BIDI)
     , public WebCore::AutomationInstrumentationClient
 #endif
-    , public ThreadSafeRefCounted<WebAutomationSessionProxy> {
+    , public DeprecatedThreadSafeRefCountedSeqCst<WebAutomationSessionProxy> {
     WTF_MAKE_TZONE_ALLOCATED(WebAutomationSessionProxy);
 public:
     static Ref<WebAutomationSessionProxy> create(const String& sessionIdentifier);

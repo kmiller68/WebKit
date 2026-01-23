@@ -44,12 +44,12 @@ class PushPullFIFO;
 using CreateAudioDestinationCocoaOverride = Ref<AudioDestination>(*)(const AudioDestinationCreationOptions&);
 
 // An AudioDestination using CoreAudio's default output AudioUnit
-class AudioDestinationCocoa : public AudioDestinationResampler, public AudioUnitRenderer, public ThreadSafeRefCounted<AudioDestinationCocoa, WTF::DestructionThread::Main> {
+class AudioDestinationCocoa : public AudioDestinationResampler, public AudioUnitRenderer, public DeprecatedThreadSafeRefCountedSeqCst<AudioDestinationCocoa, WTF::DestructionThread::Main> {
 public:
     WEBCORE_EXPORT AudioDestinationCocoa(const CreationOptions&);
     WEBCORE_EXPORT virtual ~AudioDestinationCocoa();
-    void ref() const final { return ThreadSafeRefCounted<AudioDestinationCocoa, WTF::DestructionThread::Main>::ref(); }
-    void deref() const final { return ThreadSafeRefCounted<AudioDestinationCocoa, WTF::DestructionThread::Main>::deref(); }
+    void ref() const final { return DeprecatedThreadSafeRefCountedSeqCst<AudioDestinationCocoa, WTF::DestructionThread::Main>::ref(); }
+    void deref() const final { return DeprecatedThreadSafeRefCountedSeqCst<AudioDestinationCocoa, WTF::DestructionThread::Main>::deref(); }
 
     WEBCORE_EXPORT static CreateAudioDestinationCocoaOverride createOverride;
 

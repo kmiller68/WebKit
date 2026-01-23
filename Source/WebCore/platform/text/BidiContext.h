@@ -30,7 +30,7 @@ namespace WebCore {
 enum BidiEmbeddingSource { FromStyleOrDOM, FromUnicode };
 
 // Used to keep track of explicit embeddings.
-class BidiContext : public ThreadSafeRefCounted<BidiContext> {
+class BidiContext : public DeprecatedThreadSafeRefCountedSeqCst<BidiContext> {
 public:
     WEBCORE_EXPORT static Ref<BidiContext> create(unsigned char level, UCharDirection, bool override = false, BidiEmbeddingSource = FromStyleOrDOM, BidiContext* parent = nullptr);
 

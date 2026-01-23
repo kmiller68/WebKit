@@ -36,7 +36,7 @@ namespace WebCore {
 class WeakPtrImplWithEventTargetData;
 class WorkerGlobalScope;
 
-class WorkerNotificationClient : public NotificationClient, public ThreadSafeRefCounted<WorkerNotificationClient> {
+class WorkerNotificationClient : public NotificationClient, public DeprecatedThreadSafeRefCountedSeqCst<WorkerNotificationClient> {
 public:
     static Ref<WorkerNotificationClient> create(WorkerGlobalScope&);
 

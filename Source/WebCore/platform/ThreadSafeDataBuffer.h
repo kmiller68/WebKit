@@ -34,7 +34,7 @@ namespace WebCore {
 
 class ThreadSafeDataBuffer;
 
-class ThreadSafeDataBufferImpl : public ThreadSafeRefCounted<ThreadSafeDataBufferImpl> {
+class ThreadSafeDataBufferImpl : public DeprecatedThreadSafeRefCountedSeqCst<ThreadSafeDataBufferImpl> {
 private:
     friend class ThreadSafeDataBuffer;
     friend struct IPC::ArgumentCoder<ThreadSafeDataBufferImpl>;

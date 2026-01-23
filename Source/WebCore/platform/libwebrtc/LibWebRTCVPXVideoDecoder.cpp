@@ -70,7 +70,7 @@ static WorkQueue& vpxDecoderQueueSingleton()
     return queue.get();
 }
 
-class LibWebRTCVPXInternalVideoDecoder : public ThreadSafeRefCounted<LibWebRTCVPXInternalVideoDecoder> , public webrtc::DecodedImageCallback {
+class LibWebRTCVPXInternalVideoDecoder : public DeprecatedThreadSafeRefCountedSeqCst<LibWebRTCVPXInternalVideoDecoder> , public webrtc::DecodedImageCallback {
 public:
     static Ref<LibWebRTCVPXInternalVideoDecoder> create(LibWebRTCVPXVideoDecoder::Type type, const VideoDecoder::Config& config, VideoDecoder::OutputCallback&& outputCallback) { return adoptRef(*new LibWebRTCVPXInternalVideoDecoder(type, config, WTF::move(outputCallback))); }
     ~LibWebRTCVPXInternalVideoDecoder() = default;

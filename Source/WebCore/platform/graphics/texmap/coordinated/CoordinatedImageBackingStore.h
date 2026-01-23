@@ -33,7 +33,7 @@ namespace WebCore {
 class CoordinatedPlatformLayerBuffer;
 class NativeImage;
 
-class CoordinatedImageBackingStore final : public ThreadSafeRefCounted<CoordinatedImageBackingStore> {
+class CoordinatedImageBackingStore final : public DeprecatedThreadSafeRefCountedSeqCst<CoordinatedImageBackingStore> {
 public:
     static Ref<CoordinatedImageBackingStore> create(Ref<NativeImage>&&);
     ~CoordinatedImageBackingStore();

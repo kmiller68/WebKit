@@ -35,7 +35,7 @@ class IOSurface;
 
 constexpr inline Seconds delegatedContentsFinishedTimeout = 5_s;
 
-class WEBCORE_EXPORT PlatformCALayerDelegatedContentsFence : public ThreadSafeRefCounted<PlatformCALayerDelegatedContentsFence> {
+class WEBCORE_EXPORT PlatformCALayerDelegatedContentsFence : public DeprecatedThreadSafeRefCountedSeqCst<PlatformCALayerDelegatedContentsFence> {
     WTF_MAKE_NONCOPYABLE(PlatformCALayerDelegatedContentsFence);
 public:
     PlatformCALayerDelegatedContentsFence();

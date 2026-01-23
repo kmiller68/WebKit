@@ -59,7 +59,7 @@ struct IDBIterateCursorData;
 
 namespace IDBClient {
 
-class IDBConnectionToServer final : public ThreadSafeRefCounted<IDBConnectionToServer>, public CanMakeThreadSafeCheckedPtr<IDBConnectionToServer> {
+class IDBConnectionToServer final : public DeprecatedThreadSafeRefCountedSeqCst<IDBConnectionToServer>, public CanMakeThreadSafeCheckedPtr<IDBConnectionToServer> {
     WTF_MAKE_TZONE_ALLOCATED_EXPORT(IDBConnectionToServer, WEBCORE_EXPORT);
     WTF_OVERRIDE_DELETE_FOR_CHECKED_PTR(IDBConnectionToServer);
 public:

@@ -91,7 +91,7 @@ struct GPUProcessCreationParameters;
 struct GPUProcessSessionParameters;
 struct SharedPreferencesForWebProcess;
 
-class GPUProcess final : public AuxiliaryProcess, public ThreadSafeRefCounted<GPUProcess> {
+class GPUProcess final : public AuxiliaryProcess, public DeprecatedThreadSafeRefCountedSeqCst<GPUProcess> {
     WTF_MAKE_NONCOPYABLE(GPUProcess);
     WTF_DEPRECATED_MAKE_FAST_ALLOCATED(GPUProcess);
     WTF_OVERRIDE_DELETE_FOR_CHECKED_PTR(GPUProcess);

@@ -33,7 +33,7 @@
 
 namespace WebCore {
 
-class TextureMapperGPUBuffer final : public ThreadSafeRefCounted<TextureMapperGPUBuffer> {
+class TextureMapperGPUBuffer final : public DeprecatedThreadSafeRefCountedSeqCst<TextureMapperGPUBuffer> {
     WTF_MAKE_NONCOPYABLE(TextureMapperGPUBuffer);
 public:
     enum class Type : uint8_t {

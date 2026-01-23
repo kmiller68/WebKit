@@ -35,7 +35,7 @@
 
 namespace WebKit {
 
-class ServiceWorkerDebuggableFrontendChannel final : public ThreadSafeRefCounted<ServiceWorkerDebuggableFrontendChannel>, public Inspector::FrontendChannel {
+class ServiceWorkerDebuggableFrontendChannel final : public DeprecatedThreadSafeRefCountedSeqCst<ServiceWorkerDebuggableFrontendChannel>, public Inspector::FrontendChannel {
     WTF_MAKE_TZONE_ALLOCATED(ServiceWorkerDebuggableFrontendChannel);
     WTF_MAKE_NONCOPYABLE(ServiceWorkerDebuggableFrontendChannel);
 public:

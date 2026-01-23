@@ -41,7 +41,7 @@ OBJC_CLASS MLModel;
 
 namespace WebKit {
 
-class TextExtractionFilter : public ThreadSafeRefCounted<TextExtractionFilter> {
+class TextExtractionFilter : public DeprecatedThreadSafeRefCountedSeqCst<TextExtractionFilter> {
     WTF_MAKE_TZONE_ALLOCATED(TextExtractionFilter);
     WTF_MAKE_NONCOPYABLE(TextExtractionFilter);
 public:

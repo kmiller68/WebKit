@@ -1243,7 +1243,7 @@ void CDMInstanceSessionFairPlayStreamingAVFObjC::didProvideRequests(Vector<Retai
         appIdentifier = certificate->makeContiguous()->createNSData();
 
     using RequestsData = Vector<std::pair<RefPtr<SharedBuffer>, RetainPtr<NSData>>>;
-    struct CallbackAggregator final : public ThreadSafeRefCounted<CallbackAggregator> {
+    struct CallbackAggregator final : public DeprecatedThreadSafeRefCountedSeqCst<CallbackAggregator> {
         using CallbackFunction = Function<void(RequestsData&&)>;
         static RefPtr<CallbackAggregator> create(CallbackFunction&& completionHandler)
         {

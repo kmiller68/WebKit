@@ -36,7 +36,7 @@
 
 namespace WebCore {
 
-class ThreadableLoaderClientWrapper : public ThreadSafeRefCounted<ThreadableLoaderClientWrapper> {
+class ThreadableLoaderClientWrapper : public DeprecatedThreadSafeRefCountedSeqCst<ThreadableLoaderClientWrapper> {
 public:
     static Ref<ThreadableLoaderClientWrapper> create(ThreadableLoaderClient& client, const String& initiator)
     {

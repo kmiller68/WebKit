@@ -47,7 +47,7 @@ struct SourceApplicationAuditToken {
 #endif
 };
 
-class SocketStreamHandle : public ThreadSafeRefCounted<SocketStreamHandle, WTF::DestructionThread::Main> {
+class SocketStreamHandle : public DeprecatedThreadSafeRefCountedSeqCst<SocketStreamHandle, WTF::DestructionThread::Main> {
 public:
     enum SocketStreamState { Connecting, Open, Closing, Closed };
     virtual ~SocketStreamHandle() = default;

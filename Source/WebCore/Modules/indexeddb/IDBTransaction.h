@@ -67,7 +67,7 @@ class IDBConnectionProxy;
 class TransactionOperation;
 }
 
-class IDBTransaction final : public ThreadSafeRefCounted<IDBTransaction>, public EventTarget, public IDBActiveDOMObject {
+class IDBTransaction final : public DeprecatedThreadSafeRefCountedSeqCst<IDBTransaction>, public EventTarget, public IDBActiveDOMObject {
     WTF_MAKE_TZONE_ALLOCATED_EXPORT(IDBTransaction, WEBCORE_EXPORT);
 public:
     static Ref<IDBTransaction> create(IDBDatabase&, const IDBTransactionInfo&);

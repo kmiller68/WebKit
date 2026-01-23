@@ -35,7 +35,7 @@
 
 namespace WebKit {
 
-class RemoteVideoDecoderCallbacks : public ThreadSafeRefCounted<RemoteVideoDecoderCallbacks> {
+class RemoteVideoDecoderCallbacks : public DeprecatedThreadSafeRefCountedSeqCst<RemoteVideoDecoderCallbacks> {
 public:
     static Ref<RemoteVideoDecoderCallbacks> create(WebCore::VideoDecoder::OutputCallback&& outputCallback) { return adoptRef(*new RemoteVideoDecoderCallbacks(WTF::move(outputCallback))); }
 
@@ -70,7 +70,7 @@ private:
     const Ref<RemoteVideoDecoderCallbacks> m_callbacks;
 };
 
-class RemoteVideoEncoderCallbacks : public ThreadSafeRefCounted<RemoteVideoEncoderCallbacks> {
+class RemoteVideoEncoderCallbacks : public DeprecatedThreadSafeRefCountedSeqCst<RemoteVideoEncoderCallbacks> {
 public:
     static Ref<RemoteVideoEncoderCallbacks> create(WebCore::VideoEncoder::DescriptionCallback&& descriptionCallback, WebCore::VideoEncoder::OutputCallback&& outputCallback) { return adoptRef(*new RemoteVideoEncoderCallbacks(WTF::move(descriptionCallback), WTF::move(outputCallback))); }
 

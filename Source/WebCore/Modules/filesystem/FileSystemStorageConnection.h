@@ -46,7 +46,7 @@ class FileSystemSyncAccessHandle;
 class FileSystemWritableFileStream;
 template<typename> class ExceptionOr;
 
-class FileSystemStorageConnection : public ThreadSafeRefCounted<FileSystemStorageConnection> {
+class FileSystemStorageConnection : public DeprecatedThreadSafeRefCountedSeqCst<FileSystemStorageConnection> {
 public:
     virtual ~FileSystemStorageConnection() { }
 

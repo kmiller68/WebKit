@@ -109,7 +109,7 @@ private:
     uint64_t m_size { 0 };
 };
 
-class SharedMemory : public ThreadSafeRefCounted<SharedMemory> {
+class SharedMemory : public DeprecatedThreadSafeRefCountedSeqCst<SharedMemory> {
 public:
     using Handle = SharedMemoryHandle;
     using Protection = SharedMemoryProtection;

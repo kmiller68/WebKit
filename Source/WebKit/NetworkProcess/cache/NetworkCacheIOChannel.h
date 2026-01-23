@@ -41,7 +41,7 @@ typedef struct _GOutputStream GOutputStream;
 namespace WebKit {
 namespace NetworkCache {
 
-class IOChannel : public ThreadSafeRefCounted<IOChannel> {
+class IOChannel : public DeprecatedThreadSafeRefCountedSeqCst<IOChannel> {
 public:
     enum class Type { Read, Write, Create };
     static Ref<IOChannel> open(const String& filePath, Type type, std::optional<WorkQueue::QOS> qos = { }) { return adoptRef(*new IOChannel(filePath, type, qos)); }

@@ -34,7 +34,7 @@
 namespace WTF {
 
 template <DestructionThread destructionThread>
-class CallbackAggregatorOnThread : public ThreadSafeRefCounted<CallbackAggregatorOnThread<destructionThread>, destructionThread> {
+class CallbackAggregatorOnThread : public DeprecatedThreadSafeRefCountedSeqCst<CallbackAggregatorOnThread<destructionThread>, destructionThread> {
 public:
     static auto create(CompletionHandler<void()>&& callback) { return adoptRef(*new CallbackAggregatorOnThread(WTF::move(callback))); }
 
@@ -70,7 +70,7 @@ using MainRunLoopCallbackAggregator = CallbackAggregatorOnThread<DestructionThre
 
 template<typename> class EagerCallbackAggregator;
 template <typename Out, typename... In>
-class EagerCallbackAggregator<Out(In...)> : public ThreadSafeRefCounted<EagerCallbackAggregator<Out(In...)>> {
+class EagerCallbackAggregator<Out(In...)> : public DeprecatedThreadSafeRefCountedSeqCst<EagerCallbackAggregator<Out(In...)>> {
 public:
     template<typename CallableType>
         requires (std::is_rvalue_reference_v<CallableType&&>)
@@ -106,7 +106,7 @@ private:
 
 // Waits for all bool completions and resolves to true only if all succeed.
 template <DestructionThread destructionThread>
-class SuccessCallbackAggregatorOnThread : public ThreadSafeRefCounted<SuccessCallbackAggregatorOnThread<destructionThread>, destructionThread> {
+class SuccessCallbackAggregatorOnThread : public DeprecatedThreadSafeRefCountedSeqCst<SuccessCallbackAggregatorOnThread<destructionThread>, destructionThread> {
 public:
     static auto create(CompletionHandler<void(bool)>&& callback) { return adoptRef(*new SuccessCallbackAggregatorOnThread(WTF::move(callback))); }
 

@@ -1675,7 +1675,7 @@ void NetworkProcess::fetchWebsitesWithUserInteractions(PAL::SessionID sessionID,
 void NetworkProcess::fetchWebsiteData(PAL::SessionID sessionID, OptionSet<WebsiteDataType> websiteDataTypes, OptionSet<WebsiteDataFetchOption> fetchOptions, CompletionHandler<void(WebsiteData&&)>&& completionHandler)
 {
     RELEASE_LOG(Storage, "NetworkProcess::fetchWebsiteData started to fetch data for session %" PRIu64, sessionID.toUInt64());
-    struct CallbackAggregator final : public ThreadSafeRefCounted<CallbackAggregator> {
+    struct CallbackAggregator final : public DeprecatedThreadSafeRefCountedSeqCst<CallbackAggregator> {
         explicit CallbackAggregator(CompletionHandler<void(WebsiteData&&)>&& completionHandler)
             : m_completionHandler(WTF::move(completionHandler))
         {
@@ -2044,7 +2044,7 @@ void NetworkProcess::deleteAndRestrictWebsiteDataForRegistrableDomains(PAL::Sess
 
     OptionSet<WebsiteDataFetchOption> fetchOptions = WebsiteDataFetchOption::DoNotCreateProcesses;
 
-    struct CallbackAggregator final : public ThreadSafeRefCounted<CallbackAggregator> {
+    struct CallbackAggregator final : public DeprecatedThreadSafeRefCountedSeqCst<CallbackAggregator> {
         explicit CallbackAggregator(CompletionHandler<void(HashSet<RegistrableDomain>&&)>&& completionHandler)
             : m_completionHandler(WTF::move(completionHandler))
         {
@@ -2201,7 +2201,7 @@ void NetworkProcess::deleteCookiesForTesting(PAL::SessionID sessionID, Registrab
 void NetworkProcess::registrableDomainsWithWebsiteData(PAL::SessionID sessionID, OptionSet<WebsiteDataType> websiteDataTypes, CompletionHandler<void(HashSet<RegistrableDomain>&&)>&& completionHandler)
 {
     CheckedPtr session = networkSession(sessionID);
-    struct CallbackAggregator final : public ThreadSafeRefCounted<CallbackAggregator> {
+    struct CallbackAggregator final : public DeprecatedThreadSafeRefCountedSeqCst<CallbackAggregator> {
         explicit CallbackAggregator(CompletionHandler<void(HashSet<RegistrableDomain>&&)>&& completionHandler)
             : m_completionHandler(WTF::move(completionHandler))
         {

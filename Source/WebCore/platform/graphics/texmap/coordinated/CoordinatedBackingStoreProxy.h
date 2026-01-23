@@ -35,7 +35,7 @@ class CoordinatedPlatformLayer;
 class CoordinatedTileBuffer;
 class GraphicsLayer;
 
-class CoordinatedBackingStoreProxy final : public ThreadSafeRefCounted<CoordinatedBackingStoreProxy> {
+class CoordinatedBackingStoreProxy final : public DeprecatedThreadSafeRefCountedSeqCst<CoordinatedBackingStoreProxy> {
     WTF_MAKE_TZONE_ALLOCATED(CoordinatedBackingStoreProxy);
 public:
     static Ref<CoordinatedBackingStoreProxy> create();

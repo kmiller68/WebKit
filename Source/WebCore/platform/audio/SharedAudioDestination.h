@@ -35,7 +35,7 @@ namespace WebCore {
 
 class SharedAudioDestinationAdapter;
 
-class SharedAudioDestination final : public AudioDestination, public ThreadSafeRefCounted<SharedAudioDestination, WTF::DestructionThread::Main> {
+class SharedAudioDestination final : public AudioDestination, public DeprecatedThreadSafeRefCountedSeqCst<SharedAudioDestination, WTF::DestructionThread::Main> {
 public:
     using AudioDestinationCreationFunction = Function<Ref<AudioDestination>(const CreationOptions&)>;
     WEBCORE_EXPORT static Ref<SharedAudioDestination> create(const CreationOptions&, AudioDestinationCreationFunction&&);

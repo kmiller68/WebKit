@@ -31,7 +31,7 @@
 
 namespace WebCore {
 
-class NavigationInterceptHandler : public ThreadSafeRefCounted<NavigationInterceptHandler>, public ActiveDOMCallback {
+class NavigationInterceptHandler : public DeprecatedThreadSafeRefCountedSeqCst<NavigationInterceptHandler>, public ActiveDOMCallback {
 public:
     using ActiveDOMCallback::ActiveDOMCallback;
 

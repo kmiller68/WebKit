@@ -87,7 +87,7 @@ private:
     //    go through it. All tasks posted from the worker object's thread to the worker context's
     //    thread contain the RefPtr<ThreadableLoaderClientWrapper> object, so the
     //    ThreadableLoaderClientWrapper instance is there until all tasks are executed.
-    class MainThreadBridge final : public ThreadableLoaderClient, public ThreadSafeRefCounted<MainThreadBridge, WTF::DestructionThread::Main> {
+    class MainThreadBridge final : public ThreadableLoaderClient, public DeprecatedThreadSafeRefCountedSeqCst<MainThreadBridge, WTF::DestructionThread::Main> {
         WTF_DEPRECATED_MAKE_FAST_ALLOCATED_WITH_HEAP_IDENTIFIER(MainThreadBridge, Loader);
     public:
         // All executed on the worker context's thread.

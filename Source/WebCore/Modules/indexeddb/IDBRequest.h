@@ -65,7 +65,7 @@ class IDBConnectionProxy;
 class IDBConnectionToServer;
 }
 
-class IDBRequest : public EventTarget, public IDBActiveDOMObject, public ThreadSafeRefCounted<IDBRequest> {
+class IDBRequest : public EventTarget, public IDBActiveDOMObject, public DeprecatedThreadSafeRefCountedSeqCst<IDBRequest> {
     WTF_MAKE_TZONE_ALLOCATED(IDBRequest);
 public:
     enum class NullResultType {

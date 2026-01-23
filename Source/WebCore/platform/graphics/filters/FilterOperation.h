@@ -39,7 +39,7 @@ namespace WebCore {
 struct BlendingContext;
 using IntOutsets = IntBoxExtent;
 
-class FilterOperation : public ThreadSafeRefCounted<FilterOperation> {
+class FilterOperation : public DeprecatedThreadSafeRefCountedSeqCst<FilterOperation> {
 public:
     enum class Type : uint8_t {
         Grayscale,

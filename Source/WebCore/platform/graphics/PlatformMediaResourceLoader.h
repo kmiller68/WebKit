@@ -46,7 +46,7 @@ class ResourceError;
 class ResourceRequest;
 class ResourceResponse;
 
-class PlatformMediaResourceClient : public ThreadSafeRefCounted<PlatformMediaResourceClient> {
+class PlatformMediaResourceClient : public DeprecatedThreadSafeRefCountedSeqCst<PlatformMediaResourceClient> {
 public:
     virtual ~PlatformMediaResourceClient() = default;
 
@@ -63,7 +63,7 @@ public:
     virtual bool isWebCoreNSURLSessionDataTaskClient() const { return false; }
 };
 
-class PlatformMediaResourceLoader : public ThreadSafeRefCounted<PlatformMediaResourceLoader, WTF::DestructionThread::Main> {
+class PlatformMediaResourceLoader : public DeprecatedThreadSafeRefCountedSeqCst<PlatformMediaResourceLoader, WTF::DestructionThread::Main> {
     WTF_MAKE_TZONE_ALLOCATED_INLINE(PlatformMediaResourceLoader);
     WTF_MAKE_NONCOPYABLE(PlatformMediaResourceLoader);
 public:

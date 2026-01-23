@@ -111,7 +111,7 @@ public:
     friend class ThreadGroup;
     friend WTF_EXPORT_PRIVATE void initialize();
 
-    class ClientData : public ThreadSafeRefCounted<ClientData> {
+    class ClientData : public DeprecatedThreadSafeRefCountedSeqCst<ClientData> {
     public:
         virtual ~ClientData() = default;
 

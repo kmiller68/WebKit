@@ -144,7 +144,7 @@ private:
 
     void scheduleRenderingUpdateTimerFired();
 
-    class BackingStoreFlusher : public ThreadSafeRefCounted<BackingStoreFlusher> {
+    class BackingStoreFlusher : public DeprecatedThreadSafeRefCountedSeqCst<BackingStoreFlusher> {
     public:
         static Ref<BackingStoreFlusher> create(Ref<IPC::Connection>&&);
 

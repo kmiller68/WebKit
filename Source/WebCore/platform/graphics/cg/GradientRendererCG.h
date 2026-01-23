@@ -61,7 +61,7 @@ private:
     struct Shading {
         template<typename InterpolationSpace, AlphaPremultiplication> static void shadingFunction(void*, const CGFloat*, CGFloat*);
 
-        class Data : public ThreadSafeRefCounted<Data> {
+        class Data : public DeprecatedThreadSafeRefCountedSeqCst<Data> {
         public:
             static Ref<Data> create(ColorInterpolationMethod colorInterpolationMethod, Vector<ColorConvertedToInterpolationColorSpaceStop> stops, bool firstStopIsSynthetic, bool lastStopIsSynthetic)
             {

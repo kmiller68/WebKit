@@ -36,7 +36,7 @@ namespace WebCore {
 
 class SharedBuffer;
 
-class SynchronousLoaderMessageQueue : public ThreadSafeRefCounted<SynchronousLoaderMessageQueue> {
+class SynchronousLoaderMessageQueue : public DeprecatedThreadSafeRefCountedSeqCst<SynchronousLoaderMessageQueue> {
 public:
     static Ref<SynchronousLoaderMessageQueue> create() { return adoptRef(*new SynchronousLoaderMessageQueue); }
 

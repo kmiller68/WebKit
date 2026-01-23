@@ -35,7 +35,7 @@ namespace WebKit {
 
 // Class for maintaining view of GPU process RemoteSharedResourceCache state in Web process.
 // Thread-safe.
-class RemoteSharedResourceCacheProxy : public ThreadSafeRefCounted<RemoteSharedResourceCacheProxy> {
+class RemoteSharedResourceCacheProxy : public DeprecatedThreadSafeRefCountedSeqCst<RemoteSharedResourceCacheProxy> {
     WTF_MAKE_TZONE_ALLOCATED(RemoteSharedResourceCacheProxy);
 public:
     static Ref<RemoteSharedResourceCacheProxy> create();

@@ -149,7 +149,7 @@ void ByteRangeRequest::completeUnconditionally(PDFIncrementalLoader& loader)
 
 #pragma mark -
 
-class PDFPluginStreamLoaderClient final : public ThreadSafeRefCounted<PDFPluginStreamLoaderClient>,
+class PDFPluginStreamLoaderClient final : public DeprecatedThreadSafeRefCountedSeqCst<PDFPluginStreamLoaderClient>,
     public NetscapePlugInStreamLoaderClient {
 public:
     static Ref<PDFPluginStreamLoaderClient> create(PDFIncrementalLoader& loader)

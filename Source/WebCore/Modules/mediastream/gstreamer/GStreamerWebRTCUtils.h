@@ -316,7 +316,7 @@ std::optional<Ref<RTCCertificate>> generateCertificate(Ref<SecurityOrigin>&&, co
 
 bool sdpMediaHasAttributeKey(const GstSDPMedia*, ASCIILiteral key);
 
-class UniqueSSRCGenerator : public ThreadSafeRefCounted<UniqueSSRCGenerator> {
+class UniqueSSRCGenerator : public DeprecatedThreadSafeRefCountedSeqCst<UniqueSSRCGenerator> {
     WTF_MAKE_TZONE_ALLOCATED(UniqueSSRCGenerator);
 public:
     static Ref<UniqueSSRCGenerator> create() { return adoptRef(*new UniqueSSRCGenerator()); }

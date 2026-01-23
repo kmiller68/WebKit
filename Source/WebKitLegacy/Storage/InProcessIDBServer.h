@@ -55,7 +55,7 @@ class IDBServer;
 }
 } // namespace WebCore
 
-class InProcessIDBServer final : public WebCore::IDBClient::IDBConnectionToServerDelegate, public WebCore::IDBServer::IDBConnectionToClientDelegate, public ThreadSafeRefCounted<InProcessIDBServer> {
+class InProcessIDBServer final : public WebCore::IDBClient::IDBConnectionToServerDelegate, public WebCore::IDBServer::IDBConnectionToClientDelegate, public DeprecatedThreadSafeRefCountedSeqCst<InProcessIDBServer> {
     WTF_DEPRECATED_MAKE_FAST_ALLOCATED(InProcessIDBServer);
     WTF_OVERRIDE_DELETE_FOR_CHECKED_PTR(InProcessIDBServer);
 public:

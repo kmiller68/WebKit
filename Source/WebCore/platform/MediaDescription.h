@@ -31,7 +31,7 @@
 
 namespace WebCore {
 
-class MediaDescription : public ThreadSafeRefCounted<MediaDescription> {
+class MediaDescription : public DeprecatedThreadSafeRefCountedSeqCst<MediaDescription> {
 public:
     explicit MediaDescription(String&& codec)
         : m_codec(WTF::move(codec))

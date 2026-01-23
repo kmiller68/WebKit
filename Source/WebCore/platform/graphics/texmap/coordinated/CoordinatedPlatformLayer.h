@@ -60,7 +60,7 @@ class PaintingEngine;
 }
 #endif
 
-class CoordinatedPlatformLayer : public ThreadSafeRefCounted<CoordinatedPlatformLayer> {
+class CoordinatedPlatformLayer : public DeprecatedThreadSafeRefCountedSeqCst<CoordinatedPlatformLayer> {
 public:
     // FIXME: remove this client when a subclass is added for the WebProcess.
     class Client {

@@ -70,7 +70,7 @@ WTF_MAKE_TZONE_ALLOCATED_IMPL(WorkerMessagingProxy);
 // The WorkerUserGestureForwarder, on the other hand, can be ref'd and deref'd from
 // non-main thread contexts, allowing it to be passed from main to Worker scopes and
 // vice versa.
-class WorkerUserGestureForwarder : public ThreadSafeRefCounted<WorkerUserGestureForwarder, WTF::DestructionThread::Main> {
+class WorkerUserGestureForwarder : public DeprecatedThreadSafeRefCountedSeqCst<WorkerUserGestureForwarder, WTF::DestructionThread::Main> {
 public:
     static Ref<WorkerUserGestureForwarder> create(RefPtr<UserGestureToken>&& token) { return *new WorkerUserGestureForwarder(WTF::move(token)); }
 

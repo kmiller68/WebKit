@@ -118,7 +118,7 @@ private:
  * A ConcurrentWorkQueue unlike a WorkQueue doesn't guarantee the order in which the dispatched runnable will run
  * and each can run concurrently on different threads.
  */
-class WTF_EXPORT_PRIVATE ConcurrentWorkQueue final : public WorkQueueBase, public FunctionDispatcher, public ThreadSafeRefCounted<ConcurrentWorkQueue> {
+class WTF_EXPORT_PRIVATE ConcurrentWorkQueue final : public WorkQueueBase, public FunctionDispatcher, public DeprecatedThreadSafeRefCountedSeqCst<ConcurrentWorkQueue> {
 public:
     static Ref<ConcurrentWorkQueue> create(ASCIILiteral name, QOS = QOS::Default);
     static void apply(size_t iterations, WTF::Function<void(size_t index)>&&);
@@ -133,12 +133,12 @@ private:
 
 inline void ConcurrentWorkQueue::ref() const
 {
-    ThreadSafeRefCounted<ConcurrentWorkQueue>::ref();
+    DeprecatedThreadSafeRefCountedSeqCst<ConcurrentWorkQueue>::ref();
 }
 
 inline void ConcurrentWorkQueue::deref() const
 {
-    ThreadSafeRefCounted<ConcurrentWorkQueue>::deref();
+    DeprecatedThreadSafeRefCountedSeqCst<ConcurrentWorkQueue>::deref();
 }
 
 }

@@ -38,7 +38,7 @@ namespace WebCore {
 
 class Database;
 
-class DatabaseCallback : public ThreadSafeRefCounted<DatabaseCallback>, public ActiveDOMCallback {
+class DatabaseCallback : public DeprecatedThreadSafeRefCountedSeqCst<DatabaseCallback>, public ActiveDOMCallback {
 public:
     using ActiveDOMCallback::ActiveDOMCallback;
 

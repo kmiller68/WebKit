@@ -40,7 +40,7 @@ namespace WebCore {
 struct ParentalControlsURLFilterParameters;
 class ParentalControlsContentFilter;
 
-class ParentalControlsURLFilter : public ThreadSafeRefCounted<ParentalControlsURLFilter, WTF::DestructionThread::Main> {
+class ParentalControlsURLFilter : public DeprecatedThreadSafeRefCountedSeqCst<ParentalControlsURLFilter, WTF::DestructionThread::Main> {
 public:
 #if HAVE(WEBCONTENTRESTRICTIONS_PATH_SPI)
     WEBCORE_EXPORT static ParentalControlsURLFilter& filterWithConfigurationPath(const String&);

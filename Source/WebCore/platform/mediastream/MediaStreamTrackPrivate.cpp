@@ -221,7 +221,7 @@ private:
     bool m_isStarted { false };
 };
 
-class MediaStreamTrackPrivateSourceObserver : public ThreadSafeRefCounted<MediaStreamTrackPrivateSourceObserver, WTF::DestructionThread::Main> {
+class MediaStreamTrackPrivateSourceObserver : public DeprecatedThreadSafeRefCountedSeqCst<MediaStreamTrackPrivateSourceObserver, WTF::DestructionThread::Main> {
 public:
     static Ref<MediaStreamTrackPrivateSourceObserver> create(Ref<RealtimeMediaSource>&& source, std::function<void(Function<void()>&&)>&& postTask) { return adoptRef(*new MediaStreamTrackPrivateSourceObserver(WTF::move(source), WTF::move(postTask))); }
 

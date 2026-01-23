@@ -69,7 +69,7 @@ static PartitionedSecurityOrigin partitionedSecurityOriginFromContext(ScriptExec
     return { context.topOrigin(), context.protectedSecurityOrigin().releaseNonNull() };
 }
 
-class BroadcastChannel::MainThreadBridge : public ThreadSafeRefCounted<MainThreadBridge, WTF::DestructionThread::Main>, public Identified<BroadcastChannelIdentifier> {
+class BroadcastChannel::MainThreadBridge : public DeprecatedThreadSafeRefCountedSeqCst<MainThreadBridge, WTF::DestructionThread::Main>, public Identified<BroadcastChannelIdentifier> {
 public:
     static Ref<MainThreadBridge> create(BroadcastChannel& channel, const String& name)
     {

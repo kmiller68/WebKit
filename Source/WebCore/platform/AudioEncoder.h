@@ -39,7 +39,7 @@
 
 namespace WebCore {
 
-class AudioEncoder : public ThreadSafeRefCounted<AudioEncoder> {
+class AudioEncoder : public DeprecatedThreadSafeRefCountedSeqCst<AudioEncoder> {
 public:
     virtual ~AudioEncoder() = default;
 

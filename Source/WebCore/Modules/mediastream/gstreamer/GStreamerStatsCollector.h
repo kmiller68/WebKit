@@ -36,7 +36,7 @@ namespace WebCore {
 
 class RTCStatsReport;
 
-class GStreamerStatsCollector : public ThreadSafeRefCounted<GStreamerStatsCollector, WTF::DestructionThread::Main> {
+class GStreamerStatsCollector : public DeprecatedThreadSafeRefCountedSeqCst<GStreamerStatsCollector, WTF::DestructionThread::Main> {
 public:
     static Ref<GStreamerStatsCollector> create() { return adoptRef(*new GStreamerStatsCollector()); }
 

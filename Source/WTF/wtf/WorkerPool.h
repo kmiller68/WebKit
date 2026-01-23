@@ -36,7 +36,7 @@
 
 namespace WTF {
 
-class WorkerPool final : public ThreadSafeRefCounted<WorkerPool>, public CanMakeThreadSafeCheckedPtr<WorkerPool> {
+class WorkerPool final : public DeprecatedThreadSafeRefCountedSeqCst<WorkerPool>, public CanMakeThreadSafeCheckedPtr<WorkerPool> {
     WTF_MAKE_TZONE_ALLOCATED(WorkerPool);
     WTF_OVERRIDE_DELETE_FOR_CHECKED_PTR(WorkerPool);
 public:

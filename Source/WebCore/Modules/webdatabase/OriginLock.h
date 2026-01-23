@@ -32,7 +32,7 @@
 
 namespace WebCore {
 
-class OriginLock : public ThreadSafeRefCounted<OriginLock> {
+class OriginLock : public DeprecatedThreadSafeRefCountedSeqCst<OriginLock> {
 public:
     static Ref<OriginLock> create(const String& originPath)
     {

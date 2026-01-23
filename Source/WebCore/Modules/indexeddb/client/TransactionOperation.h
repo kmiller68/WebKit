@@ -49,7 +49,7 @@ enum class IndexRecordType : bool;
 
 namespace IDBClient {
 
-class TransactionOperation : public ThreadSafeRefCounted<TransactionOperation> {
+class TransactionOperation : public DeprecatedThreadSafeRefCountedSeqCst<TransactionOperation> {
     WTF_MAKE_TZONE_ALLOCATED(TransactionOperation);
     friend IDBRequestData::IDBRequestData(TransactionOperation&);
 public:

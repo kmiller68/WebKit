@@ -62,7 +62,7 @@ constexpr uint64_t putPixelBufferBatchedAreaLimit = 60 * 60;
 WTF_MAKE_TZONE_ALLOCATED_IMPL(RemoteImageBufferProxy);
 WTF_MAKE_TZONE_ALLOCATED_IMPL(RemoteSerializedImageBufferProxy);
 
-class RemoteImageBufferProxyFlushFence : public ThreadSafeRefCounted<RemoteImageBufferProxyFlushFence> {
+class RemoteImageBufferProxyFlushFence : public DeprecatedThreadSafeRefCountedSeqCst<RemoteImageBufferProxyFlushFence> {
     WTF_MAKE_NONCOPYABLE(RemoteImageBufferProxyFlushFence);
     WTF_MAKE_TZONE_ALLOCATED(RemoteImageBufferProxyFlushFence);
 public:

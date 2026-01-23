@@ -49,7 +49,7 @@ namespace WebCore {
 class BitmapTexture;
 class GLFence;
 
-class CoordinatedTileBuffer : public ThreadSafeRefCounted<CoordinatedTileBuffer> {
+class CoordinatedTileBuffer : public DeprecatedThreadSafeRefCountedSeqCst<CoordinatedTileBuffer> {
 public:
     enum Flag {
         NoFlags = 0,

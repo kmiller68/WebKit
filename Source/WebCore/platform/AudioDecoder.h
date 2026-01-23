@@ -36,7 +36,7 @@ namespace WebCore {
 
 class PlatformRawAudioData;
 
-class AudioDecoder : public ThreadSafeRefCounted<AudioDecoder> {
+class AudioDecoder : public DeprecatedThreadSafeRefCountedSeqCst<AudioDecoder> {
 public:
     WEBCORE_EXPORT AudioDecoder();
     WEBCORE_EXPORT virtual ~AudioDecoder();

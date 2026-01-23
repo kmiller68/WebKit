@@ -30,7 +30,7 @@
 
 namespace WebKit {
 
-class PageLoadStateObserver : public ThreadSafeRefCounted<PageLoadStateObserver>, public PageLoadState::Observer {
+class PageLoadStateObserver : public DeprecatedThreadSafeRefCountedSeqCst<PageLoadStateObserver>, public PageLoadState::Observer {
     WTF_MAKE_TZONE_ALLOCATED_INLINE(PageLoadStateObserver);
 public:
     static Ref<PageLoadStateObserver> create(id object, NSString *activeURLKey = @"activeURL")

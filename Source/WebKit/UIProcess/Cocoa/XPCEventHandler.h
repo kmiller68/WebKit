@@ -29,7 +29,7 @@
 
 namespace WebKit {
 
-class XPCEventHandler : public ThreadSafeRefCounted<XPCEventHandler> {
+class XPCEventHandler : public DeprecatedThreadSafeRefCountedSeqCst<XPCEventHandler> {
 public:
     virtual ~XPCEventHandler() { }
 

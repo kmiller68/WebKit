@@ -35,7 +35,7 @@ namespace WebCore {
 
 template<typename> class ExceptionOr;
 
-class SQLResultSet : public ThreadSafeRefCounted<SQLResultSet> {
+class SQLResultSet : public DeprecatedThreadSafeRefCountedSeqCst<SQLResultSet> {
 public:
     static Ref<SQLResultSet> create() { return adoptRef(*new SQLResultSet); }
 

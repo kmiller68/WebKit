@@ -34,7 +34,7 @@ namespace WebCore {
 
 class WorkletPendingTasks;
 
-class WorkletGlobalScopeProxy : public ThreadSafeRefCounted<WorkletGlobalScopeProxy> {
+class WorkletGlobalScopeProxy : public DeprecatedThreadSafeRefCountedSeqCst<WorkletGlobalScopeProxy> {
 public:
     virtual ~WorkletGlobalScopeProxy() = default;
 

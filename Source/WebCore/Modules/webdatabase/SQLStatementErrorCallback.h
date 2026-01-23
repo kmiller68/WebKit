@@ -37,7 +37,7 @@ namespace WebCore {
 class SQLTransaction;
 class SQLError;
 
-class SQLStatementErrorCallback : public ThreadSafeRefCounted<SQLStatementErrorCallback>, public ActiveDOMCallback {
+class SQLStatementErrorCallback : public DeprecatedThreadSafeRefCountedSeqCst<SQLStatementErrorCallback>, public ActiveDOMCallback {
 public:
     using ActiveDOMCallback::ActiveDOMCallback;
 

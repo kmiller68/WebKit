@@ -147,7 +147,7 @@ uint32_t ThreadLike::currentSequence()
     return Thread::currentSingleton().uid();
 }
 
-struct Thread::NewThreadContext : public ThreadSafeRefCounted<NewThreadContext> {
+struct Thread::NewThreadContext : public DeprecatedThreadSafeRefCountedSeqCst<NewThreadContext> {
 public:
     NewThreadContext(ASCIILiteral name, Function<void()>&& entryPoint, Ref<Thread>&& thread)
         : name(name)

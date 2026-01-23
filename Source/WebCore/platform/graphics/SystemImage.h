@@ -45,7 +45,7 @@ enum class SystemImageType : uint8_t {
 #endif
 };
 
-class WEBCORE_EXPORT SystemImage : public ThreadSafeRefCounted<SystemImage> {
+class WEBCORE_EXPORT SystemImage : public DeprecatedThreadSafeRefCountedSeqCst<SystemImage> {
     WTF_MAKE_TZONE_ALLOCATED_INLINE(SystemImage);
 public:
     virtual ~SystemImage() = default;

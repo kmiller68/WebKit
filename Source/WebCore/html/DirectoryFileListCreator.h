@@ -38,7 +38,7 @@ class FileList;
 
 struct FileChooserFileInfo;
 
-class DirectoryFileListCreator : public ThreadSafeRefCounted<DirectoryFileListCreator> {
+class DirectoryFileListCreator : public DeprecatedThreadSafeRefCountedSeqCst<DirectoryFileListCreator> {
 public:
     using CompletionHandler = Function<void(Ref<FileList>&&)>;
 

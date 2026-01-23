@@ -39,7 +39,7 @@ namespace WTF {
 class MetaAllocator;
 class PrintStream;
 
-class MetaAllocatorHandle final : public ThreadSafeRefCounted<MetaAllocatorHandle>, public RedBlackTree<MetaAllocatorHandle, void*>::ThreadSafeNode {
+class MetaAllocatorHandle final : public DeprecatedThreadSafeRefCountedSeqCst<MetaAllocatorHandle>, public RedBlackTree<MetaAllocatorHandle, void*>::ThreadSafeNode {
     WTF_MAKE_COMPACT_TZONE_ALLOCATED(MetaAllocatorHandle);
     WTF_OVERRIDE_DELETE_FOR_CHECKED_PTR(MetaAllocatorHandle);
 public:

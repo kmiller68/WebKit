@@ -33,7 +33,7 @@ namespace WebCore {
 
 class RTCDataChannelRemoteHandler;
 
-class RTCDataChannelRemoteHandlerConnection : public ThreadSafeRefCounted<RTCDataChannelRemoteHandlerConnection, WTF::DestructionThread::Main> {
+class RTCDataChannelRemoteHandlerConnection : public DeprecatedThreadSafeRefCountedSeqCst<RTCDataChannelRemoteHandlerConnection, WTF::DestructionThread::Main> {
 public:
     virtual ~RTCDataChannelRemoteHandlerConnection() = default;
 

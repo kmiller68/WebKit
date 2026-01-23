@@ -29,7 +29,7 @@ namespace WebCore {
 enum class SVGPropertyAccess : uint8_t { ReadWrite, ReadOnly };
 enum class SVGPropertyState : uint8_t { Clean, Dirty };
 
-class SVGProperty : public ThreadSafeRefCounted<SVGProperty> {
+class SVGProperty : public DeprecatedThreadSafeRefCountedSeqCst<SVGProperty> {
 public:
     virtual ~SVGProperty() = default;
 

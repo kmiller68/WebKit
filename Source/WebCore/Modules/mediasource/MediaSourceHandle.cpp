@@ -39,7 +39,7 @@ namespace WebCore {
 
 WTF_MAKE_TZONE_ALLOCATED_IMPL(MediaSourceHandle);
 
-class MediaSourceHandle::SharedPrivate final : public ThreadSafeRefCounted<SharedPrivate> {
+class MediaSourceHandle::SharedPrivate final : public DeprecatedThreadSafeRefCountedSeqCst<SharedPrivate> {
 public:
     static Ref<SharedPrivate> create(MediaSource& mediaSource, MediaSourceHandle::DispatcherType&& dispatcher) { return adoptRef(*new SharedPrivate(mediaSource, WTF::move(dispatcher))); }
 

@@ -36,7 +36,7 @@ namespace PCM {
 class Database;
 struct DebugInfo;
 
-class Store : public ThreadSafeRefCounted<Store> {
+class Store : public DeprecatedThreadSafeRefCountedSeqCst<Store> {
 public:
     virtual ~Store() = default;
 

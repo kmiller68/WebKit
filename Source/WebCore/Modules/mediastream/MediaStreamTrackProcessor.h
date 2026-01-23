@@ -140,7 +140,7 @@ private:
         const unsigned short m_maxVideoFramesCount { 1 };
     };
 
-    class VideoFrameObserverWrapper : public ThreadSafeRefCounted<VideoFrameObserverWrapper, WTF::DestructionThread::Main> {
+    class VideoFrameObserverWrapper : public DeprecatedThreadSafeRefCountedSeqCst<VideoFrameObserverWrapper, WTF::DestructionThread::Main> {
     public:
         static Ref<VideoFrameObserverWrapper> create(ScriptExecutionContextIdentifier, MediaStreamTrackProcessor&, Ref<RealtimeMediaSource>&&, unsigned short maxVideoFramesCount);
 

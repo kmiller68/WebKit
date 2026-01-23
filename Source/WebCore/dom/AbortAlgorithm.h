@@ -35,7 +35,7 @@ class JSValue;
 
 namespace WebCore {
 
-class AbortAlgorithm : public ThreadSafeRefCounted<AbortAlgorithm>, public ActiveDOMCallback {
+class AbortAlgorithm : public DeprecatedThreadSafeRefCountedSeqCst<AbortAlgorithm>, public ActiveDOMCallback {
 public:
     using ActiveDOMCallback::ActiveDOMCallback;
 

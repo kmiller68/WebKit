@@ -46,7 +46,7 @@ namespace WebCore {
 
 namespace LibWebRTCCertificateGenerator {
 
-class RTCCertificateGeneratorCallbackWrapper : public ThreadSafeRefCounted<RTCCertificateGeneratorCallbackWrapper, WTF::DestructionThread::Main> {
+class RTCCertificateGeneratorCallbackWrapper : public DeprecatedThreadSafeRefCountedSeqCst<RTCCertificateGeneratorCallbackWrapper, WTF::DestructionThread::Main> {
 public:
     static Ref<RTCCertificateGeneratorCallbackWrapper> create(Ref<SecurityOrigin>&& origin, Function<void(ExceptionOr<Ref<RTCCertificate>>&&)>&& resultCallback)
     {

@@ -105,7 +105,7 @@ public:
 
     WEBCORE_EXPORT static ResourceError validateWorkerResponse(const ResourceResponse&, Source, FetchOptions::Destination);
 
-    class ServiceWorkerDataManager : public ThreadSafeRefCounted<ServiceWorkerDataManager, WTF::DestructionThread::Main> {
+    class ServiceWorkerDataManager : public DeprecatedThreadSafeRefCountedSeqCst<ServiceWorkerDataManager, WTF::DestructionThread::Main> {
     public:
         static Ref<ServiceWorkerDataManager> create(ScriptExecutionContextIdentifier identifier) { return adoptRef(*new ServiceWorkerDataManager(identifier)); }
         WEBCORE_EXPORT ~ServiceWorkerDataManager();

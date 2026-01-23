@@ -31,11 +31,11 @@
 
 namespace WebCore {
 
-class GStreamerElementHarness : public ThreadSafeRefCounted<GStreamerElementHarness> {
+class GStreamerElementHarness : public DeprecatedThreadSafeRefCountedSeqCst<GStreamerElementHarness> {
     WTF_MAKE_TZONE_ALLOCATED(GStreamerElementHarness);
 
 public:
-    class Stream : public ThreadSafeRefCounted<Stream> {
+    class Stream : public DeprecatedThreadSafeRefCountedSeqCst<Stream> {
         WTF_MAKE_TZONE_ALLOCATED(Stream);
 
     public:

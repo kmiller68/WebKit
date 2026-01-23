@@ -48,7 +48,7 @@ class GPUConnectionToWebProcess;
 struct VideoTrackPrivateRemoteConfiguration;
 
 class RemoteVideoTrackProxy final
-    : public ThreadSafeRefCounted<RemoteVideoTrackProxy, WTF::DestructionThread::Main>
+    : public DeprecatedThreadSafeRefCountedSeqCst<RemoteVideoTrackProxy, WTF::DestructionThread::Main>
     , private WebCore::VideoTrackPrivateClient {
     WTF_MAKE_TZONE_ALLOCATED(RemoteVideoTrackProxy);
 public:

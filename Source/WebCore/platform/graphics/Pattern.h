@@ -62,7 +62,7 @@ struct PatternParameters {
     AffineTransform patternSpaceTransform;
 };
 
-class Pattern final : public ThreadSafeRefCounted<Pattern> {
+class Pattern final : public DeprecatedThreadSafeRefCountedSeqCst<Pattern> {
 public:
     using Parameters = PatternParameters;
     WEBCORE_EXPORT static Ref<Pattern> create(SourceImage&& tileImage, const Parameters& = { });

@@ -40,7 +40,7 @@ OBJC_CLASS NSString;
 
 namespace Inspector {
 
-class RemoteInspectorXPCConnection : public ThreadSafeRefCounted<RemoteInspectorXPCConnection> {
+class RemoteInspectorXPCConnection : public DeprecatedThreadSafeRefCountedSeqCst<RemoteInspectorXPCConnection> {
 public:
     class Client {
     public:

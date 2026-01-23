@@ -49,7 +49,7 @@ class IntSize;
 class NativeImageBackend;
 struct ImagePaintingOptions;
 
-class NativeImage : public ThreadSafeRefCounted<NativeImage>, public CanMakeThreadSafeCheckedPtr<NativeImage> {
+class NativeImage : public DeprecatedThreadSafeRefCountedSeqCst<NativeImage>, public CanMakeThreadSafeCheckedPtr<NativeImage> {
     WTF_MAKE_TZONE_ALLOCATED(NativeImage);
     WTF_OVERRIDE_DELETE_FOR_CHECKED_PTR(NativeImage);
 public:

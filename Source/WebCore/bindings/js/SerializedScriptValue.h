@@ -108,7 +108,7 @@ struct ErrorInformation {
 std::optional<ErrorInformation> extractErrorInformationFromErrorInstance(JSC::JSGlobalObject*, JSC::ErrorInstance&);
 
 DECLARE_ALLOCATOR_WITH_HEAP_IDENTIFIER(SerializedScriptValue);
-class SerializedScriptValue : public ThreadSafeRefCounted<SerializedScriptValue> {
+class SerializedScriptValue : public DeprecatedThreadSafeRefCountedSeqCst<SerializedScriptValue> {
     WTF_DEPRECATED_MAKE_FAST_ALLOCATED_WITH_HEAP_IDENTIFIER(SerializedScriptValue, SerializedScriptValue);
 public:
     WEBCORE_EXPORT static ExceptionOr<Ref<SerializedScriptValue>> create(JSC::JSGlobalObject&, JSC::JSValue, Vector<JSC::Strong<JSC::JSObject>>&& transfer, Vector<Ref<MessagePort>>&, SerializationForStorage = SerializationForStorage::No, SerializationContext = SerializationContext::Default);

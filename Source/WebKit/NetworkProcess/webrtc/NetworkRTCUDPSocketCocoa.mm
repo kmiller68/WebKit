@@ -63,7 +63,7 @@ public:
     void setOption(int option, int value);
     void sendTo(std::span<const uint8_t>, const webrtc::SocketAddress&, const webrtc::AsyncSocketPacketOptions&);
 
-    class ConnectionStateTracker : public ThreadSafeRefCounted<ConnectionStateTracker> {
+    class ConnectionStateTracker : public DeprecatedThreadSafeRefCountedSeqCst<ConnectionStateTracker> {
     public:
         static Ref<ConnectionStateTracker> create() { return adoptRef(*new ConnectionStateTracker()); }
         void markAsStopped() { m_isStopped = true; }

@@ -58,7 +58,7 @@ namespace WebCore {
 
 static const double kRingBufferDuration = 1;
 
-class AudioSourceProviderAVFObjC::TapStorage : public ThreadSafeRefCounted<AudioSourceProviderAVFObjC::TapStorage> {
+class AudioSourceProviderAVFObjC::TapStorage : public DeprecatedThreadSafeRefCountedSeqCst<AudioSourceProviderAVFObjC::TapStorage> {
 public:
     TapStorage(AudioSourceProviderAVFObjC* _this) : _this(_this) { }
     ThreadSafeWeakPtr<AudioSourceProviderAVFObjC> _this;

@@ -42,7 +42,7 @@ namespace WebCore {
 
 class WebCoreOpaqueRoot;
 
-class CryptoKey : public ThreadSafeRefCounted<CryptoKey> {
+class CryptoKey : public DeprecatedThreadSafeRefCountedSeqCst<CryptoKey> {
 public:
     using Type = CryptoKeyType;
     using Data = CryptoKeyData;

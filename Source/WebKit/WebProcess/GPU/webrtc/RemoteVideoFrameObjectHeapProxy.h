@@ -44,7 +44,7 @@ class RemoteVideoFrameProxy;
 #endif
 
 // Wrapper around RemoteVideoFrameObjectHeapProxyProcessor that will always be destroyed on main thread.
-class RemoteVideoFrameObjectHeapProxy : public ThreadSafeRefCounted<RemoteVideoFrameObjectHeapProxy, WTF::DestructionThread::MainRunLoop> {
+class RemoteVideoFrameObjectHeapProxy : public DeprecatedThreadSafeRefCountedSeqCst<RemoteVideoFrameObjectHeapProxy, WTF::DestructionThread::MainRunLoop> {
 public:
     static Ref<RemoteVideoFrameObjectHeapProxy> create(GPUProcessConnection& connection) { return adoptRef(*new RemoteVideoFrameObjectHeapProxy(connection)); }
 

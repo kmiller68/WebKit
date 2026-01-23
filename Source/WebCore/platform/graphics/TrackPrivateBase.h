@@ -95,7 +95,7 @@ protected:
     TrackPrivateBase() = default;
 
     template <typename T>
-    class Shared final : public ThreadSafeRefCounted<Shared<T>> {
+    class Shared final : public DeprecatedThreadSafeRefCountedSeqCst<Shared<T>> {
     public:
         static Ref<Shared> create(T&& obj) { return adoptRef(*new Shared(WTF::move(obj))); }
 

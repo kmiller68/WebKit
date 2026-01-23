@@ -28,7 +28,7 @@
 namespace WTF {
 
 // Activity observers (used to implement WebCore::RunLoopObserver)
-class ActivityObserver : public ThreadSafeRefCounted<ActivityObserver> {
+class ActivityObserver : public DeprecatedThreadSafeRefCountedSeqCst<ActivityObserver> {
     WTF_MAKE_TZONE_ALLOCATED(ActivityObserver);
 public:
     using Callback = Function<void()>;

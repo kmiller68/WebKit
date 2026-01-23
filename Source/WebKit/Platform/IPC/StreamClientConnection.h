@@ -57,7 +57,7 @@ namespace IPC {
 // The whole IPC::Connection message order is not preserved.
 //
 // The StreamClientConnection trusts the StreamServerConnection.
-class StreamClientConnection final : public ThreadSafeRefCounted<StreamClientConnection>, public CanMakeThreadSafeCheckedPtr<StreamClientConnection> {
+class StreamClientConnection final : public DeprecatedThreadSafeRefCountedSeqCst<StreamClientConnection>, public CanMakeThreadSafeCheckedPtr<StreamClientConnection> {
     WTF_MAKE_TZONE_ALLOCATED(StreamClientConnection);
     WTF_MAKE_NONCOPYABLE(StreamClientConnection);
     WTF_OVERRIDE_DELETE_FOR_CHECKED_PTR(StreamClientConnection);

@@ -37,7 +37,7 @@ namespace WTF {
 DECLARE_COMPACT_ALLOCATOR_WITH_HEAP_IDENTIFIER(WeakPtrImplBase);
 
 template<typename Derived>
-class WeakPtrImplBase : public ThreadSafeRefCounted<Derived> {
+class WeakPtrImplBase : public DeprecatedThreadSafeRefCountedSeqCst<Derived> {
     WTF_MAKE_NONCOPYABLE(WeakPtrImplBase);
     WTF_DEPRECATED_MAKE_FAST_COMPACT_ALLOCATED_WITH_HEAP_IDENTIFIER(WeakPtrImplBase, WeakPtrImplBase);
 public:

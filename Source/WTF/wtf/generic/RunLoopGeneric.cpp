@@ -36,7 +36,7 @@ namespace WTF {
 
 static constexpr bool report = false;
 
-class RunLoop::TimerBase::ScheduledTask final : public ThreadSafeRefCounted<ScheduledTask>, public RedBlackTree<ScheduledTask, MonotonicTime>::ThreadSafeNode {
+class RunLoop::TimerBase::ScheduledTask final : public DeprecatedThreadSafeRefCountedSeqCst<ScheduledTask>, public RedBlackTree<ScheduledTask, MonotonicTime>::ThreadSafeNode {
     WTF_MAKE_TZONE_ALLOCATED(ScheduledTask);
     WTF_MAKE_NONCOPYABLE(ScheduledTask);
     WTF_OVERRIDE_DELETE_FOR_CHECKED_PTR(ScheduledTask);

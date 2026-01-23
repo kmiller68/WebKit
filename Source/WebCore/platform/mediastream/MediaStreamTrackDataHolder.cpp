@@ -31,7 +31,7 @@
 
 namespace WebCore {
 
-class PreventSourceFromEndingObserverWrapper : public ThreadSafeRefCounted<PreventSourceFromEndingObserverWrapper, WTF::DestructionThread::Main> {
+class PreventSourceFromEndingObserverWrapper : public DeprecatedThreadSafeRefCountedSeqCst<PreventSourceFromEndingObserverWrapper, WTF::DestructionThread::Main> {
 public:
     static Ref<PreventSourceFromEndingObserverWrapper> create(Ref<RealtimeMediaSource>&& source)
     {

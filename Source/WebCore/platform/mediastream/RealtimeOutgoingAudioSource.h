@@ -57,7 +57,7 @@ class AudioTrackSinkInterface;
 namespace WebCore {
 
 class RealtimeOutgoingAudioSource
-    : public ThreadSafeRefCounted<RealtimeOutgoingAudioSource, WTF::DestructionThread::Main>
+    : public DeprecatedThreadSafeRefCountedSeqCst<RealtimeOutgoingAudioSource, WTF::DestructionThread::Main>
     , public webrtc::AudioSourceInterface
     , private MediaStreamTrackPrivateObserver
     , private RealtimeMediaSource::AudioSampleObserver

@@ -51,7 +51,7 @@ class ModelConnectionToWebProcess;
 struct ModelProcessConnectionParameters;
 struct ModelProcessCreationParameters;
 
-class ModelProcess final : public AuxiliaryProcess, public ThreadSafeRefCounted<ModelProcess> {
+class ModelProcess final : public AuxiliaryProcess, public DeprecatedThreadSafeRefCountedSeqCst<ModelProcess> {
     WTF_MAKE_NONCOPYABLE(ModelProcess);
     WTF_MAKE_TZONE_ALLOCATED(ModelProcess);
     WTF_OVERRIDE_DELETE_FOR_CHECKED_PTR(ModelProcess);

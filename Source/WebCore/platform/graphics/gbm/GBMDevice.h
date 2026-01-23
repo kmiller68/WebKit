@@ -34,7 +34,7 @@ struct gbm_device;
 
 namespace WebCore {
 
-class GBMDevice final : public ThreadSafeRefCounted<GBMDevice, WTF::DestructionThread::Main> {
+class GBMDevice final : public DeprecatedThreadSafeRefCountedSeqCst<GBMDevice, WTF::DestructionThread::Main> {
 public:
     static RefPtr<GBMDevice> create(const CString&);
     ~GBMDevice();

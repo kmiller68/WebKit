@@ -93,7 +93,7 @@ CaptureSourceOrError MockRealtimeAudioSource::create(String&& deviceID, AtomStri
     return CoreAudioCaptureSource::createForTesting(WTF::move(deviceID), std::get<MockMicrophoneProperties>(device->properties).deviceID, WTF::move(name), WTF::move(hashSalts), constraints, pageIdentifier, std::get<MockMicrophoneProperties>(device->properties).echoCancellation);
 }
 
-class MockAudioCaptureInternalUnitState : public ThreadSafeRefCounted<MockAudioCaptureInternalUnitState> {
+class MockAudioCaptureInternalUnitState : public DeprecatedThreadSafeRefCountedSeqCst<MockAudioCaptureInternalUnitState> {
 public:
     static Ref<MockAudioCaptureInternalUnitState> create() { return adoptRef(*new MockAudioCaptureInternalUnitState()); }
 

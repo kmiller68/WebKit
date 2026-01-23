@@ -33,7 +33,7 @@
 
 namespace WebCore {
 
-class SQLError : public ThreadSafeRefCounted<SQLError> {
+class SQLError : public DeprecatedThreadSafeRefCountedSeqCst<SQLError> {
 public:
     static Ref<SQLError> create(unsigned code, String&& message) { return adoptRef(*new SQLError(code, WTF::move(message))); }
     static Ref<SQLError> create(unsigned code, ASCIILiteral message, int sqliteCode)

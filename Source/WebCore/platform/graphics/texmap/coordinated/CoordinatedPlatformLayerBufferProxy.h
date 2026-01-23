@@ -37,7 +37,7 @@ class CoordinatedPlatformLayerBuffer;
 class IntSize;
 class TextureMapperLayer;
 
-class CoordinatedPlatformLayerBufferProxy final : public ThreadSafeRefCounted<CoordinatedPlatformLayerBufferProxy> {
+class CoordinatedPlatformLayerBufferProxy final : public DeprecatedThreadSafeRefCountedSeqCst<CoordinatedPlatformLayerBufferProxy> {
 public:
     static Ref<CoordinatedPlatformLayerBufferProxy> create();
     ~CoordinatedPlatformLayerBufferProxy();

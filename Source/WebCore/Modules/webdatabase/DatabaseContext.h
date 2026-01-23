@@ -46,7 +46,7 @@ class DatabaseThread;
 class SecurityOrigin;
 class SecurityOriginData;
 
-class DatabaseContext final : public ThreadSafeRefCounted<DatabaseContext>, private ActiveDOMObject {
+class DatabaseContext final : public DeprecatedThreadSafeRefCountedSeqCst<DatabaseContext>, private ActiveDOMObject {
 public:
     // ActiveDOMObject.
     void ref() const final { ThreadSafeRefCounted::ref(); }

@@ -48,7 +48,7 @@ namespace WebKit {
 class GPUConnectionToWebProcess;
 // Class holding GPU process resources per Web Content process.
 // Thread-safe.
-class RemoteSharedResourceCache final : public ThreadSafeRefCounted<RemoteSharedResourceCache>, IPC::MessageReceiver {
+class RemoteSharedResourceCache final : public DeprecatedThreadSafeRefCountedSeqCst<RemoteSharedResourceCache>, IPC::MessageReceiver {
     WTF_MAKE_TZONE_ALLOCATED(RemoteSharedResourceCache);
 public:
     static Ref<RemoteSharedResourceCache> create(GPUConnectionToWebProcess&);

@@ -59,7 +59,7 @@ struct RTCEncodedVideoFrameMetadata {
 };
 
 class RTCRtpScriptTransformer;
-class RTCRtpTransformableFrame : public ThreadSafeRefCounted<RTCRtpTransformableFrame> {
+class RTCRtpTransformableFrame : public DeprecatedThreadSafeRefCountedSeqCst<RTCRtpTransformableFrame> {
 public:
     virtual ~RTCRtpTransformableFrame() = default;
 

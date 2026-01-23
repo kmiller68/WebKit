@@ -612,7 +612,7 @@ void WebsiteDataStore::fetchData(OptionSet<WebsiteDataType> dataTypes, OptionSet
 void WebsiteDataStore::fetchDataAndApply(OptionSet<WebsiteDataType> dataTypes, OptionSet<WebsiteDataFetchOption> fetchOptions, Ref<WorkQueue>&& queue, Function<void(Vector<WebsiteDataRecord>)>&& apply)
 {
     RELEASE_LOG(Storage, "WebsiteDataStore::fetchDataAndApply started to fetch data for session %" PRIu64, m_sessionID.toUInt64());
-    class CallbackAggregator final : public ThreadSafeRefCounted<CallbackAggregator, WTF::DestructionThread::MainRunLoop> {
+    class CallbackAggregator final : public DeprecatedThreadSafeRefCountedSeqCst<CallbackAggregator, WTF::DestructionThread::MainRunLoop> {
     public:
         static Ref<CallbackAggregator> create(OptionSet<WebsiteDataFetchOption> fetchOptions, Ref<WorkQueue>&& queue, Function<void(Vector<WebsiteDataRecord>)>&& apply, WebsiteDataStore& dataStore)
         {

@@ -37,7 +37,7 @@ namespace WTF {
 // Test CrossThreadCopier using static_assert.
 
 // Verify that ThreadSafeRefCounted objects get handled correctly.
-class CopierThreadSafeRefCountedTest : public ThreadSafeRefCounted<CopierThreadSafeRefCountedTest> {
+class CopierThreadSafeRefCountedTest : public DeprecatedThreadSafeRefCountedSeqCst<CopierThreadSafeRefCountedTest> {
 };
 
 static_assert((std::is_same<RefPtr<CopierThreadSafeRefCountedTest>, CrossThreadCopier<RefPtr<CopierThreadSafeRefCountedTest>>::Type>::value), "RefPtrTest");

@@ -66,7 +66,7 @@ enum class AlwaysRunsAtBackgroundPriority : bool { No, Yes };
 using ExtensionCapabilityGrantMap = HashMap<String, ExtensionCapabilityGrant>;
 
 class AuxiliaryProcessProxy
-    : public ThreadSafeRefCounted<AuxiliaryProcessProxy, WTF::DestructionThread::MainRunLoop>
+    : public DeprecatedThreadSafeRefCountedSeqCst<AuxiliaryProcessProxy, WTF::DestructionThread::MainRunLoop>
     , public ResponsivenessTimer::Client
     , private ProcessLauncher::Client
     , public IPC::Connection::Client {

@@ -48,7 +48,7 @@ class GPUConnectionToWebProcess;
 struct TextTrackPrivateRemoteConfiguration;
 
 class RemoteTextTrackProxy final
-    : public ThreadSafeRefCounted<RemoteTextTrackProxy, WTF::DestructionThread::Main>
+    : public DeprecatedThreadSafeRefCountedSeqCst<RemoteTextTrackProxy, WTF::DestructionThread::Main>
     , private WebCore::InbandTextTrackPrivateClient {
     WTF_MAKE_TZONE_ALLOCATED(RemoteTextTrackProxy);
 public:

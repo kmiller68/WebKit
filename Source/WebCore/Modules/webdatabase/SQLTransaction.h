@@ -47,7 +47,7 @@ class SQLTransactionErrorCallback;
 class VoidCallback;
 template<typename> class ExceptionOr;
 
-class SQLTransactionWrapper : public ThreadSafeRefCounted<SQLTransactionWrapper> {
+class SQLTransactionWrapper : public DeprecatedThreadSafeRefCountedSeqCst<SQLTransactionWrapper> {
 public:
     virtual ~SQLTransactionWrapper() = default;
     virtual bool performPreflight(SQLTransaction&) = 0;

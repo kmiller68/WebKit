@@ -42,7 +42,7 @@ class RegistrableDomain;
 class SecurityOriginData;
 struct ClientOrigin;
 
-class PermissionController : public ThreadSafeRefCounted<PermissionController> {
+class PermissionController : public DeprecatedThreadSafeRefCountedSeqCst<PermissionController> {
 public:
     WEBCORE_EXPORT static PermissionController& singleton();
     WEBCORE_EXPORT static void setSharedController(Ref<PermissionController>&&);

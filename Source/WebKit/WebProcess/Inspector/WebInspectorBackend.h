@@ -37,7 +37,7 @@ namespace WebKit {
 
 class WebPage;
 
-class WebInspectorBackend : public ThreadSafeRefCounted<WebInspectorBackend>, private IPC::Connection::Client {
+class WebInspectorBackend : public DeprecatedThreadSafeRefCountedSeqCst<WebInspectorBackend>, private IPC::Connection::Client {
     WTF_DEPRECATED_MAKE_FAST_ALLOCATED(WebInspectorBackend);
     WTF_OVERRIDE_DELETE_FOR_CHECKED_PTR(WebInspectorBackend);
 public:

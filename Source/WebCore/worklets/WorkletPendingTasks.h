@@ -34,7 +34,7 @@ namespace WebCore {
 class Worklet;
 
 // https://drafts.css-houdini.org/worklets/#pending-tasks-struct
-class WorkletPendingTasks : public ThreadSafeRefCounted<WorkletPendingTasks> {
+class WorkletPendingTasks : public DeprecatedThreadSafeRefCountedSeqCst<WorkletPendingTasks> {
 public:
     static Ref<WorkletPendingTasks> create(Worklet& worklet, DOMPromiseDeferred<void>&& promise, int counter)
     {

@@ -90,7 +90,7 @@ struct AudioParamDescriptor;
 
 class BaseAudioContext
     : public ActiveDOMObject
-    , public ThreadSafeRefCounted<BaseAudioContext>
+    , public DeprecatedThreadSafeRefCountedSeqCst<BaseAudioContext>
     , public EventTarget
 #if !RELEASE_LOG_DISABLED
     , public LoggerHelper

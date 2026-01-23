@@ -198,7 +198,7 @@ namespace WTF {
  *
  * struct PhotoSettings { };
  *
- * class PhotoProducer : public ThreadSafeRefCounted<PhotoProducer> {
+ * class PhotoProducer : public DeprecatedThreadSafeRefCountedSeqCst<PhotoProducer> {
  * public:
  *    using PhotoPromise = NativePromise<std::pair<Vector<uint8_t>, String>, int>;
  *    static Ref<PhotoProducer> create(const PhotoSettings& settings) { return adoptRef(*new PhotoProducer(settings)); }
@@ -250,7 +250,7 @@ namespace WTF {
  * For additional examples on how to use NativePromise, refer to NativePromise.cpp API tests.
  */
 
-class NativePromiseBase : public ThreadSafeRefCounted<NativePromiseBase>  {
+class NativePromiseBase : public DeprecatedThreadSafeRefCountedSeqCst<NativePromiseBase>  {
 public:
     virtual void assertIsDead() = 0;
     virtual ~NativePromiseBase() = default;
@@ -290,7 +290,7 @@ public:
         ASSERT(!m_callback, "complete() or disconnect() wasn't called");
     }
 
-    class Callback : public ThreadSafeRefCounted<Callback> {
+    class Callback : public DeprecatedThreadSafeRefCountedSeqCst<Callback> {
     public:
         virtual ~Callback() = default;
         virtual void disconnect() = 0;
@@ -546,7 +546,7 @@ private:
     // We can't move the Result object with non-exclusive promise.
     using ResultParam = std::conditional_t<IsExclusive, Result&&, const Result&>;
 
-    class AllPromiseProducer : public ThreadSafeRefCounted<AllPromiseProducer> {
+    class AllPromiseProducer : public DeprecatedThreadSafeRefCountedSeqCst<AllPromiseProducer> {
     public:
         explicit AllPromiseProducer(size_t dependentPromisesCount)
             : m_producer(makeUnique<typename AllPromiseType::Producer>())
@@ -610,7 +610,7 @@ private:
         size_t m_outstandingPromises WTF_GUARDED_BY_LOCK(m_lock);
     };
 
-    class AllSettledPromiseProducer : public ThreadSafeRefCounted<AllSettledPromiseProducer> {
+    class AllSettledPromiseProducer : public DeprecatedThreadSafeRefCountedSeqCst<AllSettledPromiseProducer> {
     public:
         explicit AllSettledPromiseProducer(size_t dependentPromisesCount)
             : m_producer(makeUnique<typename AllSettledPromiseType::Producer>())
@@ -1232,7 +1232,7 @@ private:
         struct NoResult { };
 
         using StorageType = Variant<NoResult, Result, ResultRunnable>;
-        struct RefCountedResult : ThreadSafeRefCounted<RefCountedResult> {
+        struct RefCountedResult : DeprecatedThreadSafeRefCountedSeqCst<RefCountedResult> {
             StorageType result = NoResult { };
         };
         using ResultType = std::conditional_t<IsExclusive, StorageType, Ref<RefCountedResult>>;

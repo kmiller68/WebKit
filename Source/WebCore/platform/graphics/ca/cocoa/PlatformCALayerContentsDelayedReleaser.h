@@ -36,7 +36,7 @@ class PlatformCALayer;
 
 // This class exists to work around rdar://85892959, where CABackingStore objects would get released on the ScrollingThread
 // during scrolling commits, which can take long enough to cause scrolling frame drops.
-class PlatformCALayerContentsDelayedReleaser : ThreadSafeRefCounted<PlatformCALayerContentsDelayedReleaser> {
+class PlatformCALayerContentsDelayedReleaser : DeprecatedThreadSafeRefCountedSeqCst<PlatformCALayerContentsDelayedReleaser> {
     WTF_MAKE_NONCOPYABLE(PlatformCALayerContentsDelayedReleaser);
 public:
     static PlatformCALayerContentsDelayedReleaser& singleton();

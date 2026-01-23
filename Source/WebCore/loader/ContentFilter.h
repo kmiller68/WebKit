@@ -93,7 +93,7 @@ public:
 private:
     using State = PlatformContentFilter::State;
 
-    class ContentFilterCallbackAggregator : public ThreadSafeRefCounted<ContentFilterCallbackAggregator> {
+    class ContentFilterCallbackAggregator : public DeprecatedThreadSafeRefCountedSeqCst<ContentFilterCallbackAggregator> {
     public:
         static auto create(ContentFilter& contentFilter, const ResourceRequest& request, CompletionHandler<void(ResourceRequest&&)>&& callback) { return adoptRef(*new ContentFilterCallbackAggregator(contentFilter, request, WTF::move(callback))); }
 

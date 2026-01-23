@@ -65,7 +65,7 @@ class ModelProcessModelPlayerManagerProxy;
 struct ModelProcessConnectionParameters;
 
 class ModelConnectionToWebProcess
-    : public ThreadSafeRefCounted<ModelConnectionToWebProcess, WTF::DestructionThread::Main>
+    : public DeprecatedThreadSafeRefCountedSeqCst<ModelConnectionToWebProcess, WTF::DestructionThread::Main>
     , public CanMakeWeakPtr<ModelConnectionToWebProcess>
     , IPC::Connection::Client {
     WTF_MAKE_NONCOPYABLE(ModelConnectionToWebProcess);

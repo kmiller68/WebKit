@@ -28,7 +28,7 @@
 
 namespace WebCore {
 
-class GStreamerRTPPacketizer : public ThreadSafeRefCounted<GStreamerRTPPacketizer> {
+class GStreamerRTPPacketizer : public DeprecatedThreadSafeRefCountedSeqCst<GStreamerRTPPacketizer> {
     WTF_MAKE_NONCOPYABLE(GStreamerRTPPacketizer);
     WTF_DEPRECATED_MAKE_FAST_ALLOCATED(GStreamerRTPPacketizer);
 public:

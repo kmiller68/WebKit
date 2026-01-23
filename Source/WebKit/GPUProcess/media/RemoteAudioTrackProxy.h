@@ -48,7 +48,7 @@ class GPUConnectionToWebProcess;
 struct AudioTrackPrivateRemoteConfiguration;
 
 class RemoteAudioTrackProxy final
-    : public ThreadSafeRefCounted<RemoteAudioTrackProxy, WTF::DestructionThread::Main>
+    : public DeprecatedThreadSafeRefCountedSeqCst<RemoteAudioTrackProxy, WTF::DestructionThread::Main>
     , public WebCore::AudioTrackPrivateClient {
     WTF_MAKE_TZONE_ALLOCATED(RemoteAudioTrackProxy);
 public:

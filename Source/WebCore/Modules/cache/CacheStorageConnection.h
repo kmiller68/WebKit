@@ -38,7 +38,7 @@ namespace WebCore {
 struct ClientOrigin;
 class FetchResponse;
 
-class CacheStorageConnection : public ThreadSafeRefCounted<CacheStorageConnection> {
+class CacheStorageConnection : public DeprecatedThreadSafeRefCountedSeqCst<CacheStorageConnection> {
 public:
     virtual ~CacheStorageConnection() = default;
 

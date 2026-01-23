@@ -35,7 +35,7 @@ namespace WebCore {
 
 class VideoFrame;
 
-class VideoDecoder : public ThreadSafeRefCounted<VideoDecoder> {
+class VideoDecoder : public DeprecatedThreadSafeRefCountedSeqCst<VideoDecoder> {
 public:
     WEBCORE_EXPORT virtual ~VideoDecoder();
 

@@ -50,7 +50,7 @@ class NativeImage;
 class TextureMapper;
 enum class TextureMapperFlags : uint16_t;
 
-class BitmapTexture final : public ThreadSafeRefCounted<BitmapTexture> {
+class BitmapTexture final : public DeprecatedThreadSafeRefCountedSeqCst<BitmapTexture> {
 public:
     enum class Flags : uint8_t {
         SupportsAlpha = 1 << 0,

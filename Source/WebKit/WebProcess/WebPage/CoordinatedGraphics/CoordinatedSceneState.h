@@ -37,7 +37,7 @@ class CoordinatedPlatformLayer;
 
 namespace WebKit {
 
-class CoordinatedSceneState final : public ThreadSafeRefCounted<CoordinatedSceneState> {
+class CoordinatedSceneState final : public DeprecatedThreadSafeRefCountedSeqCst<CoordinatedSceneState> {
     WTF_MAKE_TZONE_ALLOCATED(CoordinatedSceneState);
 public:
     static Ref<CoordinatedSceneState> create()

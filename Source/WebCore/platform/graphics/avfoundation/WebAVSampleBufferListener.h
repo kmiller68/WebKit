@@ -49,7 +49,7 @@ public:
     virtual void outputObscuredDueToInsufficientExternalProtectionChanged(bool) { }
 };
 
-class WebAVSampleBufferListener final : public ThreadSafeRefCounted<WebAVSampleBufferListener> {
+class WebAVSampleBufferListener final : public DeprecatedThreadSafeRefCountedSeqCst<WebAVSampleBufferListener> {
 public:
     static Ref<WebAVSampleBufferListener> create(WebAVSampleBufferListenerClient& client) { return adoptRef(*new WebAVSampleBufferListener(client)); }
     void invalidate();

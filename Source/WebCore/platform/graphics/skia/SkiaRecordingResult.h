@@ -39,7 +39,7 @@ class SkImage;
 
 namespace WebCore {
 
-class SkiaRecordingResult final : public ThreadSafeRefCounted<SkiaRecordingResult, WTF::DestructionThread::Main> {
+class SkiaRecordingResult final : public DeprecatedThreadSafeRefCountedSeqCst<SkiaRecordingResult, WTF::DestructionThread::Main> {
 public:
     ~SkiaRecordingResult();
     static Ref<SkiaRecordingResult> create(sk_sp<SkPicture>&&, SkiaImageToFenceMap&&, const IntRect& recordRect, RenderingMode, bool contentsOpaque, float contentsScale);

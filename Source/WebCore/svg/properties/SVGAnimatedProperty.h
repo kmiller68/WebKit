@@ -37,7 +37,7 @@ namespace WebCore {
 class SVGElement;
 class WeakPtrImplWithEventTargetData;
 
-class SVGAnimatedProperty : public ThreadSafeRefCounted<SVGAnimatedProperty>, public SVGPropertyOwner {
+class SVGAnimatedProperty : public DeprecatedThreadSafeRefCountedSeqCst<SVGAnimatedProperty>, public SVGPropertyOwner {
 public:
     virtual ~SVGAnimatedProperty() = default;
     

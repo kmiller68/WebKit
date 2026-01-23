@@ -81,7 +81,7 @@ class SharedMemoryHandle;
 
 // Data wrapped by a DataSegment should be immutable because it can be referenced by other objects.
 // To modify or combine the data, allocate a new DataSegment.
-class DataSegment : public ThreadSafeRefCounted<DataSegment> {
+class DataSegment : public DeprecatedThreadSafeRefCountedSeqCst<DataSegment> {
 public:
     size_t size() const { return span().size(); }
     WEBCORE_EXPORT std::span<const uint8_t> span() const LIFETIME_BOUND;
@@ -162,7 +162,7 @@ private:
     friend class SharedBuffer; // For createCFData
 };
 
-class FragmentedSharedBuffer : public ThreadSafeRefCounted<FragmentedSharedBuffer> {
+class FragmentedSharedBuffer : public DeprecatedThreadSafeRefCountedSeqCst<FragmentedSharedBuffer> {
 public:
     using IPCData = Variant<std::optional<WebCore::SharedMemoryHandle>, Vector<std::span<const uint8_t>>>;
 

@@ -131,7 +131,7 @@ struct ConsoleLogValue<Argument, false> {
 WTF_EXPORT_PRIVATE extern Lock loggerObserverLock;
 WTF_EXPORT_PRIVATE extern Lock messageHandlerLoggerObserverLock;
 
-class Logger : public ThreadSafeRefCounted<Logger> {
+class Logger : public DeprecatedThreadSafeRefCountedSeqCst<Logger> {
     WTF_MAKE_NONCOPYABLE(Logger);
 public:
     virtual ~Logger() { }

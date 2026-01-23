@@ -199,7 +199,7 @@ using GstMappedBuffer = GstBufferMapper<GstMapInfo, gst_buffer_map, gst_buffer_u
 // This class maps only buffers in GST_MAP_READ mode to be able to
 // bump the reference count and keep it alive during the life of this
 // object.
-class GstMappedOwnedBuffer : public GstMappedBuffer, public ThreadSafeRefCounted<GstMappedOwnedBuffer> {
+class GstMappedOwnedBuffer : public GstMappedBuffer, public DeprecatedThreadSafeRefCountedSeqCst<GstMappedOwnedBuffer> {
 
 public:
     static RefPtr<GstMappedOwnedBuffer> create(GRefPtr<GstBuffer>&&);

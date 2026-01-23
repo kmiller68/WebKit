@@ -35,7 +35,7 @@ namespace WebCore {
 
 class BitmapImageSource;
 
-class ImageFrameWorkQueue : public ThreadSafeRefCounted<ImageFrameWorkQueue> {
+class ImageFrameWorkQueue : public DeprecatedThreadSafeRefCountedSeqCst<ImageFrameWorkQueue> {
 public:
     struct Request {
         unsigned index;

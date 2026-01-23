@@ -78,7 +78,7 @@ protected:
 //   void didReceiveStreamMessage(StreamServerConnection&, Decoder&);
 //
 // The StreamServerConnection does not trust the StreamClientConnection.
-class StreamServerConnection final : public ThreadSafeRefCounted<StreamServerConnection>, private MessageReceiveQueue, private Connection::Client {
+class StreamServerConnection final : public DeprecatedThreadSafeRefCountedSeqCst<StreamServerConnection>, private MessageReceiveQueue, private Connection::Client {
     WTF_MAKE_NONCOPYABLE(StreamServerConnection);
     WTF_DEPRECATED_MAKE_FAST_ALLOCATED(StreamServerConnection);
     WTF_OVERRIDE_DELETE_FOR_CHECKED_PTR(StreamServerConnection);

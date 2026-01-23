@@ -38,7 +38,7 @@
 namespace WebKit {
 using namespace WebCore;
 
-class RemoteImageBufferSetProxyFlushFence : public ThreadSafeRefCounted<RemoteImageBufferSetProxyFlushFence> {
+class RemoteImageBufferSetProxyFlushFence : public DeprecatedThreadSafeRefCountedSeqCst<RemoteImageBufferSetProxyFlushFence> {
     WTF_MAKE_NONCOPYABLE(RemoteImageBufferSetProxyFlushFence);
     WTF_MAKE_TZONE_ALLOCATED_INLINE(RemoteImageBufferSetProxyFlushFence);
 public:

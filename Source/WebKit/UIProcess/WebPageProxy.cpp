@@ -16027,7 +16027,7 @@ void WebPageProxy::didFindTextManipulationItems(const Vector<WebCore::TextManipu
 
 void WebPageProxy::completeTextManipulation(const Vector<TextManipulationItem>& items, CompletionHandler<void(Vector<TextManipulationControllerManipulationFailure>&&)>&& completionHandler)
 {
-    class TextManipulationCallbackAggregator final : public ThreadSafeRefCounted<TextManipulationCallbackAggregator, WTF::DestructionThread::MainRunLoop> {
+    class TextManipulationCallbackAggregator final : public DeprecatedThreadSafeRefCountedSeqCst<TextManipulationCallbackAggregator, WTF::DestructionThread::MainRunLoop> {
     public:
         struct ItemInfo {
             Markable<FrameIdentifier> frameID;

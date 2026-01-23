@@ -49,7 +49,7 @@ enum class ExceptionCode : uint8_t;
 using KeyData = Variant<Vector<uint8_t>, JsonWebKey>;
 using KeyOrKeyPair = Variant<RefPtr<CryptoKey>, CryptoKeyPair>;
 
-class CryptoAlgorithm : public ThreadSafeRefCounted<CryptoAlgorithm> {
+class CryptoAlgorithm : public DeprecatedThreadSafeRefCountedSeqCst<CryptoAlgorithm> {
 public:
     virtual ~CryptoAlgorithm() = default;
 

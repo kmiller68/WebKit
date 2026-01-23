@@ -38,7 +38,7 @@ namespace WebCore {
 
 class OriginAccessPatterns;
 
-class SecurityOrigin : public ThreadSafeRefCounted<SecurityOrigin> {
+class SecurityOrigin : public DeprecatedThreadSafeRefCountedSeqCst<SecurityOrigin> {
 public:
     enum class Policy : uint8_t {
         AlwaysDeny = 0,

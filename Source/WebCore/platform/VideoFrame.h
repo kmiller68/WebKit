@@ -72,7 +72,7 @@ enum class VideoFrameRotation : uint16_t {
 };
 
 // A class representing a video frame from a decoder, capture source, or similar.
-class VideoFrame : public ThreadSafeRefCounted<VideoFrame> {
+class VideoFrame : public DeprecatedThreadSafeRefCountedSeqCst<VideoFrame> {
 public:
     virtual ~VideoFrame() = default;
 

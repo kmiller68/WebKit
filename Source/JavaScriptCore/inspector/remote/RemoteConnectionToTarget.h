@@ -50,7 +50,7 @@ class RemoteControllableTarget;
 typedef Vector<Function<void ()>> RemoteTargetQueue;
 #endif
 
-class RemoteConnectionToTarget final : public ThreadSafeRefCounted<RemoteConnectionToTarget>, public FrontendChannel {
+class RemoteConnectionToTarget final : public DeprecatedThreadSafeRefCountedSeqCst<RemoteConnectionToTarget>, public FrontendChannel {
 public:
 #if PLATFORM(COCOA)
     RemoteConnectionToTarget(RemoteControllableTarget*, NSString* connectionIdentifier, NSString* destination);

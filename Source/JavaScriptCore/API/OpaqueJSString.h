@@ -69,8 +69,6 @@ struct OpaqueJSString : public ThreadSafeRefCounted<OpaqueJSString> {
     static bool equal(const OpaqueJSString*, const OpaqueJSString*);
 
 private:
-    friend class WTF::ThreadSafeRefCounted<OpaqueJSString>;
-
     OpaqueJSString()
         : m_characters(nullptr)
     {

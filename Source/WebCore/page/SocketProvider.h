@@ -48,7 +48,7 @@ class RiceBackend;
 class RiceBackendClient;
 #endif
 
-class WEBCORE_EXPORT SocketProvider : public ThreadSafeRefCounted<SocketProvider> {
+class WEBCORE_EXPORT SocketProvider : public DeprecatedThreadSafeRefCountedSeqCst<SocketProvider> {
 public:
     virtual RefPtr<ThreadableWebSocketChannel> createWebSocketChannel(Document&, WebSocketChannelClient&) = 0;
     virtual std::pair<RefPtr<WebTransportSession>, Ref<WebTransportSessionPromise>> initializeWebTransportSession(ScriptExecutionContext&, WebTransportSessionClient&, const URL&, const WebTransportOptions&) = 0;

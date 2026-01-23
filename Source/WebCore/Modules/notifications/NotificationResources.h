@@ -30,7 +30,7 @@
 
 namespace WebCore {
 
-class NotificationResources : public ThreadSafeRefCounted<NotificationResources> {
+class NotificationResources : public DeprecatedThreadSafeRefCountedSeqCst<NotificationResources> {
 public:
     static Ref<NotificationResources> create()
     {

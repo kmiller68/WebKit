@@ -30,7 +30,7 @@ namespace WebCore {
 enum class AudioSampleFormat;
 class MediaSample;
 
-class PlatformRawAudioData : public ThreadSafeRefCounted<PlatformRawAudioData> {
+class PlatformRawAudioData : public DeprecatedThreadSafeRefCountedSeqCst<PlatformRawAudioData> {
 public:
     virtual ~PlatformRawAudioData() = default;
     static RefPtr<PlatformRawAudioData> create(std::span<const uint8_t>, AudioSampleFormat, float sampleRate, int64_t timestamp, size_t numberOfFrames, size_t numberOfChannels);

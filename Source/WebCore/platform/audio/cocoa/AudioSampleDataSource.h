@@ -43,7 +43,7 @@ namespace WebCore {
 class AudioSampleBufferList;
 class PlatformAudioData;
 
-class AudioSampleDataSource : public ThreadSafeRefCounted<AudioSampleDataSource, WTF::DestructionThread::MainRunLoop>
+class AudioSampleDataSource : public DeprecatedThreadSafeRefCountedSeqCst<AudioSampleDataSource, WTF::DestructionThread::MainRunLoop>
 #if !RELEASE_LOG_DISABLED
     , private LoggerHelper
 #endif

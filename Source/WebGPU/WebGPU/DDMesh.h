@@ -45,7 +45,7 @@ namespace WebGPU {
 
 class Instance;
 
-class DDMesh : public ThreadSafeRefCounted<DDMesh>, public WGPUDDMeshImpl {
+class DDMesh : public DeprecatedThreadSafeRefCountedSeqCst<DDMesh>, public WGPUDDMeshImpl {
     WTF_MAKE_TZONE_ALLOCATED(DDMesh);
 public:
     static Ref<DDMesh> create(const WGPUDDCreateMeshDescriptor& descriptor, Instance& instance)

@@ -57,7 +57,7 @@ private:
     unsigned m_size { 0 };
 };
 
-class ShareableResource : public ThreadSafeRefCounted<ShareableResource> {
+class ShareableResource : public DeprecatedThreadSafeRefCountedSeqCst<ShareableResource> {
 public:
     using Handle = ShareableResourceHandle;
 

@@ -40,7 +40,7 @@ OBJC_CLASS NSRunLoop;
 
 namespace WTF {
 
-class SchedulePair : public ThreadSafeRefCounted<SchedulePair> {
+class SchedulePair : public DeprecatedThreadSafeRefCountedSeqCst<SchedulePair> {
 public:
     static Ref<SchedulePair> create(CFRunLoopRef runLoop, CFStringRef mode) { return adoptRef(*new SchedulePair(runLoop, mode)); }
 

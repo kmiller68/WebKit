@@ -139,7 +139,7 @@ private:
     ShareableBitmapConfiguration m_configuration;
 };
 
-class ShareableBitmap : public ThreadSafeRefCounted<ShareableBitmap> {
+class ShareableBitmap : public DeprecatedThreadSafeRefCountedSeqCst<ShareableBitmap> {
 public:
     using Handle = ShareableBitmapHandle;
 

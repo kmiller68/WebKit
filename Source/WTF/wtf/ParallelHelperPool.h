@@ -66,7 +66,7 @@ class AutomaticThreadCondition;
 
 class ParallelHelperClient;
 
-class ParallelHelperPool final : public ThreadSafeRefCounted<ParallelHelperPool>, public CanMakeThreadSafeCheckedPtr<ParallelHelperPool> {
+class ParallelHelperPool final : public DeprecatedThreadSafeRefCountedSeqCst<ParallelHelperPool>, public CanMakeThreadSafeCheckedPtr<ParallelHelperPool> {
     WTF_MAKE_TZONE_ALLOCATED(ParallelHelperPool);
     WTF_OVERRIDE_DELETE_FOR_CHECKED_PTR(ParallelHelperPool);
 public:

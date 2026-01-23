@@ -31,7 +31,7 @@ namespace WebCore {
 
 class NetworkStorageSession;
 
-class StorageSessionProvider : public ThreadSafeRefCounted<StorageSessionProvider> {
+class StorageSessionProvider : public DeprecatedThreadSafeRefCountedSeqCst<StorageSessionProvider> {
 public:
     virtual NetworkStorageSession* storageSession() const = 0;
 

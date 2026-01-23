@@ -34,7 +34,7 @@ namespace WebCore {
 GST_DEBUG_CATEGORY(webkit_webrtc_dtls_transport_debug);
 #define GST_CAT_DEFAULT webkit_webrtc_dtls_transport_debug
 
-class GStreamerDtlsTransportBackendObserver final : public ThreadSafeRefCounted<GStreamerDtlsTransportBackendObserver> {
+class GStreamerDtlsTransportBackendObserver final : public DeprecatedThreadSafeRefCountedSeqCst<GStreamerDtlsTransportBackendObserver> {
     WTF_MAKE_NONCOPYABLE(GStreamerDtlsTransportBackendObserver);
 public:
     static Ref<GStreamerDtlsTransportBackendObserver> create(RTCDtlsTransportBackendClient& client, GRefPtr<GstWebRTCDTLSTransport>&& backend) { return adoptRef(*new GStreamerDtlsTransportBackendObserver(client, WTF::move(backend))); }

@@ -45,7 +45,7 @@ struct DMABufBufferAttributes {
     uint64_t modifier { 0 };
 };
 
-class DMABufBuffer final : public ThreadSafeRefCounted<DMABufBuffer> {
+class DMABufBuffer final : public DeprecatedThreadSafeRefCountedSeqCst<DMABufBuffer> {
 public:
     using Attributes = DMABufBufferAttributes;
 

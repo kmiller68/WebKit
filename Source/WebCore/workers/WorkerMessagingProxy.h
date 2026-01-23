@@ -43,7 +43,7 @@ class WeakPtrImplWithEventTargetData;
 class WorkerInspectorProxy;
 class WorkerUserGestureForwarder;
 
-class WorkerMessagingProxy final : public ThreadSafeRefCounted<WorkerMessagingProxy>, public WorkerGlobalScopeProxy, public WorkerObjectProxy, public WorkerLoaderProxy, public WorkerDebuggerProxy, public WorkerBadgeProxy, public CanMakeThreadSafeCheckedPtr<WorkerMessagingProxy> {
+class WorkerMessagingProxy final : public DeprecatedThreadSafeRefCountedSeqCst<WorkerMessagingProxy>, public WorkerGlobalScopeProxy, public WorkerObjectProxy, public WorkerLoaderProxy, public WorkerDebuggerProxy, public WorkerBadgeProxy, public CanMakeThreadSafeCheckedPtr<WorkerMessagingProxy> {
     WTF_MAKE_TZONE_ALLOCATED(WorkerMessagingProxy);
     WTF_OVERRIDE_DELETE_FOR_CHECKED_PTR(WorkerMessagingProxy);
 public:

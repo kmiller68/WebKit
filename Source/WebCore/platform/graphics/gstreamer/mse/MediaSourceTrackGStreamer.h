@@ -39,7 +39,7 @@
 
 namespace WebCore {
 
-class MediaSourceTrackGStreamer final: public ThreadSafeRefCounted<MediaSourceTrackGStreamer> {
+class MediaSourceTrackGStreamer final: public DeprecatedThreadSafeRefCountedSeqCst<MediaSourceTrackGStreamer> {
 public:
     static Ref<MediaSourceTrackGStreamer> create(TrackPrivateBaseGStreamer::TrackType, TrackID, GRefPtr<GstCaps>&& initialCaps);
     ~MediaSourceTrackGStreamer();

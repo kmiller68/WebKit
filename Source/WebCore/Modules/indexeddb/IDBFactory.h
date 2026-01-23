@@ -50,7 +50,7 @@ namespace IDBClient {
 class IDBConnectionProxy;
 }
 
-class IDBFactory : public ThreadSafeRefCounted<IDBFactory> {
+class IDBFactory : public DeprecatedThreadSafeRefCountedSeqCst<IDBFactory> {
     WTF_MAKE_TZONE_ALLOCATED(IDBFactory);
 public:
     static Ref<IDBFactory> create(IDBClient::IDBConnectionProxy&);

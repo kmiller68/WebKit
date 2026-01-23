@@ -28,7 +28,7 @@
 namespace WebCore {
 
 template <typename T>
-class MainThreadNotifier final : public ThreadSafeRefCounted<MainThreadNotifier<T>> {
+class MainThreadNotifier final : public DeprecatedThreadSafeRefCountedSeqCst<MainThreadNotifier<T>> {
 public:
     static Ref<MainThreadNotifier> create()
     {

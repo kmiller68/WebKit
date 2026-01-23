@@ -36,7 +36,7 @@
 
 namespace WebCore {
 
-class VideoEncoder : public ThreadSafeRefCounted<VideoEncoder> {
+class VideoEncoder : public DeprecatedThreadSafeRefCountedSeqCst<VideoEncoder> {
 public:
     virtual ~VideoEncoder() = default;
 

@@ -85,7 +85,7 @@ private:
 #endif
 };
 
-class IPAddressCallbackAggregator final : public ThreadSafeRefCounted<IPAddressCallbackAggregator, WTF::DestructionThread::MainRunLoop> {
+class IPAddressCallbackAggregator final : public DeprecatedThreadSafeRefCountedSeqCst<IPAddressCallbackAggregator, WTF::DestructionThread::MainRunLoop> {
 public:
     using Callback = CompletionHandler<void(RTCNetwork::IPAddress&&, RTCNetwork::IPAddress&&, HashMap<String, RTCNetwork>&&)>;
     static Ref<IPAddressCallbackAggregator> create(Callback&& callback) { return adoptRef(*new IPAddressCallbackAggregator(WTF::move(callback))); }

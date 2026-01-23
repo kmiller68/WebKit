@@ -36,7 +36,7 @@ namespace WebCore {
 
 template<typename> class ExceptionOr;
 
-class WebCodecsEncodedAudioChunkStorage : public ThreadSafeRefCounted<WebCodecsEncodedAudioChunkStorage> {
+class WebCodecsEncodedAudioChunkStorage : public DeprecatedThreadSafeRefCountedSeqCst<WebCodecsEncodedAudioChunkStorage> {
 public:
     static Ref<WebCodecsEncodedAudioChunkStorage> create(WebCodecsEncodedAudioChunkType type, int64_t timestamp, std::optional<uint64_t> duration, Vector<uint8_t>&& buffer) { return create(WebCodecsEncodedAudioChunkData { type, timestamp, duration, WTF::move(buffer) }); }
     static Ref<WebCodecsEncodedAudioChunkStorage> create(WebCodecsEncodedAudioChunkData&& data) { return adoptRef(* new WebCodecsEncodedAudioChunkStorage(WTF::move(data))); }

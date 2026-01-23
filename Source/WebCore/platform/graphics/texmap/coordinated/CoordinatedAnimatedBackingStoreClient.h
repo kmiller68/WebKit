@@ -36,7 +36,7 @@ namespace WebCore {
 class GraphicsLayer;
 class TransformationMatrix;
 
-class CoordinatedAnimatedBackingStoreClient final : public ThreadSafeRefCounted<CoordinatedAnimatedBackingStoreClient> {
+class CoordinatedAnimatedBackingStoreClient final : public DeprecatedThreadSafeRefCountedSeqCst<CoordinatedAnimatedBackingStoreClient> {
 public:
     static Ref<CoordinatedAnimatedBackingStoreClient> create(GraphicsLayer&);
     ~CoordinatedAnimatedBackingStoreClient() = default;

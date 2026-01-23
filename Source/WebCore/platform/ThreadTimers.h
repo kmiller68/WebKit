@@ -79,7 +79,7 @@ private:
     MonotonicTime m_pendingSharedTimerFireTime;
 };
 
-struct ThreadTimerHeapItem : ThreadSafeRefCounted<ThreadTimerHeapItem> {
+struct ThreadTimerHeapItem : DeprecatedThreadSafeRefCountedSeqCst<ThreadTimerHeapItem> {
     WTF_MAKE_COMPACT_TZONE_ALLOCATED(ThreadTimerHeapItem);
 
 public:

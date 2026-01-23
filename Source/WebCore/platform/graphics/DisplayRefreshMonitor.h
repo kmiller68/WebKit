@@ -40,7 +40,7 @@ class DisplayAnimationClient;
 class DisplayRefreshMonitorClient;
 class DisplayRefreshMonitorFactory;
 
-class DisplayRefreshMonitor : public ThreadSafeRefCounted<DisplayRefreshMonitor> {
+class DisplayRefreshMonitor : public DeprecatedThreadSafeRefCountedSeqCst<DisplayRefreshMonitor> {
     friend class DisplayRefreshMonitorManager;
 public:
     static RefPtr<DisplayRefreshMonitor> create(DisplayRefreshMonitorFactory*, PlatformDisplayID);

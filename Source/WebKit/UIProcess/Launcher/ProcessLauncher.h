@@ -105,7 +105,7 @@ struct ProcessLaunchOptions {
 };
 
 #if USE(EXTENSIONKIT)
-class LaunchGrant : public ThreadSafeRefCounted<LaunchGrant> {
+class LaunchGrant : public DeprecatedThreadSafeRefCountedSeqCst<LaunchGrant> {
 public:
     static Ref<LaunchGrant> create(ExtensionProcess&);
     ~LaunchGrant();

@@ -42,7 +42,7 @@ namespace Inspector {
 
 DECLARE_ALLOCATOR_WITH_HEAP_IDENTIFIER(InspectorThreadableLoaderClient);
 
-class InspectorThreadableLoaderClient final : public ThreadSafeRefCounted<InspectorThreadableLoaderClient, WTF::DestructionThread::Main>, public WebCore::ThreadableLoaderClient {
+class InspectorThreadableLoaderClient final : public DeprecatedThreadSafeRefCountedSeqCst<InspectorThreadableLoaderClient, WTF::DestructionThread::Main>, public WebCore::ThreadableLoaderClient {
     WTF_MAKE_NONCOPYABLE(InspectorThreadableLoaderClient);
     WTF_DEPRECATED_MAKE_FAST_ALLOCATED_WITH_HEAP_IDENTIFIER(InspectorThreadableLoaderClient, InspectorThreadableLoaderClient);
 public:

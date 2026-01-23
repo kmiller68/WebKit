@@ -264,7 +264,7 @@ static NSString *replyBlockSignature(Protocol *protocol, SEL selector, NSUIntege
         RetainPtr<_WKRemoteObjectRegistry> remoteObjectRegistry = self;
         uint64_t replyID = replyInfo->replyID;
 
-        class ReplyBlockCallChecker : public WTF::ThreadSafeRefCounted<ReplyBlockCallChecker, WTF::DestructionThread::MainRunLoop> {
+        class ReplyBlockCallChecker : public WTF::DeprecatedThreadSafeRefCountedSeqCst<ReplyBlockCallChecker, WTF::DestructionThread::MainRunLoop> {
         public:
             static Ref<ReplyBlockCallChecker> create(_WKRemoteObjectRegistry *registry, uint64_t replyID) { return adoptRef(*new ReplyBlockCallChecker(registry, replyID)); }
 

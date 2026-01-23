@@ -51,7 +51,7 @@ namespace WebKit {
 class GPUConnectionToWebProcess;
 struct SharedPreferencesForWebProcess;
 
-class RemoteSampleBufferDisplayLayer : public ThreadSafeRefCounted<RemoteSampleBufferDisplayLayer, WTF::DestructionThread::MainRunLoop>, public WebCore::SampleBufferDisplayLayerClient, public IPC::MessageReceiver, private IPC::MessageSender {
+class RemoteSampleBufferDisplayLayer : public DeprecatedThreadSafeRefCountedSeqCst<RemoteSampleBufferDisplayLayer, WTF::DestructionThread::MainRunLoop>, public WebCore::SampleBufferDisplayLayerClient, public IPC::MessageReceiver, private IPC::MessageSender {
     WTF_MAKE_TZONE_ALLOCATED(RemoteSampleBufferDisplayLayer);
 public:
     void ref() const final { ThreadSafeRefCounted::ref(); }

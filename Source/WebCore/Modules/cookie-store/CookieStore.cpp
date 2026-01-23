@@ -70,7 +70,7 @@ namespace WebCore {
 
 WTF_MAKE_TZONE_ALLOCATED_IMPL(CookieStore);
 
-class CookieStore::MainThreadBridge : public ThreadSafeRefCounted<MainThreadBridge, WTF::DestructionThread::Main> {
+class CookieStore::MainThreadBridge : public DeprecatedThreadSafeRefCountedSeqCst<MainThreadBridge, WTF::DestructionThread::Main> {
 public:
     static Ref<MainThreadBridge> create(CookieStore& cookieStore)
     {

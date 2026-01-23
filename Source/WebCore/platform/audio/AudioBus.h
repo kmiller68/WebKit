@@ -46,7 +46,7 @@ enum class ChannelInterpretation {
     Discrete,
 };
 
-class AudioBus final : public ThreadSafeRefCounted<AudioBus> {
+class AudioBus final : public DeprecatedThreadSafeRefCountedSeqCst<AudioBus> {
     WTF_MAKE_NONCOPYABLE(AudioBus);
 public:
     enum {

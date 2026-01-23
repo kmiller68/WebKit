@@ -39,7 +39,7 @@ class CryptoKey;
 
 template<typename> class ExceptionOr;
 
-class RTCRtpSFrameTransformer : public ThreadSafeRefCounted<RTCRtpSFrameTransformer, WTF::DestructionThread::Main> {
+class RTCRtpSFrameTransformer : public DeprecatedThreadSafeRefCountedSeqCst<RTCRtpSFrameTransformer, WTF::DestructionThread::Main> {
 public:
     enum class CompatibilityMode : uint8_t { None, H264, VP8 };
 

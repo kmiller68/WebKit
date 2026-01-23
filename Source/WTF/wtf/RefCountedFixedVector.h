@@ -34,7 +34,7 @@
 namespace WTF {
 
 template<typename T, bool isThreadSafe>
-class RefCountedFixedVectorBase final : public std::conditional<isThreadSafe, ThreadSafeRefCounted<RefCountedFixedVectorBase<T, isThreadSafe>>, RefCounted<RefCountedFixedVectorBase<T, isThreadSafe>>>::type, public TrailingArray<RefCountedFixedVectorBase<T, isThreadSafe>, T> {
+class RefCountedFixedVectorBase final : public std::conditional<isThreadSafe, DeprecatedThreadSafeRefCountedSeqCst<RefCountedFixedVectorBase<T, isThreadSafe>>, RefCounted<RefCountedFixedVectorBase<T, isThreadSafe>>>::type, public TrailingArray<RefCountedFixedVectorBase<T, isThreadSafe>, T> {
 public:
     using Base = TrailingArray<RefCountedFixedVectorBase<T, isThreadSafe>, T>;
 

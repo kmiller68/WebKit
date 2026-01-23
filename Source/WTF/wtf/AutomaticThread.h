@@ -69,7 +69,7 @@ namespace WTF {
 
 class AutomaticThread;
 
-class AutomaticThreadCondition : public ThreadSafeRefCounted<AutomaticThreadCondition> {
+class AutomaticThreadCondition : public DeprecatedThreadSafeRefCountedSeqCst<AutomaticThreadCondition> {
 public:
     static WTF_EXPORT_PRIVATE Ref<AutomaticThreadCondition> create();
     
@@ -99,7 +99,7 @@ private:
     Vector<CheckedPtr<AutomaticThread>> m_threads;
 };
 
-class WTF_EXPORT_PRIVATE AutomaticThread : public ThreadSafeRefCounted<AutomaticThread>, public CanMakeThreadSafeCheckedPtr<AutomaticThread> {
+class WTF_EXPORT_PRIVATE AutomaticThread : public DeprecatedThreadSafeRefCountedSeqCst<AutomaticThread>, public CanMakeThreadSafeCheckedPtr<AutomaticThread> {
     WTF_MAKE_TZONE_ALLOCATED(AutomaticThread);
     WTF_OVERRIDE_DELETE_FOR_CHECKED_PTR(AutomaticThread);
 public:

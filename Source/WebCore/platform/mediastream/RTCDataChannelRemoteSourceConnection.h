@@ -34,7 +34,7 @@
 
 namespace WebCore {
 
-class RTCDataChannelRemoteSourceConnection : public ThreadSafeRefCounted<RTCDataChannelRemoteSourceConnection, WTF::DestructionThread::Main> {
+class RTCDataChannelRemoteSourceConnection : public DeprecatedThreadSafeRefCountedSeqCst<RTCDataChannelRemoteSourceConnection, WTF::DestructionThread::Main> {
 public:
     virtual ~RTCDataChannelRemoteSourceConnection() = default;
 

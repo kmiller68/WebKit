@@ -30,7 +30,7 @@
 
 namespace WebCore {
 
-class RTCNetworkManager : public ThreadSafeRefCounted<RTCNetworkManager, WTF::DestructionThread::MainRunLoop> {
+class RTCNetworkManager : public DeprecatedThreadSafeRefCountedSeqCst<RTCNetworkManager, WTF::DestructionThread::MainRunLoop> {
 public:
     virtual ~RTCNetworkManager() = default;
     virtual void close() = 0;

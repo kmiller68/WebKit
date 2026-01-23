@@ -86,7 +86,7 @@ struct TrackInfoData {
     bool operator==(const TrackInfoData&) const = default;
 };
 
-class TrackInfo : public ThreadSafeRefCounted<TrackInfo> {
+class TrackInfo : public DeprecatedThreadSafeRefCountedSeqCst<TrackInfo> {
 public:
     virtual ~TrackInfo() = default;
     using TrackType = TrackInfoTrackType;

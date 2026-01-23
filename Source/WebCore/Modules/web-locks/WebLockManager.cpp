@@ -68,7 +68,7 @@ struct WebLockManager::LockRequest {
     bool isValid() const { return !!lockIdentifier; }
 };
 
-class WebLockManager::MainThreadBridge : public ThreadSafeRefCounted<MainThreadBridge, WTF::DestructionThread::Main> {
+class WebLockManager::MainThreadBridge : public DeprecatedThreadSafeRefCountedSeqCst<MainThreadBridge, WTF::DestructionThread::Main> {
 public:
     static RefPtr<MainThreadBridge> create(ScriptExecutionContext* context)
     {

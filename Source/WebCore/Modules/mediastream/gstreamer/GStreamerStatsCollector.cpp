@@ -351,7 +351,7 @@ RTCStatsReport::VideoSourceStats::VideoSourceStats(const GstStructure* structure
 {
 }
 
-struct ReportHolder : public ThreadSafeRefCounted<ReportHolder> {
+struct ReportHolder : public DeprecatedThreadSafeRefCountedSeqCst<ReportHolder> {
     WTF_MAKE_TZONE_ALLOCATED_INLINE(ReportHolder);
     WTF_MAKE_NONCOPYABLE(ReportHolder);
 public:

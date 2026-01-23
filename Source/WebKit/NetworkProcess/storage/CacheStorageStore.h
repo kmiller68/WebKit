@@ -33,7 +33,7 @@ namespace WebKit {
 class CacheStorageRecordInformation;
 struct CacheStorageRecord;
 
-class CacheStorageStore : public ThreadSafeRefCounted<CacheStorageStore> {
+class CacheStorageStore : public DeprecatedThreadSafeRefCountedSeqCst<CacheStorageStore> {
 public:
     virtual ~CacheStorageStore() = default;
     using ReadAllRecordInfosCallback = CompletionHandler<void(Vector<CacheStorageRecordInformation>&&)>;

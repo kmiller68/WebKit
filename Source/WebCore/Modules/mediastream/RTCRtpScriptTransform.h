@@ -43,7 +43,7 @@ class RTCRtpTransformBackend;
 class Worker;
 
 class RTCRtpScriptTransform final
-    : public ThreadSafeRefCounted<RTCRtpScriptTransform, WTF::DestructionThread::Main>
+    : public DeprecatedThreadSafeRefCountedSeqCst<RTCRtpScriptTransform, WTF::DestructionThread::Main>
     , public ActiveDOMObject {
     WTF_MAKE_TZONE_ALLOCATED(RTCRtpScriptTransform);
 public:

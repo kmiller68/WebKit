@@ -264,7 +264,7 @@ public:
         Function<void()> m_function;
     };
 
-    class DispatchTimer final : public TimerBase, public ThreadSafeRefCounted<DispatchTimer> {
+    class DispatchTimer final : public TimerBase, public DeprecatedThreadSafeRefCountedSeqCst<DispatchTimer> {
         WTF_DEPRECATED_MAKE_FAST_ALLOCATED(DispatchTimer);
     public:
         DispatchTimer(RunLoop& runLoop)

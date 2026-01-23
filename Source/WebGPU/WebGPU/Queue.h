@@ -53,7 +53,7 @@ class TextureView;
 
 // https://gpuweb.github.io/gpuweb/#gpuqueue
 // A device owns its default queue, not the other way around.
-class Queue : public WGPUQueueImpl, public ThreadSafeRefCounted<Queue> {
+class Queue : public WGPUQueueImpl, public DeprecatedThreadSafeRefCountedSeqCst<Queue> {
     WTF_MAKE_TZONE_ALLOCATED(Queue);
 public:
     static Ref<Queue> create(id<MTLCommandQueue> commandQueue, Adapter& adapter, Device& device)

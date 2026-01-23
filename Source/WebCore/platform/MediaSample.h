@@ -74,7 +74,7 @@ private:
     VariantType m_sample;
 };
 
-class MediaSample : public ThreadSafeRefCounted<MediaSample> {
+class MediaSample : public DeprecatedThreadSafeRefCountedSeqCst<MediaSample> {
 public:
     virtual ~MediaSample() = default;
 

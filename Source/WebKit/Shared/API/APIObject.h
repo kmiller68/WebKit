@@ -48,7 +48,7 @@ namespace API {
 
 class Object
 #if !DELEGATE_REF_COUNTING_TO_COCOA
-    : public ThreadSafeRefCounted<Object>
+    : public DeprecatedThreadSafeRefCountedSeqCst<Object>
 #endif
 {
     WTF_MAKE_NONCOPYABLE(Object);

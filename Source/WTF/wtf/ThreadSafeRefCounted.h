@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2007, 2008, 2010, 2013, 2014 Apple Inc. All rights reserved.
+ * Copyright (C) 2007-2026 Apple Inc. All rights reserved.
  * Copyright (C) 2007 Justin Haygood (jhaygood@reaktix.com)
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,7 +25,7 @@
 
 #pragma once
 
-#include <atomic>
+#include <wtf/Atomics.h>
 #include <wtf/FastMalloc.h>
 #include <wtf/MainThread.h>
 #include <wtf/Noncopyable.h>
@@ -38,14 +38,14 @@ class WTF_EMPTY_BASE_CLASS ThreadSafeRefCountedBase {
     WTF_MAKE_NONCOPYABLE(ThreadSafeRefCountedBase);
     WTF_DEPRECATED_MAKE_FAST_ALLOCATED(ThreadSafeRefCountedBase);
 public:
-    void ref() const
+    void ref(std::memory_order order) const
     {
-        m_refCountDebugger.willRef(m_refCount, RefCountIsThreadSafe::Yes);
-        ++m_refCount;
+        m_refCountDebugger.willRef(m_refCount.loadRelaxed(), RefCountIsThreadSafe::Yes);
+        m_refCount.exchangeAdd(1, order);
     }
 
-    bool hasOneRef() const { return m_refCount == 1; }
-    uint32_t refCount() const { return m_refCount; }
+    bool hasOneRef() const { return m_refCount.loadRelaxed() == 1; }
+    uint32_t refCount() const { return m_refCount.loadRelaxed(); }
 
     // Debug APIs
     void adopted() { m_refCountDebugger.adopted(); }
@@ -63,20 +63,31 @@ protected:
 
     ~ThreadSafeRefCountedBase()
     {
-        m_refCountDebugger.willDestroy(m_refCount);
+        m_refCountDebugger.willDestroy(m_refCount.loadRelaxed());
         // FIXME: Test performance, then change this to RELEASE_ASSERT.
-        ASSERT(m_refCount == 1);
+        ASSERT(m_refCount.loadRelaxed() == 1);
     }
 
     // Returns true if the pointer should be freed.
     bool derefBase() const
     {
-        m_refCountDebugger.willDeref(m_refCount, RefCountIsThreadSafe::Yes);
+        m_refCountDebugger.willDeref(m_refCount.loadRelaxed(), RefCountIsThreadSafe::Yes);
 
-        if (!--m_refCount) [[unlikely]] {
+        // Use memory_order_release to synchronize-with the acquire fence below when the ref count
+        // reaches zero. This ensures the destroying thread sees all modifications made to the object
+        // before the last deref. The release also prevents loads from sinking to after the decrement
+        // on non-destroying threads, which could otherwise access deallocated memory.
+        //
+        // Note: this release ordering does *NOT* provide synchronization for accesses to the object
+        // while it's still alive - callers must use external synchronization if they access the
+        // object's data from multiple threads. In particular, when first publishing a shared object
+        // to other threads some store barrier must be issued before publication e.g. a Lock or a
+        // store fence. In theory a deref is sufficient but such code is brittle to refactoring so
+        // it is preferred to use explicit synchronization.
+        if ((m_refCount.exchangeSub(1, std::memory_order_release)) == 1) [[unlikely]] {
+
+            m_refCount.storeRelaxed(1, std::memory_order_acquire);
             m_refCountDebugger.willDelete();
-
-            m_refCount = 1;
             return true;
         }
 
@@ -84,12 +95,19 @@ protected:
     }
 
 private:
-    mutable std::atomic<uint32_t> m_refCount { 1 };
+    mutable Atomic<uint32_t> m_refCount { 1 };
     NO_UNIQUE_ADDRESS RefCountDebugger m_refCountDebugger;
 };
 
-template<class T, DestructionThread destructionThread = DestructionThread::Any> class ThreadSafeRefCounted : public ThreadSafeRefCountedBase {
+
+template<class T, DestructionThread destructionThread = DestructionThread::Any, std::memory_order order = std::memory_order_relaxed>
+class ThreadSafeRefCounted : public ThreadSafeRefCountedBase {
 public:
+    void ref() const
+    {
+        ThreadSafeRefCountedBase::ref(order);
+    }
+
     void deref() const
     {
         if (!derefBase())
@@ -114,6 +132,9 @@ protected:
     ~ThreadSafeRefCounted() = default;
 } SWIFT_RETURNED_AS_UNRETAINED_BY_DEFAULT;
 
+template<typename T, DestructionThread destructionThread = DestructionThread::Any>
+using DeprecatedThreadSafeRefCountedSeqCst = ThreadSafeRefCounted<T, destructionThread, std::memory_order_seq_cst>;
+
 inline void adopted(ThreadSafeRefCountedBase* object)
 {
     if (!object)
@@ -124,3 +145,4 @@ inline void adopted(ThreadSafeRefCountedBase* object)
 } // namespace WTF
 
 using WTF::ThreadSafeRefCounted;
+using WTF::DeprecatedThreadSafeRefCountedSeqCst;

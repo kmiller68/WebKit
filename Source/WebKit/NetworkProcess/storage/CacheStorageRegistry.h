@@ -35,7 +35,7 @@ namespace WebKit {
 
 class CacheStorageCache;
 
-class CacheStorageRegistry : public ThreadSafeRefCounted<CacheStorageRegistry> {
+class CacheStorageRegistry : public DeprecatedThreadSafeRefCountedSeqCst<CacheStorageRegistry> {
     WTF_MAKE_TZONE_ALLOCATED(CacheStorageRegistry);
 public:
     static Ref<CacheStorageRegistry> create();

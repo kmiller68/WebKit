@@ -30,7 +30,7 @@
 
 namespace WebCore {
 
-class FileSystemHandleCloseScope : public ThreadSafeRefCounted<FileSystemHandleCloseScope, WTF::DestructionThread::MainRunLoop> {
+class FileSystemHandleCloseScope : public DeprecatedThreadSafeRefCountedSeqCst<FileSystemHandleCloseScope, WTF::DestructionThread::MainRunLoop> {
 public:
     static Ref<FileSystemHandleCloseScope> create(FileSystemHandleIdentifier identifier, bool isDirectory, FileSystemStorageConnection& connection)
     {

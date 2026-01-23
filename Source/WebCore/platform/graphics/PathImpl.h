@@ -34,7 +34,7 @@
 
 namespace WebCore {
 
-class PathImpl : public ThreadSafeRefCounted<PathImpl> {
+class PathImpl : public DeprecatedThreadSafeRefCountedSeqCst<PathImpl> {
     WTF_MAKE_TZONE_ALLOCATED(PathImpl);
 public:
     virtual ~PathImpl() = default;

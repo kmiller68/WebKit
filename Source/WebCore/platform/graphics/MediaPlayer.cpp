@@ -118,7 +118,7 @@ WTF_MAKE_TZONE_ALLOCATED_IMPL(MediaPlayerFactory);
 
 // a null player to make MediaPlayer logic simpler
 
-class NullMediaPlayerPrivate final : public MediaPlayerPrivateInterface, public ThreadSafeRefCounted<NullMediaPlayerPrivate, WTF::DestructionThread::Main> {
+class NullMediaPlayerPrivate final : public MediaPlayerPrivateInterface, public DeprecatedThreadSafeRefCountedSeqCst<NullMediaPlayerPrivate, WTF::DestructionThread::Main> {
 public:
     void ref() const final { ThreadSafeRefCounted::ref(); }
     void deref() const final { ThreadSafeRefCounted::deref(); }

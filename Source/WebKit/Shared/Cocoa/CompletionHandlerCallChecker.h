@@ -30,7 +30,7 @@
 
 namespace WebKit {
 
-class CompletionHandlerCallChecker : public WTF::ThreadSafeRefCounted<CompletionHandlerCallChecker> {
+class CompletionHandlerCallChecker : public WTF::DeprecatedThreadSafeRefCountedSeqCst<CompletionHandlerCallChecker> {
 public:
     static Ref<CompletionHandlerCallChecker> create(id delegate, SEL delegateMethodSelector);
 

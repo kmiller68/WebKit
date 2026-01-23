@@ -28,7 +28,7 @@
 
 namespace WebCore {
 
-struct SameSizeAsBidiContext : public ThreadSafeRefCounted<SameSizeAsBidiContext> {
+struct SameSizeAsBidiContext : public DeprecatedThreadSafeRefCountedSeqCst<SameSizeAsBidiContext> {
     uint32_t bitfields : 16;
     void* parent;
 };

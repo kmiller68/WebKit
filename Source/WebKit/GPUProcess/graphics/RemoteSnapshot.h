@@ -44,7 +44,7 @@ namespace WebKit {
 // should not have any access to data of each other.
 // Each display list receives a placeholder for their subframe display lists. The placeholders are resolved through applyFrame().
 // The snapshot starts with the root frame pending as if the frame reference was added with it.
-class RemoteSnapshot final : public ThreadSafeRefCounted<RemoteSnapshot> {
+class RemoteSnapshot final : public DeprecatedThreadSafeRefCountedSeqCst<RemoteSnapshot> {
     WTF_MAKE_NONCOPYABLE(RemoteSnapshot);
     WTF_MAKE_TZONE_ALLOCATED(RemoteSnapshot);
 public:

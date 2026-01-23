@@ -37,7 +37,7 @@ namespace WTF {
 // FIXME: becomes largely unnecessary once rdar://162361370 is fixed in Swift/C++
 // interop.
 template<typename T>
-class RefCountable : public ThreadSafeRefCounted<RefCountable<T>> {
+class RefCountable : public DeprecatedThreadSafeRefCountedSeqCst<RefCountable<T>> {
 public:
     template<typename... Arguments>
     static Ref<RefCountable> create(Arguments&&... arguments)
@@ -56,12 +56,12 @@ public:
     // type hierarchy.
     void ref() const
     {
-        ThreadSafeRefCounted<RefCountable<T>>::ref();
+        DeprecatedThreadSafeRefCountedSeqCst<RefCountable<T>>::ref();
     }
 
     void deref() const
     {
-        ThreadSafeRefCounted<RefCountable<T>>::deref();
+        DeprecatedThreadSafeRefCountedSeqCst<RefCountable<T>>::deref();
     }
 #endif
 

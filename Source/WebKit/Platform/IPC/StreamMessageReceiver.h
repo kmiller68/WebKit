@@ -32,7 +32,7 @@ namespace IPC {
 class StreamServerConnection;
 class Decoder;
 
-class StreamMessageReceiver : public ThreadSafeRefCounted<StreamMessageReceiver> {
+class StreamMessageReceiver : public DeprecatedThreadSafeRefCountedSeqCst<StreamMessageReceiver> {
 public:
     virtual ~StreamMessageReceiver() { }
 

@@ -54,7 +54,7 @@ enum class VideoFrameRotation : uint16_t;
 
 class MediaPlayerPrivateMediaStreamAVFObjC final
     : public MediaPlayerPrivateInterface
-    , public ThreadSafeRefCounted<MediaPlayerPrivateMediaStreamAVFObjC, WTF::DestructionThread::Main>
+    , public DeprecatedThreadSafeRefCountedSeqCst<MediaPlayerPrivateMediaStreamAVFObjC, WTF::DestructionThread::Main>
     , private MediaStreamPrivateObserver
     , public MediaStreamTrackPrivateObserver
     , public RealtimeMediaSource::VideoFrameObserver

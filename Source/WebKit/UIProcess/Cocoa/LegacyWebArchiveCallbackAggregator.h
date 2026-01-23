@@ -31,7 +31,7 @@
 
 namespace WebKit {
 
-class LegacyWebArchiveCallbackAggregator final : public ThreadSafeRefCounted<LegacyWebArchiveCallbackAggregator, WTF::DestructionThread::MainRunLoop> {
+class LegacyWebArchiveCallbackAggregator final : public DeprecatedThreadSafeRefCountedSeqCst<LegacyWebArchiveCallbackAggregator, WTF::DestructionThread::MainRunLoop> {
 public:
     static Ref<LegacyWebArchiveCallbackAggregator> create(WebCore::FrameIdentifier rootFrameIdentifier, HashMap<WebCore::FrameIdentifier, Ref<WebCore::LegacyWebArchive>>&& frameArchives, CompletionHandler<void(RefPtr<WebCore::LegacyWebArchive>&&)>&& callback)
     {

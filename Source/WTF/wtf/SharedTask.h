@@ -59,7 +59,7 @@ namespace WTF {
 // state is shared between instances of the task.
 template<typename FunctionType> class SharedTask;
 template<typename PassedResultType, typename... ArgumentTypes>
-class SharedTask<PassedResultType (ArgumentTypes...)> : public ThreadSafeRefCounted<SharedTask<PassedResultType (ArgumentTypes...)>> {
+class SharedTask<PassedResultType(ArgumentTypes...)> : public DeprecatedThreadSafeRefCountedSeqCst<SharedTask<PassedResultType(ArgumentTypes...)>> {
 public:
     typedef PassedResultType ResultType;
     
