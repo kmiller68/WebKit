@@ -43,6 +43,7 @@
 #include <wtf/HashSet.h>
 #include <wtf/HashTraits.h>
 #include <wtf/Lock.h>
+#include <wtf/ReadWriteLock.h>
 #include <wtf/ReferenceWrapperVector.h>
 #include <wtf/StdLibExtras.h>
 #include <wtf/TZoneMalloc.h>
@@ -1266,7 +1267,7 @@ private:
     UncheckedKeyHashSet<CanonicalRecursionGroupEntry, CanonicalRecursionGroupEntryHash> m_canonicalRecursionGroups;
     UncheckedKeyHashSet<CanonicalSingletonEntry> m_canonicalSingletonGroups;
     RefPtr<const RTT> m_Void_Externref;
-    Lock m_lock;
+    ReadWriteLock m_lock;
 };
 
 } } // namespace JSC::Wasm

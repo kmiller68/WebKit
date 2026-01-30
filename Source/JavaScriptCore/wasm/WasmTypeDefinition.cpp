@@ -762,7 +762,7 @@ Vector<Ref<const RTT>> TypeInformation::canonicalizeRecursionGroupImpl(TypeSecti
         rtt.setCanonicalGroup(candidateGroup.ptr(), i);
     }
 
-    Locker locker { m_lock };
+    Locker locker { m_lock.write() };
     CanonicalRecursionGroupEntry candidate { candidateGroup.copyRef() };
     auto addResult = m_canonicalRecursionGroups.add(WTF::move(candidate));
     if (!addResult.isNewEntry) {
@@ -783,7 +783,7 @@ Ref<const RTT> TypeInformation::canonicalizeSingletonImpl(TypeSectionState* stat
     }
     candidate->setSelfDisplaySlot();
 
-    Locker locker { m_lock };
+    Locker locker { m_lock.write() };
     CanonicalSingletonEntry entry { candidate.copyRef() };
     auto addResult = m_canonicalSingletonGroups.add(WTF::move(entry));
     if (!addResult.isNewEntry)
@@ -865,7 +865,7 @@ bool TypeInformation::isReferenceValueAssignable(JSValue refValue, bool allowNul
 void TypeInformation::tryCleanup()
 {
     auto& info = singleton();
-    Locker locker { info.m_lock };
+    Locker locker { info.m_lock.write() };
 
     // Bacon-Rajan synchronous cycle collection. Snapshot -> trial-decrement
     // internal edges -> restore via BFS from roots -> sweep zeros.
@@ -1015,7 +1015,7 @@ void TypeInformation::tryCleanup()
 size_t TypeInformation::canonicalTypeCount()
 {
     auto& info = singleton();
-    Locker locker { info.m_lock };
+    Locker locker { info.m_lock.read() };
     return info.m_canonicalRecursionGroups.size() + info.m_canonicalSingletonGroups.size();
 }
 
