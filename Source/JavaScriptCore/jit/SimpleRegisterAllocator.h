@@ -112,6 +112,13 @@ public:
         }
     }
 
+    void flush(JITBackend& backend, const RegisterBinding& binding)
+    {
+        flushIf(backend, [&](Register, const RegisterBinding& b) ALWAYS_INLINE_LAMBDA {
+            return b == binding;
+        });
+    }
+
     void flushAllRegisters(JITBackend& backend)
     {
         flushIf(backend, [&](Register, const RegisterBinding&) ALWAYS_INLINE_LAMBDA { return true; });

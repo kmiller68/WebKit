@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Apple Inc. All rights reserved.
+ * Copyright (C) 2025-2026 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -65,6 +65,8 @@ namespace JSC::LOL {
     macro(op_resolve_scope) \
     macro(op_get_from_scope) \
     macro(op_put_to_scope) \
+    macro(op_get_argument) \
+    macro(op_argument_count) \
     macro(op_lshift) \
     macro(op_to_number) \
     macro(op_to_string) \

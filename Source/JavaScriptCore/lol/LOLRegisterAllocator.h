@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Apple Inc. All rights reserved.
+ * Copyright (C) 2025-2026 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -82,6 +82,7 @@ public:
         : m_numVars(codeBlock->numVars())
         , m_constantsOffset(codeBlock->numCalleeLocals())
         , m_headersOffset(m_constantsOffset + codeBlock->constantRegisters().size())
+        , m_numArguments(codeBlock->numParameters())
         , m_locations(codeBlock->numCalleeLocals() + codeBlock->constantRegisters().size() + CallFrame::headerSizeInRegisters + codeBlock->numParameters())
         , m_backend(backend)
     {
@@ -211,10 +212,10 @@ private:
         return m_locations[operand.offset() + m_headersOffset];
     }
 
-    // Only used for debugging.
     const uint32_t m_numVars;
     const uint32_t m_constantsOffset;
     const uint32_t m_headersOffset;
+    const uint32_t m_numArguments;
     // This is laid out as [ locals, constants, headers, arguments ]
     FixedVector<Location> m_locations;
     SimpleRegisterAllocator<GPRBank> m_allocator;
@@ -297,6 +298,31 @@ auto RegisterAllocator<Backend>::allocate(Backend& jit, const OpPutToScope& inst
     std::array<AllocationHint, 2> uses = { instruction.m_scope, instruction.m_value };
     std::array<AllocationHint, 0> defs = { };
     return allocateImpl<1>(jit, instruction, index, uses, defs); // 1 scratch for metadata
+}
+
+template<typename Backend>
+auto RegisterAllocator<Backend>::allocate(Backend& jit, const OpGetArgument& instruction, BytecodeIndex index)
+{
+    // The argument value might be in a register if it's less than the number of lexical arguments and was previously written. That's rare so just flush the current value back to the stack in that case.
+    if (static_cast<uint32_t>(instruction.m_index) < m_numArguments) {
+        VirtualRegister argument = virtualRegisterForArgumentIncludingThis(instruction.m_index);
+        Location& location = locationOfImpl(argument);
+        if (location.regs)
+            jit.flush(location, location.regs.payloadGPR(), argument);
+    }
+
+
+    std::array<AllocationHint, 0> uses = { };
+    std::array<AllocationHint, 1> defs = { instruction.m_dst };
+    return allocateImpl<0>(jit, instruction, index, uses, defs);
+}
+
+template<typename Backend>
+auto RegisterAllocator<Backend>::allocate(Backend& jit, const OpArgumentCount& instruction, BytecodeIndex index)
+{
+    std::array<AllocationHint, 0> uses = { };
+    std::array<AllocationHint, 1> defs = { instruction.m_dst };
+    return allocateImpl<0>(jit, instruction, index, uses, defs);
 }
 
 template<typename Backend>

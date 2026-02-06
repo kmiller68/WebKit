@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Apple Inc. All rights reserved.
+ * Copyright (C) 2025-2026 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -752,6 +752,8 @@ void LOLJIT::privateCompileSlowCases()
         REPLAY_ALLOCATION_FOR_OP(op_new_async_generator_func, OpNewAsyncGeneratorFunc)
         REPLAY_ALLOCATION_FOR_OP(op_new_async_generator_func_exp, OpNewAsyncGeneratorFuncExp)
         REPLAY_ALLOCATION_FOR_OP(op_new_reg_exp, OpNewRegExp)
+        REPLAY_ALLOCATION_FOR_OP(op_get_argument, OpGetArgument)
+        REPLAY_ALLOCATION_FOR_OP(op_argument_count, OpArgumentCount)
 
         default:
             RELEASE_ASSERT_NOT_REACHED();
@@ -2581,6 +2583,40 @@ void LOLJIT::emit_op_dec(const JSInstruction* currentInstruction)
 #else
     move(s_scratch, srcDestRegs.payloadGPR());
 #endif
+    m_fastAllocator.releaseScratches(allocations);
+}
+
+void LOLJIT::emit_op_argument_count(const JSInstruction* currentInstruction)
+{
+    auto bytecode = currentInstruction->as<OpArgumentCount>();
+    auto allocations = m_fastAllocator.allocate(*this, bytecode, m_bytecodeIndex);
+    auto [ dstRegs ] = allocations.defs;
+
+    load32(payloadFor(CallFrameSlot::argumentCountIncludingThis), dstRegs.payloadGPR());
+    sub32(TrustedImm32(1), dstRegs.payloadGPR());
+    boxInt32(dstRegs.payloadGPR(), dstRegs);
+
+    m_fastAllocator.releaseScratches(allocations);
+}
+
+void LOLJIT::emit_op_get_argument(const JSInstruction* currentInstruction)
+{
+    auto bytecode = currentInstruction->as<OpGetArgument>();
+    auto allocations = m_fastAllocator.allocate(*this, bytecode, m_bytecodeIndex);
+    auto [ dstRegs ] = allocations.defs;
+    int index = bytecode.m_index;
+
+    load32(payloadFor(CallFrameSlot::argumentCountIncludingThis), s_scratch);
+    Jump argumentOutOfBounds = branch32(LessThanOrEqual, s_scratch, TrustedImm32(index));
+    loadValue(addressFor(VirtualRegister(CallFrameSlot::thisArgument + index)), dstRegs);
+    Jump done = jump();
+
+    argumentOutOfBounds.link(this);
+    moveTrustedValue(jsUndefined(), dstRegs);
+
+    done.link(this);
+    emitValueProfilingSite(bytecode, dstRegs);
+
     m_fastAllocator.releaseScratches(allocations);
 }
 
