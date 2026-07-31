@@ -110,13 +110,13 @@ JSToWasmCallee& CalleeGroup::ensureJSToWasmCallee(const ModuleInformation& modul
 {
     ASSERT(runnable());
     ASSERT(functionIndexSpace >= functionImportCount());
+    UNUSED_PARAM(moduleInformation);
     unsigned calleeIndex = functionIndexSpace - functionImportCount();
 
     Locker locker { m_jsToWasmCalleesLock };
     auto addResult = m_jsToWasmCallees.ensure(calleeIndex, [&] {
         auto& ipintCallee = m_ipintCallees->at(calleeIndex).get();
-        bool usesSIMD = moduleInformation.usesSIMD(FunctionCodeIndex(calleeIndex));
-        auto callee = JSToWasmCallee::create(Ref<const RTT> { ipintCallee.signatureRTT() }, usesSIMD);
+        auto callee = JSToWasmCallee::create(Ref<const RTT> { ipintCallee.signatureRTT() });
         callee->setWasmCallee(CalleeBits::encodeNativeCallee(&ipintCallee));
         return callee;
     });

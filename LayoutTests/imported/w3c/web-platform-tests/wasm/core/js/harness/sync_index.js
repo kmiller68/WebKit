@@ -194,8 +194,12 @@ function uniqueTest(func, desc) {
 function assert_invalid(bytes, source) {
     uniqueTest(() => {
         try {
+            // Compiling successfully here is allowed: WebAssembly.validate reporting a
+            // module invalid does not oblige the WebAssembly.Module constructor to
+            // reject it, because function bodies may be validated lazily, on the first
+            // call into the function. module() still enforces the forward direction, by
+            // throwing if validate accepts a module expected to be invalid.
             module(bytes, source, /* valid */ false);
-            throw new Error('did not fail');
         } catch(e) {
             assert_true(e instanceof WebAssembly.CompileError, "expected invalid failure:");
         }

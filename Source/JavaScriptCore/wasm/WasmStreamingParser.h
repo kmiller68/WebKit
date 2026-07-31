@@ -43,7 +43,12 @@ namespace JSC { namespace Wasm {
 struct FunctionData;
 struct ModuleInformation;
 
-enum class CompilerMode : uint8_t { FullCompile, Validation };
+enum class CompilerMode : uint8_t { FullCompile, ValidateFull, ValidateNonCode };
+
+constexpr bool isValidation(CompilerMode mode)
+{
+    return mode == CompilerMode::ValidateFull || mode == CompilerMode::ValidateNonCode;
+}
 
 class StreamingParserClient {
 public:

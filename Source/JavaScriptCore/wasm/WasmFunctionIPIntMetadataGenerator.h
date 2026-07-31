@@ -39,7 +39,6 @@ WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
 #include <JavaScriptCore/MacroAssemblerCodeRef.h>
 #include <JavaScriptCore/SIMDInfo.h>
 #include <JavaScriptCore/WasmHandlerInfo.h>
-#include <JavaScriptCore/WasmIPIntGenerator.h>
 #include <JavaScriptCore/WasmIPIntTierUpCounter.h>
 #include <wtf/HashMap.h>
 #include <wtf/RefCountedFixedVector.h>

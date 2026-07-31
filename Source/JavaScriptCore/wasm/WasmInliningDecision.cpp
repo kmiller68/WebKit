@@ -134,6 +134,11 @@ void InliningNode::inlineNode(InliningDecision& decision)
                 continue;
             SUPPRESS_UNCOUNTED_LOCAL auto& target = uncheckedDowncast<const IPIntCallee>(*candidateCallee);
 
+            // Skip lazy callees: their bytecode hasn't been parsed so usesSIMD /
+            // wasmSize aren't valid. canInline in OMGIRGenerator also skips them.
+            if (target.isLazy())
+                continue;
+
             double relativeCallCount = 0;
             if (profile->totalCount())
                 relativeCallCount = callCount / static_cast<double>(profile->totalCount());

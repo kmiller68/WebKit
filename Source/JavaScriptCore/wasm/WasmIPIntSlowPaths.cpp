@@ -1125,6 +1125,24 @@ static ALWAYS_INLINE void ensureCallBytecodeForKind(const Wasm::RTT& rtt, Prepar
         rtt.ensureCallBytecode();
 }
 
+WASM_IPINT_EXTERN_CPP_DECL(lazy_initialize, CallFrame* callFrame)
+{
+    auto* callee = IPINT_CALLEE(callFrame);
+    if (!callee->isLazy())
+        WASM_RETURN_TWO(nullptr, nullptr);
+
+    Locker locker { callee->lazyInitLock() };
+    if (!callee->isLazy())
+        WASM_RETURN_TWO(nullptr, nullptr);
+
+    auto& moduleInformation = const_cast<Wasm::ModuleInformation&>(instance->moduleInformation());
+    auto entrypointResult = parseAndInitializeIPIntCallee(*callee, moduleInformation);
+    if (!entrypointResult) [[unlikely]]
+        IPINT_THROW(Wasm::ExceptionType::InvalidFunctionBody);
+
+    WASM_RETURN_TWO(nullptr, nullptr);
+}
+
 /**
  * Given a function index, determine the pointer to its executable code.
  * Return a pair of the target wasm instance and the code pointer (via WASM_CALL_RETURN).

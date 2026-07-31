@@ -74,6 +74,7 @@ namespace Wasm {
     macro(OutOfBoundsElementSegmentAccess, "Offset + array length would exceed the length of an element segment"_s) \
     macro(OutOfMemory, "Out of memory"_s) \
     macro(IllegalArgument, "Illegal argument"_s) \
+    macro(InvalidFunctionBody, "WebAssembly function body failed to parse"_s) \
     macro(Termination, "Termination"_s)
 
 enum class ExceptionType : uint32_t {
@@ -137,6 +138,7 @@ ALWAYS_INLINE bool isTypeErrorExceptionType(ExceptionType type)
     case ExceptionType::CastFailure:
     case ExceptionType::OutOfMemory:
     case ExceptionType::IllegalArgument:
+    case ExceptionType::InvalidFunctionBody:
     case ExceptionType::Termination:
         return false;
     case ExceptionType::InvalidGCTypeUse:

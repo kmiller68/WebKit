@@ -344,7 +344,8 @@ macro skipLEB128(cursor, scratch)
 end
 
 macro checkStackOverflow(callee, scratch)
-    loadi Wasm::IPIntCallee::m_maxFrameSizeInV128[callee], scratch
+    loadp Wasm::IPIntCallee::m_data[callee], scratch
+    loadi Wasm::IPIntCallee::IPIntData::m_maxFrameSizeInV128[scratch], scratch
     mulp V128ISize, scratch
     subp cfr, scratch, scratch
 
@@ -528,7 +529,8 @@ end
 macro ipintPrologueOSR(increment)
 if WEBASSEMBLY_BBQJIT
     loadp UnboxedWasmCalleeStackSlot[cfr], ws0
-    baddis increment, Wasm::IPIntCallee::m_tierUpCounter + Wasm::IPIntTierUpCounter::m_counter[ws0], .continue
+    loadp Wasm::IPIntCallee::m_data[ws0], ws1
+    baddis increment, Wasm::IPIntCallee::IPIntData::m_tierUpCounter + Wasm::IPIntTierUpCounter::m_counter[ws1], .continue
 
     preserveWasmArgumentRegisters()
 
@@ -570,7 +572,8 @@ macro ipintLoopOSR(increment)
 if WEBASSEMBLY_BBQJIT and not ARMv7
     validateOpcodeConfig(ws0)
     loadp UnboxedWasmCalleeStackSlot[cfr], ws0
-    baddis increment, Wasm::IPIntCallee::m_tierUpCounter + Wasm::IPIntTierUpCounter::m_counter[ws0], .continue
+    loadp Wasm::IPIntCallee::m_data[ws0], ws1
+    baddis increment, Wasm::IPIntCallee::IPIntData::m_tierUpCounter + Wasm::IPIntTierUpCounter::m_counter[ws1], .continue
 
     move cfr, a1
     move PC, a2
@@ -600,7 +603,8 @@ end
 macro ipintEpilogueOSR(increment)
 if WEBASSEMBLY_BBQJIT and not ARMv7
     loadp UnboxedWasmCalleeStackSlot[cfr], ws0
-    baddis increment, Wasm::IPIntCallee::m_tierUpCounter + Wasm::IPIntTierUpCounter::m_counter[ws0], .continue
+    loadp Wasm::IPIntCallee::m_data[ws0], ws1
+    baddis increment, Wasm::IPIntCallee::IPIntData::m_tierUpCounter + Wasm::IPIntTierUpCounter::m_counter[ws1], .continue
 
     move cfr, a1
     operationCall(macro() cCall2(_ipint_extern_epilogue_osr) end)
@@ -1349,7 +1353,35 @@ if WEBASSEMBLY and (ARM64 or ARM64E or X86_64 or ARMv7)
     unboxWasmCallee(ws0, ws1)
     storep ws0, UnboxedWasmCalleeStackSlot[cfr]
 
-ipintEntry()
+    # Lazy-init check: if m_data is null the function hasn't been parsed yet.
+    # ipint_extern_lazy_initialize takes lazyInitLock and release-stores m_data.
+    # A plain load suffices here: ARM64 address-dependency ordering / x86_64 TSO
+    # guarantees that observing a non-null m_data also makes its contents visible
+    # to ipintEntry()'s subsequent loads through the same pointer.
+    loadp Wasm::IPIntCallee::m_data[ws0], ws1
+    btpz ws1, .ipint_data_lazy_initialize
+
+.ipint_data_loaded:
+    ipintEntry()
+
+.ipint_data_lazy_initialize:
+    preserveWasmArgumentRegisters()
+    move wasmInstance, a0
+    move cfr, a1
+    cCall2(_ipint_extern_lazy_initialize)
+    # A bad function body (deferred under lazy parsing / ValidateNonCode)
+    # surfaces here as SlowPathExceptionTag in r1. r0 holds the exception type.
+    bpeq r1, (constexpr JSC::IPInt::SlowPathExceptionTag), .ipint_lazy_init_failed
+    restoreWasmArgumentRegisters()
+    loadp UnboxedWasmCalleeStackSlot[cfr], ws0   # ws0 may have been clobbered by the call
+    jmp .ipint_data_loaded
+
+.ipint_lazy_init_failed:
+    # Stash the exception type where wasm_throw_from_slow_path_trampoline expects
+    # it. Stack space reserved by preserveWasmArgumentRegisters is discarded by
+    # jumpToException()'s unwind; no explicit cleanup needed here.
+    storei r0, ArgumentCountIncludingThis + PayloadOffset[cfr]
+    jmp _wasm_throw_from_slow_path_trampoline
 else
     break
 end
@@ -1358,7 +1390,8 @@ end)
 if WEBASSEMBLY and (ARM64 or ARM64E or X86_64 or ARMv7)
 .ipint_entry_end_local:
     loadp UnboxedWasmCalleeStackSlot[cfr], MC
-    loadp Wasm::IPIntCallee::m_localInitBytecode + VectorBufferOffset[MC], MC
+    loadp Wasm::IPIntCallee::m_data[MC], MC
+    loadp Wasm::IPIntCallee::IPIntData::m_localInitBytecode + VectorBufferOffset[MC], MC
 .ipint_entry_end_local_loop:
     argumINTInitializeDefaultLocals()
     jmp .ipint_entry_end_local_loop
@@ -1379,7 +1412,10 @@ end
     move r0, ws0
 
     loadp Wasm::IPIntCallee::m_bytecode[ws0], PC
-    loadp Wasm::IPIntCallee::m_metadata + VectorBufferOffset[ws0], MC
+    loadp Wasm::IPIntCallee::m_data[ws0], MC
+    loadi Wasm::IPIntCallee::IPIntData::m_bytecodeOffset[MC], t2
+    addp t2, PC
+    addp constexpr (JSC::Wasm::IPIntCallee::IPIntData::offsetOfMetadata()), MC
 
     # Load memory
     ipintReloadMemory(t2)
@@ -1423,12 +1459,13 @@ end
     loadp CodeBlock[cfr], wasmInstance
     loadp Wasm::IPIntCallee::m_bytecode[ws0], t1
     addp t1, PC
-    loadp Wasm::IPIntCallee::m_metadata + VectorBufferOffset[ws0], t1
-    addp t1, MC
+    loadp Wasm::IPIntCallee::m_data[ws0], t1
+    leap constexpr (JSC::Wasm::IPIntCallee::IPIntData::offsetOfMetadata())[t1], t2
+    addp t2, MC
 
     # Recompute SP from catch metadata. [MC] contains localSizeToAlloc + stackValues.
     # Add rethrowSlots to get the total frame size below callee-save space.
-    loadi Wasm::IPIntCallee::m_numRethrowSlotsToAlloc[ws0], t1
+    loadi Wasm::IPIntCallee::IPIntData::m_numRethrowSlotsToAlloc[t1], t1
     loadi [MC], t0
     addp t1, t0
     mulp StackValueSize, t0

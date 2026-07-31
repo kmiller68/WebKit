@@ -75,6 +75,7 @@ private:
     Vector<std::unique_ptr<FunctionIPIntMetadataGenerator>> m_wasmInternalFunctions;
     RefPtr<IPIntCallees> m_ipintCallees;
     bool m_calleesAlreadyRegistered { false };
+    const bool m_lazyParsing { false };
 };
 
 } } // namespace JSC::Wasm

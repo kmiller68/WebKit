@@ -327,7 +327,8 @@ JSWebAssemblyModule* WebAssemblyModuleConstructor::createModule(JSGlobalObject* 
     Structure* structure = JSC_GET_DERIVED_STRUCTURE(vm, webAssemblyModuleStructure, newTarget, callFrame->jsCallee());
     RETURN_IF_EXCEPTION(scope, nullptr);
 
-    auto result = Wasm::Module::validateSync(vm, WTF::move(buffer));
+    auto compilerMode = (options && options->eagerValidate()) ? Wasm::CompilerMode::ValidateFull : Wasm::CompilerMode::ValidateNonCode;
+    auto result = Wasm::Module::validateSync(vm, WTF::move(buffer), compilerMode);
     if (!result.has_value()) [[unlikely]] {
         throwException(globalObject, scope, createJSWebAssemblyCompileError(globalObject, vm, result.error()));
         return nullptr;

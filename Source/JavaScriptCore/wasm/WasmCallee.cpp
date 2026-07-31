@@ -309,51 +309,100 @@ RestoreFrameCallee& RestoreFrameCallee::singleton()
 IPIntCallee::IPIntCallee(FunctionIPIntMetadataGenerator& generator, FunctionSpaceIndex index, const RTT& signatureRTT, std::pair<const Name*, RefPtr<NameSection>>&& name)
     : Callee(Wasm::CompilationMode::IPIntMode, index, WTF::move(name))
     , m_functionIndex(generator.m_functionIndex)
-    , m_bytecode(generator.m_bytecode.data() + generator.m_bytecodeOffset)
-    , m_bytecodeEnd(m_bytecode + (generator.m_bytecode.size() - generator.m_bytecodeOffset - 1))
-    , m_metadata(WTF::move(generator.m_metadata))
-    , m_localInitBytecode(WTF::move(generator.m_localInitBytecode))
+    , m_bytecode(generator.m_bytecode.data())
+    , m_bytecodeEnd(generator.m_bytecode.data() + generator.m_bytecode.size() - 1)
     , m_signatureRTT(&signatureRTT)
-    , m_callTargets(WTF::move(generator.m_callTargets))
-    , m_localSizeToAlloc(roundUpToMultipleOf<2>(generator.m_numLocals))
-    , m_numRethrowSlotsToAlloc(generator.m_numAlignedRethrowSlots)
-    , m_numLocals(generator.m_numLocals)
-    , m_numArgumentsOnStack(generator.m_numArgumentsOnStack)
-    , m_maxFrameSizeInV128(generator.m_maxFrameSizeInV128)
-    , m_maxCalleeStackSize(generator.m_maxCalleeStackSize)
-    , m_tierUpCounter(WTF::move(generator.m_tierUpCounter))
 {
-    if (size_t count = generator.m_exceptionHandlers.size()) {
-        m_exceptionHandlers = FixedVector<HandlerInfo>(count);
-        for (size_t i = 0; i < count; i++) {
-            const UnlinkedHandlerInfo& unlinkedHandler = generator.m_exceptionHandlers[i];
-            HandlerInfo& handler = m_exceptionHandlers[i];
-            CodeLocationLabel<ExceptionHandlerPtrTag> target;
-            switch (unlinkedHandler.m_type) {
-            case HandlerType::Catch:
-                target = CodeLocationLabel<ExceptionHandlerPtrTag>(LLInt::inPlaceInterpreterCatchEntryThunk().retaggedCode<ExceptionHandlerPtrTag>());
-                break;
-            case HandlerType::CatchAll:
-            case HandlerType::Delegate:
-                target = CodeLocationLabel<ExceptionHandlerPtrTag>(LLInt::inPlaceInterpreterCatchAllEntryThunk().retaggedCode<ExceptionHandlerPtrTag>());
-                break;
-            case HandlerType::TryTableCatch:
-                target = CodeLocationLabel<ExceptionHandlerPtrTag>(LLInt::inPlaceInterpreterTableCatchEntryThunk().retaggedCode<ExceptionHandlerPtrTag>());
-                break;
-            case HandlerType::TryTableCatchRef:
-                target = CodeLocationLabel<ExceptionHandlerPtrTag>(LLInt::inPlaceInterpreterTableCatchRefEntryThunk().retaggedCode<ExceptionHandlerPtrTag>());
-                break;
-            case HandlerType::TryTableCatchAll:
-                target = CodeLocationLabel<ExceptionHandlerPtrTag>(LLInt::inPlaceInterpreterTableCatchAllEntryThunk().retaggedCode<ExceptionHandlerPtrTag>());
-                break;
-            case HandlerType::TryTableCatchAllRef:
-                target = CodeLocationLabel<ExceptionHandlerPtrTag>(LLInt::inPlaceInterpreterTableCatchAllrefEntryThunk().retaggedCode<ExceptionHandlerPtrTag>());
-                break;
-            }
+    assertNotYetRunnable();
+    initializeMetadata(generator);
+}
 
-            handler.initialize(unlinkedHandler, target);
+IPIntCallee::IPIntCallee(FunctionCodeIndex functionIndex, FunctionSpaceIndex index, const RTT& signatureRTT, std::pair<const Name*, RefPtr<NameSection>>&& name, const uint8_t* bytecode, const uint8_t* bytecodeEnd)
+    : Callee(Wasm::CompilationMode::IPIntMode, index, WTF::move(name))
+    , m_functionIndex(functionIndex)
+    , m_bytecode(bytecode)
+    , m_bytecodeEnd(bytecodeEnd)
+    , m_signatureRTT(&signatureRTT)
+{
+}
+
+void IPIntCallee::assertNotYetRunnable() const
+{
+#if ASSERT_ENABLED
+    Locker locker { NativeCalleeRegistry::singleton().getLock() };
+    ASSERT(!NativeCalleeRegistry::singleton().isValidCallee(const_cast<IPIntCallee*>(this)));
+#endif
+}
+
+void IPIntCallee::initializeMetadata(FunctionIPIntMetadataGenerator& generator)
+{
+    ASSERT(isLazy());
+    m_data.ensure([&] {
+        auto data = IPIntData::create(generator.m_metadata.size());
+        if (generator.m_metadata.size())
+            memcpy(data->data(), generator.m_metadata.span().data(), generator.m_metadata.size());
+
+        data->m_localInitBytecode = WTF::move(generator.m_localInitBytecode);
+        data->m_callTargets = WTF::move(generator.m_callTargets);
+        data->m_bytecodeOffset = generator.m_bytecodeOffset;
+        data->m_localSizeToAlloc = roundUpToMultipleOf<2>(generator.m_numLocals);
+        data->m_numRethrowSlotsToAlloc = generator.m_numAlignedRethrowSlots;
+        data->m_numLocals = generator.m_numLocals;
+        data->m_numArgumentsOnStack = generator.m_numArgumentsOnStack;
+        data->m_maxFrameSizeInV128 = generator.m_maxFrameSizeInV128;
+        data->m_maxCalleeStackSize = generator.m_maxCalleeStackSize;
+
+        // The generator emits PC-related offsets (handlers, tier-up keys) relative to
+        // the start of opcodes (i.e. with bytecodeOffset already subtracted). The
+        // runtime's m_bytecode points at the raw function body, so saveCallSiteIndex
+        // computes (PC - m_bytecode) = bytecodeOffset + opcode_offset. Shift the
+        // generator's offsets to match this raw-relative coordinate space.
+        uint32_t bytecodeOffset = generator.m_bytecodeOffset;
+        {
+            UncheckedKeyHashMap<IPIntPC, IPIntTierUpCounter::OSREntryData> shifted;
+            shifted.reserveInitialCapacity(generator.m_tierUpCounter.size());
+            for (auto& entry : generator.m_tierUpCounter)
+                shifted.add(entry.key + bytecodeOffset, entry.value);
+            data->m_tierUpCounter.setOSREntryData(WTF::move(shifted));
         }
-    }
+
+        if (size_t count = generator.m_exceptionHandlers.size()) {
+            m_exceptionHandlers = FixedVector<HandlerInfo>(count);
+            for (size_t i = 0; i < count; i++) {
+                UnlinkedHandlerInfo unlinkedHandler = generator.m_exceptionHandlers[i];
+                unlinkedHandler.m_start += bytecodeOffset;
+                unlinkedHandler.m_end += bytecodeOffset;
+                unlinkedHandler.m_target += bytecodeOffset;
+                HandlerInfo& handler = m_exceptionHandlers[i];
+                CodeLocationLabel<ExceptionHandlerPtrTag> target;
+                switch (unlinkedHandler.m_type) {
+                case HandlerType::Catch:
+                    target = CodeLocationLabel<ExceptionHandlerPtrTag>(LLInt::inPlaceInterpreterCatchEntryThunk().retaggedCode<ExceptionHandlerPtrTag>());
+                    break;
+                case HandlerType::CatchAll:
+                case HandlerType::Delegate:
+                    target = CodeLocationLabel<ExceptionHandlerPtrTag>(LLInt::inPlaceInterpreterCatchAllEntryThunk().retaggedCode<ExceptionHandlerPtrTag>());
+                    break;
+                case HandlerType::TryTableCatch:
+                    target = CodeLocationLabel<ExceptionHandlerPtrTag>(LLInt::inPlaceInterpreterTableCatchEntryThunk().retaggedCode<ExceptionHandlerPtrTag>());
+                    break;
+                case HandlerType::TryTableCatchRef:
+                    target = CodeLocationLabel<ExceptionHandlerPtrTag>(LLInt::inPlaceInterpreterTableCatchRefEntryThunk().retaggedCode<ExceptionHandlerPtrTag>());
+                    break;
+                case HandlerType::TryTableCatchAll:
+                    target = CodeLocationLabel<ExceptionHandlerPtrTag>(LLInt::inPlaceInterpreterTableCatchAllEntryThunk().retaggedCode<ExceptionHandlerPtrTag>());
+                    break;
+                case HandlerType::TryTableCatchAllRef:
+                    target = CodeLocationLabel<ExceptionHandlerPtrTag>(LLInt::inPlaceInterpreterTableCatchAllrefEntryThunk().retaggedCode<ExceptionHandlerPtrTag>());
+                    break;
+                }
+
+                handler.initialize(unlinkedHandler, target);
+            }
+        }
+
+        return data;
+    });
 }
 
 void IPIntCallee::setEntrypoint(CodePtr<WasmEntryPtrTag> entrypoint)
@@ -536,7 +585,7 @@ Box<PCToCodeOriginMap> OptimizingJITCallee::materializePCToOriginMap(B3::PCToOri
 
 #endif
 
-JSToWasmCallee::JSToWasmCallee(Ref<const RTT>&& rtt, bool)
+JSToWasmCallee::JSToWasmCallee(Ref<const RTT>&& rtt)
     : Callee(Wasm::CompilationMode::JSToWasmMode)
     , m_rtt(WTF::move(rtt))
 {

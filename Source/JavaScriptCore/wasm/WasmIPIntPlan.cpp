@@ -49,6 +49,7 @@ namespace JSC { namespace Wasm {
 
 IPIntPlan::IPIntPlan(VM& vm, Vector<uint8_t>&& source, CompilerMode compilerMode, CompletionTask&& task)
     : Base(vm, WTF::move(source), compilerMode, WTF::move(task))
+    , m_lazyParsing(compilerMode != CompilerMode::ValidateFull && Options::useWasmIPIntLazyParsing())
 {
     if (parseAndValidateModule(m_source.span()))
         prepare();
@@ -66,6 +67,7 @@ IPIntPlan::IPIntPlan(VM& vm, Ref<ModuleInformation> info, Ref<IPIntCallees> call
 
 IPIntPlan::IPIntPlan(VM& vm, Ref<ModuleInformation> info, CompilerMode compilerMode, CompletionTask&& task)
     : Base(vm, WTF::move(info), compilerMode, WTF::move(task))
+    , m_lazyParsing(compilerMode != CompilerMode::ValidateFull && Options::useWasmIPIntLazyParsing())
 {
     prepare();
     m_currentIndex = m_moduleInformation->functions.size();
@@ -85,54 +87,50 @@ bool IPIntPlan::prepareImpl()
 
 void IPIntPlan::compileFunction(FunctionCodeIndex functionIndex)
 {
-    const auto& function = m_moduleInformation->functions[functionIndex];
-    TypeSignatureIndex typeSignatureIndex = m_moduleInformation->internalFunctionTypeSignatureIndices[functionIndex];
-    const RTT& signature = m_moduleInformation->rtt(typeSignatureIndex);
     auto functionIndexSpace = m_moduleInformation->toSpaceIndex(functionIndex);
-    ASSERT_UNUSED(functionIndexSpace, &m_moduleInformation->rtt(functionIndexSpace) == &m_moduleInformation->rtt(typeSignatureIndex));
+    const auto& function = m_moduleInformation->functions[functionIndex];
+    auto functionSpan = function.data.span();
+    const uint8_t* bytecode = functionSpan.data();
+    const uint8_t* bytecodeEnd = bytecode + functionSpan.size() - 1;
+    ASSERT_UNUSED(functionIndexSpace, &m_moduleInformation->rtt(functionIndexSpace) == &m_moduleInformation->rtt(m_moduleInformation->internalFunctionTypeSignatureIndices[functionIndex]));
 
+    auto callee = IPIntCallee::createLazy(functionIndex, functionIndexSpace, m_moduleInformation->rtt(functionIndexSpace), m_moduleInformation->nameSection().get(functionIndexSpace), bytecode, bytecodeEnd);
+
+    // Install the normal IPInt entrypoint regardless of lazy vs. eager. The
+    // entrypoint itself checks m_data and calls a slow path on first entry
+    // when lazy parsing is enabled.
+    CodePtr<WasmEntryPtrTag> entrypoint;
+#if ENABLE(JIT)
+    if (Options::useJIT())
+        entrypoint = LLInt::inPlaceInterpreterEntryThunk().retaggedCode<WasmEntryPtrTag>();
+#endif
+    if (!entrypoint)
+        entrypoint = LLInt::getCodeFunctionPtr<CFunctionPtrTag>(ipint_trampoline);
+    callee->setEntrypointWithoutRegistration(entrypoint);
+
+    if (m_lazyParsing) {
+        m_ipintCallees->at(functionIndex) = WTF::move(callee);
+        return;
+    }
+
+    // Eager path: parse and initialize metadata now.
     beginCompilerSignpost(CompilationMode::IPIntMode, functionIndexSpace);
     m_unlinkedWasmToWasmCalls[functionIndex] = Vector<UnlinkedWasmToWasmCall>();
-    auto parseAndCompileResult = parseAndCompileMetadata(function.data, signature, m_moduleInformation.get(), functionIndex);
+    callee->assertNotYetRunnable();
+    auto entrypointResult = parseAndInitializeIPIntCallee(callee.get(), m_moduleInformation.get());
     endCompilerSignpost(CompilationMode::IPIntMode, functionIndexSpace);
 
-    if (!parseAndCompileResult) [[unlikely]] {
+    if (!entrypointResult) [[unlikely]] {
         Locker locker { m_lock };
         if (!m_errorMessage) {
             // Multiple compiles could fail simultaneously. We arbitrarily choose the first.
-            fail(makeString(parseAndCompileResult.error(), ", in function at index "_s, functionIndex.rawIndex())); // FIXME make this an Expected.
+            fail(makeString(entrypointResult.error(), ", in function at index "_s, functionIndex.rawIndex())); // FIXME make this an Expected.
         }
         m_currentIndex = m_moduleInformation->functions.size();
         return;
     }
 
-    m_wasmInternalFunctions[functionIndex] = WTF::move(*parseAndCompileResult);
-
-    {
-        auto callee = IPIntCallee::create(*m_wasmInternalFunctions[functionIndex], functionIndexSpace, signature, { });
-        ASSERT(!callee->entrypoint());
-        bool usesSIMD = m_moduleInformation->usesSIMD(functionIndex);
-        // Immediately tier up to BBQ for SIMD, if necesary.
-        if (usesSIMD && !Options::useWasmIPIntSIMD())
-            callee->tierUpCounter().setNewThreshold(0);
-
-        if (usesSIMD && !Options::useBBQJIT() && !Options::useWasmIPIntSIMD()) {
-            Locker locker { m_lock };
-            Base::fail(makeString("JIT is disabled, but the entrypoint for "_s, functionIndex.rawIndex(), " requires JIT"_s));
-            return;
-        }
-
-        CodePtr<WasmEntryPtrTag> entrypoint { };
-#if ENABLE(JIT)
-        if (Options::useJIT())
-            entrypoint = LLInt::inPlaceInterpreterEntryThunk().retaggedCode<WasmEntryPtrTag>();
-#endif
-        if (!entrypoint)
-            entrypoint = LLInt::getCodeFunctionPtr<CFunctionPtrTag>(ipint_trampoline);
-
-        callee->setEntrypointWithoutRegistration(entrypoint);
-        m_ipintCallees->at(functionIndex) = WTF::move(callee);
-    }
+    m_ipintCallees->at(functionIndex) = WTF::move(callee);
 }
 
 void IPIntPlan::didCompleteCompilation()
@@ -152,7 +150,7 @@ void IPIntPlan::didCompleteCompilation()
             RestoreFrameCallee::singleton();
     }
 
-    if (m_compilerMode == CompilerMode::Validation)
+    if (isValidation(m_compilerMode))
         return;
 
     for (auto& unlinked : m_unlinkedWasmToWasmCalls) {

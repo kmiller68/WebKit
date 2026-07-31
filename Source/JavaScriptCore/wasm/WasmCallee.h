@@ -39,7 +39,6 @@
 #include <JavaScriptCore/WasmFormat.h>
 #include <JavaScriptCore/WasmFunctionIPIntMetadataGenerator.h>
 #include <JavaScriptCore/WasmHandlerInfo.h>
-#include <JavaScriptCore/WasmIPIntGenerator.h>
 #include <JavaScriptCore/WasmIPIntTierUpCounter.h>
 #include <JavaScriptCore/WasmIndexOrName.h>
 #include <JavaScriptCore/WasmTierUpCount.h>
@@ -47,7 +46,9 @@
 #include <wtf/FixedVector.h>
 #include <wtf/RefCountedFixedVector.h>
 #include <wtf/TZoneMalloc.h>
+#include <wtf/ThreadSafeLazyUniquePtr.h>
 #include <wtf/ThreadSafeRefCounted.h>
+#include <wtf/TrailingArray.h>
 
 namespace JSC {
 
@@ -165,9 +166,9 @@ public:
     friend class Callee;
     friend class JSC::LLIntOffsetsExtractor;
 
-    static inline Ref<JSToWasmCallee> create(Ref<const RTT>&& rtt, bool usesSIMD)
+    static inline Ref<JSToWasmCallee> create(Ref<const RTT>&& rtt)
     {
-        return adoptRef(*new JSToWasmCallee(WTF::move(rtt), usesSIMD));
+        return adoptRef(*new JSToWasmCallee(WTF::move(rtt)));
     }
 
     CodePtr<WasmEntryPtrTag> entrypointImpl() const;
@@ -192,7 +193,7 @@ public:
     }
 
 private:
-    JSToWasmCallee(Ref<const RTT>&&, bool);
+    JSToWasmCallee(Ref<const RTT>&&);
 
     unsigned m_frameSize { };
     // This must be initialized after the callee is created unfortunately.
@@ -474,32 +475,86 @@ class IPIntCallee final : public Callee {
     friend class JSC::LLIntOffsetsExtractor;
     friend class Callee;
 public:
+    using IPIntMetadata = uint8_t;
+    class IPIntData final : public TrailingArray<IPIntData, IPIntMetadata> {
+        WTF_MAKE_NONMOVABLE(IPIntData);
+        WTF_DEPRECATED_MAKE_FAST_ALLOCATED(IPIntData);
+        using TrailingArrayType = TrailingArray<IPIntData, IPIntMetadata>;
+        friend TrailingArrayType;
+        friend class IPIntCallee;
+        friend class JSC::LLIntOffsetsExtractor;
+    public:
+        static std::unique_ptr<IPIntData> create(size_t metadataSize)
+        {
+            return std::unique_ptr<IPIntData>(new (fastMalloc(allocationSize(metadataSize))) IPIntData(metadataSize));
+        }
+
+        Vector<uint8_t> m_localInitBytecode;
+        Vector<FunctionSpaceIndex> m_callTargets;
+        IPIntTierUpCounter m_tierUpCounter;
+
+        // Offset from raw function bytecode to the first opcode (post locals header).
+        unsigned m_bytecodeOffset { 0 };
+        unsigned m_maxFrameSizeInV128 { 0 };
+        unsigned m_localSizeToAlloc { 0 };
+        unsigned m_numRethrowSlotsToAlloc { 0 };
+        unsigned m_numLocals { 0 };
+        unsigned m_numArgumentsOnStack { 0 };
+        unsigned m_maxCalleeStackSize { 0 };
+
+        static constexpr ptrdiff_t offsetOfMetadata() { return TrailingArrayType::offsetOfData(); }
+        static constexpr ptrdiff_t offsetOfLocalInitBytecode() { return OBJECT_OFFSETOF(IPIntData, m_localInitBytecode); }
+        static constexpr ptrdiff_t offsetOfTierUpCounter() { return OBJECT_OFFSETOF(IPIntData, m_tierUpCounter); }
+        static constexpr ptrdiff_t offsetOfBytecodeOffset() { return OBJECT_OFFSETOF(IPIntData, m_bytecodeOffset); }
+        static constexpr ptrdiff_t offsetOfMaxFrameSizeInV128() { return OBJECT_OFFSETOF(IPIntData, m_maxFrameSizeInV128); }
+        static constexpr ptrdiff_t offsetOfLocalSizeToAlloc() { return OBJECT_OFFSETOF(IPIntData, m_localSizeToAlloc); }
+        static constexpr ptrdiff_t offsetOfNumRethrowSlotsToAlloc() { return OBJECT_OFFSETOF(IPIntData, m_numRethrowSlotsToAlloc); }
+
+    private:
+        explicit IPIntData(size_t metadataSize)
+            : TrailingArrayType(metadataSize)
+            , m_tierUpCounter(UncheckedKeyHashMap<IPIntPC, IPIntTierUpCounter::OSREntryData>())
+        {
+        }
+    };
+
     static Ref<IPIntCallee> create(FunctionIPIntMetadataGenerator& generator, FunctionSpaceIndex index, const RTT& signatureRTT, std::pair<const Name*, RefPtr<NameSection>>&& name)
     {
         return adoptRef(*new IPIntCallee(generator, index, signatureRTT, WTF::move(name)));
     }
 
+    static Ref<IPIntCallee> createLazy(FunctionCodeIndex functionIndex, FunctionSpaceIndex index, const RTT& signatureRTT, std::pair<const Name*, RefPtr<NameSection>>&& name, const uint8_t* bytecode, const uint8_t* bytecodeEnd)
+    {
+        return adoptRef(*new IPIntCallee(functionIndex, index, signatureRTT, WTF::move(name), bytecode, bytecodeEnd));
+    }
+
     FunctionCodeIndex functionIndex() const { return m_functionIndex; }
+    bool isLazy() const { return !data(); }
+    void initializeMetadata(FunctionIPIntMetadataGenerator&) WTF_REQUIRES_LOCK(m_lazyInitLock);
     void setEntrypoint(CodePtr<WasmEntryPtrTag>);
     void setEntrypointWithoutRegistration(CodePtr<WasmEntryPtrTag>);
     void setName(std::pair<const Name*, RefPtr<NameSection>>&& name) { setIndexOrName(IndexOrName(index(), WTF::move(name))); }
     const uint8_t* bytecode() const { return m_bytecode; }
     const uint8_t* bytecodeEnd() const { return m_bytecodeEnd; }
-    const uint8_t* metadata() const LIFETIME_BOUND { return m_metadata.span().data(); }
+    IPIntData* data() const { return m_data.get(); }
+    const uint8_t* metadata() const LIFETIME_BOUND { return data() ? data()->data() : nullptr; }
 
-    unsigned numLocals() const { return m_numLocals; }
-    unsigned localSizeToAlloc() const { return m_localSizeToAlloc; }
-    unsigned rethrowSlots() const { return m_numRethrowSlotsToAlloc; }
-    unsigned maxFrameSizeInV128() const { return m_maxFrameSizeInV128; }
-    unsigned maxCalleeStackSize() const { return m_maxCalleeStackSize; }
+    unsigned numLocals() const { return data()->m_numLocals; }
+    unsigned localSizeToAlloc() const { return data()->m_localSizeToAlloc; }
+    unsigned rethrowSlots() const { return data()->m_numRethrowSlotsToAlloc; }
+    unsigned maxFrameSizeInV128() const { return data()->m_maxFrameSizeInV128; }
+    unsigned maxCalleeStackSize() const { return data()->m_maxCalleeStackSize; }
 
-    const Vector<FunctionSpaceIndex>& callTargets() const LIFETIME_BOUND { return m_callTargets; }
-    unsigned numCallProfiles() const { return m_callTargets.size(); }
+    const Vector<FunctionSpaceIndex>& callTargets() const LIFETIME_BOUND { return data()->m_callTargets; }
+    unsigned numCallProfiles() const { return data()->m_callTargets.size(); }
 
-    IPIntTierUpCounter& tierUpCounter() LIFETIME_BOUND { return m_tierUpCounter; }
-    const IPIntTierUpCounter& tierUpCounter() const LIFETIME_BOUND { return m_tierUpCounter; }
+    IPIntTierUpCounter& tierUpCounter() LIFETIME_BOUND { return data()->m_tierUpCounter; }
+    const IPIntTierUpCounter& tierUpCounter() const LIFETIME_BOUND { return data()->m_tierUpCounter; }
 
-    FunctionSpaceIndex callTarget(unsigned callProfileIndex) const { return m_callTargets[callProfileIndex]; }
+    FunctionSpaceIndex callTarget(unsigned callProfileIndex) const { return data()->m_callTargets[callProfileIndex]; }
+
+    Lock& lazyInitLock() LIFETIME_BOUND WTF_RETURNS_LOCK(m_lazyInitLock) { return m_lazyInitLock; }
+    void assertNotYetRunnable() const WTF_ASSERTS_ACQUIRED_LOCK(m_lazyInitLock);
 
     const RTT& signatureRTT() const LIFETIME_BOUND { return *m_signatureRTT; }
 
@@ -507,32 +562,33 @@ public:
 
     unsigned computeCodeHashImpl() const;
 
+    static constexpr ptrdiff_t offsetOfData() { return OBJECT_OFFSETOF(IPIntCallee, m_data); }
+
 private:
     IPIntCallee(FunctionIPIntMetadataGenerator&, FunctionSpaceIndex, const RTT& signatureRTT, std::pair<const Name*, RefPtr<NameSection>>&&);
+    IPIntCallee(FunctionCodeIndex, FunctionSpaceIndex index, const RTT& signatureRTT, std::pair<const Name*, RefPtr<NameSection>>&&, const uint8_t* bytecode, const uint8_t* bytecodeEnd);
 
     CodePtr<WasmEntryPtrTag> entrypointImpl() const { return m_entrypoint; }
     std::tuple<void*, void*> rangeImpl() const { return { nullptr, nullptr }; };
     JS_EXPORT_PRIVATE const RegisterAtOffsetList* calleeSaveRegistersImpl();
 
+    // FIXME: Do we really need this. We only use it for gating tier up so we can
+    // compute it from the instance + m_functionSpaceIndex in Callee.
     FunctionCodeIndex m_functionIndex;
     CodePtr<WasmEntryPtrTag> m_entrypoint;
 
-    const uint8_t* m_bytecode;
-    const uint8_t* m_bytecodeEnd;
-    Vector<uint8_t> m_metadata;
-    Vector<uint8_t> m_localInitBytecode;
+    // m_bytecode points at raw function body (including locals header).
+    // Opcodes start at m_bytecode + m_data->m_bytecodeOffset.
+    // FIXME: Maybe this should be an offset to the start of the code. Could also be a tagged union with
+    // m_data as we won't need it after we've initialzed.
+    const uint8_t* m_bytecode { nullptr };
+    const uint8_t* m_bytecodeEnd { nullptr };
     RefPtr<const RTT> m_signatureRTT;
-    Vector<FunctionSpaceIndex> m_callTargets;
+    ThreadSafeLazyUniquePtr<IPIntData> m_data;
 
-    unsigned m_localSizeToAlloc;
-    unsigned m_numRethrowSlotsToAlloc;
-    unsigned m_numLocals;
-    unsigned m_numArgumentsOnStack;
-    unsigned m_maxFrameSizeInV128;
-    unsigned m_maxCalleeStackSize;
     mutable unsigned m_codeHash { 0 };
 
-    IPIntTierUpCounter m_tierUpCounter;
+    Lock m_lazyInitLock;
 };
 
 using IPIntCallees = ThreadSafeRefCountedFixedVector<Ref<IPIntCallee>>;

@@ -176,7 +176,8 @@ void JSWebAssembly::webAssemblyModuleValidateAsync(JSGlobalObject* globalObject,
     dependencies.append(globalObject);
 
     auto weakTicket = vm.deferredWorkTimer->addPendingWork(DeferredWorkTimer::WorkType::ImminentlyScheduled, vm, promise, WTF::move(dependencies));
-    Wasm::Module::validateAsync(vm, WTF::move(source), createSharedTask<Wasm::Module::CallbackType>([weakTicket = WTF::move(weakTicket), compileOptions = WTF::move(compileOptions), &vm] (Wasm::Module::ValidationResult&& result) mutable {
+    auto compilerMode = (compileOptions && compileOptions->eagerValidate()) ? Wasm::CompilerMode::ValidateFull : Wasm::CompilerMode::ValidateNonCode;
+    Wasm::Module::validateAsync(vm, WTF::move(source), compilerMode, createSharedTask<Wasm::Module::CallbackType>([weakTicket = WTF::move(weakTicket), compileOptions = WTF::move(compileOptions), &vm] (Wasm::Module::ValidationResult&& result) mutable {
         vm.deferredWorkTimer->scheduleWorkSoonIfActive(weakTicket, [result = WTF::move(result), compileOptions = WTF::move(compileOptions), &vm](DeferredWorkTimer::Ticket& ticket) mutable {
             auto* promise = uncheckedDowncast<JSPromise>(ticket.target());
             auto* globalObject = uncheckedDowncast<JSGlobalObject>(ticket.dependencies()[0]);
@@ -300,7 +301,8 @@ static void compileAndInstantiate(VM& vm, JSGlobalObject* globalObject, JSPromis
         auto sourceURLString = sourceProvider->sourceOrigin().url().string();
         sourceURL = Wasm::Name(byteCast<char8_t>(sourceURLString.utf8().span()));
     }
-    Wasm::Module::validateAsync(vm, WTF::move(source), WTF::move(sourceURL), createSharedTask<Wasm::Module::CallbackType>([weakTicket = WTF::move(weakTicket), importObject, sourceProvider = WTF::move(sourceProvider), compileOptions = WTF::move(compileOptions), resolveKind, creationMode, &vm] (Wasm::Module::ValidationResult&& result) mutable {
+    auto compilerMode = (compileOptions && compileOptions->eagerValidate()) ? Wasm::CompilerMode::ValidateFull : Wasm::CompilerMode::ValidateNonCode;
+    Wasm::Module::validateAsync(vm, WTF::move(source), compilerMode, WTF::move(sourceURL), createSharedTask<Wasm::Module::CallbackType>([weakTicket = WTF::move(weakTicket), importObject, sourceProvider = WTF::move(sourceProvider), compileOptions = WTF::move(compileOptions), resolveKind, creationMode, &vm] (Wasm::Module::ValidationResult&& result) mutable {
         vm.deferredWorkTimer->scheduleWorkSoonIfActive(weakTicket, [importObject, sourceProvider = WTF::move(sourceProvider), compileOptions = WTF::move(compileOptions), result = WTF::move(result), resolveKind, creationMode, &vm](DeferredWorkTimer::Ticket& ticket) mutable {
             auto* promise = uncheckedDowncast<JSPromise>(ticket.target());
             auto& deps = ticket.dependencies();
@@ -434,7 +436,7 @@ JSC_DEFINE_HOST_FUNCTION(webAssemblyValidateFunc, (JSGlobalObject* globalObject,
         }
     }
 
-    auto validationResult = Wasm::Module::validateSync(vm, WTF::move(source));
+    auto validationResult = Wasm::Module::validateSync(vm, WTF::move(source), Wasm::CompilerMode::ValidateFull);
     bool success = validationResult.has_value();
     if (success) {
         auto compileOptions = WebAssemblyCompileOptions::tryCreate(globalObject, compileOptionsObject);

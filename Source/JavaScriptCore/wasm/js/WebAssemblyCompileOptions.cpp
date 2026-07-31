@@ -29,6 +29,8 @@
 #if ENABLE(WEBASSEMBLY)
 
 #include "IteratorOperations.h"
+#include "JSCJSValueInlines.h"
+#include "Options.h"
 #include "WasmModuleInformation.h"
 #include "WebAssemblyBuiltin.h"
 
@@ -73,6 +75,20 @@ std::optional<WebAssemblyCompileOptions> WebAssemblyCompileOptions::tryCreate(JS
         RETURN_IF_EXCEPTION(scope, std::nullopt);
         if (sawBadEntries) {
             auto error = createTypeError(globalObject, "builtins list option values must be strings"_s);
+            throwException(globalObject, scope, error);
+            return std::nullopt;
+        }
+    }
+
+    // Check for the non-standard 'eagerValidate' entry, gated by a JSC option so that
+    // it is silently ignored in web embeddings.
+    if (Options::acceptEagerWasmValidationOption()) {
+        JSValue eagerValidateValue = optionsObject->get(globalObject, PropertyName(Identifier::fromString(vm, "eagerValidate"_s)));
+        RETURN_IF_EXCEPTION(scope, std::nullopt);
+        if (eagerValidateValue.isBoolean())
+            options.m_eagerValidate = eagerValidateValue.asBoolean();
+        else if (!eagerValidateValue.isUndefined()) {
+            auto error = createTypeError(globalObject, "eagerValidate option value must be a boolean"_s);
             throwException(globalObject, scope, error);
             return std::nullopt;
         }

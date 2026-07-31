@@ -4130,6 +4130,7 @@ void CommandLine::parseArguments(int argc, char** argv, int start)
     Options::AllowUnfinalizedAccessScope scope;
     Options::initialize([] {
         Options::useSharedArrayBuffer() = true;
+        Options::acceptEagerWasmValidationOption() = true;
 #if PLATFORM(IOS_FAMILY) && !PLATFORM(APPLETV) && !PLATFORM(WATCHOS)
         Options::crashIfCantAllocateJITMemory() = true;
 #endif

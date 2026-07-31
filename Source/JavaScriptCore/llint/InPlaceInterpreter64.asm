@@ -171,12 +171,15 @@ macro ipintEntry()
     const argumINTEndAsScratch = argumINTEnd
     checkStackOverflow(ws0, argumINTEndAsScratch)
 
+    # Load IPIntData pointer for accessing per-function metadata fields.
+    loadp Wasm::IPIntCallee::m_data[ws0], ws1
+
     # Allocate space for locals and rethrow values
     if ARM64 or ARM64E
-        loadpairi Wasm::IPIntCallee::m_localSizeToAlloc[ws0], argumINTTmp, argumINTEnd
+        loadpairi Wasm::IPIntCallee::IPIntData::m_localSizeToAlloc[ws1], argumINTTmp, argumINTEnd
     else
-        loadi Wasm::IPIntCallee::m_localSizeToAlloc[ws0], argumINTTmp
-        loadi Wasm::IPIntCallee::m_numRethrowSlotsToAlloc[ws0], argumINTEnd
+        loadi Wasm::IPIntCallee::IPIntData::m_localSizeToAlloc[ws1], argumINTTmp
+        loadi Wasm::IPIntCallee::IPIntData::m_numRethrowSlotsToAlloc[ws1], argumINTEnd
     end
     mulp LocalSize, argumINTEnd
     mulp LocalSize, argumINTTmp

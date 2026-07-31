@@ -6024,6 +6024,14 @@ InliningNode* OMGIRGenerator::canInline(FunctionSpaceIndex functionIndexSpace, u
     if (result->depth() > 1 && !StackCheck(Thread::currentSingleton().stack(), StackBounds::DefaultReservedZone * 2).isSafeToRecurse())
         return nullptr;
 
+    // Beyond being obviously not profitable to inline a function that has never
+    // been called. A lazy IPInt callee hasn't been parsed yet, so its hasExceptionHandlers()
+    // reports false even if the inlinee has try/catch. Inlining it would emit
+    // call patchpoints with no stackmap collection and corrupt unwinding state
+    // on a thrown exception.
+    if (m_calleeGroup.ipintCalleeFromFunctionIndexSpace(functionIndexSpace)->isLazy())
+        return nullptr;
+
     return result;
 }
 

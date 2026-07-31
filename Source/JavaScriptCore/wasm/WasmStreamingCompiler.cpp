@@ -146,7 +146,8 @@ void StreamingCompiler::didComplete()
 
     auto result = makeValidationResult(*m_plan);
     switch (m_compilerMode) {
-    case CompilerMode::Validation: {
+    case CompilerMode::ValidateFull:
+    case CompilerMode::ValidateNonCode: {
         m_vm.deferredWorkTimer->scheduleWorkSoonIfActive(m_ticket, [result = WTF::move(result), compileOptions = WTF::move(m_compileOptions)](DeferredWorkTimer::Ticket& ticket) mutable {
             JSPromise* promise = uncheckedDowncast<JSPromise>(ticket.target());
             JSGlobalObject* globalObject = uncheckedDowncast<JSGlobalObject>(ticket.dependencies()[0]);

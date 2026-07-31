@@ -46,6 +46,7 @@ public:
 
     const std::optional<String>& importedStringConstants() const LIFETIME_BOUND { return m_importedStringConstants; }
     const Vector<String>& qualifiedBuiltinSetNames() const LIFETIME_BOUND { return m_qualifiedBuiltinSetNames; }
+    bool eagerValidate() const { return m_eagerValidate; }
 
     // Validate the options in the context of the given module as specified in
     // https://webassembly.github.io/js-string-builtins/js-api/#validate-builtins-and-imported-string-for-a-webassembly-module.
@@ -58,6 +59,7 @@ private:
 
     std::optional<String> m_importedStringConstants;
     Vector<String> m_qualifiedBuiltinSetNames;
+    bool m_eagerValidate { false };
 };
 
 } // namespace JSC

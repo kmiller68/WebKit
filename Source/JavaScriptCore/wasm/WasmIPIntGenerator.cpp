@@ -31,9 +31,14 @@
 
 #include "BytecodeGeneratorBaseInlines.h"
 #include "BytecodeStructs.h"
+#include "InPlaceInterpreter.h"
 #include "InstructionStream.h"
 #include "JSCJSValueInlines.h"
+#include "LLIntData.h"
+#include "LLIntThunks.h"
 #include "Label.h"
+#include "Options.h"
+#include "WasmCallee.h"
 #include "WasmCallingConvention.h"
 #include "WasmContext.h"
 #include "WasmFunctionIPIntMetadataGenerator.h"
@@ -2994,6 +2999,38 @@ Expected<std::unique_ptr<FunctionIPIntMetadataGenerator>, String> parseAndCompil
     FunctionParser<IPIntGenerator> parser(generator, function, signature, info);
     WASM_FAIL_IF_HELPER_FAILS(parser.parse());
     return generator.finalize();
+}
+
+Expected<CodePtr<WasmEntryPtrTag>, String> parseAndInitializeIPIntCallee(IPIntCallee& callee, ModuleInformation& info)
+{
+    auto functionIndex = callee.functionIndex();
+    const auto& function = info.functions[functionIndex];
+    auto typeSignatureIndex = info.internalFunctionTypeSignatureIndices[functionIndex];
+    const auto& signature = info.rtt(typeSignatureIndex);
+
+    auto parseResult = parseAndCompileMetadata(function.data, signature, info, functionIndex);
+    if (!parseResult)
+        return makeUnexpected(WTF::move(parseResult.error()));
+
+    callee.initializeMetadata(**parseResult);
+
+    bool usesSIMD = info.usesSIMD(functionIndex);
+    // Immediately tier up to BBQ for SIMD, if necessary.
+    if (usesSIMD && !Options::useWasmIPIntSIMD())
+        callee.tierUpCounter().setNewThreshold(0);
+
+    if (usesSIMD && !Options::useBBQJIT() && !Options::useWasmIPIntSIMD())
+        return makeUnexpected("JIT is disabled, but the entrypoint requires JIT"_s);
+
+    CodePtr<WasmEntryPtrTag> entrypoint;
+#if ENABLE(JIT)
+    if (Options::useJIT())
+        entrypoint = LLInt::inPlaceInterpreterEntryThunk().retaggedCode<WasmEntryPtrTag>();
+#endif
+    if (!entrypoint)
+        entrypoint = LLInt::getCodeFunctionPtr<CFunctionPtrTag>(ipint_trampoline);
+
+    return entrypoint;
 }
 
 void parseForDebugInfo(std::span<const uint8_t> function, const RTT& signature, ModuleInformation& info, FunctionCodeIndex functionIndex, FunctionDebugInfo& debugInfo)
