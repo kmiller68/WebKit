@@ -76,9 +76,15 @@ public:
         : m_functionIndex(functionIndex)
         , m_bytecode(bytecode)
     {
+        // Metadata comes to a bit under one byte per byte of function body, so sizing the
+        // buffer from the body up front usually avoids growing it at all. Growing means
+        // copying everything emitted so far, and the buffer is discarded once the metadata
+        // has been copied into the callee, so over-estimating costs only transient memory.
+        m_metadata.reserveInitialCapacity(std::max<size_t>(minimumMetadataCapacity, bytecode.size()));
     }
 
     FunctionCodeIndex functionIndex() const { return m_functionIndex; }
+    bool usesSIMD() const { return m_usesSIMD; }
 
     const uint8_t* getBytecode() const LIFETIME_BOUND { return m_bytecode.data(); }
     const uint8_t* getMetadata() const LIFETIME_BOUND { return m_metadata.span().data(); }
@@ -93,6 +99,8 @@ public:
     }
 
 private:
+    static constexpr size_t minimumMetadataCapacity = 32;
+
     struct MetadataBufferMalloc final : public FastMalloc {
         static constexpr ALWAYS_INLINE size_t nextCapacity(size_t capacity) { return capacity + capacity; }
     };
@@ -133,6 +141,10 @@ private:
     unsigned m_numArguments { 0 };
     unsigned m_numArgumentsOnStack { 0 };
     unsigned m_nonArgLocalOffset { 0 };
+    // IPIntCallee arms its tier-up counter from this while initializing. It holds the same
+    // answer ModuleInformation::usesSIMD() gives, which includes the testing option that
+    // forces every function to count as using SIMD.
+    bool m_usesSIMD { false };
     Vector<FunctionSpaceIndex> m_callTargets { };
     Vector<uint8_t, 8> m_localInitBytecode { };
 

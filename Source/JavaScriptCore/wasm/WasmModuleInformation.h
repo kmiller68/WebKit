@@ -127,10 +127,24 @@ struct ModuleInformation final : public ThreadSafeRefCounted<ModuleInformation> 
 
     size_t functionWasmSizeImportSpace(FunctionSpaceIndex index) const { return functionWasmSize(toCodeIndex(index)); }
 
+    // A function's flags are set by its validator, and lazy validation lets two threads
+    // validate the same function at once: one may still be writing its (identical) flags
+    // while another has already published and a third reads them. So every access goes
+    // through the atomic byte, and the setters OR their bit in rather than storing. The cast
+    // is because Atomic cannot wrap a const type.
+    //
+    // The setters also assert the matching boolean afterwards. Bit position within a
+    // bitfield is not guaranteed to follow declaration order, and reading the inactive
+    // union member rules out a static_assert, so this pins the layout in debug builds.
+    uint8_t functionFlags(FunctionCodeIndex index) const
+    {
+        return WTF::atomicLoad(const_cast<uint8_t*>(&functions[index].flags.bits));
+    }
+
     size_t functionWasmSize(FunctionCodeIndex index) const
     {
         ASSERT(index < internalFunctionCount());
-        ASSERT(functions[index].finishedValidating);
+        ASSERT(functionFlags(index) & FunctionData::finishedValidatingBit);
         return functions[index].end - functions[index].start;
     }
 
@@ -138,7 +152,7 @@ struct ModuleInformation final : public ThreadSafeRefCounted<ModuleInformation> 
     bool usesSIMD(FunctionCodeIndex index) const
     {
         ASSERT(index < internalFunctionCount());
-        ASSERT(functions[index].finishedValidating);
+        ASSERT(functionFlags(index) & FunctionData::finishedValidatingBit);
 
         // See also: B3Procedure::usesSIMD().
         if (!Options::useWasmSIMD())
@@ -147,16 +161,51 @@ struct ModuleInformation final : public ThreadSafeRefCounted<ModuleInformation> 
             return true;
         ASSERT(Options::useWasmIPInt());
 
-        return functions[index].usesSIMD;
+        return functionFlags(index) & FunctionData::usesSIMDBit;
     }
-    void markUsesSIMD(FunctionCodeIndex index) { ASSERT(index < internalFunctionCount()); ASSERT(!functions[index].finishedValidating); functions[index].usesSIMD = true; }
+    void markUsesSIMD(FunctionCodeIndex index)
+    {
+        ASSERT(index < internalFunctionCount());
+        auto& function = functions[index];
+        WTF::atomicExchangeOr(&function.flags.bits, FunctionData::usesSIMDBit);
+        ASSERT(function.flags.usesSIMD);
+    }
 
-    bool usesExceptions(FunctionCodeIndex index) const { ASSERT(index < internalFunctionCount()); ASSERT(functions[index].finishedValidating); return functions[index].usesExceptions; }
-    void markUsesExceptions(FunctionCodeIndex index) { ASSERT(index < internalFunctionCount()); ASSERT(!functions[index].finishedValidating); functions[index].usesExceptions = true; }
-    bool usesAtomics(FunctionCodeIndex index) const { ASSERT(index < internalFunctionCount()); ASSERT(functions[index].finishedValidating); return functions[index].usesAtomics; }
-    void markUsesAtomics(FunctionCodeIndex index) { ASSERT(index < internalFunctionCount()); ASSERT(!functions[index].finishedValidating); functions[index].usesAtomics = true; }
+    bool usesExceptions(FunctionCodeIndex index) const
+    {
+        ASSERT(index < internalFunctionCount());
+        ASSERT(functionFlags(index) & FunctionData::finishedValidatingBit);
+        return functionFlags(index) & FunctionData::usesExceptionsBit;
+    }
+    void markUsesExceptions(FunctionCodeIndex index)
+    {
+        ASSERT(index < internalFunctionCount());
+        auto& function = functions[index];
+        WTF::atomicExchangeOr(&function.flags.bits, FunctionData::usesExceptionsBit);
+        ASSERT(function.flags.usesExceptions);
+    }
 
-    void doneSeeingFunction(FunctionCodeIndex index) { ASSERT(index < internalFunctionCount()); ASSERT(!functions[index].finishedValidating); functions[index].finishedValidating = true; }
+    bool usesAtomics(FunctionCodeIndex index) const
+    {
+        ASSERT(index < internalFunctionCount());
+        ASSERT(functionFlags(index) & FunctionData::finishedValidatingBit);
+        return functionFlags(index) & FunctionData::usesAtomicsBit;
+    }
+    void markUsesAtomics(FunctionCodeIndex index)
+    {
+        ASSERT(index < internalFunctionCount());
+        auto& function = functions[index];
+        WTF::atomicExchangeOr(&function.flags.bits, FunctionData::usesAtomicsBit);
+        ASSERT(function.flags.usesAtomics);
+    }
+
+    void doneSeeingFunction(FunctionCodeIndex index)
+    {
+        ASSERT(index < internalFunctionCount());
+        auto& function = functions[index];
+        WTF::atomicExchangeOr(&function.flags.bits, FunctionData::finishedValidatingBit);
+        ASSERT(function.flags.finishedValidating);
+    }
 
     bool hasGCObjectTypes() const { return m_hasGCObjectTypes; }
 

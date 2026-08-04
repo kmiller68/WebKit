@@ -642,13 +642,30 @@ struct GlobalInformation {
 
 struct FunctionData {
     WTF_DEPRECATED_MAKE_STRUCT_FAST_ALLOCATED(FunctionData);
+
+    static constexpr uint8_t usesSIMDBit = 1 << 0;
+    static constexpr uint8_t usesExceptionsBit = 1 << 1;
+    static constexpr uint8_t usesAtomicsBit = 1 << 2;
+    static constexpr uint8_t finishedValidatingBit = 1 << 3;
+
     size_t start;
     size_t end;
     Vector<uint8_t> data;
-    bool usesSIMD : 1 { false };
-    bool usesExceptions : 1 { false };
-    bool usesAtomics : 1 { false };
-    bool finishedValidating : 1 { false };
+
+    // Lazy validation lets two threads validate the same function concurrently, so these
+    // flags must be set with an atomic read-modify-write on `bits`. The bitfields alias it
+    // for readability; ModuleInformation's accessors are the only things that touch either,
+    // and they assert the bit positions match the declaration order.
+    union Flags {
+        uint8_t bits { 0 };
+        struct {
+            bool usesSIMD : 1;
+            bool usesExceptions : 1;
+            bool usesAtomics : 1;
+            bool finishedValidating : 1;
+        };
+    };
+    Flags flags { };
 };
 
 class I32InitExpr {

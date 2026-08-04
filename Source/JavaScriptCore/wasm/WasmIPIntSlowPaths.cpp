@@ -1131,10 +1131,6 @@ WASM_IPINT_EXTERN_CPP_DECL(lazy_initialize, CallFrame* callFrame)
     if (!callee->isLazy())
         WASM_RETURN_TWO(nullptr, nullptr);
 
-    Locker locker { callee->lazyInitLock() };
-    if (!callee->isLazy())
-        WASM_RETURN_TWO(nullptr, nullptr);
-
     auto& moduleInformation = const_cast<Wasm::ModuleInformation&>(instance->moduleInformation());
     auto entrypointResult = parseAndInitializeIPIntCallee(*callee, moduleInformation);
     if (!entrypointResult) [[unlikely]]

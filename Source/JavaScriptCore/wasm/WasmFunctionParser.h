@@ -2077,8 +2077,11 @@ ALWAYS_INLINE void FunctionParser<Context>::switchToBlock(ControlType&& block, u
     m_currentStackBegin = newBegin;
 }
 
+// The only caller is parseBody's per-opcode loop, so inlining here hoists this function's
+// prologue, epilogue and stack-protector check out of that loop: they are paid once per
+// function body instead of once per opcode.
 template<typename Context>
-auto FunctionParser<Context>::parseExpression() -> PartialResult
+ALWAYS_INLINE auto FunctionParser<Context>::parseExpression() -> PartialResult
 {
     switch (m_currentOpcode) {
 #define CREATE_CASE(name, id, b3op, inc, lhsType, rhsType, returnType) case OpType::name: return binaryCase(OpType::name, &Context::add##name, Types::returnType, Types::lhsType, Types::rhsType);

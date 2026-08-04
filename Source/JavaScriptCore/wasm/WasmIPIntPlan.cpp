@@ -116,7 +116,6 @@ void IPIntPlan::compileFunction(FunctionCodeIndex functionIndex)
     // Eager path: parse and initialize metadata now.
     beginCompilerSignpost(CompilationMode::IPIntMode, functionIndexSpace);
     m_unlinkedWasmToWasmCalls[functionIndex] = Vector<UnlinkedWasmToWasmCall>();
-    callee->assertNotYetRunnable();
     auto entrypointResult = parseAndInitializeIPIntCallee(callee.get(), m_moduleInformation.get());
     endCompilerSignpost(CompilationMode::IPIntMode, functionIndexSpace);
 

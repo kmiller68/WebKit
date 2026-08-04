@@ -547,7 +547,7 @@ public:
     {
         return m_parser->offset() - m_parser->currentOpcodeStartingOffset();
     }
-    void addTailCallCommonData(const RTT&, const CallInformation&);
+    void addTailCallCommonData(const RTT&, RTT::CallFrameSizes);
     void NODELETE didFinishParsingLocals()
     {
         m_metadata->m_bytecodeOffset = m_parser->offset();
@@ -616,15 +616,6 @@ public:
         }
     }
 
-    ALWAYS_INLINE const CallInformation& cachedCallInformationFor(const RTT& signature)
-    {
-        if (m_cachedSignature != &signature) {
-            m_cachedSignature = &signature;
-            m_cachedCallInformation = wasmCallingConvention().callInformationFor(signature, CallRole::Caller);
-        }
-        return m_cachedCallInformation;
-    }
-
     static constexpr bool NODELETE tierSupportsSIMD() { return true; }
     static constexpr bool validateFunctionBodySize = true;
 
@@ -682,9 +673,6 @@ private:
         Checked<int32_t> dMC = static_cast<int64_t>(to.mc) - static_cast<int64_t>(from.mc);
         return { dPC, dMC };
     }
-
-    CallInformation m_cachedCallInformation { };
-    const RTT* m_cachedSignature { nullptr };
 
     Checked<int32_t> m_argumentAndResultsStackSize;
 
@@ -939,9 +927,7 @@ IPIntGenerator::ExpressionType IPIntGenerator::addSIMDConstant(v128_t)
 
 [[nodiscard]] PartialResult IPIntGenerator::addArguments(const RTT& signature)
 {
-    const CallInformation callCC = wasmCallingConvention().callInformationFor(signature, CallRole::Callee);
-
-    ASSERT(callCC.headerAndArgumentStackSizeInBytes >= callCC.headerIncludingThisSizeInBytes);
+    RTT::CallFrameSizes callCC = signature.calleeCallFrameSizes();
     m_argumentAndResultsStackSize = WTF::roundUpToMultipleOf<stackAlignmentBytes()>(callCC.headerAndArgumentStackSizeInBytes) - callCC.headerIncludingThisSizeInBytes;
     ASSERT(!Options::useWasmIPInt() || !(m_argumentAndResultsStackSize % 16)); // mINT requires this
 
@@ -959,8 +945,8 @@ IPIntGenerator::ExpressionType IPIntGenerator::addSIMDConstant(v128_t)
     }
 #endif
 
-    signature.ensureArgumINTBytecode(callCC);
-    signature.ensureUINTBytecode(callCC);
+    signature.ensureArgumINTBytecode();
+    signature.ensureUINTBytecode();
     return { };
 }
 
@@ -2790,6 +2776,11 @@ void IPIntGenerator::endTryTable(const ControlType& data)
 
 auto IPIntGenerator::endTopLevel(std::span<const TypedExpression>) -> PartialResult
 {
+    // Mirrors ModuleInformation::usesSIMD(), which IPIntCallee can't consult while it is
+    // initializing: only the callee's own generator is guaranteed to describe the body it is
+    // about to publish metadata for.
+    m_metadata->m_usesSIMD = Options::useWasmSIMD() && (Options::forceAllFunctionsToUseSIMD() || m_usesSIMD);
+
     bool isNotDebugMode = !m_debugInfo;
     if (m_usesSIMD && isNotDebugMode)
         m_info.markUsesSIMD(m_metadata->functionIndex());
@@ -2800,7 +2791,7 @@ auto IPIntGenerator::endTopLevel(std::span<const TypedExpression>) -> PartialRes
 
 // Calls
 
-void IPIntGenerator::addTailCallCommonData(const RTT&, const CallInformation& callConvention)
+void IPIntGenerator::addTailCallCommonData(const RTT&, RTT::CallFrameSizes callConvention)
 {
     size_t stackArgumentsAndResultsInBytes = roundUpToMultipleOf<stackAlignmentBytes()>(callConvention.headerAndArgumentStackSizeInBytes) - callConvention.headerIncludingThisSizeInBytes;
     // The WASM stack slots are always 16-bytes.
@@ -2813,7 +2804,7 @@ void IPIntGenerator::addTailCallCommonData(const RTT&, const CallInformation& ca
 
 [[nodiscard]] PartialResult IPIntGenerator::addCall(unsigned callProfileIndex, FunctionSpaceIndex index, const RTT& signature, ArgumentList&, ResultList& results, CallType callType)
 {
-    const CallInformation& callConvention = cachedCallInformationFor(signature);
+    RTT::CallFrameSizes callConvention = signature.callerCallFrameSizes();
     m_metadata->addCallTarget(callProfileIndex, index);
 
     if (callType == CallType::TailCall) {
@@ -2861,7 +2852,7 @@ void IPIntGenerator::addTailCallCommonData(const RTT&, const CallInformation& ca
 
 [[nodiscard]] PartialResult IPIntGenerator::addCallIndirect(unsigned callProfileIndex, unsigned tableIndex, const RTT& signature, ArgumentList&, ResultList& results, CallType callType)
 {
-    const CallInformation& callConvention = cachedCallInformationFor(signature);
+    RTT::CallFrameSizes callConvention = signature.callerCallFrameSizes();
     m_metadata->addCallTarget(callProfileIndex, { });
 
     if (callType == CallType::TailCall) {
@@ -2913,7 +2904,7 @@ void IPIntGenerator::addTailCallCommonData(const RTT&, const CallInformation& ca
 
 [[nodiscard]] PartialResult IPIntGenerator::addCallRef(unsigned callProfileIndex, const RTT& signature, ArgumentList&, ResultList& results, CallType callType)
 {
-    const CallInformation& callConvention = cachedCallInformationFor(signature);
+    RTT::CallFrameSizes callConvention = signature.callerCallFrameSizes();
     m_metadata->addCallTarget(callProfileIndex, { });
 
     if (callType == CallType::TailCall) {
@@ -3012,12 +3003,8 @@ Expected<CodePtr<WasmEntryPtrTag>, String> parseAndInitializeIPIntCallee(IPIntCa
     if (!parseResult)
         return makeUnexpected(WTF::move(parseResult.error()));
 
+    bool usesSIMD = (*parseResult)->usesSIMD();
     callee.initializeMetadata(**parseResult);
-
-    bool usesSIMD = info.usesSIMD(functionIndex);
-    // Immediately tier up to BBQ for SIMD, if necessary.
-    if (usesSIMD && !Options::useWasmIPIntSIMD())
-        callee.tierUpCounter().setNewThreshold(0);
 
     if (usesSIMD && !Options::useBBQJIT() && !Options::useWasmIPIntSIMD())
         return makeUnexpected("JIT is disabled, but the entrypoint requires JIT"_s);

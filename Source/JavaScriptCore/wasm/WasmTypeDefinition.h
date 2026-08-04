@@ -68,6 +68,7 @@ class RTTGroup;
 class SectionParser;
 class TypeSectionState;
 struct CallInformation;
+enum class CallRole : uint8_t;
 
 // Shared aINT/uINT bytecode, canonicalized per signature. Aliased so
 // offlineasm can reference it without template syntax.
@@ -868,10 +869,20 @@ public:
     CodePtr<JSEntryPtrTag> jsToWasmICEntrypoint() const;
 #endif
 
+    // Function-kind only. The stack sizes the calling convention gives this signature, which
+    // every call site sharing the signature agrees on. This is all a caller needs to size its
+    // frame; the argument locations behind them are only needed to build the mINT bytecode.
+    struct CallFrameSizes {
+        uint32_t headerAndArgumentStackSizeInBytes;
+        uint32_t headerIncludingThisSizeInBytes;
+    };
+    CallFrameSizes callerCallFrameSizes() const;
+    CallFrameSizes calleeCallFrameSizes() const;
+
     // Function-kind only. Lazy-installed via a CAS in ThreadSafeLazyUniquePtr;
     // buffer is immutable once published.
-    void ensureArgumINTBytecode(const CallInformation&) const;
-    void ensureUINTBytecode(const CallInformation&) const;
+    void ensureArgumINTBytecode() const;
+    void ensureUINTBytecode() const;
 
     // Unified mINT call bytecode: [arg bytecode][Call][CallReturnMetadata][result bytecode][End].
     // MC walks through this buffer during the entire call -- arg dispatch leaves MC at
@@ -1031,6 +1042,13 @@ private:
     mutable RefPtr<JSToWasmICCallee> m_jsToWasmICCallee;
     mutable Lock m_jitCodeLock;
 #endif
+    // Function-kind only. Packed CallFrameSizes, zero until computed. Both halves are nonzero
+    // once set, so a zero word means "not computed yet"; two threads computing at the same
+    // time derive the same value, so the store needs no synchronization beyond atomicity.
+    CallFrameSizes cachedCallFrameSizes(Atomic<uint64_t>& cache, CallRole) const;
+
+    mutable Atomic<uint64_t> m_callerCallFrameSizes { 0 };
+    mutable Atomic<uint64_t> m_calleeCallFrameSizes { 0 };
     mutable ThreadSafeLazyUniquePtr<const IPIntSharedBytecode> m_argumINTBytecode;
     mutable ThreadSafeLazyUniquePtr<const IPIntSharedBytecode> m_uINTBytecode;
     mutable ThreadSafeLazyUniquePtr<const IPIntSharedBytecode> m_callBytecode;

@@ -43,7 +43,7 @@ struct FunctionDebugInfo;
 Expected<std::unique_ptr<FunctionIPIntMetadataGenerator>, String> parseAndCompileMetadata(std::span<const uint8_t>, const RTT&, ModuleInformation&, FunctionCodeIndex functionIndex);
 JS_EXPORT_PRIVATE void parseForDebugInfo(std::span<const uint8_t>, const RTT&, ModuleInformation&, FunctionCodeIndex, FunctionDebugInfo&);
 
-Expected<CodePtr<WasmEntryPtrTag>, String> parseAndInitializeIPIntCallee(IPIntCallee& callee, ModuleInformation&) WTF_REQUIRES_LOCK(callee.lazyInitLock());
+Expected<CodePtr<WasmEntryPtrTag>, String> parseAndInitializeIPIntCallee(IPIntCallee& callee, ModuleInformation&);
 
 } // namespace JSC::Wasm
 

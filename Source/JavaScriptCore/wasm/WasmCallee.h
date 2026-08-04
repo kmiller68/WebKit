@@ -84,7 +84,8 @@ public:
 
     const HandlerInfo* handlerForIndex(JSWebAssemblyInstance&, unsigned, const Tag*);
 
-    bool hasExceptionHandlers() const { return !m_exceptionHandlers.isEmpty(); }
+    const FixedVector<HandlerInfo>& exceptionHandlers() const LIFETIME_BOUND;
+    bool hasExceptionHandlers() const { return !exceptionHandlers().isEmpty(); }
 
     void dump(PrintStream&) const;
     void dumpSimpleName(PrintStream&) const;
@@ -106,6 +107,8 @@ public:
 protected:
     JS_EXPORT_PRIVATE Callee(Wasm::CompilationMode);
     JS_EXPORT_PRIVATE Callee(Wasm::CompilationMode, FunctionSpaceIndex, std::pair<const Name*, RefPtr<NameSection>>&&);
+
+    const FixedVector<HandlerInfo>& exceptionHandlersImpl() const LIFETIME_BOUND { return m_exceptionHandlers; }
 
     template<typename Func>
     void runWithDowncast(const Func&);
@@ -491,6 +494,7 @@ public:
 
         Vector<uint8_t> m_localInitBytecode;
         Vector<FunctionSpaceIndex> m_callTargets;
+        FixedVector<HandlerInfo> m_exceptionHandlers;
         IPIntTierUpCounter m_tierUpCounter;
 
         // Offset from raw function bytecode to the first opcode (post locals header).
@@ -530,7 +534,7 @@ public:
 
     FunctionCodeIndex functionIndex() const { return m_functionIndex; }
     bool isLazy() const { return !data(); }
-    void initializeMetadata(FunctionIPIntMetadataGenerator&) WTF_REQUIRES_LOCK(m_lazyInitLock);
+    void initializeMetadata(FunctionIPIntMetadataGenerator&);
     void setEntrypoint(CodePtr<WasmEntryPtrTag>);
     void setEntrypointWithoutRegistration(CodePtr<WasmEntryPtrTag>);
     void setName(std::pair<const Name*, RefPtr<NameSection>>&& name) { setIndexOrName(IndexOrName(index(), WTF::move(name))); }
@@ -553,9 +557,6 @@ public:
 
     FunctionSpaceIndex callTarget(unsigned callProfileIndex) const { return data()->m_callTargets[callProfileIndex]; }
 
-    Lock& lazyInitLock() LIFETIME_BOUND WTF_RETURNS_LOCK(m_lazyInitLock) { return m_lazyInitLock; }
-    void assertNotYetRunnable() const WTF_ASSERTS_ACQUIRED_LOCK(m_lazyInitLock);
-
     const RTT& signatureRTT() const LIFETIME_BOUND { return *m_signatureRTT; }
 
     using OutOfLineJumpTargets = UncheckedKeyHashMap<unsigned, int>;
@@ -571,6 +572,7 @@ private:
     CodePtr<WasmEntryPtrTag> entrypointImpl() const { return m_entrypoint; }
     std::tuple<void*, void*> rangeImpl() const { return { nullptr, nullptr }; };
     JS_EXPORT_PRIVATE const RegisterAtOffsetList* calleeSaveRegistersImpl();
+    const FixedVector<HandlerInfo>& exceptionHandlersImpl() const LIFETIME_BOUND;
 
     // FIXME: Do we really need this. We only use it for gating tier up so we can
     // compute it from the instance + m_functionSpaceIndex in Callee.
@@ -587,8 +589,6 @@ private:
     ThreadSafeLazyUniquePtr<IPIntData> m_data;
 
     mutable unsigned m_codeHash { 0 };
-
-    Lock m_lazyInitLock;
 };
 
 using IPIntCallees = ThreadSafeRefCountedFixedVector<Ref<IPIntCallee>>;

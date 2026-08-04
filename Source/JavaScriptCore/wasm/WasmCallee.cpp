@@ -240,10 +240,27 @@ void Callee::destroy(Callee* callee)
     });
 }
 
+static const FixedVector<HandlerInfo>& emptyExceptionHandlers()
+{
+    static NeverDestroyed<FixedVector<HandlerInfo>> empty;
+    return empty.get();
+}
+
+const FixedVector<HandlerInfo>& Callee::exceptionHandlers() const
+{
+    // Compilation modes whose Callee subclass is compiled out have nothing to dispatch to.
+    const FixedVector<HandlerInfo>* result = &emptyExceptionHandlers();
+    runWithDowncast([&](auto* derived) {
+        result = &derived->exceptionHandlersImpl();
+    });
+    return *result;
+}
+
 const HandlerInfo* Callee::handlerForIndex(JSWebAssemblyInstance& instance, unsigned index, const Tag* tag)
 {
-    ASSERT(hasExceptionHandlers());
-    return HandlerInfo::handlerForIndex(instance, m_exceptionHandlers, index, tag);
+    const auto& handlers = exceptionHandlers();
+    ASSERT(!handlers.isEmpty());
+    return HandlerInfo::handlerForIndex(instance, handlers, index, tag);
 }
 
 JITCallee::JITCallee(Wasm::CompilationMode compilationMode)
@@ -313,7 +330,6 @@ IPIntCallee::IPIntCallee(FunctionIPIntMetadataGenerator& generator, FunctionSpac
     , m_bytecodeEnd(generator.m_bytecode.data() + generator.m_bytecode.size() - 1)
     , m_signatureRTT(&signatureRTT)
 {
-    assertNotYetRunnable();
     initializeMetadata(generator);
 }
 
@@ -326,17 +342,12 @@ IPIntCallee::IPIntCallee(FunctionCodeIndex functionIndex, FunctionSpaceIndex ind
 {
 }
 
-void IPIntCallee::assertNotYetRunnable() const
-{
-#if ASSERT_ENABLED
-    Locker locker { NativeCalleeRegistry::singleton().getLock() };
-    ASSERT(!NativeCalleeRegistry::singleton().isValidCallee(const_cast<IPIntCallee*>(this)));
-#endif
-}
-
 void IPIntCallee::initializeMetadata(FunctionIPIntMetadataGenerator& generator)
 {
-    ASSERT(isLazy());
+    // Concurrent first callers of a lazily validated function each parse the body and race
+    // to install their candidate; the losers drop theirs and observe the winner's. Nothing
+    // the interpreter needs may therefore live outside the candidate, since the callee
+    // becomes runnable the instant the candidate is published.
     m_data.ensure([&] {
         auto data = IPIntData::create(generator.m_metadata.size());
         if (generator.m_metadata.size())
@@ -367,13 +378,13 @@ void IPIntCallee::initializeMetadata(FunctionIPIntMetadataGenerator& generator)
         }
 
         if (size_t count = generator.m_exceptionHandlers.size()) {
-            m_exceptionHandlers = FixedVector<HandlerInfo>(count);
+            data->m_exceptionHandlers = FixedVector<HandlerInfo>(count);
             for (size_t i = 0; i < count; i++) {
                 UnlinkedHandlerInfo unlinkedHandler = generator.m_exceptionHandlers[i];
                 unlinkedHandler.m_start += bytecodeOffset;
                 unlinkedHandler.m_end += bytecodeOffset;
                 unlinkedHandler.m_target += bytecodeOffset;
-                HandlerInfo& handler = m_exceptionHandlers[i];
+                HandlerInfo& handler = data->m_exceptionHandlers[i];
                 CodeLocationLabel<ExceptionHandlerPtrTag> target;
                 switch (unlinkedHandler.m_type) {
                 case HandlerType::Catch:
@@ -401,8 +412,22 @@ void IPIntCallee::initializeMetadata(FunctionIPIntMetadataGenerator& generator)
             }
         }
 
+        // Tier up to BBQ on the first call when SIMD isn't supported in IPInt. The counter
+        // must be armed before publication: the interpreter starts incrementing it, without
+        // atomics, as soon as the function becomes callable.
+        if (generator.m_usesSIMD && !Options::useWasmIPIntSIMD())
+            data->m_tierUpCounter.setNewThreshold(0);
+
         return data;
     });
+}
+
+const FixedVector<HandlerInfo>& IPIntCallee::exceptionHandlersImpl() const
+{
+    // A lazily validated function has no handlers until its body is parsed.
+    if (auto* data = this->data())
+        return data->m_exceptionHandlers;
+    return emptyExceptionHandlers();
 }
 
 void IPIntCallee::setEntrypoint(CodePtr<WasmEntryPtrTag> entrypoint)
