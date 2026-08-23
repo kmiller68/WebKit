@@ -75,6 +75,17 @@ public:
     virtual bool multiThreaded() const = 0;
 
     JS_EXPORT_PRIVATE void waitForCompletion();
+
+    // Runs the plan on the calling thread instead of handing it to the worklist, so its
+    // completion tasks also run here, before this returns.
+    //
+    // FIXME: Make this conditional before landing. It only pays off when the per-function work
+    // is trivial, which is the case for IPInt lazy parsing: the worklist fans one plan out over
+    // Options::numberOfWasmCompilerThreads() threads, and for ort-wasm-simd-threaded.wasm that
+    // makes the plan slower, 3.9 ms across 15 threads versus 2.3 ms on one, on top of the
+    // ~0.9 ms of eagerly creating the pool. With eager validation the fan-out is worth far more
+    // than it costs (8 ms versus 45 ms for the same module), so this must not be used there.
+    JS_EXPORT_PRIVATE void runSynchronously();
     // Returns true if it cancelled the plan.
     bool tryRemoveContextAndCancelIfLast(VM&);
 

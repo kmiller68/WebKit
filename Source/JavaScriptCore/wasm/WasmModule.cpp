@@ -86,8 +86,7 @@ static Plan::CompletionTask makeValidationCallback(Name&& sourceURL, Module::Asy
 Module::ValidationResult Module::validateSync(VM& vm, Vector<uint8_t>&& source, CompilerMode compilerMode)
 {
     Ref<IPIntPlan> plan = adoptRef(*new IPIntPlan(vm, WTF::move(source), compilerMode, Plan::dontFinalize()));
-    Wasm::ensureWorklist().enqueue(plan.get());
-    plan->waitForCompletion();
+    plan->runSynchronously();
     return makeValidationResult(plan.get());
 }
 
@@ -99,7 +98,7 @@ void Module::validateAsync(VM& vm, Vector<uint8_t>&& source, CompilerMode compil
 void Module::validateAsync(VM& vm, Vector<uint8_t>&& source, CompilerMode compilerMode, Name&& sourceURL, Module::AsyncValidationCallback&& callback)
 {
     Ref<Plan> plan = adoptRef(*new IPIntPlan(vm, WTF::move(source), compilerMode, makeValidationCallback(WTF::move(sourceURL), WTF::move(callback))));
-    Wasm::ensureWorklist().enqueue(WTF::move(plan));
+    plan->runSynchronously();
 }
 
 Ref<CalleeGroup> Module::getOrCreateCalleeGroup(VM& vm, MemoryMode mode)

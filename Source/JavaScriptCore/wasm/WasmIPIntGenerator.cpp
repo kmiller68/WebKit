@@ -587,14 +587,32 @@ public:
     void resolveEntryTarget(unsigned, IPIntLocation);
     void resolveExitTarget(unsigned, IPIntLocation);
 
+    void appendPendingTarget(uint32_t& head, IPIntLocation loc)
+    {
+        m_pendingTargets.append(PendingTarget { loc, head });
+        head = m_pendingTargets.size() - 1;
+    }
+
+    // Runs the functor over every location in the list and empties it.
+    template<typename Functor>
+    void drainPendingTargets(uint32_t& head, NOESCAPE const Functor& functor)
+    {
+        for (uint32_t index = head; index != noPendingTarget;) {
+            const PendingTarget& target = m_pendingTargets[index];
+            index = target.previous;
+            functor(target.location);
+        }
+        head = noPendingTarget;
+    }
+
     void tryToResolveEntryTarget(uint32_t index, IPIntLocation loc, uint8_t*)
     {
-        m_controlStructuresAwaitingCoalescing[index].m_awaitingEntryTarget.append(loc);
+        appendPendingTarget(m_controlStructuresAwaitingCoalescing[index].m_awaitingEntryTarget, loc);
     }
 
     void tryToResolveExitTarget(uint32_t index, IPIntLocation loc, uint8_t*)
     {
-        m_controlStructuresAwaitingCoalescing[index].m_awaitingExitTarget.append(loc);
+        appendPendingTarget(m_controlStructuresAwaitingCoalescing[index].m_awaitingExitTarget, loc);
     }
 
     void tryToResolveBranchTarget(ControlType& targetBlock, IPIntLocation loc, uint8_t* metadata)
@@ -612,7 +630,7 @@ public:
             RECORD_NEXT_INSTRUCTION(loc.pc, target.m_entryTarget.pc);
         } else {
             ASSERT(!target.m_exitResolved);
-            target.m_awaitingBranchTarget.append(loc);
+            appendPendingTarget(target.m_awaitingBranchTarget, loc);
         }
     }
 
@@ -629,10 +647,24 @@ private:
     const FunctionCodeIndex m_functionIndex;
     std::unique_ptr<FunctionIPIntMetadataGenerator> m_metadata;
 
+    // Every control structure awaiting coalescing has three lists of locations whose metadata is
+    // waiting on a target, and all of them live in one flat arena: a structure holds the index of
+    // its most recently added location, and each location holds the index of the previous one in
+    // the same list. That keeps ControlStructureAwaitingCoalescing small and trivially copyable,
+    // so growing the vector of them moves a few bytes per structure rather than relocating three
+    // inline vector buffers each. Lists are only appended to and drained, never indexed, so
+    // draining them in reverse order is not observable.
+    static constexpr uint32_t noPendingTarget = std::numeric_limits<uint32_t>::max();
+    struct PendingTarget {
+        IPIntLocation location;
+        uint32_t previous;
+    };
+
     struct ControlStructureAwaitingCoalescing {
-        Vector<IPIntLocation, 16> m_awaitingEntryTarget { };
-        Vector<IPIntLocation, 16> m_awaitingBranchTarget { };
-        Vector<IPIntLocation, 16> m_awaitingExitTarget { };
+        // Heads of this structure's pending target lists, which live in m_pendingTargets.
+        uint32_t m_awaitingEntryTarget { noPendingTarget };
+        uint32_t m_awaitingBranchTarget { noPendingTarget };
+        uint32_t m_awaitingExitTarget { noPendingTarget };
 
         IPIntLocation m_entryTarget { 0, 0 }; // where do we go when entering normally?
         IPIntLocation m_exitTarget { 0, 0 }; // where do we go when leaving?
@@ -643,6 +675,7 @@ private:
         bool m_exitResolved { false };
     };
     Vector<ControlStructureAwaitingCoalescing, 16> m_controlStructuresAwaitingCoalescing;
+    Vector<PendingTarget, 32> m_pendingTargets;
 
     struct QueuedCoalesceRequest {
         size_t index;
@@ -2116,8 +2149,10 @@ void IPIntGenerator::coalesceControlFlow(bool force)
     }
     m_coalesceQueue.shrink(0);
 
-    if (!m_coalesceDebt)
+    if (!m_coalesceDebt) {
         m_controlStructuresAwaitingCoalescing.shrink(0);
+        m_pendingTargets.shrink(0);
+    }
 
     for (auto& src : m_exitHandlersAwaitingCoalescing) {
         IPInt::BlockMetadata md = checkedDelta(here, src);
@@ -2131,21 +2166,15 @@ void IPIntGenerator::resolveEntryTarget(unsigned index, IPIntLocation loc)
 {
     auto& control = m_controlStructuresAwaitingCoalescing[index];
     ASSERT(!control.m_entryResolved);
-    for (auto& src : control.m_awaitingEntryTarget) {
+    auto resolve = [&](IPIntLocation src) {
         // write delta PC and delta MC
         IPInt::BlockMetadata md = checkedDelta(loc, src);
         WRITE_TO_METADATA(m_metadata->m_metadata.mutableSpan().data() + src.mc, md, IPInt::BlockMetadata);
         RECORD_NEXT_INSTRUCTION(src.pc, loc.pc); // FIXME: coalescing sequential blocks - should update instead of adding
-    }
-    if (control.isLoop) {
-        for (auto& src : control.m_awaitingBranchTarget) {
-            IPInt::BlockMetadata md = checkedDelta(loc, src);
-            WRITE_TO_METADATA(m_metadata->m_metadata.mutableSpan().data() + src.mc, md, IPInt::BlockMetadata);
-            RECORD_NEXT_INSTRUCTION(src.pc, loc.pc);
-        }
-        control.m_awaitingBranchTarget.clear();
-    }
-    control.m_awaitingEntryTarget.clear();
+    };
+    drainPendingTargets(control.m_awaitingEntryTarget, resolve);
+    if (control.isLoop)
+        drainPendingTargets(control.m_awaitingBranchTarget, resolve);
     control.m_entryResolved = true;
     control.m_entryTarget = loc;
 }
@@ -2154,21 +2183,15 @@ void IPIntGenerator::resolveExitTarget(unsigned index, IPIntLocation loc)
 {
     auto& control = m_controlStructuresAwaitingCoalescing[index];
     ASSERT(!control.m_exitResolved);
-    for (auto& src : control.m_awaitingExitTarget) {
+    auto resolve = [&](IPIntLocation src) {
         // write delta PC and delta MC
         IPInt::BlockMetadata md = checkedDelta(loc, src);
         WRITE_TO_METADATA(m_metadata->m_metadata.mutableSpan().data() + src.mc, md, IPInt::BlockMetadata);
         RECORD_NEXT_INSTRUCTION(src.pc, loc.pc);
-    }
-    if (!control.isLoop) {
-        for (auto& src : control.m_awaitingBranchTarget) {
-            IPInt::BlockMetadata md = checkedDelta(loc, src);
-            WRITE_TO_METADATA(m_metadata->m_metadata.mutableSpan().data() + src.mc, md, IPInt::BlockMetadata);
-            RECORD_NEXT_INSTRUCTION(src.pc, loc.pc);
-        }
-        control.m_awaitingBranchTarget.clear();
-    }
-    control.m_awaitingExitTarget.clear();
+    };
+    drainPendingTargets(control.m_awaitingExitTarget, resolve);
+    if (!control.isLoop)
+        drainPendingTargets(control.m_awaitingBranchTarget, resolve);
     control.m_exitResolved = true;
     control.m_exitTarget = loc;
 }
