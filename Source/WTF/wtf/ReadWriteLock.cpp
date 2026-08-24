@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2025 Apple Inc. All rights reserved.
+ * Copyright (C) 2017-2026 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -26,14 +26,17 @@
 #include "config.h"
 #include <wtf/ReadWriteLock.h>
 
+#include <wtf/LockAlgorithmInlines.h>
 #include <wtf/ParkingLot.h>
-#include <wtf/Threading.h>
+#include <limits>
 
 namespace WTF {
 
-// This magic number turns out to be optimal based on past JikesRVM experiments.
-// Same value used by WTF::Lock.
-static constexpr unsigned spinLimit = 40;
+// Both slow paths thread the last observed state through the loop by hand rather than using
+// Atomic::transaction, which reloads on every attempt. Every RMW here hands back the value it
+// saw — compareExchangeStrong returns the actual value on failure, exchangeOr and exchangeAdd
+// return the previous one — so a retry costs no load at all. The one place a fresh load is
+// wanted is the spin step, where re-reading is the whole point.
 
 void ReadWriteLock::readLockSlow()
 {
@@ -41,137 +44,130 @@ void ReadWriteLock::readLockSlow()
 
     for (;;) {
         uint32_t state = m_state.load(std::memory_order_relaxed);
-
-        // If no writer is held and no writer is waiting, try to acquire read lock.
-        if (!(state & (WriterHeldBit | WriterWaitingBit))) {
-            if (m_state.compareExchangeWeak(state, state + ReaderCountUnit, std::memory_order_acquire))
+        // Yield to writers that hold or are waiting for the lock. This is what keeps a
+        // stream of readers from starving a writer.
+        if (!(state & (WriterHeldBit | WriterWaitCountMask))) {
+            ASSERT((state & ReaderCountMask) != ReaderCountMask);
+            uint32_t actual = m_state.compareExchangeStrong(state, state + ReaderCountUnit, std::memory_order_acquire, std::memory_order_relaxed);
+            if (actual == state)
                 return;
+            state = actual;
             continue;
         }
 
-        // Writer is active or waiting. Spin first if no parked readers and under spin limit.
-        if (!(state & HasParkedReadersBit) && spinCount < spinLimit) {
-            spinCount++;
-            Thread::yield();
+        if (!(state & HasParkedReadersBit) && spinCount < LockSpin::spinLimit) {
+            LockSpin::spinStep(spinCount);
+            state = m_state.load(std::memory_order_relaxed);
             continue;
         }
 
-        // Set HasParkedReadersBit before parking.
-        if (!(state & HasParkedReadersBit)) {
-            if (!m_state.compareExchangeWeak(state, state | HasParkedReadersBit, std::memory_order_relaxed))
-                continue;
-            state |= HasParkedReadersBit;
-        }
+        if (!(state & HasParkedReadersBit))
+            state = m_state.exchangeOr(HasParkedReadersBit, std::memory_order_relaxed) | HasParkedReadersBit;
 
-        // Park on the reader queue.
-        ParkingLot::parkConditionally(
+        ParkingLot::ParkResult parkResult = ParkingLot::parkConditionally(
             readerParkingAddress(),
             [&]() -> bool {
-                // Validate: still need to wait if writer is held or waiting.
+                // Requiring HasParkedReadersBit is what makes it safe for a releasing writer
+                // to clear that bit after finding this queue empty: either we observe the
+                // clear and do not park, or our own set of the bit is what it observes.
+                // Without this, we could park having already had our bit cleared, and nobody
+                // would ever wake us.
                 uint32_t currentState = m_state.load(std::memory_order_relaxed);
-                return currentState & (WriterHeldBit | WriterWaitingBit);
+                return (currentState & (WriterHeldBit | WriterWaitCountMask))
+                    && (currentState & HasParkedReadersBit);
             },
             []() { },
             ParkingLot::Time::infinity());
 
-        // After waking, loop around and try again.
+        // The releasing writer added our reader count on our behalf under the queue lock, so
+        // we already hold a read lock and must not touch the state. Ordering comes from
+        // ParkingLot's per-thread parkingLock, which the unparker takes before signalling.
+        if (parkResult.token == ReadGranted)
+            return;
     }
 }
 
 void ReadWriteLock::readUnlockSlow()
 {
-    for (;;) {
-        uint32_t state = m_state.load(std::memory_order_relaxed);
-        ASSERT(state >> ReaderCountShift); // Must have at least one reader.
+    bool shouldWakeWriter = false;
 
-        uint32_t newState = state - ReaderCountUnit;
-        uint32_t newReaderCount = newState >> ReaderCountShift;
+    m_state.transaction([&](uint32_t& bits) -> bool {
+        ASSERT(bits & ReaderCountMask);
+        bits -= ReaderCountUnit;
+        shouldWakeWriter = !(bits & ReaderCountMask) && (bits & HasParkedWritersBit);
+        return true;
+    }, std::memory_order_release);
 
-        // If this is the last reader and there are parked writers, wake one.
-        if (!newReaderCount && (state & HasParkedWritersBit)) {
-            if (!m_state.compareExchangeWeak(state, newState, std::memory_order_release))
-                continue;
+    if (!shouldWakeWriter)
+        return;
 
-            // Wake one writer.
-            ParkingLot::unparkOne(
-                writerParkingAddress(),
-                [&](ParkingLot::UnparkResult result) -> intptr_t {
-                    if (!result.mayHaveMoreThreads) {
-                        // Clear HasParkedWritersBit since there are no more parked writers.
-                        m_state.transactionRelaxed([](uint32_t& value) -> bool {
-                            value &= ~HasParkedWritersBit;
-                            return true;
-                        });
-                    }
-                    return 0;
-                });
-            return;
-        }
-
-        // Not the last reader or no waiting writers, just decrement.
-        if (m_state.compareExchangeWeak(state, newState, std::memory_order_release))
-            return;
-    }
+    // The lock is already free, so the writer we wake has to contend for it. A stale
+    // HasParkedWritersBit heals here: with nobody to unpark, the callback clears it.
+    ParkingLot::unparkOne(
+        writerParkingAddress(),
+        [&](ParkingLot::UnparkResult result) -> intptr_t {
+            if (!result.mayHaveMoreThreads) {
+                m_state.exchangeAnd(~HasParkedWritersBit, std::memory_order_relaxed);
+            }
+            return BargingOpportunity;
+        });
 }
 
 void ReadWriteLock::writeLockSlow()
 {
     unsigned spinCount = 0;
-    bool setWaiting = false;
 
-    for (;;) {
-        uint32_t state = m_state.load(std::memory_order_relaxed);
+    // Register as a waiting writer, which holds new readers out. The count is exact: it
+    // is incremented once here and decremented only by whoever grants this writer the
+    // lock, so it is precisely the number of writers between entry and acquisition. That
+    // exactness is what reader liveness rests on — a nonzero count always has a live
+    // writer behind it, so the readers it blocks are guaranteed to be woken when that
+    // writer releases.
+    uint32_t previousState = m_state.exchangeAdd(WriterWaitCountUnit, std::memory_order_relaxed);
+    RELEASE_ASSERT((previousState & WriterWaitCountMask) != WriterWaitCountMask, previousState);
+    uint32_t state = previousState + WriterWaitCountUnit;
 
-        // If completely free (or only WriterWaitingBit is set by us), try to acquire.
-        if (state == 0 || (setWaiting && state == WriterWaitingBit)) {
-            uint32_t expected = setWaiting ? WriterWaitingBit : 0;
-            if (m_state.compareExchangeWeak(expected, WriterHeldBit, std::memory_order_acquire))
+    for (;; state = m_state.load(std::memory_order_relaxed)) {
+        // Retire our own registration as we take the lock. Note that this never consults
+        // the waiting-writer count, so no value of it can prevent a writer from acquiring.
+        if (!(state & (ReaderCountMask | WriterHeldBit))) {
+            ASSERT(state & WriterWaitCountMask);
+            // We want the exchange to fail if we're in a reader phase.
+            uint32_t desired = (state | WriterHeldBit) - WriterWaitCountUnit;
+            uint32_t actual = m_state.compareExchangeStrong(state, desired, std::memory_order_acquire, std::memory_order_relaxed);
+            if (actual == state)
                 return;
+            state = actual;
             continue;
         }
 
-        // Set WriterWaitingBit to block new readers (for fairness).
-        if (!setWaiting && !(state & WriterWaitingBit)) {
-            if (m_state.compareExchangeWeak(state, state | WriterWaitingBit, std::memory_order_relaxed)) {
-                setWaiting = true;
-                state |= WriterWaitingBit;
-            }
+        if (!(state & HasParkedWritersBit) && spinCount < LockSpin::spinLimit) {
+            LockSpin::spinStep(spinCount);
             continue;
         }
 
-        // Spin if under limit and no parked writers.
-        if (!(state & HasParkedWritersBit) && spinCount < spinLimit) {
-            spinCount++;
-            Thread::yield();
-            continue;
-        }
+        if (!(state & HasParkedWritersBit))
+            state = m_state.exchangeOr(HasParkedWritersBit, std::memory_order_relaxed) | HasParkedWritersBit;
 
-        // Set HasParkedWritersBit before parking.
-        if (!(state & HasParkedWritersBit)) {
-            if (!m_state.compareExchangeWeak(state, state | HasParkedWritersBit, std::memory_order_relaxed))
-                continue;
-            state |= HasParkedWritersBit;
-        }
-
-        // Park on the writer queue.
         ParkingLot::ParkResult parkResult = ParkingLot::parkConditionally(
             writerParkingAddress(),
             [&]() -> bool {
-                // Validate: still blocked if readers exist or writer is held.
+                // HasParkedWritersBit is required for the same reason as on the reader side:
+                // a releaser that clears it after finding this queue empty must not be able to
+                // do so while we are on our way to parking.
                 uint32_t currentState = m_state.load(std::memory_order_relaxed);
-                return (currentState & ReaderCountMask) || (currentState & WriterHeldBit);
+                return (currentState & (ReaderCountMask | WriterHeldBit))
+                    && (currentState & HasParkedWritersBit);
             },
             []() { },
             ParkingLot::Time::infinity());
 
-        // Check for direct handoff.
         if (parkResult.wasUnparked && parkResult.token == DirectHandoff) {
-            // The lock was handed directly to us.
+            // The releasing writer set WriterHeldBit and retired our registration for us.
             ASSERT(m_state.load(std::memory_order_relaxed) & WriterHeldBit);
             return;
         }
 
-        // Otherwise, loop around and try again (barging opportunity).
     }
 }
 
@@ -181,49 +177,94 @@ void ReadWriteLock::writeUnlockSlow()
         uint32_t state = m_state.load(std::memory_order_relaxed);
         ASSERT(state & WriterHeldBit);
 
-        // Check for parked writers first (writer preference to avoid starvation).
+        if (state & HasParkedReadersBit) {
+            // Hand the read lock to the whole parked cohort at once. Everything that decides
+            // who owns what happens inside the callback, with the queue lock held, so the
+            // count cannot change under us and no woken reader has to re-examine the state.
+            bool granted = false;
+            bool shouldWakeWriter = false;
+            ParkingLot::unparkCount(
+                readerParkingAddress(), std::numeric_limits<unsigned>::max(),
+                [&](ParkingLot::UnparkResult result) -> intptr_t {
+                    if (!result.unparkedCount) {
+                        // HasParkedReadersBit was stale: a reader set it and then acquired
+                        // without parking. Clear it, but keep holding the lock, because a
+                        // release here would drop the wakeup of anyone on the writer queue.
+                        m_state.exchangeAnd(~HasParkedReadersBit, std::memory_order_relaxed);
+                        return BargingOpportunity;
+                    }
+
+                    granted = true;
+                    m_state.transaction([&](uint32_t& bits) -> bool {
+                        bits &= ~WriterHeldBit;
+                        // We asked for every waiter at this address, so the queue is empty.
+                        // mayHaveMoreThreads is bucket-granular and would only leave the bit
+                        // stale here.
+                        bits &= ~HasParkedReadersBit;
+                        ASSERT((bits >> ReaderCountShift) + result.unparkedCount <= (ReaderCountMask >> ReaderCountShift));
+                        bits += result.unparkedCount * ReaderCountUnit;
+                        shouldWakeWriter = bits & HasParkedWritersBit;
+                        return true;
+                    }, std::memory_order_release);
+                    return ReadGranted;
+                });
+
+            if (!granted)
+                continue;
+
+            // A writer may be parked behind the cohort we just granted. Nothing else would
+            // wake it: the readers now holding the lock will only unpark a writer if the last
+            // one out sees HasParkedWritersBit, and it was set before they were counted in.
+            if (shouldWakeWriter) {
+                ParkingLot::unparkOne(
+                    writerParkingAddress(),
+                    [&](ParkingLot::UnparkResult result) -> intptr_t {
+                        if (!result.mayHaveMoreThreads)
+                            m_state.exchangeAnd(~HasParkedWritersBit, std::memory_order_relaxed);
+                        return BargingOpportunity;
+                    });
+            }
+            return;
+        }
+
         if (state & HasParkedWritersBit) {
             ParkingLot::unparkOne(
                 writerParkingAddress(),
                 [&](ParkingLot::UnparkResult result) -> intptr_t {
-                    if (result.didUnparkThread && result.timeToBeFair) {
-                        // Direct handoff: keep WriterHeldBit set, transfer lock to waiting writer.
-                        if (!result.mayHaveMoreThreads) {
-                            m_state.transactionRelaxed([](uint32_t& value) -> bool {
-                                value &= ~HasParkedWritersBit;
-                                return true;
-                            });
-                        }
+                    if (result.unparkedCount && result.timeToBeFair) {
+                        // Hand the lock over directly: keep WriterHeldBit set and retire the
+                        // woken writer's registration, since it returns without running the
+                        // acquire transaction that would otherwise have done so. This is exact
+                        // because we know we dequeued exactly one thread.
+                        m_state.transactionRelaxed([&](uint32_t& bits) -> bool {
+                            ASSERT(bits & WriterWaitCountMask);
+                            bits -= WriterWaitCountUnit;
+                            if (!result.mayHaveMoreThreads)
+                                bits &= ~HasParkedWritersBit;
+                            return true;
+                        });
                         return DirectHandoff;
                     }
 
-                    // Barging opportunity: release the lock, unparked thread competes.
-                    m_state.transactionRelaxed([&](uint32_t& value) -> bool {
-                        value &= ~WriterHeldBit;
+                    // Release and let the woken thread contend. A stale HasParkedWritersBit
+                    // heals here, since nothing was dequeued when there was nobody to wake.
+                    m_state.transaction([&](uint32_t& bits) -> bool {
+                        bits &= ~WriterHeldBit;
                         if (!result.mayHaveMoreThreads)
-                            value &= ~HasParkedWritersBit;
+                            bits &= ~HasParkedWritersBit;
                         return true;
-                    });
+                    }, std::memory_order_release);
                     return BargingOpportunity;
                 });
             return;
         }
 
-        // Check for parked readers.
-        if (state & HasParkedReadersBit) {
-            // Release the writer lock.
-            uint32_t newState = (state & ~WriterHeldBit) & ~HasParkedReadersBit;
-            if (!m_state.compareExchangeWeak(state, newState, std::memory_order_release))
-                continue;
-
-            // Wake ALL parked readers.
-            ParkingLot::unparkAll(readerParkingAddress());
-            return;
-        }
-
-        // No parked threads, just release the writer lock.
-        uint32_t newState = state & ~WriterHeldBit;
-        if (m_state.compareExchangeWeak(state, newState, std::memory_order_release))
+        // Nothing is parked, so release without waking anyone. This has to be a CAS from the
+        // state observed above rather than a blind clear: a thread can set either parked bit
+        // between that load and here, and releasing without noticing would drop its wakeup and
+        // leave it asleep forever with the lock free. Retrying re-reads the bit and routes to
+        // the branch that wakes it.
+        if (m_state.compareExchangeWeak(state, state & ~WriterHeldBit, std::memory_order_release, std::memory_order_relaxed))
             return;
     }
 }

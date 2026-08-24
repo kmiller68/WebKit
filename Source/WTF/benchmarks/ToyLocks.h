@@ -463,7 +463,7 @@ private:
                 continue;
             }
             
-            if (ParkingLot::unparkOne(&m_state).didUnparkThread) {
+            if (ParkingLot::unparkOne(&m_state).unparkedCount) {
                 // We unparked someone. There are now running and they hold the lock.
                 return;
             }

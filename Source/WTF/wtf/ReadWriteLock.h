@@ -26,61 +26,84 @@
 #pragma once
 
 #include <wtf/Atomics.h>
-#include <wtf/Noncopyable.h>
+#include <wtf/Nonmovable.h>
 
 namespace WTF {
 
-// This is a high-performance read-write lock implementation that uses ParkingLot directly,
-// following the same patterns as WTF::Lock. It enables concurrency between readers while
-// providing efficient fast paths for uncontended operations.
-//
-// Compared to the traditional Lock+Condition implementation:
-// - Fast paths use a single CAS operation (no internal lock acquisition)
-// - No thundering herd: uses selective wakeup via unparkOne/unparkAll
-// - Writer fairness: waiting writers block new readers to prevent starvation
+// A read-write lock built directly on ParkingLot, in the style of WTF::Lock.
 //
 // It's easiest to read lock like this:
 //     Locker locker { rwLock.read() };
 //
 // It's easiest to write lock like this:
 //     Locker locker { rwLock.write() };
-
+//
+// Fairness. Readers yield to writers: a reader that arrives while any writer is
+// waiting parks rather than joining. That alone would starve readers under a stream of
+// writers, so a writer releasing the lock hands the read lock directly to every reader it
+// wakes - it adds their count to the state on their behalf, under the queue lock, and tells
+// them so with a token. They therefore wake up already holding the lock, and cannot lose it
+// to a writer that acquires before they are scheduled. Granting rather than merely permitting
+// is what makes this bounded: a permitted reader that is slow to wake would find the
+// permission withdrawn and re-park, and a writer stream could repeat that indefinitely.
+// Writers are kept fair among themselves by ParkingLot's eventual-fairness mechanism, the
+// same way WTF::Lock does it.
+//
+// A read lock is not recursive: taking a second read lock on a thread that already
+// holds one deadlocks if a writer is waiting in between.
 class ReadWriteLock {
-    WTF_MAKE_NONCOPYABLE(ReadWriteLock);
+    WTF_MAKE_NONMOVABLE(ReadWriteLock);
     WTF_DEPRECATED_MAKE_FAST_ALLOCATED(ReadWriteLock);
 public:
     constexpr ReadWriteLock() = default;
 
-    void readLock()
+    bool tryReadLock()
     {
         uint32_t state = m_state.load(std::memory_order_relaxed);
-        if (!(state & (WriterHeldBit | WriterWaitingBit))) [[likely]] {
-            if (m_state.compareExchangeWeak(state, state + ReaderCountUnit, std::memory_order_acquire)) [[likely]]
-                return;
+        if (!(state & (WriterHeldBit | WriterWaitCountMask))) [[likely]] {
+            if (m_state.compareExchangeWeak(state, state + ReaderCountUnit, std::memory_order_acquire, std::memory_order_relaxed)) [[likely]]
+                return true;
         }
-        readLockSlow();
+        return false;
+    }
+
+    void readLock()
+    {
+        if (!tryReadLock())
+            readLockSlow();
     }
 
     void readUnlock()
     {
         uint32_t state = m_state.load(std::memory_order_relaxed);
-        uint32_t readerCount = state >> ReaderCountShift;
-        if (readerCount > 1 && !(state & HasParkedWritersBit)) [[likely]] {
+        ASSERT(state & ReaderCountMask);
+        // Only the last reader out has anything beyond a decrement to do: it wakes a
+        // writer, if one is waiting.
+        bool isLastReaderWithWork = (state & ReaderCountMask) == ReaderCountUnit
+            && (state & HasParkedWritersBit);
+        if (!isLastReaderWithWork) [[likely]] {
             if (m_state.compareExchangeWeak(state, state - ReaderCountUnit, std::memory_order_release)) [[likely]]
                 return;
         }
         readUnlockSlow();
     }
 
+    bool tryWriteLock()
+    {
+        return m_state.compareExchangeWeak(0u, WriterHeldBit, std::memory_order_acquire);
+    }
+
     void writeLock()
     {
-        if (m_state.compareExchangeWeak(0u, WriterHeldBit, std::memory_order_acquire)) [[likely]]
-            return;
-        writeLockSlow();
+        if (!tryWriteLock())
+            writeLockSlow();
     }
 
     void writeUnlock()
     {
+        // This deliberately requires the state to be exactly WriterHeldBit, so that a
+        // release can never skip writeUnlockSlow while anyone is parked. Do not widen it
+        // to ignore the parked bits.
         if (m_state.compareExchangeWeak(WriterHeldBit, 0u, std::memory_order_release)) [[likely]]
             return;
         writeUnlockSlow();
@@ -92,25 +115,37 @@ public:
     ReadLock& read();
     WriteLock& write();
 
+    // A lock that every thread has released must read back as zero. Tests assert this to
+    // catch state that leaks across acquisitions.
+    uint32_t stateForTesting() const { return m_state.load(std::memory_order_relaxed); }
+
 private:
-    // State encoding in a 32-bit word:
-    // Bits 31-16 (16 bits): Reader count (up to 65535 concurrent readers)
-    // Bit      3:           Writer waiting bit (blocks new readers for fairness)
-    // Bit      2:           Writer held bit
-    // Bit      1:           Has parked writers bit
-    // Bit      0:           Has parked readers bit
+    // State encoding in a 32-bit word. The fields are ordered so that the masks the hot
+    // paths test are contiguous runs of bits, and therefore single-instruction immediates:
+    // ReaderCountMask | WriterHeldBit and WriterHeldBit | WriterWaitCountMask.
+    //
+    // Bits 31-16 (16 bits): reader count
+    // Bit      15:          writer held
+    // Bits 14-2  (13 bits): waiting-writer count
+    // Bit       1:          has parked writers
+    // Bit       0:          has parked readers
     static constexpr uint32_t ReaderCountShift = 16;
     static constexpr uint32_t ReaderCountUnit = 1u << ReaderCountShift;
     static constexpr uint32_t ReaderCountMask = 0xFFFF0000;
-    static constexpr uint32_t WriterWaitingBit = 1u << 3;
-    static constexpr uint32_t WriterHeldBit = 1u << 2;
+    static constexpr uint32_t WriterHeldBit = 1u << 15;
+    static constexpr uint32_t WriterWaitCountShift = 2;
+    static constexpr uint32_t WriterWaitCountUnit = 1u << WriterWaitCountShift;
+    static constexpr uint32_t WriterWaitCountMask = 0x00007FFC;
     static constexpr uint32_t HasParkedWritersBit = 1u << 1;
     static constexpr uint32_t HasParkedReadersBit = 1u << 0;
 
-    // Tokens for ParkingLot handoff (matching Lock pattern)
+    // Tokens for ParkingLot handoff. BargingOpportunity and DirectHandoff match the Lock
+    // pattern; ReadGranted says the releasing writer already counted this reader in, so it
+    // holds a read lock and must not touch the state.
     enum Token : intptr_t {
         BargingOpportunity = 0,
-        DirectHandoff = 1
+        DirectHandoff = 1,
+        ReadGranted = 2
     };
 
     WTF_EXPORT_PRIVATE NEVER_INLINE void readLockSlow();
@@ -130,14 +165,14 @@ WTF_ALLOW_UNSAFE_BUFFER_USAGE_END
 
 class ReadWriteLock::ReadLock : public ReadWriteLock {
 public:
-    bool tryLock() { return false; }
+    bool tryLock() { return tryReadLock(); }
     void lock() { readLock(); }
     void unlock() { readUnlock(); }
 };
 
 class ReadWriteLock::WriteLock : public ReadWriteLock {
 public:
-    bool tryLock() { return false; }
+    bool tryLock() { return tryWriteLock(); }
     void lock() { writeLock(); }
     void unlock() { writeUnlock(); }
 };

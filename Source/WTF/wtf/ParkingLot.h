@@ -101,10 +101,9 @@ public:
             Time::infinity());
     }
 
-    // Unparking status given to you anytime you unparkOne().
     struct UnparkResult {
-        // True if some thread was unparked.
-        bool didUnparkThread { false };
+        // How many threads were unparked. Never more than the original count.
+        unsigned unparkedCount { 0 };
         // True if there may be more threads on this address. This may be conservatively true.
         bool mayHaveMoreThreads { false };
         // This bit is randomly set to true indicating that it may be profitable to unlock the lock
@@ -135,9 +134,31 @@ public:
     template<typename Callback>
     static void unparkOne(const void* address, const Callback& callback)
     {
-        unparkOneImpl(address, scopedLambdaRef<intptr_t(UnparkResult)>(callback));
+        unparkCountImpl(address, 1, scopedLambdaRef<intptr_t(UnparkResult)>(callback));
     }
-    
+
+    // Unparks up to count threads from the queue associated with the given address, and calls
+    // the given callback while the address is locked. The token the callback returns is
+    // delivered to every thread that was unparked.
+    //
+    // This is the bulk analogue of the expert-mode unparkOne(), which is itself implemented on
+    // top of it. Its reason to exist is that the callback runs before any of the unparked threads
+    // can proceed, and with the queue lock held, so a caller can transfer ownership of something
+    // to the whole cohort at once - the count it is given cannot change under it, and the token
+    // tells the woken threads that the transfer happened. Without that, each woken thread would
+    // have to re-examine shared state after waking, and would lose any race against a thread that
+    // acquired in the meantime.
+    //
+    // The callback runs under the queue lock even when nothing was dequeued, which is what makes
+    // acting on a zero count safe: a thread on its way to parking must take that same lock to
+    // validate and enqueue, so it either gets dequeued here or observes whatever the callback
+    // published and declines to park.
+    template<typename Callback>
+    static void unparkCount(const void* address, unsigned count, const Callback& callback)
+    {
+        unparkCountImpl(address, count, scopedLambdaRef<intptr_t(UnparkResult)>(callback));
+    }
+
     WTF_EXPORT_PRIVATE static unsigned unparkCount(const void* address, unsigned count);
 
     // Unparks every thread from the queue associated with the given address, which cannot be null.
@@ -172,9 +193,10 @@ private:
         const ScopedLambda<bool()>& validation,
         const ScopedLambda<void()>& beforeSleep,
         const TimeWithDynamicClockType& timeout);
-    
-    WTF_EXPORT_PRIVATE static void unparkOneImpl(
-        const void* address, const ScopedLambda<intptr_t(UnparkResult)>& callback);
+
+    WTF_EXPORT_PRIVATE static void unparkCountImpl(
+        const void* address, unsigned count,
+        const ScopedLambda<intptr_t(UnparkResult)>& callback);
 
     WTF_EXPORT_PRIVATE static void forEachImpl(const ScopedLambda<void(uintptr_t, const void*)>&);
 };
