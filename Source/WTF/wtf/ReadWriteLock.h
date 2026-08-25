@@ -76,17 +76,17 @@ public:
 
     void readUnlock()
     {
-        uint32_t state = m_state.load(std::memory_order_relaxed);
+        // An unconditional decrement, so unlike a compare-and-swap it cannot fail and retry when
+        // readers release concurrently. It also makes "we were the last reader" exact: the value
+        // this hands back is the state immediately before our own decrement, so no re-check is
+        // needed and readUnlockSlow() has nothing left to release.
+        uint32_t state = m_state.exchangeAdd(0u - ReaderCountUnit, std::memory_order_release);
         ASSERT(state & ReaderCountMask);
+        ASSERT(!(state & WriterHeldBit));
         // Only the last reader out has anything beyond a decrement to do: it hands the lock to
         // whoever is parked.
-        bool isLastReaderWithParked = (state & ReaderCountMask) == ReaderCountUnit
-            && (state & HasParkedMask);
-        if (!isLastReaderWithParked) [[likely]] {
-            if (m_state.compareExchangeWeak(state, state - ReaderCountUnit, std::memory_order_release)) [[likely]]
-                return;
-        }
-        readUnlockSlow();
+        if ((state & ReaderCountMask) == ReaderCountUnit && (state & HasParkedMask)) [[unlikely]]
+            readUnlockSlow();
     }
 
     bool tryWriteLock()

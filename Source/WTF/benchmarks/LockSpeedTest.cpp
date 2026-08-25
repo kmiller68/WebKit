@@ -60,10 +60,13 @@ unsigned numThreadsPerGroup;
 unsigned workPerCriticalSection;
 unsigned workBetweenCriticalSections;
 double secondsPerTest;
+// Microseconds a writer sleeps between acquisitions. Zero means hammer the lock, which is the
+// pathological case; a real workload with rare writes wants this nonzero.
+unsigned writerSleepUsec;
     
 [[noreturn]] void usage()
 {
-    printf("Usage: LockSpeedTest yieldspinlock|pausespinlock|wordlock|lock|barginglock|bargingwordlock|thunderlock|thunderwordlock|cascadelock|cascadewordlock|handofflock|unfairlock|mutex|all|readwritelock|pflock|sharedmutex|allrw <num thread groups> <num threads per group> <work per critical section> <work between critical sections> <spin limit> <seconds per test> [<num writers per group>]\n");
+    printf("Usage: LockSpeedTest yieldspinlock|pausespinlock|wordlock|lock|barginglock|bargingwordlock|thunderlock|thunderwordlock|cascadelock|cascadewordlock|handofflock|unfairlock|mutex|all|readwritelock|pflock|pftlock|pfblock|sharedmutex|allrw <num thread groups> <num threads per group> <work per critical section> <work between critical sections> <spin limit> <seconds per test> [<num writers per group> [<writer sleep usec>]]\n");
     exit(1);
 }
 
@@ -75,9 +78,9 @@ struct WithPadding {
 
 HashMap<CString, Vector<double>> results;
 
-void reportResult(const char* name, double value)
+void reportResult(const char* name, double value, const char* unit = "KHz")
 {
-    dataLogF("%s: %.3lf KHz\n", name, value);
+    dataLogF("%s: %.3lf %s\n", name, value, unit);
     results.add(name, Vector<double>()).iterator->value.append(value);
 }
 
@@ -163,6 +166,9 @@ struct RWBenchmark {
         Lock numIterationsLock;
         uint64_t numReadIterations = 0;
         uint64_t numWriteIterations = 0;
+        // How long writers spent inside writeLock(). With rare writes, this is what matters about a
+        // writer far more than its throughput does.
+        double totalWriteAcquireSeconds = 0;
 
         for (unsigned threadGroupIndex = numThreadGroups; threadGroupIndex--;) {
             words[threadGroupIndex].value = 0;
@@ -171,18 +177,23 @@ struct RWBenchmark {
                 bool isWriter = threadIndex < writersPerGroup;
                 threads[threadGroupIndex * numThreadsPerGroup + threadIndex] = Thread::create(
                     "Benchmark thread"_s,
-                    [threadGroupIndex, isWriter, &locks, &words, &keepGoing, &numIterationsLock, &numReadIterations, &numWriteIterations] () {
+                    [threadGroupIndex, isWriter, &locks, &words, &keepGoing, &numIterationsLock, &numReadIterations, &numWriteIterations, &totalWriteAcquireSeconds] () {
                         double localWord = 0;
                         double value = 1;
                         unsigned myNumIterations = 0;
+                        double myAcquireSeconds = 0;
                         while (keepGoing) {
                             if (isWriter) {
+                                MonotonicTime before = MonotonicTime::now();
                                 locks[threadGroupIndex].value.writeLock();
+                                myAcquireSeconds += (MonotonicTime::now() - before).seconds();
                                 for (unsigned j = workPerCriticalSection; j--;) {
                                     words[threadGroupIndex].value += value;
                                     value = words[threadGroupIndex].value;
                                 }
                                 locks[threadGroupIndex].value.writeUnlock();
+                                if (writerSleepUsec)
+                                    usleep(writerSleepUsec);
                             } else {
                                 locks[threadGroupIndex].value.readLock();
                                 for (unsigned j = workPerCriticalSection; j--;)
@@ -196,9 +207,10 @@ struct RWBenchmark {
                             myNumIterations++;
                         }
                         Locker locker { numIterationsLock };
-                        if (isWriter)
+                        if (isWriter) {
                             numWriteIterations += myNumIterations;
-                        else
+                            totalWriteAcquireSeconds += myAcquireSeconds;
+                        } else
                             numReadIterations += myNumIterations;
                     });
             }
@@ -219,6 +231,9 @@ struct RWBenchmark {
         reportResult(label, numReadIterations / seconds / 1000);
         snprintf(label, sizeof(label), "%s writes", name);
         reportResult(label, numWriteIterations / seconds / 1000);
+        // Reported in microseconds, not KHz, so it reads as a latency rather than a rate.
+        snprintf(label, sizeof(label), "%s write acquire", name);
+        reportResult(label, numWriteIterations ? totalWriteAcquireSeconds / numWriteIterations * 1000000 : 0, "usec");
     }
 };
 
@@ -257,14 +272,15 @@ int main(int argc, char** argv)
 {
     WTF::initialize();
     
-    if ((argc != 8 && argc != 9)
+    if ((argc != 8 && argc != 9 && argc != 10)
         || !parseValue(argv[2], &numThreadGroups)
         || !parseValue(argv[3], &numThreadsPerGroup)
         || !parseValue(argv[4], &workPerCriticalSection)
         || !parseValue(argv[5], &workBetweenCriticalSections)
         || !parseValue(argv[6], &toyLockSpinLimit)
         || sscanf(argv[7], "%lf", &secondsPerTest) != 1
-        || (argc == 9 && !parseValue(argv[8], &toyLockWritersPerGroup)))
+        || (argc >= 9 && !parseValue(argv[8], &toyLockWritersPerGroup))
+        || (argc >= 10 && !parseValue(argv[9], &writerSleepUsec)))
         usage();
     if (rangeVariable) {
         dataLog("Running with rangeMin = ", rangeMin, ", rangeMax = ", rangeMax, ", rangeStep = ", rangeStep, "\n");
