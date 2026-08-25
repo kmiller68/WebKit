@@ -74,27 +74,27 @@ ALWAYS_INLINE bool spinStep(unsigned& spinCount)
 
 void ReadWriteLock::readLockSlow(uint32_t observedPhase)
 {
-    // We are already counted in m_rin; all that remains is to wait out the writer whose phase we
+    // We are already counted in m_readersIn; all that remains is to wait out the writer whose phase we
     // collided with. Waiting for the phase field to *change* rather than to clear is what bounds this
     // to one writer: the next writer's phase carries a different id, so a queue of writers cannot
     // extend our wait.
     unsigned spinCount = 0;
     for (;;) {
-        uint32_t rin = m_rin.load(std::memory_order_acquire);
-        if ((rin & PhaseFieldMask) != observedPhase)
+        uint32_t readersIn = m_readersIn.load(std::memory_order_acquire);
+        if ((readersIn & s_phaseFieldMask) != observedPhase)
             return;
 
         if (ReadWriteLockInternal::spinStep(spinCount))
             continue;
 
-        if (!(rin & HasParkedReadersBit))
-            m_rin.exchangeOr(HasParkedReadersBit, std::memory_order_relaxed);
+        if (!(readersIn & s_hasParkedReadersBit))
+            m_readersIn.exchangeOr(s_hasParkedReadersBit, std::memory_order_relaxed);
 
         ParkingLot::parkConditionally(
             readerParkingAddress(),
             [&]() -> bool {
-                uint32_t currentRin = m_rin.load(std::memory_order_relaxed);
-                return (currentRin & PhaseFieldMask) == observedPhase && (currentRin & HasParkedReadersBit);
+                uint32_t currentReadersIn = m_readersIn.load(std::memory_order_relaxed);
+                return (currentReadersIn & s_phaseFieldMask) == observedPhase && (currentReadersIn & s_hasParkedReadersBit);
             },
             []() { },
             ParkingLot::Time::infinity());
@@ -109,7 +109,7 @@ void ReadWriteLock::readUnlockSlow()
         [&](ParkingLot::UnparkResult result) -> intptr_t {
             // Only one writer can be draining, so an empty queue means the bit was stale.
             if (!result.mayHaveMoreThreads)
-                m_rout.exchangeAnd(~WriterDrainParkedBit, std::memory_order_relaxed);
+                m_readersOut.exchangeAnd(~s_writerDrainParkedBit, std::memory_order_relaxed);
             return 0;
         });
 }
@@ -118,15 +118,15 @@ void ReadWriteLock::writeLockSlow(uint32_t target)
 {
     // We own the phase, so no more readers can join; wait for the ones already counted to leave.
     //
-    // This is an equality test, which relies on m_rout never advancing past a target: it counts
+    // This is an equality test, which relies on m_readersOut never advancing past a target: it counts
     // departures, and the target is the number of joins at the moment we claimed the phase, so the
     // two meet exactly once. Anything that departs without a matching join before that moment would
     // break it, both by satisfying us early and by moving the count past a value we may not have
     // observed yet - which is why tryReadLock() commits rather than joining and backing out.
     unsigned spinCount = 0;
     for (;;) {
-        uint32_t rout = m_rout.load(std::memory_order_acquire);
-        if ((rout & ReaderCountMask) == target)
+        uint32_t readersOut = m_readersOut.load(std::memory_order_acquire);
+        if ((readersOut & s_readerCountMask) == target)
             return;
 
         if (ReadWriteLockInternal::spinStep(spinCount))
@@ -134,16 +134,16 @@ void ReadWriteLock::writeLockSlow(uint32_t target)
 
         // Publish what we are waiting for before advertising that we are waiting, so a reader that
         // observes the bit is guaranteed to see the target too. Both this and a reader's departure are
-        // read-modify-writes on m_rout, so either the reader sees the bit and wakes us, or we observe
+        // read-modify-writes on m_readersOut, so either the reader sees the bit and wakes us, or we observe
         // its departure above and never park.
         m_drainTarget.store(target, std::memory_order_relaxed);
-        m_rout.exchangeOr(WriterDrainParkedBit, std::memory_order_release);
+        m_readersOut.exchangeOr(s_writerDrainParkedBit, std::memory_order_release);
 
         ParkingLot::parkConditionally(
             drainParkingAddress(),
             [&]() -> bool {
-                uint32_t currentRout = m_rout.load(std::memory_order_relaxed);
-                return (currentRout & ReaderCountMask) != target && (currentRout & WriterDrainParkedBit);
+                uint32_t currentReadersOut = m_readersOut.load(std::memory_order_relaxed);
+                return (currentReadersOut & s_readerCountMask) != target && (currentReadersOut & s_writerDrainParkedBit);
             },
             []() { },
             ParkingLot::Time::infinity());
@@ -159,7 +159,7 @@ void ReadWriteLock::writeUnlockSlow()
         [&](ParkingLot::UnparkResult) -> intptr_t {
             // We asked for every waiter at this address, so the queue is drained. mayHaveMoreThreads
             // is bucket-granular and would only leave the bit stale here.
-            m_rin.exchangeAnd(~HasParkedReadersBit, std::memory_order_relaxed);
+            m_readersIn.exchangeAnd(~s_hasParkedReadersBit, std::memory_order_relaxed);
             return 0;
         });
 }

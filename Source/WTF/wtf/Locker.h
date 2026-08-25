@@ -33,6 +33,7 @@
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
 
 #include <mutex>
+#include <optional>
 #include <wtf/Assertions.h>
 #include <wtf/Atomics.h>
 #include <wtf/Compiler.h>
@@ -166,15 +167,33 @@ public:
     // the capability without restating the mode it was taken in.
     ~Locker() WTF_RELEASES_GENERIC_LOCK()
     {
-        TSAN_ANNOTATE_HAPPENS_BEFORE(&m_lock);
-        m_lock.unlock();
+        if (m_isLocked) {
+            TSAN_ANNOTATE_HAPPENS_BEFORE(&m_lock);
+            m_lock.unlock();
+        }
     }
+
+    // Turn the read lock into a write lock, yielding a Locker for it if that succeeds. Either way this
+    // locker's read lock is gone afterwards, so it stops releasing anything of its own; the annotation
+    // says the same thing to the analysis that m_isLocked says at runtime. See
+    // ReadWriteLock::tryUpgrade() for why failure gives up the read lock too.
+    //
+    // The analysis cannot follow the returned locker. A scoped capability is a fact attached to a
+    // local declaration, not a value, so it survives neither being returned nor being wrapped in an
+    // optional, and writes to guarded data under it are unchecked. The lock is still released
+    // correctly; it is only the checking that stops at the boundary.
+    //
+    // Prefer adopting the write lock into a local Locker instead, which is checked in both
+    // directions; see ReadWriteLock::tryUpgrade(). This form is for callers that would rather not
+    // spell out the two-step.
+    std::optional<Locker<WriteLockView>> tryUpgrade() WTF_RELEASES_GENERIC_LOCK();
 
     Locker(const Locker<T>&) = delete;
     Locker& operator=(const Locker<T>&) = delete;
 
 private:
     T& m_lock;
+    bool m_isLocked { true };
 };
 
 // Unspecialized Locker that skips thread safety analysis.
