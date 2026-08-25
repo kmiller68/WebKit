@@ -27,10 +27,12 @@
 #define ToyLocks_h
 
 #include <mutex>
+#include <shared_mutex>
 #include <thread>
 #include <wtf/Atomics.h>
 #include <wtf/Lock.h>
 #include <wtf/ParkingLot.h>
+#include <wtf/ReadWriteLock.h>
 #include <wtf/Threading.h>
 #include <wtf/WordLock.h>
 
@@ -46,6 +48,21 @@
 namespace {
 
 unsigned toyLockSpinLimit = 40;
+
+// Number of threads in each group that write. The rest read. Only the read-write lock
+// benchmarks look at this.
+unsigned toyLockWritersPerGroup = 1;
+
+// Tell the CPU we are in a spin loop, so it can stop speculating and let a sibling thread
+// have the pipeline.
+inline void spinLoopHint()
+{
+#if CPU(X86_64)
+    asm volatile ("pause");
+#elif CPU(ARM64)
+    asm volatile ("isb sy");
+#endif
+}
 
 // This is the old WTF::SpinLock class, included here so that we can still compare our new locks to a
 // spinlock baseline.
@@ -85,13 +102,8 @@ public:
 
     void lock()
     {
-        while (!m_lock.compareExchangeWeak(0, 1, std::memory_order_acquire)) {
-#if CPU(X86_64)
-            asm volatile ("pause");
-#elif CPU(ARM64)
-            asm volatile ("isb sy");
-#endif
-        }
+        while (!m_lock.compareExchangeWeak(0, 1, std::memory_order_acquire))
+            spinLoopHint();
     }
 
     void unlock()
@@ -479,6 +491,94 @@ private:
     Atomic<unsigned> m_state;
 };
 
+// Read-write locks. These have a different interface from the exclusive locks above, and are
+// driven by their own benchmark, so they are dispatched by runEverythingRW() rather than
+// runEverything().
+
+// A phase-fair reader-writer lock, ported from the Rust `pflock` crate, which implements the
+// design in Brandenburg and Anderson, "Spin-Based Reader-Writer Synchronization for
+// Multiprocessor Real-Time Systems". Readers and writers alternate phases: a writer arriving
+// during a read phase blocks readers that arrive after it, and a reader arriving during a write
+// phase waits only for that one writer, not for any writers queued behind it.
+//
+// The rin word holds a reader count in its high bits plus two low bits describing the current
+// write phase, so a reader learns whether a writer is present and which phase it is in with a
+// single fetch-and-add. Readers then spin until either of those two bits changes, which is what
+// bounds their wait to one writer.
+//
+// This spins rather than parking, so unlike the crate's version the accesses here carry the
+// acquire and release ordering a lock needs. The original is relaxed throughout, which would
+// let the critical section leak out of the lock on ARM64 and would not be comparable against
+// locks that order correctly.
+class PFLock {
+public:
+    void readLock()
+    {
+        // Take a reader ticket and read the current write phase.
+        size_t phase = m_rin.exchangeAdd(readerIncrement, std::memory_order_acquire) & writerMask;
+
+        // If a writer is present, wait for either the present bit or the phase bit to flip.
+        // Writers queued behind that one cannot flip these bits, so this waits for one writer.
+        while (phase && phase == (m_rin.load(std::memory_order_acquire) & writerMask))
+            spinLoopHint();
+    }
+
+    void readUnlock()
+    {
+        m_rout.exchangeAdd(readerIncrement, std::memory_order_release);
+    }
+
+    void writeLock()
+    {
+        // Wait for our turn among writers.
+        size_t writerTicket = m_win.exchangeAdd(1, std::memory_order_relaxed);
+        while (writerTicket != m_wout.load(std::memory_order_acquire))
+            spinLoopHint();
+
+        // Announce ourselves in rin, which stops readers arriving after this point, and learn
+        // how many readers came before us.
+        size_t phase = writerPresentBit | (writerTicket & phaseIdBit);
+        size_t readerTicket = m_rin.exchangeAdd(phase, std::memory_order_acquire);
+
+        // Wait for exactly those readers to leave.
+        while (readerTicket != m_rout.load(std::memory_order_acquire))
+            spinLoopHint();
+    }
+
+    void writeUnlock()
+    {
+        // Clear the phase bits, releasing the readers that queued behind us.
+        m_rin.exchangeAnd(phaseClearMask, std::memory_order_release);
+
+        // Let the next writer take its turn. Only one writer is ever here.
+        m_wout.exchangeAdd(1, std::memory_order_release);
+    }
+
+private:
+    static constexpr size_t readerIncrement = 0x100;
+    static constexpr size_t writerMask = 0x3;
+    static constexpr size_t writerPresentBit = 0x2;
+    static constexpr size_t phaseIdBit = 0x1;
+    static constexpr size_t phaseClearMask = ~static_cast<size_t>(0xFF);
+
+    Atomic<size_t> m_rin { 0 };
+    Atomic<size_t> m_rout { 0 };
+    Atomic<size_t> m_win { 0 };
+    Atomic<size_t> m_wout { 0 };
+};
+
+// Adapts std::shared_mutex to the interface the read-write benchmark uses.
+class SharedMutexRWLock {
+public:
+    void readLock() { m_lock.lock_shared(); }
+    void readUnlock() { m_lock.unlock_shared(); }
+    void writeLock() { m_lock.lock(); }
+    void writeUnlock() { m_lock.unlock(); }
+
+private:
+    std::shared_mutex m_lock;
+};
+
 #ifdef HAS_UNFAIR_LOCK
 class UnfairLock {
     os_unfair_lock l = OS_UNFAIR_LOCK_INIT;
@@ -531,6 +631,20 @@ void runEverything(const char* what)
 #endif
     if (!strcmp(what, "mutex") || !strcmp(what, "all"))
         Benchmark::template run<std::mutex>("std::mutex");
+}
+
+// The read-write locks are driven by a benchmark that mixes readers and writers, so they get
+// their own dispatcher. The names here are disjoint from the ones above, which lets both
+// dispatchers be called with the same argument.
+template<typename Benchmark>
+void runEverythingRW(const char* what)
+{
+    if (!strcmp(what, "readwritelock") || !strcmp(what, "allrw"))
+        Benchmark::template run<ReadWriteLock>("WTFReadWriteLock");
+    if (!strcmp(what, "pflock") || !strcmp(what, "allrw"))
+        Benchmark::template run<PFLock>("PFLock");
+    if (!strcmp(what, "sharedmutex") || !strcmp(what, "allrw"))
+        Benchmark::template run<SharedMutexRWLock>("std::shared_mutex");
 }
 
 } // anonymous namespace

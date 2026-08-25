@@ -61,6 +61,7 @@ public:
     {
         uint32_t state = m_state.load(std::memory_order_relaxed);
         if (!(state & (WriterHeldBit | WriterWaitCountMask))) [[likely]] {
+            ASSERT((state & ReaderCountMask) != ReaderCountMask);
             if (m_state.compareExchangeWeak(state, state + ReaderCountUnit, std::memory_order_acquire, std::memory_order_relaxed)) [[likely]]
                 return true;
         }
@@ -77,11 +78,11 @@ public:
     {
         uint32_t state = m_state.load(std::memory_order_relaxed);
         ASSERT(state & ReaderCountMask);
-        // Only the last reader out has anything beyond a decrement to do: it wakes a
-        // writer, if one is waiting.
-        bool isLastReaderWithWork = (state & ReaderCountMask) == ReaderCountUnit
-            && (state & HasParkedWritersBit);
-        if (!isLastReaderWithWork) [[likely]] {
+        // Only the last reader out has anything beyond a decrement to do: it hands the lock to
+        // whoever is parked.
+        bool isLastReaderWithParked = (state & ReaderCountMask) == ReaderCountUnit
+            && (state & HasParkedMask);
+        if (!isLastReaderWithParked) [[likely]] {
             if (m_state.compareExchangeWeak(state, state - ReaderCountUnit, std::memory_order_release)) [[likely]]
                 return;
         }
@@ -138,14 +139,16 @@ private:
     static constexpr uint32_t WriterWaitCountMask = 0x00007FFC;
     static constexpr uint32_t HasParkedWritersBit = 1u << 1;
     static constexpr uint32_t HasParkedReadersBit = 1u << 0;
+    static constexpr uint32_t HasParkedMask = HasParkedWritersBit | HasParkedReadersBit;
 
-    // Tokens for ParkingLot handoff. BargingOpportunity and DirectHandoff match the Lock
-    // pattern; ReadGranted says the releasing writer already counted this reader in, so it
-    // holds a read lock and must not touch the state.
+    // Tokens for ParkingLot handoff, matching the Lock pattern. DirectHandoff means the
+    // releasing thread already transferred ownership in the state on the woken thread's
+    // behalf - for a writer by setting WriterHeldBit and retiring its registration, for a
+    // reader cohort by counting all of them in - so the woken thread already holds the lock
+    // and must not touch the state.
     enum Token : intptr_t {
         BargingOpportunity = 0,
         DirectHandoff = 1,
-        ReadGranted = 2
     };
 
     WTF_EXPORT_PRIVATE NEVER_INLINE void readLockSlow();
