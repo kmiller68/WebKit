@@ -49,6 +49,11 @@ enum NoLockingNecessaryTag { NoLockingNecessary };
 
 class WTF_CAPABILITY_LOCK WordLock;
 class WTF_CAPABILITY_LOCK UnfairLock;
+// Views of a ReadWriteLock that select a mode. The write side behaves like any other exclusive lock
+// and joins the specialization below; the read side needs its own, because acquiring shared cannot be
+// expressed by a Locker that always acquires exclusively.
+class WTF_CAPABILITY_LOCK ReadLockView;
+class WTF_CAPABILITY_LOCK WriteLockView;
 
 class AbstractLocker {
     WTF_MAKE_NONCOPYABLE(AbstractLocker);
@@ -74,9 +79,9 @@ constexpr AdoptLockTag AdoptLock;
 // Example: Locker locker { m_lock };
 template<typename T>
 #if ENABLE(UNFAIR_LOCK)
-    requires (std::same_as<T, Lock> || std::same_as<T, WordLock> || std::same_as<T, UnfairLock>)
+    requires (std::same_as<T, Lock> || std::same_as<T, WordLock> || std::same_as<T, UnfairLock> || std::same_as<T, WriteLockView>)
 #else
-    requires (std::same_as<T, Lock> || std::same_as<T, WordLock>)
+    requires (std::same_as<T, Lock> || std::same_as<T, WordLock> || std::same_as<T, WriteLockView>)
 #endif
 class WTF_CAPABILITY_SCOPED_LOCK Locker<T> : public AbstractLocker {
 public:
@@ -140,6 +145,36 @@ private:
 
     T& m_lock;
     bool m_isLocked { false };
+};
+
+// Locker specialization for the read side of a ReadWriteLock, which acquires shared rather than
+// exclusive. Without this the analysis either has to be skipped or has to misreport the mode, and
+// misreporting it means a write to guarded data under a read lock goes unnoticed.
+// Example: Locker locker { m_rwLock.read() };
+template<typename T>
+    requires (std::same_as<T, ReadLockView>)
+class WTF_CAPABILITY_SCOPED_LOCK Locker<T> : public AbstractLocker {
+public:
+    explicit Locker(T& lock) WTF_ACQUIRES_SHARED_LOCK(lock)
+        : m_lock(lock)
+    {
+        m_lock.lock();
+        TSAN_ANNOTATE_HAPPENS_AFTER(&m_lock);
+    }
+
+    // Generic rather than shared, because the scoped-lockable convention has the destructor release
+    // the capability without restating the mode it was taken in.
+    ~Locker() WTF_RELEASES_GENERIC_LOCK()
+    {
+        TSAN_ANNOTATE_HAPPENS_BEFORE(&m_lock);
+        m_lock.unlock();
+    }
+
+    Locker(const Locker<T>&) = delete;
+    Locker& operator=(const Locker<T>&) = delete;
+
+private:
+    T& m_lock;
 };
 
 // Unspecialized Locker that skips thread safety analysis.
