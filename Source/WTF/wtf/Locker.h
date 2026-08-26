@@ -33,7 +33,6 @@
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
 
 #include <mutex>
-#include <optional>
 #include <wtf/Assertions.h>
 #include <wtf/Atomics.h>
 #include <wtf/Compiler.h>
@@ -50,6 +49,7 @@ enum NoLockingNecessaryTag { NoLockingNecessary };
 
 class WTF_CAPABILITY_LOCK WordLock;
 class WTF_CAPABILITY_LOCK UnfairLock;
+class WTF_CAPABILITY_LOCK ReadWriteLock;
 // Views of a ReadWriteLock that select a mode. The write side behaves like any other exclusive lock
 // and joins the specialization below; the read side needs its own, because acquiring shared cannot be
 // expressed by a Locker that always acquires exclusively.
@@ -173,20 +173,23 @@ public:
         }
     }
 
-    // Turn the read lock into a write lock, yielding a Locker for it if that succeeds. Either way this
-    // locker's read lock is gone afterwards, so it stops releasing anything of its own; the annotation
-    // says the same thing to the analysis that m_isLocked says at runtime. See
-    // ReadWriteLock::tryUpgrade() for why failure gives up the read lock too.
+    // Turn the read lock into a write lock. Either way this locker's read lock is gone afterwards, so
+    // it stops releasing anything of its own; the annotation says the same thing to the analysis that
+    // m_isLocked says at runtime. See ReadWriteLock::tryUpgrade() for why failure gives up the read
+    // lock too.
     //
-    // The analysis cannot follow the returned locker. A scoped capability is a fact attached to a
-    // local declaration, not a value, so it survives neither being returned nor being wrapped in an
-    // optional, and writes to guarded data under it are unchecked. The lock is still released
-    // correctly; it is only the checking that stops at the boundary.
-    //
-    // Prefer adopting the write lock into a local Locker instead, which is checked in both
-    // directions; see ReadWriteLock::tryUpgrade(). This form is for callers that would rather not
-    // spell out the two-step.
-    std::optional<Locker<WriteLockView>> tryUpgrade() WTF_RELEASES_GENERIC_LOCK();
+    // This is the only way to upgrade, and it exists because a read Locker has to be told its read
+    // lock is gone. Take ownership of the write lock by adopting it:
+    //     Locker readLocker { m_lock.read() };
+    //     if (readLocker.tryUpgrade(m_lock)) {
+    //         Locker writeLocker { AdoptLock, m_lock.write() };
+    //         ...
+    //     }
+    // The lock is passed even though this locker holds it, so that the capability the analysis sees
+    // acquired is the caller's own expression for it. Without that the adopt below cannot be checked,
+    // because a capability named through this locker's member does not unify with the one the caller's
+    // data is guarded by.
+    bool tryUpgrade(ReadWriteLock& lock) WTF_RELEASES_GENERIC_LOCK() WTF_ACQUIRES_LOCK_IF(true, lock);
 
     Locker(const Locker<T>&) = delete;
     Locker& operator=(const Locker<T>&) = delete;

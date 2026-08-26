@@ -142,64 +142,6 @@ public:
         m_writerLock.unlock();
     }
 
-    // Turn a read lock this thread already holds into a write lock without letting another writer in
-    // between, so that whatever the caller read under the read lock is still true. On success the
-    // caller holds the write lock and releases it with writeUnlock(). On failure the caller holds
-    // nothing at all: the read lock is gone too, so a caller that still needs the data has to acquire
-    // again and re-examine it.
-    //
-    // Giving up the read lock on failure is what makes both outcomes expressible to clang's
-    // thread-safety analysis, which can say "acquires exclusive if this returned true" but has no way
-    // to say "releases shared only if it returned false". It also fits what this is for: read
-    // cheaply, discover a write is needed, and upgrade if that is free rather than holding readers
-    // off while queueing for the write lock.
-    //
-    // There is deliberately no blocking upgrade(). Waiting for m_writerLock would deadlock against a
-    // writer that owns the phase, because that writer is waiting for this thread's read lock to be
-    // released. For the same reason two threads upgrading at once can both keep failing, so a caller
-    // that retries needs its own way out.
-    //
-    // This cannot be used under Locker { lock.read() }, whose destructor would release a read lock
-    // that is no longer held. Call readLock() and readUnlock() directly.
-    //
-    // For RAII release of the write lock, adopt it into a Locker inside the success branch:
-    //     lock.readLock();
-    //     if (lock.tryUpgrade()) {
-    //         Locker locker { AdoptLock, lock.write() };
-    //         ...
-    //     }
-    // The analysis checks that fully, in both directions: the writes verify, the release is accounted
-    // for, adopting without having upgraded is caught, and so is writing after the Locker's scope
-    // ends. It works because the Locker is a local constructed in place, which is the only form whose
-    // capability the analysis tracks.
-    //
-    // Forgetting to release an upgraded lock is caught either way, as "not held on every path".
-    // Releasing it twice is not: an adopted Locker plus a writeUnlock() of its own looks fine to the
-    // analysis, and shows up only as the failed assertion in endPhase().
-    bool tryUpgrade() WTF_RELEASES_SHARED_LOCK() WTF_ACQUIRES_LOCK_IF(true) WTF_IGNORES_THREAD_SAFETY_ANALYSIS
-    {
-        // This must not wait, because a writer holding m_writerLock may be draining, and what it is
-        // waiting for is us. Taking it also establishes that no writer owns the phase.
-        if (!m_writerLock.tryLock()) {
-            // Release through the normal path, which is the one that can wake exactly that writer.
-            readUnlock();
-            return false;
-        }
-        uint32_t target = beginPhase();
-        // Our own read lock is counted in m_readersIn and no readUnlock is coming for it, so count it out
-        // here or the drain below would be waiting for us. Being counted out is also what makes the
-        // read lock gone either way, and it is why the uncontended upgrade needs no waiting at all:
-        // if we were the only reader, m_readersOut has already reached the target.
-        m_readersOut.exchangeAdd(s_readerIncrement, std::memory_order_relaxed);
-        if ((m_readersOut.load(std::memory_order_acquire) & s_readerCountMask) == target) [[likely]]
-            return true;
-        // Other readers were already inside and we are not willing to wait for them. Give the phase
-        // back, releasing any readers that queued behind us.
-        endPhase();
-        m_writerLock.unlock();
-        return false;
-    }
-
     // WTF_RETURNS_LOCK declares that these denote the same capability as the lock itself, so that
     // data annotated WTF_GUARDED_BY_LOCK(theLock) is recognised as held inside
     // Locker { theLock.read() } as well as by theLock.readLock().
@@ -219,6 +161,50 @@ public:
     }
 
 private:
+    // Upgrading is reached only through Locker { lock.read() }.tryUpgrade(lock), which is what tells
+    // that locker its read lock is gone. Exposing this directly would let a caller upgrade out from
+    // under a read Locker whose destructor then releases a read lock the thread no longer holds.
+    friend class Locker<ReadLockView>;
+
+    // Turn a read lock this thread already holds into a write lock without letting another writer in
+    // between, so that whatever the caller read under the read lock is still true. On success the
+    // caller holds the write lock. On failure it holds nothing at all: the read lock is gone too, so a
+    // caller that still needs the data has to acquire again and re-examine it.
+    //
+    // Giving up the read lock on failure is also what makes both outcomes expressible to clang's
+    // thread-safety analysis, which can say "acquires exclusive if this returned true" but has no way
+    // to say "releases shared only if it returned false". It fits what this is for either way: read
+    // cheaply, discover a write is needed, and upgrade if that is free rather than holding readers off
+    // while queueing for the write lock.
+    //
+    // There is deliberately no blocking upgrade(). Waiting for m_writerLock would deadlock against a
+    // writer that owns the phase, because that writer is waiting for this thread's read lock to be
+    // released. For the same reason two threads upgrading at once can both keep failing, so a caller
+    // that retries needs its own way out.
+    bool tryUpgrade() WTF_RELEASES_SHARED_LOCK() WTF_ACQUIRES_LOCK_IF(true) WTF_IGNORES_THREAD_SAFETY_ANALYSIS
+    {
+        // This must not wait, because a writer holding m_writerLock may be draining, and what it is
+        // waiting for is us. Taking it also establishes that no writer owns the phase.
+        if (!m_writerLock.tryLock()) {
+            // Release through the normal path, which is the one that can wake exactly that writer.
+            readUnlock();
+            return false;
+        }
+        uint32_t target = beginPhase();
+        // Our own read lock is counted in m_readersIn and no readUnlock is coming for it, so count it
+        // out here or the drain below would be waiting for us. Being counted out is also what makes
+        // the read lock gone either way, and it is why the uncontended upgrade needs no waiting at
+        // all: if we were the only reader, m_readersOut has already reached the target.
+        m_readersOut.exchangeAdd(s_readerIncrement, std::memory_order_relaxed);
+        if ((m_readersOut.load(std::memory_order_acquire) & s_readerCountMask) == target) [[likely]]
+            return true;
+        // Other readers were already inside and we are not willing to wait for them. Give the phase
+        // back, releasing any readers that queued behind us.
+        endPhase();
+        m_writerLock.unlock();
+        return false;
+    }
+
     // m_readersIn: bits 31-8 readers entered, 7-4 phase id, 1 has parked readers, 0 writer present.
     // m_readersOut: bits 31-8 readers left, 0 has a parked writer draining.
     //
@@ -338,22 +324,20 @@ public:
 inline ReadLockView& ReadWriteLock::read() WTF_IGNORES_THREAD_SAFETY_ANALYSIS { return *static_cast<ReadLockView*>(this); }
 inline WriteLockView& ReadWriteLock::write() WTF_IGNORES_THREAD_SAFETY_ANALYSIS { return *static_cast<WriteLockView*>(this); }
 
-// Defined here rather than in Locker.h because it needs both views complete and the lock's own
-// tryUpgrade(). Opts out of the analysis because it hands the write lock to a Locker that declares it
-// already held, which is true of the thread but not of anything the analysis can see.
+// Defined here rather than in Locker.h because it needs ReadLockView complete and the lock's own
+// tryUpgrade(), which is private to everything but this. Opts out of the analysis because the
+// capability it gives up belongs to the lock rather than to this locker.
 template<typename T>
     requires (std::same_as<T, ReadLockView>)
-std::optional<Locker<WriteLockView>> Locker<T>::tryUpgrade() WTF_IGNORES_THREAD_SAFETY_ANALYSIS
+bool Locker<T>::tryUpgrade(ReadWriteLock& lock) WTF_IGNORES_THREAD_SAFETY_ANALYSIS
 {
     ASSERT(m_isLocked);
+    ASSERT(&lock == static_cast<ReadWriteLock*>(&m_lock));
     // The read lock is given up whichever way the upgrade goes, so this locker has nothing left to
-    // release in either case.
+    // release in either case. Without this its destructor would count a departure that never had a
+    // matching arrival, which is exactly what satisfies a later writer's drain target early.
     m_isLocked = false;
-    if (!m_lock.tryUpgrade())
-        return std::nullopt;
-    // Constructed in place as a prvalue: Locker is neither copyable nor movable, so the return object
-    // has to be initialized directly rather than moved into.
-    return std::optional<Locker<WriteLockView>>(std::in_place, AdoptLock, m_lock.write());
+    return lock.tryUpgrade();
 }
 
 } // namespace WTF

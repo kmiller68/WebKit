@@ -27,6 +27,7 @@
 #include <wtf/ReadWriteLock.h>
 
 #include <wtf/ParkingLot.h>
+#include <wtf/Threading.h>
 #include <limits>
 #include <wtf/simde/simde.h>
 
@@ -36,26 +37,59 @@ namespace WTF {
 // collide with those of the other files it is compiled with.
 namespace ReadWriteLockInternal {
 
-// Both waits here are for something short: a reader waits out one writer's critical section, and a
-// writer waits for the readers already inside to finish theirs. So both spin briefly before parking
-// rather than either parking immediately or spinning at length.
+// A reader waits out one writer's phase; a writer waits for the readers already inside to finish their
+// critical sections. Both spin before parking, and both budgets are measured rather than guessed - see
+// ReadWriteLockSpinTuning.md.
 //
-// These values are not the product of the search recorded in ReadWriteLockSpinTuning.md. That was
-// done against a previous design whose reader admission was conditional, where the tuning interacted
-// with reader starvation and mattered a great deal; here it is far less sensitive, because readers
-// are only ever blocked by a writer that actually owns the phase. They are the values the benchmark
-// used when measuring this design.
-constexpr unsigned spinLimit = 40;
+// A budget is a cap on wasted time, not a cost: the loop exits the moment its condition flips, so the
+// time actually spent is the smaller of the cap and the wait. A cap is therefore nearly free when it is
+// larger than the wait, and only expensive when it is not - in which case the whole cap is burned and
+// the caller parks anyway. That makes the useful question "is the cap bigger than what we are waiting
+// for", and the answer wants to be yes:
+//
+//  - A reader is blocked for a whole phase, which is the writer's drain wait plus its critical section.
+//  - A writer's drain is over once the readers already inside finish, so roughly one read critical
+//    section, since readers run concurrently.
+//
+// One iteration is about 13ns, almost entirely the pause below, so 640 is a cap of about 8us. That
+// covers both waits for critical sections up to a few microseconds, which is what these are tuned for.
+// Callers holding either lock for far longer than that get no benefit and pay up to 15% more CPU;
+// callers holding them very briefly are unaffected, because the cap is never spent.
+//
+// A cap that lands short of the wait is the worst case - it burns and then parks regardless - so these
+// are deliberately well clear rather than marginal. Measured at a 570ns read critical section, raising
+// the reader from 0.5us to 8us doubled read throughput and cut write acquire latency twelvefold, while
+// intermediate values were worse than either end.
+constexpr unsigned readerSpinLimit = 640;
+constexpr unsigned writerSpinLimit = 640;
+// Yields a blocked reader attempts after its pause budget is spent, before parking. These are a second
+// phase rather than interleaved with the pauses the way LockAlgorithm does it, and the ordering is the
+// point: nothing reaches them unless the pause spin already failed, so an acquire that completes
+// promptly never yields and so never depresses its own priority. Interleaving measured 27% off read
+// throughput under heavy contention for the same benefit, because then every waiter yields whether or
+// not it was about to succeed.
+//
+// What they buy is the oversubscribed case, where blocked readers spinning are occupying the cores the
+// readers inside the lock need in order to finish and let a writer in. Eight yields measured 37% lower
+// write acquire latency with 28 readers on 12 performance cores, and nothing measurable anywhere else.
+// Raising it further keeps improving that latency - 32 yields is twelve times better again - but starts
+// costing oversubscribed read throughput, so this is the value that is free.
+//
+// Only readers yield. The same experiment on the writer's drain wait moved its latency by 13% against
+// the reader side's 3x, which is what one would expect: a writer waits alone, so there is no crowd of
+// spinners to get out of the way.
+constexpr unsigned readerYieldLimit = 8;
 // simde_mm_pause() is isb on ARM64, a full instruction-synchronization barrier and so much more
-// expensive than x86's pause; one per iteration is plenty.
+// expensive than x86's pause - about 13ns, which dominates a spin iteration. Only the product of this
+// and a spin limit matters, so this stays at one and the limits carry the tuning.
 constexpr unsigned pauseCount = 1;
 
 // One iteration of a spin loop. Returns false once the caller has spun long enough and should park.
 // Spin on plain loads at the call site: read-modify-write spinning ping-pongs the word between cores,
 // which hurts exactly the contended case this has to survive.
-ALWAYS_INLINE bool spinStep(unsigned& spinCount)
+ALWAYS_INLINE bool spinStep(unsigned& spinCount, unsigned limit)
 {
-    if (spinCount >= spinLimit)
+    if (spinCount >= limit)
         return false;
     ++spinCount;
     for (unsigned i = 0; i < pauseCount; ++i)
@@ -79,13 +113,21 @@ void ReadWriteLock::readLockSlow(uint32_t observedPhase)
     // to one writer: the next writer's phase carries a different id, so a queue of writers cannot
     // extend our wait.
     unsigned spinCount = 0;
+    unsigned yieldCount = 0;
     for (;;) {
         uint32_t readersIn = m_readersIn.load(std::memory_order_acquire);
         if ((readersIn & s_phaseFieldMask) != observedPhase)
             return;
 
-        if (ReadWriteLockInternal::spinStep(spinCount))
+        if (ReadWriteLockInternal::spinStep(spinCount, ReadWriteLockInternal::readerSpinLimit))
             continue;
+
+        // Give up the core before parking. See readerYieldLimit.
+        if (yieldCount < ReadWriteLockInternal::readerYieldLimit) {
+            ++yieldCount;
+            Thread::yield();
+            continue;
+        }
 
         if (!(readersIn & s_hasParkedReadersBit))
             m_readersIn.exchangeOr(s_hasParkedReadersBit, std::memory_order_relaxed);
@@ -129,7 +171,7 @@ void ReadWriteLock::writeLockSlow(uint32_t target)
         if ((readersOut & s_readerCountMask) == target)
             return;
 
-        if (ReadWriteLockInternal::spinStep(spinCount))
+        if (ReadWriteLockInternal::spinStep(spinCount, ReadWriteLockInternal::writerSpinLimit))
             continue;
 
         // Publish what we are waiting for before advertising that we are waiting, so a reader that
