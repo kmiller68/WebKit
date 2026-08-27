@@ -1163,4 +1163,98 @@ TEST(WTF_HashSetDeathTest, InlineWeakPtrAddAfterDeath)
 }
 #endif
 
+namespace {
+
+struct TwoPhaseTranslator {
+    static unsigned hash(unsigned key) { return DefaultHash<unsigned>::hash(key); }
+    static bool equal(unsigned a, unsigned b) { return a == b; }
+    static void translate(unsigned& location, unsigned key, unsigned) { location = key; }
+};
+
+// What a caller does that has to probe under one kind of exclusion and insert under another: probe,
+// then insert at the slot the probe returned rather than probing a second time.
+static bool addInTwoPhases(HashSet<unsigned>& set, unsigned key)
+{
+    // findSlotForInsert() requires storage, so a table that has never been given any has to go
+    // through the ordinary add().
+    if (!set.capacity())
+        return set.add<TwoPhaseTranslator>(key).isNewEntry;
+
+    auto lookup = set.findSlotForInsert<TwoPhaseTranslator>(key);
+    if (lookup.found) {
+        EXPECT_EQ(key, *lookup.slot);
+        return false;
+    }
+
+    auto result = set.addAtSlot<TwoPhaseTranslator>(lookup, key);
+    EXPECT_TRUE(result.isNewEntry);
+    EXPECT_EQ(key, *result.iterator);
+    return true;
+}
+
+// Both sets have seen the same keys through the same structural transitions, so they have to agree on
+// contents and on table size. Capacity is the part that catches an insert that grew the table when
+// add() would not have, or reused an empty bucket where add() would have reclaimed a deleted one.
+//
+// The reference side deliberately uses the untranslated add(), which keeps its own copy of the
+// insert tail. Comparing against the translated add() would compare addAtSlot() with itself, since
+// that is what the translated add() is built out of.
+static void expectSetsAgree(const HashSet<unsigned>& viaAdd, const HashSet<unsigned>& viaTwoPhases)
+{
+    EXPECT_EQ(viaAdd.size(), viaTwoPhases.size());
+    EXPECT_EQ(viaAdd.capacity(), viaTwoPhases.capacity());
+    for (unsigned key : viaAdd)
+        EXPECT_TRUE(viaTwoPhases.contains(key));
+    for (unsigned key : viaTwoPhases)
+        EXPECT_TRUE(viaAdd.contains(key));
+}
+
+}
+
+TEST(WTF_HashSet, TwoPhaseAddMatchesAdd)
+{
+    HashSet<unsigned> viaAdd;
+    HashSet<unsigned> viaTwoPhases;
+
+    // Enough keys to rehash several times, so the expand-on-insert tail of addAtSlot() runs. Each key
+    // is offered twice: the second offer is a hit, which must not insert.
+    for (unsigned round = 0; round < 2; ++round) {
+        for (unsigned key = 1; key <= 500; ++key) {
+            bool addedByAdd = viaAdd.add(key).isNewEntry;
+            EXPECT_EQ(addedByAdd, addInTwoPhases(viaTwoPhases, key));
+            EXPECT_EQ(!round, addedByAdd);
+        }
+        expectSetsAgree(viaAdd, viaTwoPhases);
+    }
+
+    EXPECT_EQ(500u, viaTwoPhases.size());
+}
+
+TEST(WTF_HashSet, TwoPhaseAddReusesDeletedBucket)
+{
+    HashSet<unsigned> viaAdd;
+    HashSet<unsigned> viaTwoPhases;
+
+    for (unsigned key = 1; key <= 64; ++key) {
+        viaAdd.add(key);
+        addInTwoPhases(viaTwoPhases, key);
+    }
+
+    // Removing leaves deleted buckets on the probe chains of the keys that were in them, so probing
+    // for one of those keys again returns a deleted bucket rather than an empty one.
+    for (unsigned key = 2; key <= 64; key += 2) {
+        EXPECT_TRUE(viaAdd.remove(key));
+        EXPECT_TRUE(viaTwoPhases.remove(key));
+    }
+    expectSetsAgree(viaAdd, viaTwoPhases);
+
+    for (unsigned key = 2; key <= 64; key += 2) {
+        EXPECT_TRUE(viaAdd.add(key).isNewEntry);
+        EXPECT_TRUE(addInTwoPhases(viaTwoPhases, key));
+    }
+    expectSetsAgree(viaAdd, viaTwoPhases);
+
+    EXPECT_EQ(64u, viaTwoPhases.size());
+}
+
 } // namespace TestWebKitAPI

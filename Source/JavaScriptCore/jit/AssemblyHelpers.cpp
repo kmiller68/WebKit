@@ -741,7 +741,7 @@ AssemblyHelpers::JumpList AssemblyHelpers::loadCacheableIdentifierImpl(GPRReg pr
         loadPtr(Address(propertyGPR, JSString::offsetOfValue()), destGPR);
         if (canBeRope)
             slowCases.append(branchIfRopeStringImpl(destGPR));
-        slowCases.append(branchTest32(Zero, Address(destGPR, StringImpl::flagsOffset()), TrustedImm32(StringImpl::flagIsAtom())));
+        slowCases.append(branchTest32(Zero, Address(destGPR, StringImpl::refCountOffset()), TrustedImm32(StringImpl::refCountFlagIsAtom())));
     } else if (propertyIsSymbol)
         loadPtr(Address(propertyGPR, Symbol::offsetOfSymbolImpl()), destGPR);
     else {
@@ -755,7 +755,7 @@ AssemblyHelpers::JumpList AssemblyHelpers::loadCacheableIdentifierImpl(GPRReg pr
         loadPtr(Address(propertyGPR, JSString::offsetOfValue()), destGPR);
         if (canBeRope)
             slowCases.append(branchIfRopeStringImpl(destGPR));
-        slowCases.append(branchTest32(Zero, Address(destGPR, StringImpl::flagsOffset()), TrustedImm32(StringImpl::flagIsAtom())));
+        slowCases.append(branchTest32(Zero, Address(destGPR, StringImpl::refCountOffset()), TrustedImm32(StringImpl::refCountFlagIsAtom())));
 
         done.link(this);
     }

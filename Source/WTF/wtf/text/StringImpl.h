@@ -28,6 +28,7 @@
 #include <unicode/uchar.h>
 #include <unicode/ustring.h>
 #include <wtf/ASCIICType.h>
+#include <wtf/Atomics.h>
 #include <wtf/CheckedArithmetic.h>
 #include <wtf/CompactPtr.h>
 #include <wtf/DebugHeap.h>
@@ -159,7 +160,7 @@ protected:
     constexpr StringImplShape(uint32_t refCount, ASCIILiteral, unsigned hashAndFlags, ConstructWithConstExprTag);
     template<unsigned characterCount> constexpr StringImplShape(uint32_t refCount, unsigned length, const char16_t (&characters)[characterCount], unsigned hashAndFlags, ConstructWithConstExprTag);
 
-    std::atomic<uint32_t> m_refCount;
+    Atomic<uint32_t> m_refCount;
     unsigned m_length;
     union {
         const Latin1Character* m_data8;
@@ -169,7 +170,11 @@ protected:
         const char* m_data8Char;
         const char16_t* m_data16Char;
     };
-    mutable unsigned m_hashAndFlags;
+    // Atomic because a StringImpl can be reachable from more than one thread: the process-wide
+    // AtomStringTable shares atom strings, and whichever thread drops the last reference inspects
+    // the flags to decide how to destroy. Every access here is relaxed; the ordering that matters
+    // lives on the reference count, which deref() releases and its destroying path acquires.
+    mutable Atomic<unsigned> m_hashAndFlags;
 };
 
 // FIXME: Use of StringImpl and const is rather confused.
@@ -184,6 +189,7 @@ class StringImpl : private StringImplShape, public NoVirtualDestructorBase {
     WTF_DEPRECATED_MAKE_FAST_COMPACT_ALLOCATED_WITH_HEAP_IDENTIFIER(StringImpl, StringImpl);
 
     friend class AtomStringImpl;
+    friend class AtomStringTable;
     friend class JSC::LLInt::Data;
     friend class JSC::LLIntOffsetsExtractor;
     friend class PrivateSymbolImpl;
@@ -218,21 +224,20 @@ public:
 private:
     static constexpr const unsigned s_flagMask = (1u << s_flagCount) - 1;
     static_assert(s_flagCount <= StringHasher::flagCount, "StringHasher reserves enough bits for StringImpl flags");
-    static constexpr const unsigned s_flagStringKindCount = 4;
 
     static constexpr const unsigned s_hashZeroValue = 0;
-    static constexpr const unsigned s_hashFlagStringKindIsAtom = 1u << (s_flagStringKindCount);
-    static constexpr const unsigned s_hashFlagStringKindIsSymbol = 1u << (s_flagStringKindCount + 1);
-    static constexpr const unsigned s_hashMaskStringKind = s_hashFlagStringKindIsAtom | s_hashFlagStringKindIsSymbol;
     static constexpr const unsigned s_hashFlagDidReportCost = 1u << 3;
     static constexpr const unsigned s_hashFlag8BitBuffer = 1u << 2;
     static constexpr const unsigned s_hashMaskBufferOwnership = (1u << 0) | (1u << 1);
 
 public:
+    // The string kind lives in the reference count rather than alongside the other flags so that
+    // deref() can decide from one load both whether it holds the last reference and, if so, whether
+    // the string is uniqued and therefore has to be unregistered before it can be destroyed.
     enum StringKind {
         StringNormal = 0u, // non-symbol, non-atomic
-        StringAtom = s_hashFlagStringKindIsAtom, // non-symbol, atomic
-        StringSymbol = s_hashFlagStringKindIsSymbol, // symbol, non-atomic
+        StringAtom = 1u << 0, // non-symbol, atomic
+        StringSymbol = 1u << 1, // symbol, non-atomic
     };
 
 private:
@@ -300,9 +305,11 @@ public:
 
     static constexpr unsigned flagsOffset() { return OBJECT_OFFSETOF(StringImpl, m_hashAndFlags); }
     static constexpr unsigned flagIs8Bit() { return s_hashFlag8BitBuffer; }
-    static constexpr unsigned flagIsAtom() { return s_hashFlagStringKindIsAtom; }
-    static constexpr unsigned flagIsSymbol() { return s_hashFlagStringKindIsSymbol; }
-    static constexpr unsigned maskStringKind() { return s_hashMaskStringKind; }
+    // The string kind is in the reference count, so these must be tested against refCountOffset().
+    static constexpr unsigned refCountOffset() { return OBJECT_OFFSETOF(StringImpl, m_refCount); }
+    static constexpr unsigned refCountFlagIsAtom() { return StringAtom; }
+    static constexpr unsigned refCountFlagIsSymbol() { return StringSymbol; }
+    static constexpr unsigned refCountMaskStringKind() { return s_refCountMaskStringKind; }
     static constexpr unsigned dataOffset() { return OBJECT_OFFSETOF(StringImpl, m_data8); }
 
     template<typename CharacterType, size_t inlineCapacity, typename OverflowHandler, size_t minCapacity, typename Malloc>
@@ -315,7 +322,7 @@ public:
     static constexpr ptrdiff_t lengthMemoryOffset() { return OBJECT_OFFSETOF(StringImpl, m_length); }
     bool isEmpty() const { return !m_length; }
 
-    bool is8Bit() const { return m_hashAndFlags & s_hashFlag8BitBuffer; }
+    bool is8Bit() const { return m_hashAndFlags.loadRelaxed() & s_hashFlag8BitBuffer; }
     ALWAYS_INLINE std::span<const Latin1Character> span8() const LIFETIME_BOUND { ASSERT(is8Bit()); return unsafeMakeSpan(m_data8, length()); }
     ALWAYS_INLINE std::span<const char16_t> span16() const LIFETIME_BOUND { ASSERT(!is8Bit() || isEmpty()); return unsafeMakeSpan(m_data16, length()); }
 
@@ -326,8 +333,8 @@ public:
 
     WTF_EXPORT_PRIVATE size_t NODELETE sizeInBytes() const;
 
-    bool isSymbol() const { return m_hashAndFlags & s_hashFlagStringKindIsSymbol; }
-    bool isAtom() const { return m_hashAndFlags & s_hashFlagStringKindIsAtom; }
+    bool isSymbol() const { return m_refCount.loadRelaxed() & StringSymbol; }
+    bool isAtom() const { return m_refCount.loadRelaxed() & StringAtom; }
     void setIsAtom(bool);
     
     bool isExternal() const { return bufferOwnership() == BufferExternal; }
@@ -356,7 +363,15 @@ private:
     // So, we shift left and right when setting and getting our hash code.
     void setHash(unsigned) const;
 
-    unsigned rawHash() const { return m_hashAndFlags >> s_flagCount; }
+    // Promotes an ordinary string to an immortal one. Setting the flag is enough on its own: it is a
+    // bit the count cannot reach, so no sequence of ref / deref can bring the string back into range
+    // of deref()'s last-reference test.
+    void makeStatic()
+    {
+        m_refCount.exchangeOr(s_refCountFlagIsStatic, std::memory_order_relaxed);
+    }
+
+    unsigned rawHash() const { return m_hashAndFlags.loadRelaxed() >> s_flagCount; }
 
 public:
     bool hasHash() const { return !!rawHash(); }
@@ -369,19 +384,25 @@ public:
     unsigned symbolAwareHash() const;
     unsigned existingSymbolAwareHash() const;
 
-    SUPPRESS_TSAN bool isStatic() const { return m_refCount.load(std::memory_order_relaxed) & s_refCountFlagIsStaticString; }
+    bool isStatic() const { return m_refCount.loadRelaxed() & s_refCountFlagIsStatic; }
 
-    uint32_t refCount() const { return m_refCount.load(std::memory_order_relaxed) / s_refCountIncrement; }
-    bool hasOneRef() const { return m_refCount.load(std::memory_order_relaxed) == s_refCountIncrement; }
-    bool hasAtLeastOneRef() const { return m_refCount.load(std::memory_order_relaxed); } // For assertions.
+    uint32_t refCount() const { return m_refCount.loadRelaxed() / s_refCountIncrement; }
+    bool hasOneRef() const { return refCount() == 1; }
+    bool hasAtLeastOneRef() const { return refCount(); } // For assertions.
 
     void ref();
     void deref();
 
+private:
+    WTF_EXPORT_PRIVATE void destroyIfNeeded(uint32_t oldRefCount);
+
+public:
+
     class StaticStringImpl : private StringImplShape {
         WTF_MAKE_NONCOPYABLE(StaticStringImpl);
     public:
-        // Used to construct static strings, which have an special refCount that can never hit zero.
+        // Used to construct static strings, whose reference count starts high enough that no
+        // balanced sequence of ref / deref can bring it down to where deref() would destroy them.
         // This means that the static string will never be destroyed, which is important because
         // static strings will be shared across threads & ref-counted in a non-threadsafe manner.
         //
@@ -406,7 +427,7 @@ public:
         //    c. setHash() is never called on a StaticStringImpl.
         //       StaticStringImpl's constructor sets the hash on construction.
         //       StringImpl::hash() only sets a new hash iff !hasHash().
-        //       Additionally, StringImpl::setHash() asserts hasHash() and !isStatic().
+        //       Additionally, StringImpl::setHash() asserts !isStatic().
 
         explicit constexpr StaticStringImpl(ASCIILiteral, StringKind = StringNormal);
         template<unsigned characterCount> explicit constexpr StaticStringImpl(const char16_t (&characters)[characterCount], StringKind = StringNormal);
@@ -531,7 +552,7 @@ public:
     ALWAYS_INLINE static StringStats& stringStats() { return m_stringStats; }
 #endif
 
-    BufferOwnership bufferOwnership() const { return static_cast<BufferOwnership>(m_hashAndFlags & s_hashMaskBufferOwnership); }
+    BufferOwnership bufferOwnership() const { return static_cast<BufferOwnership>(m_hashAndFlags.loadRelaxed() & s_hashMaskBufferOwnership); }
 
     template<typename T> static constexpr size_t headerSize() { return tailOffset<T>(); }
     
@@ -577,9 +598,24 @@ private:
     WTF_EXPORT_PRIVATE NEVER_INLINE unsigned hashSlowCase() const;
     Ref<StringImpl> convertToUppercaseWithoutLocaleUpconvert();
 
-    // The bottom bit in the ref count indicates a static (immortal) string.
-    static constexpr uint32_t s_refCountFlagIsStaticString = 0x1;
-    static constexpr uint32_t s_refCountIncrement = 0x2; // This allows us to ref / deref without disturbing the static string flag.
+    // The bottom bits of the reference count hold the StringKind and the immortality flag. This
+    // allows us to ref / deref without disturbing them, and lets deref() route a last reference to
+    // the right teardown from the value it has already loaded.
+    //
+    // Keeping the static flag here is what makes static strings immortal, and it has to be a bit
+    // the count cannot reach rather than a large starting count: ref / deref are not balanced for
+    // them. SymbolImpl's null symbol, for instance, points its substring buffer at empty() without
+    // taking a reference, while ~StringImpl always drops one. So the count of a static string
+    // drifts without bound, and only an exact comparison against the allowed low bits keeps
+    // deref() from eventually mistaking it for a last reference.
+    //
+    // FIXME: This belongs with the other immutable construction-time properties in m_hashAndFlags,
+    // which would give the count another bit and leave only the string kind here. Doing so requires
+    // every reference to a static string to be balanced first, since immortality would then rest on
+    // the count staying out of range rather than on a bit the count cannot reach.
+    static constexpr uint32_t s_refCountMaskStringKind = StringAtom | StringSymbol;
+    static constexpr uint32_t s_refCountFlagIsStatic = 0x4;
+    static constexpr uint32_t s_refCountIncrement = 0x8;
 
 #if STRING_STATS
     WTF_EXPORT_PRIVATE static StringStats m_stringStats;
@@ -950,7 +986,7 @@ template<bool isSpecialCharacter(char16_t)> inline bool StringImpl::containsOnly
 }
 
 inline StringImpl::StringImpl(unsigned length, Force8Bit)
-    : StringImplShape(s_refCountIncrement, unsafeMakeSpan(tailPointer<Latin1Character>(), length), s_hashFlag8BitBuffer | StringNormal | BufferInternal)
+    : StringImplShape(s_refCountIncrement, unsafeMakeSpan(tailPointer<Latin1Character>(), length), s_hashFlag8BitBuffer | BufferInternal)
 {
     ASSERT(m_data8);
     ASSERT(m_length);
@@ -959,7 +995,7 @@ inline StringImpl::StringImpl(unsigned length, Force8Bit)
 }
 
 inline StringImpl::StringImpl(unsigned length)
-    : StringImplShape(s_refCountIncrement, unsafeMakeSpan(tailPointer<char16_t>(), length), s_hashZeroValue | StringNormal | BufferInternal)
+    : StringImplShape(s_refCountIncrement, unsafeMakeSpan(tailPointer<char16_t>(), length), s_hashZeroValue | BufferInternal)
 {
     ASSERT(m_data16);
     ASSERT(m_length);
@@ -981,7 +1017,7 @@ MallocSpan<CharacterType, StringImplMalloc> StringImpl::toStringImplMallocSpan(M
 
 template<typename Malloc>
 inline StringImpl::StringImpl(MallocSpan<Latin1Character, Malloc> characters)
-    : StringImplShape(s_refCountIncrement, toStringImplMallocSpan(WTF::move(characters)).leakSpan(), s_hashFlag8BitBuffer | StringNormal | BufferOwned)
+    : StringImplShape(s_refCountIncrement, toStringImplMallocSpan(WTF::move(characters)).leakSpan(), s_hashFlag8BitBuffer | BufferOwned)
 {
     ASSERT(m_data8);
     ASSERT(m_length);
@@ -990,7 +1026,7 @@ inline StringImpl::StringImpl(MallocSpan<Latin1Character, Malloc> characters)
 }
 
 inline StringImpl::StringImpl(std::span<const char16_t> characters, ConstructWithoutCopyingTag)
-    : StringImplShape(s_refCountIncrement, characters, s_hashZeroValue | StringNormal | BufferInternal)
+    : StringImplShape(s_refCountIncrement, characters, s_hashZeroValue | BufferInternal)
 {
     ASSERT(m_data16);
     ASSERT(m_length);
@@ -999,7 +1035,7 @@ inline StringImpl::StringImpl(std::span<const char16_t> characters, ConstructWit
 }
 
 inline StringImpl::StringImpl(std::span<const Latin1Character> characters, ConstructWithoutCopyingTag)
-    : StringImplShape(s_refCountIncrement, characters, s_hashFlag8BitBuffer | StringNormal | BufferInternal)
+    : StringImplShape(s_refCountIncrement, characters, s_hashFlag8BitBuffer | BufferInternal)
 {
     ASSERT(m_data8);
     ASSERT(m_length);
@@ -1009,7 +1045,7 @@ inline StringImpl::StringImpl(std::span<const Latin1Character> characters, Const
 
 template<typename Malloc>
 inline StringImpl::StringImpl(MallocSpan<char16_t, Malloc> characters)
-    : StringImplShape(s_refCountIncrement, toStringImplMallocSpan(WTF::move(characters)).leakSpan(), s_hashZeroValue | StringNormal | BufferOwned)
+    : StringImplShape(s_refCountIncrement, toStringImplMallocSpan(WTF::move(characters)).leakSpan(), s_hashZeroValue | BufferOwned)
 {
     ASSERT(m_data16);
     ASSERT(m_length);
@@ -1018,7 +1054,7 @@ inline StringImpl::StringImpl(MallocSpan<char16_t, Malloc> characters)
 }
 
 inline StringImpl::StringImpl(std::span<const Latin1Character> characters, Ref<StringImpl>&& base)
-    : StringImplShape(s_refCountIncrement, characters, s_hashFlag8BitBuffer | StringNormal | BufferSubstring)
+    : StringImplShape(s_refCountIncrement, characters, s_hashFlag8BitBuffer | BufferSubstring)
 {
     ASSERT(is8Bit());
     ASSERT(m_data8);
@@ -1031,7 +1067,7 @@ inline StringImpl::StringImpl(std::span<const Latin1Character> characters, Ref<S
 }
 
 inline StringImpl::StringImpl(std::span<const char16_t> characters, Ref<StringImpl>&& base)
-    : StringImplShape(s_refCountIncrement, characters, s_hashZeroValue | StringNormal | BufferSubstring)
+    : StringImplShape(s_refCountIncrement, characters, s_hashZeroValue | BufferSubstring)
 {
     ASSERT(!is8Bit());
     ASSERT(m_data16);
@@ -1115,10 +1151,10 @@ inline size_t StringImpl::cost() const
     // We ensure this by pre-setting the s_hashFlagDidReportCost bit in all instances of
     // StaticStringImpl. As a result, StaticStringImpl instances will always return a cost of
     // 0 here and avoid modifying m_hashAndFlags.
-    if (m_hashAndFlags & s_hashFlagDidReportCost)
+    if (m_hashAndFlags.loadRelaxed() & s_hashFlagDidReportCost)
         return 0;
 
-    m_hashAndFlags |= s_hashFlagDidReportCost;
+    m_hashAndFlags.exchangeOr(s_hashFlagDidReportCost, std::memory_order_relaxed);
     size_t result = m_length;
     if (!is8Bit())
         result <<= 1;
@@ -1143,10 +1179,13 @@ inline void StringImpl::setIsAtom(bool isAtom)
 {
     ASSERT(!isStatic());
     ASSERT(!isSymbol());
+    // Relaxed despite the bit having to be visible to whichever thread drops the last reference:
+    // it lives in the reference count, so that thread reads it in the same load that told it the
+    // count, and the release on the decrements it observed orders everything before them.
     if (isAtom)
-        m_hashAndFlags |= s_hashFlagStringKindIsAtom;
+        m_refCount.exchangeOr(StringAtom, std::memory_order_relaxed);
     else
-        m_hashAndFlags &= ~s_hashFlagStringKindIsAtom;
+        m_refCount.exchangeAnd(~StringAtom, std::memory_order_relaxed);
 }
 
 inline void StringImpl::setHash(unsigned hash) const
@@ -1155,45 +1194,68 @@ inline void StringImpl::setHash(unsigned hash) const
     // in the low bits because it makes them slightly more efficient to access.
     // So, we shift left and right when setting and getting our hash code.
 
-    ASSERT(!hasHash());
     ASSERT(!isStatic());
     // Multiple clients assume that StringHasher is the canonical string hash function.
     ASSERT(hash == (is8Bit() ? StringHasher::computeHashAndMaskTop8Bits(span8()) : StringHasher::computeHashAndMaskTop8Bits(span16())));
     ASSERT(!(hash & (s_flagMask << (8 * sizeof(hash) - s_flagCount)))); // Verify that enough high bits are empty.
 
     hash <<= s_flagCount;
-    ASSERT(!(hash & m_hashAndFlags)); // Verify that enough low bits are empty after shift.
     ASSERT(hash); // Verify that 0 is a valid sentinel hash value.
+    // Two threads sharing a string can both compute the hash and store it. They necessarily
+    // compute the same value, so the store is idempotent, but it may not be the first one.
+    ASSERT(!rawHash() || (hash >> s_flagCount) == rawHash());
 
-    m_hashAndFlags |= hash; // Store hash with flags in low bits.
+    m_hashAndFlags.exchangeOr(hash, std::memory_order_relaxed); // Store hash with flags in low bits.
 }
 
 inline void StringImpl::ref()
 {
     STRING_STATS_REF_STRING(*this);
 
-#if TSAN_ENABLED
-    if (isStatic())
-        return;
-#endif
-
-    m_refCount.fetch_add(s_refCountIncrement, std::memory_order_relaxed);
+    m_refCount.exchangeAdd(s_refCountIncrement, std::memory_order_relaxed);
 }
 
 inline void StringImpl::deref()
 {
     STRING_STATS_DEREF_STRING(*this);
 
-#if TSAN_ENABLED
-    if (isStatic())
-        return;
-#endif
+    // The low bits sit below s_refCountIncrement, so the first comparison is exactly "the count is
+    // at most two" whichever of them are set. Two rather than one because the table that uniques an
+    // atom string holds a reference of its own, so for those the last reference a caller can be
+    // holding is the second.
+    //
+    // The second comparison is exact, and deliberately: it demands that the only low bits set are
+    // the kind, which is what keeps a static string out of here no matter how far its count has
+    // drifted. See s_refCountFlagIsStatic.
+    //
+    // Do not decrement when it is the last one: for a uniqued string the drop to the table's own
+    // reference has to happen under that table's lock, because a racing add() can still revive it.
+    //
+    // The decrement only needs release: a thread that drops a reference without destroying reads
+    // nothing from the object afterwards, but it must publish its prior writes to whichever thread
+    // ends up destroying.
 
-    auto oldRefCount = m_refCount.fetch_sub(s_refCountIncrement, std::memory_order_relaxed);
-    if (oldRefCount != s_refCountIncrement)
-        return;
-
-    StringImpl::destroy(this);
+    uint32_t oldRefCount = m_refCount.exchangeSub(s_refCountIncrement);
+    // old ref + refCountFlags
+    if (oldRefCount < 2 * s_refCountIncrement)
+        destroyIfNeeded(oldRefCount);
+    for (;;) {
+        if (oldRefCount < 3 * s_refCountIncrement) [[unlikely]] {
+            uint32_t kind = oldRefCount & s_refCountMaskStringKind;
+            uint32_t lastRefCount = (kind & StringAtom) ? 2 * s_refCountIncrement : s_refCountIncrement;
+            if (oldRefCount == (lastRefCount | kind)) {
+                // We reached this decision through a relaxed load and are about to run the
+                // destructor, so acquire to see everything the threads that dropped the other
+                // references wrote.
+                std::atomic_thread_fence(std::memory_order_acquire);
+                destroyIfNeeded();
+                return;
+            }
+        }
+        if (m_refCount.compareExchangeWeak(oldRefCount, oldRefCount - s_refCountIncrement, std::memory_order_release, std::memory_order_relaxed))
+            return;
+        oldRefCount = m_refCount.loadRelaxed();
+    }
 }
 
 inline char16_t StringImpl::at(unsigned i) const
@@ -1202,7 +1264,7 @@ inline char16_t StringImpl::at(unsigned i) const
 }
 
 inline StringImpl::StringImpl(CreateSymbolTag, std::span<const Latin1Character> characters)
-    : StringImplShape(s_refCountIncrement, characters, s_hashFlag8BitBuffer | StringSymbol | BufferSubstring)
+    : StringImplShape(s_refCountIncrement | StringSymbol, characters, s_hashFlag8BitBuffer | BufferSubstring)
 {
     ASSERT(is8Bit());
     ASSERT(m_data8);
@@ -1210,7 +1272,7 @@ inline StringImpl::StringImpl(CreateSymbolTag, std::span<const Latin1Character> 
 }
 
 inline StringImpl::StringImpl(CreateSymbolTag, std::span<const char16_t> characters)
-    : StringImplShape(s_refCountIncrement, characters, s_hashZeroValue | StringSymbol | BufferSubstring)
+    : StringImplShape(s_refCountIncrement | StringSymbol, characters, s_hashZeroValue | BufferSubstring)
 {
     ASSERT(!is8Bit());
     ASSERT(m_data16);
@@ -1218,7 +1280,7 @@ inline StringImpl::StringImpl(CreateSymbolTag, std::span<const char16_t> charact
 }
 
 inline StringImpl::StringImpl(CreateSymbolTag)
-    : StringImplShape(s_refCountIncrement, empty()->span8(), s_hashFlag8BitBuffer | StringSymbol | BufferSubstring)
+    : StringImplShape(s_refCountIncrement | StringSymbol, empty()->span8(), s_hashFlag8BitBuffer | BufferSubstring)
 {
     ASSERT(is8Bit());
     ASSERT(m_data8);
@@ -1300,14 +1362,14 @@ inline void StringImpl::assertHashIsCorrect() const
 }
 
 constexpr StringImpl::StaticStringImpl::StaticStringImpl(ASCIILiteral literal, StringKind stringKind)
-    : StringImplShape(s_refCountFlagIsStaticString, literal,
-        s_hashFlag8BitBuffer | s_hashFlagDidReportCost | stringKind | BufferInternal | (StringHasher::computeLiteralHashAndMaskTop8Bits(literal) << s_flagCount), ConstructWithConstExpr)
+    : StringImplShape(s_refCountFlagIsStatic | stringKind, literal,
+        s_hashFlag8BitBuffer | s_hashFlagDidReportCost | BufferInternal | (StringHasher::computeLiteralHashAndMaskTop8Bits(literal) << s_flagCount), ConstructWithConstExpr)
 {
 }
 
 template<unsigned characterCount> constexpr StringImpl::StaticStringImpl::StaticStringImpl(const char16_t (&characters)[characterCount], StringKind stringKind)
-    : StringImplShape(s_refCountFlagIsStaticString, characterCount - 1, characters,
-        s_hashFlagDidReportCost | stringKind | BufferInternal | (StringHasher::computeLiteralHashAndMaskTop8Bits(characters) << s_flagCount), ConstructWithConstExpr)
+    : StringImplShape(s_refCountFlagIsStatic | stringKind, characterCount - 1, characters,
+        s_hashFlagDidReportCost | BufferInternal | (StringHasher::computeLiteralHashAndMaskTop8Bits(characters) << s_flagCount), ConstructWithConstExpr)
 {
 }
 

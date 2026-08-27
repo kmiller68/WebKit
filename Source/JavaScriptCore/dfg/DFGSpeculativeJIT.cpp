@@ -9919,7 +9919,7 @@ void SpeculativeJIT::compileArrayIndexOfOrArrayIncludes(Node* node)
             operation = operationCopyOnWriteArrayIndexOfString;
             auto notAtomStructure = branchWeakStructure(NotEqual, Address(storageGPR, -static_cast<ptrdiff_t>(JSCellButterfly::offsetOfData()) + JSCell::structureIDOffset()), m_graph.registerStructure(vm().cellButterflyOnlyAtomStringsStructure.get()));
 
-            slowCase.append(branchTest32(Zero, Address(rightStringGPR, StringImpl::flagsOffset()), TrustedImm32(StringImpl::flagIsAtom())));
+            slowCase.append(branchTest32(Zero, Address(rightStringGPR, StringImpl::refCountOffset()), TrustedImm32(StringImpl::refCountFlagIsAtom())));
 
             JumpList atomFound;
             Label atomLoop = label();
@@ -12124,7 +12124,7 @@ void SpeculativeJIT::speculateStringIdentAndLoadStorage(Edge edge, GPRReg string
 
     if (canBeRope(edge))
         speculationCheck(BadStringType, JSValueSource::unboxedCell(string), edge, branchIfRopeStringImpl(storage));
-    speculationCheck(BadStringType, JSValueSource::unboxedCell(string), edge, branchTest32(Zero, Address(storage, StringImpl::flagsOffset()), TrustedImm32(StringImpl::flagIsAtom())));
+    speculationCheck(BadStringType, JSValueSource::unboxedCell(string), edge, branchTest32(Zero, Address(storage, StringImpl::refCountOffset()), TrustedImm32(StringImpl::refCountFlagIsAtom())));
 
     m_interpreter.filter(edge, SpecStringIdent | ~SpecString);
 }

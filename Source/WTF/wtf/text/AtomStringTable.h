@@ -25,13 +25,22 @@
 #include <wtf/CompactPtr.h>
 #include <wtf/HashSet.h>
 #include <wtf/Packed.h>
+#include <wtf/ReadWriteLock.h>
 #include <wtf/text/StringHash.h>
 #include <wtf/text/StringImpl.h>
 
 namespace WTF {
 
-class StringImpl;
+class AtomStringImpl;
 
+// Atomization is read-mostly: almost every add() finds an existing entry and only takes a reference
+// to it, which is a pure lookup and has no reason to exclude other lookups. Hence a reader-writer
+// lock rather than an exclusive one.
+//
+// Nothing reached with this lock held may reenter the table, because ReadWriteLock is recursive in
+// neither mode, and the read side fails worse than the write side: a second read lock deadlocks if a
+// writer announces itself in between, which makes it an intermittent hang rather than a reliable one,
+// and upgrading one of two read locks held by the same thread deadlocks outright.
 class AtomStringTable {
     WTF_DEPRECATED_MAKE_FAST_ALLOCATED(AtomStringTable);
 public:
@@ -40,12 +49,24 @@ public:
     using StringEntry = std::conditional_t<CompactPtrTraits<StringImpl>::is32Bit, CompactPtr<StringImpl>, PackedPtr<StringImpl>>;
     using StringTableImpl = UncheckedKeyHashSet<StringEntry>;
 
-    WTF_EXPORT_PRIVATE ~AtomStringTable();
+    WTF_EXPORT_PRIVATE static AtomStringTable& singleton();
 
-    StringTableImpl& table() LIFETIME_BOUND { return m_table; }
+    ReadWriteLock& lock() LIFETIME_BOUND WTF_RETURNS_LOCK(m_lock) { return m_lock; }
+
+    // Two accessors rather than one, catching two different mistakes. The annotations catch touching
+    // the table with no lock held, or with a shared lock where an exclusive one is required. The
+    // const on the shared accessor is what catches mutating the table under the shared lock, which
+    // the annotations cannot see: constness applies to the pointer and not the pointee, so a probe
+    // still hands back a writable slot, but add() and remove() do not compile.
+    const StringTableImpl& tableUnderSharedLock() const LIFETIME_BOUND WTF_REQUIRES_SHARED_LOCK(m_lock) { return m_table; }
+    StringTableImpl& tableUnderExclusiveLock() LIFETIME_BOUND WTF_REQUIRES_LOCK(m_lock) { return m_table; }
+
+    WTF_EXPORT_PRIVATE static bool releaseAndRemoveIfNeeded(AtomStringImpl*);
+    WTF_EXPORT_PRIVATE void reserveInitialCapacityIfEmpty(unsigned);
 
 private:
-    StringTableImpl m_table;
+    ReadWriteLock m_lock;
+    StringTableImpl m_table WTF_GUARDED_BY_LOCK(m_lock);
 };
 
 }

@@ -260,7 +260,7 @@ VM::VM(VMType vmType, HeapType heapType, WTF::RunLoop* runLoop, bool* success)
     , clientHeap(heap)
     , vmType(vmType)
     , deferredWorkTimer(DeferredWorkTimer::create(*this))
-    , m_atomStringTable(vmType == VMType::Default ? Thread::currentSingleton().atomStringTable() : new AtomStringTable)
+    , m_atomStringTable(&AtomStringTable::singleton())
     , m_symbolRegistry(makeUniqueRef<SymbolRegistry>())
     , m_privateSymbolRegistry(makeUniqueRef<SymbolRegistry>(SymbolRegistry::Type::PrivateSymbol))
     , emptyList(new ArgList)
@@ -325,15 +325,10 @@ VM::VM(VMType vmType, HeapType heapType, WTF::RunLoop* runLoop, bool* success)
     JSLockHolder lock(this);
 
     // A VM interns on the order of two thousand identifiers while starting up: CommonIdentifiers,
-    // BuiltinNames, SmallStrings, and whatever the embedder adds on top. On a fresh thread the table
-    // starts empty and rehashes its way up to that size, so size it once up front instead. Only when
-    // it is still empty, so a thread that already has atoms keeps whatever it has grown to.
-    if (m_atomStringTable->table().isEmpty()) {
-        m_atomStringTable->table().clear();
-        m_atomStringTable->table().reserveInitialCapacity(2048);
-    }
-
-    AtomStringTable* existingEntryAtomStringTable = Thread::currentSingleton().setCurrentAtomStringTable(m_atomStringTable);
+    // BuiltinNames, SmallStrings, and whatever the embedder adds on top. The table starts empty and
+    // would rehash its way up to that size, so size it once up front instead. Only when it is still
+    // empty, so that a second VM sharing the process-wide table keeps what it has grown to.
+    m_atomStringTable->reserveInitialCapacityIfEmpty(2048);
     structureStructure.setWithoutWriteBarrier(Structure::createStructure(*this));
     structureRareDataStructure.setWithoutWriteBarrier(StructureRareData::createStructure(*this, nullptr, jsNull()));
     stringStructure.setWithoutWriteBarrier(JSString::createStructure(*this, nullptr, jsNull()));
@@ -445,8 +440,6 @@ WTF_ALLOW_UNSAFE_BUFFER_USAGE_END
         }
     }
 
-    Thread::currentSingleton().setCurrentAtomStringTable(existingEntryAtomStringTable);
-    
     Gigacage::addPrimitiveDisableCallback(primitiveGigacageDisabledCallback, this);
 
     heap.notifyIsSafeToCollect();
@@ -645,8 +638,6 @@ VM::~VM()
     delete emptyList;
 
     delete propertyNames;
-    if (vmType != VMType::Default)
-        delete m_atomStringTable;
 
     delete clientData;
     m_regExpCache.reset();

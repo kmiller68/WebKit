@@ -250,14 +250,12 @@ public:
 
     AtomStringTable* atomStringTable()
     {
-        return m_currentAtomStringTable;
+        return &AtomStringTable::singleton();
     }
 
-    AtomStringTable* setCurrentAtomStringTable(AtomStringTable* atomStringTable)
+    AtomStringTable* setCurrentAtomStringTable(AtomStringTable*)
     {
-        AtomStringTable* oldAtomStringTable = m_currentAtomStringTable;
-        m_currentAtomStringTable = atomStringTable;
-        return oldAtomStringTable;
+        return &AtomStringTable::singleton();
     }
 
 #if ENABLE(STACK_STATS)
@@ -421,8 +419,7 @@ protected:
     SpecificStorage m_specificStorage;
 #endif
 
-    AtomStringTable* m_currentAtomStringTable { nullptr };
-    AtomStringTable m_defaultAtomStringTable;
+    AtomStringTable* m_currentAtomStringTable { nullptr }; // FIXME: Remove once all callers are updated.
 
 #if ENABLE(STACK_STATS)
     StackStats::PerThreadStats m_stackStats;

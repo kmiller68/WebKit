@@ -163,6 +163,7 @@ namespace JSC::B3 {
     macro(StringImpl_data, StringImpl::dataOffset(), Mutability::Immutable) \
     macro(StringImpl_hashAndFlags, StringImpl::flagsOffset(), Mutability::Mutable) \
     macro(StringImpl_length, StringImpl::lengthMemoryOffset(), Mutability::Immutable) \
+    macro(StringImpl_refCount, StringImpl::refCountOffset(), Mutability::Mutable) \
     macro(Structure_bitField, Structure::bitFieldOffset(), Mutability::Mutable) \
     macro(Structure_classInfo, Structure::classInfoOffset(), Mutability::Immutable) \
     macro(Structure_realm, Structure::realmOffset(), Mutability::Immutable) \

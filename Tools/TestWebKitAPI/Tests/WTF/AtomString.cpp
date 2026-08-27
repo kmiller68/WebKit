@@ -25,8 +25,14 @@
 
 #include "config.h"
 
+#include "Helpers/Test.h"
 #include <numbers>
+#include <wtf/Threading.h>
+#include <wtf/Vector.h>
 #include <wtf/text/AtomString.h>
+#include <wtf/text/AtomStringImpl.h>
+#include <wtf/text/MakeString.h>
+#include <wtf/text/StringView.h>
 
 namespace TestWebKitAPI {
 
@@ -121,6 +127,96 @@ TEST(WTF, AtomStringNumberDouble)
     EXPECT_STREQ("110000000000000000000", testAtomStringNumber(1.1e20));
     EXPECT_STREQ("1.1e+21", testAtomStringNumber(1.1e21));
     EXPECT_STREQ("1.1e+30", testAtomStringNumber(1.1e30));
+}
+
+namespace {
+
+// Interned once up front and held for the whole test, so nothing can drop these entries while the
+// threads run and every thread must observe the same AtomStringImpl for a given key.
+struct PinnedAtoms {
+    Vector<String> keys;
+    Vector<AtomString> atoms;
+
+    explicit PinnedAtoms(unsigned count)
+    {
+        keys.reserveInitialCapacity(count);
+        atoms.reserveInitialCapacity(count);
+        for (unsigned i = 0; i < count; ++i)
+            keys.append(makeString("concurrent-atomization-shared-"_s, i));
+        for (auto& key : keys)
+            atoms.append(AtomString { key });
+    }
+};
+
+}
+
+TEST(WTF_AtomString, ConcurrentAtomizationIsUnique)
+{
+    constexpr unsigned threadCount = 8;
+    constexpr unsigned keyCount = 256;
+    constexpr unsigned rounds = 20;
+
+    PinnedAtoms pinned { keyCount };
+
+    // Every thread's view of every key, filled without any synchronisation of its own: the table's
+    // lock is the only thing making this safe.
+    Vector<Vector<AtomStringImpl*>> observed;
+    observed.reserveInitialCapacity(threadCount);
+    for (unsigned i = 0; i < threadCount; ++i)
+        observed.append(Vector<AtomStringImpl*>(FillWith { }, keyCount, nullptr));
+
+    Vector<Ref<Thread>> threads;
+    for (unsigned threadIndex = 0; threadIndex < threadCount; ++threadIndex) {
+        threads.append(Thread::create("AtomString concurrency test"_s, [&, threadIndex] {
+            for (unsigned round = 0; round < rounds; ++round) {
+                // Hits: keys already in the table. Started at a different offset per thread so the
+                // threads are not walking the buckets in lockstep.
+                for (unsigned i = 0; i < keyCount; ++i) {
+                    unsigned key = (i + threadIndex * 32) % keyCount;
+                    AtomString atom { pinned.keys[key] };
+                    AtomStringImpl* impl = atom.impl();
+                    AtomStringImpl* previous = observed[threadIndex][key];
+                    EXPECT_TRUE(!previous || previous == impl);
+                    observed[threadIndex][key] = impl;
+                }
+
+                // Misses and drops: strings unique to this thread and round, interned and then
+                // released, so insertions and removals run concurrently with the hits above.
+                for (unsigned i = 0; i < 32; ++i) {
+                    AtomString churn { makeString("concurrent-atomization-churn-"_s, threadIndex, '-', round, '-', i) };
+                    EXPECT_FALSE(churn.isEmpty());
+                    EXPECT_TRUE(churn.impl()->isAtom());
+                }
+
+                // Substrings, which take the translator whose hash is computed from characters rather
+                // than borrowed from the base string.
+                for (unsigned i = 0; i < 32; ++i) {
+                    AtomString substring = StringView { pinned.keys[i] }.substring(1, 12).toAtomString();
+                    EXPECT_EQ(12u, substring.length());
+                }
+            }
+        }));
+    }
+    for (auto& thread : threads)
+        thread->waitForCompletion();
+
+    // Same characters always yield the same AtomStringImpl, both across threads and against the
+    // references the main thread is still holding.
+    for (unsigned key = 0; key < keyCount; ++key) {
+        AtomStringImpl* expected = pinned.atoms[key].impl();
+        EXPECT_TRUE(expected);
+        for (unsigned threadIndex = 0; threadIndex < threadCount; ++threadIndex)
+            EXPECT_EQ(expected, observed[threadIndex][key]);
+    }
+
+    // Every churned string was dropped by its thread, so nothing may be left in the table. A stale
+    // entry here would mean a lost removal or a reference the table never released.
+    for (unsigned threadIndex = 0; threadIndex < threadCount; ++threadIndex) {
+        for (unsigned i = 0; i < 32; ++i) {
+            auto key = makeString("concurrent-atomization-churn-"_s, threadIndex, '-', rounds - 1, '-', i);
+            EXPECT_NULL(AtomStringImpl::lookUp(key.span8()));
+        }
+    }
 }
 
 } // namespace TestWebKitAPI

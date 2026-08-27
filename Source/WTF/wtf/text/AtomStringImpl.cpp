@@ -24,14 +24,9 @@
 #include "config.h"
 #include <wtf/text/AtomStringImpl.h>
 
-#include <wtf/Threading.h>
 #include <wtf/text/ASCIIFastPath.h>
 #include <wtf/text/AtomStringTable.h>
 #include <wtf/text/WTFString.h>
-
-#if USE(WEB_THREAD)
-#include <wtf/Lock.h>
-#endif
 
 namespace WTF {
 
@@ -45,55 +40,91 @@ AtomStringImpl::~AtomStringImpl()
 }
 IGNORE_CLANG_WARNINGS_END
 
-#if USE(WEB_THREAD)
-
-class AtomStringTableLocker : public Locker<Lock> {
-    WTF_MAKE_NONCOPYABLE(AtomStringTableLocker);
-
-    static Lock s_stringTableLock;
-public:
-    AtomStringTableLocker()
-        : Locker<Lock>(s_stringTableLock)
-    {
-    }
-};
-
-Lock AtomStringTableLocker::s_stringTableLock;
-
-#else
-
-class AtomStringTableLocker {
-    WTF_MAKE_NONCOPYABLE(AtomStringTableLocker);
-public:
-    AtomStringTableLocker() { }
-};
-
-#endif // USE(WEB_THREAD)
-
-using StringTableImpl = AtomStringTable::StringTableImpl;
-
-static ALWAYS_INLINE StringTableImpl& stringTable()
-{
-    return Thread::currentSingleton().atomStringTable()->table();
-}
-
-template<typename T, typename HashTranslator>
-static inline Ref<AtomStringImpl> addToStringTable(AtomStringTableLocker&, StringTableImpl& atomStringTable, const T& value)
-{
-    auto addResult = atomStringTable.add<HashTranslator>(value);
-
-    // If the string is newly-translated, then we need to adopt it.
-    // The boolean in the pair tells us if that is so.
-    if (addResult.isNewEntry)
-        return adoptRef(uncheckedDowncast<AtomStringImpl>(*addResult.iterator->get()));
-    return *uncheckedDowncast<AtomStringImpl>(addResult.iterator->get());
-}
-
+// Interning is read-mostly, so probe under the shared lock first: the common case is a hit, which is
+// a pure lookup and only has to take a reference. A miss upgrades in place and inserts at the slot the
+// probe already found.
+//
+// The table holds a reference of its own: for a new entry it is the one the translator leaked into the
+// entry, which is why nothing is adopted here. Either way the caller gets a reference of its own, so
+// an atom string reached from the table always has a count of at least two.
 template<typename T, typename HashTranslator>
 static inline Ref<AtomStringImpl> addToStringTable(const T& value)
 {
-    AtomStringTableLocker locker;
-    return addToStringTable<T, HashTranslator>(locker, stringTable(), value);
+    auto& table = AtomStringTable::singleton();
+    {
+        Locker readLocker { table.lock().read() };
+        auto& atomStringTable = table.tableUnderSharedLock();
+        // findSlotForInsert() requires storage, and a table with none has nothing to find.
+        if (atomStringTable.capacity()) [[likely]] {
+            auto lookup = atomStringTable.findSlotForInsert<HashTranslator>(value);
+            // The reference is taken before the locker leaves scope. Entries are only removed under
+            // the exclusive lock, so no removal can run while this reader is counted.
+            if (lookup.found) [[likely]]
+                return *uncheckedDowncast<AtomStringImpl>(lookup.slot->get());
+
+            // A successful upgrade admits no other writer in between, so the slot and hash just
+            // probed for are still the right ones and the insert skips a second probe. It fails only
+            // to a competing writer, which is exactly the case where the slot would have been
+            // invalidated anyway; then nothing is held and the slot is meaningless.
+            if (readLocker.tryUpgrade(table.lock())) {
+                Locker writeLocker { AdoptLock, table.lock().write() };
+                auto addResult = table.tableUnderExclusiveLock().addAtSlot<HashTranslator>(lookup, value);
+                return *uncheckedDowncast<AtomStringImpl>(addResult.iterator->get());
+            }
+        }
+    }
+
+    Locker writeLocker { table.lock().write() };
+    auto addResult = table.tableUnderExclusiveLock().add<HashTranslator>(value);
+    return *uncheckedDowncast<AtomStringImpl>(addResult.iterator->get());
+}
+
+// The table's own value type as a translator, so that the slow-case add() paths can reach the
+// two-phase API, which has no untranslated form. Equivalent to what an untranslated add() does: the
+// table hashes and compares its entries by string contents, not by pointer.
+struct StringEntryTranslator {
+    using StringEntry = AtomStringTable::StringEntry;
+
+    static unsigned hash(const StringEntry& entry) { return DefaultHash<StringEntry>::hash(entry); }
+    static bool equal(const StringEntry& a, const StringEntry& b) { return DefaultHash<StringEntry>::equal(a, b); }
+    static void translate(StringEntry& location, const StringEntry& entry, unsigned) { location = entry; }
+};
+
+// Take the table's own reference and set the atom flag when the string we offered is the one that
+// landed in the table. Both have to happen under the lock that admitted the entry, so that a
+// concurrent releaseAndRemoveIfNeeded() cannot find an entry whose count has not been raised yet.
+static inline Ref<AtomStringImpl> claimStringEntry(StringImpl& string, auto addResult)
+{
+    if (addResult.isNewEntry) {
+        ASSERT(addResult.iterator->get() == &string);
+        string.setIsAtom(true);
+        string.ref(); // The table's own reference. Released when the entry is removed.
+    }
+    return *uncheckedDowncast<AtomStringImpl>(addResult.iterator->get());
+}
+
+// Intern a string that is not yet an atom. Shares addToStringTable()'s probe-then-upgrade shape; the
+// difference is the bookkeeping a new entry needs, which is why it cannot just call it.
+static inline Ref<AtomStringImpl> addStringEntry(StringImpl& string)
+{
+    auto& table = AtomStringTable::singleton();
+    {
+        Locker readLocker { table.lock().read() };
+        auto& atomStringTable = table.tableUnderSharedLock();
+        if (atomStringTable.capacity()) [[likely]] {
+            auto lookup = atomStringTable.findSlotForInsert<StringEntryTranslator>(&string);
+            if (lookup.found) [[likely]]
+                return *uncheckedDowncast<AtomStringImpl>(lookup.slot->get());
+
+            if (readLocker.tryUpgrade(table.lock())) {
+                Locker writeLocker { AdoptLock, table.lock().write() };
+                return claimStringEntry(string, table.tableUnderExclusiveLock().addAtSlot<StringEntryTranslator>(lookup, &string));
+            }
+        }
+    }
+
+    Locker writeLocker { table.lock().write() };
+    return claimStringEntry(string, table.tableUnderExclusiveLock().add(&string));
 }
 
 using UTF16Buffer = HashTranslatorCharBuffer<char16_t>;
@@ -144,6 +175,20 @@ struct SubstringLocation {
     SUPPRESS_UNCOUNTED_MEMBER StringImpl* baseString;
     unsigned start;
     unsigned length;
+    unsigned hash;
+
+    SubstringLocation(StringImpl* baseString, unsigned start, unsigned length)
+        : baseString(baseString)
+        , start(start)
+        , length(length)
+        // Computed once here rather than in the translator's hash(), which the table may call more
+        // than once for a single add. A substring has no hash of its own to borrow: the base string's
+        // is over all of its characters, not this range.
+        , hash(baseString->is8Bit()
+            ? StringHasher::computeHashAndMaskTop8Bits(baseString->span8().subspan(start, length))
+            : StringHasher::computeHashAndMaskTop8Bits(baseString->span16().subspan(start, length)))
+    {
+    }
 };
 
 struct SubstringTranslator {
@@ -159,7 +204,7 @@ struct SubstringTranslator {
 struct SubstringTranslator8 : SubstringTranslator {
     static unsigned hash(const SubstringLocation& buffer)
     {
-        return StringHasher::computeHashAndMaskTop8Bits(buffer.baseString->span8().subspan(buffer.start, buffer.length));
+        return buffer.hash;
     }
 
     static bool equal(AtomStringTable::StringEntry const& string, const SubstringLocation& buffer)
@@ -171,7 +216,7 @@ struct SubstringTranslator8 : SubstringTranslator {
 struct SubstringTranslator16 : SubstringTranslator {
     static unsigned hash(const SubstringLocation& buffer)
     {
-        return StringHasher::computeHashAndMaskTop8Bits(buffer.baseString->span16().subspan(buffer.start, buffer.length));
+        return buffer.hash;
     }
 
     static bool equal(AtomStringTable::StringEntry const& string, const SubstringLocation& buffer)
@@ -200,7 +245,7 @@ RefPtr<AtomStringImpl> AtomStringImpl::add(StringImpl* baseString, unsigned star
         return addToStringTable<SubstringLocation, SubstringTranslator8>(buffer);
     return addToStringTable<SubstringLocation, SubstringTranslator16>(buffer);
 }
-    
+
 using Latin1Buffer = HashTranslatorCharBuffer<Latin1Character>;
 struct Latin1BufferTranslator {
     static unsigned NODELETE hash(const Latin1Buffer& buf)
@@ -271,7 +316,10 @@ struct StaticStringAtomTranslator {
 
     static void translate(AtomStringTable::StringEntry& location, const Buffer& buf, unsigned)
     {
-        location = const_cast<StringImpl*>(&buf.staticImpl);
+        // Take a reference like any other entry. This string is immortal so it makes no difference
+        // to its lifetime, but it keeps the table's invariant uniform.
+        SUPPRESS_UNCOUNTED_ARG Ref stringImpl = const_cast<StringImpl&>(buf.staticImpl);
+        location = &stringImpl.leakRef();
     }
 };
 
@@ -307,24 +355,18 @@ Ref<AtomStringImpl> AtomStringImpl::addLiteral(std::span<const Latin1Character> 
     return addToStringTable<Latin1Buffer, BufferFromStaticDataTranslator<Latin1Character>>(buffer);
 }
 
-static Ref<AtomStringImpl> addSymbol(AtomStringTableLocker& locker, StringTableImpl& atomStringTable, StringImpl& base)
+static Ref<AtomStringImpl> addSymbol(StringImpl& base)
 {
     ASSERT(base.length());
     ASSERT(base.isSymbol());
 
     SubstringLocation buffer = { &base, 0, base.length() };
     if (base.is8Bit())
-        return addToStringTable<SubstringLocation, SubstringTranslator8>(locker, atomStringTable, buffer);
-    return addToStringTable<SubstringLocation, SubstringTranslator16>(locker, atomStringTable, buffer);
+        return addToStringTable<SubstringLocation, SubstringTranslator8>(buffer);
+    return addToStringTable<SubstringLocation, SubstringTranslator16>(buffer);
 }
 
-static inline Ref<AtomStringImpl> addSymbol(StringImpl& base)
-{
-    AtomStringTableLocker locker;
-    return addSymbol(locker, stringTable(), base);
-}
-
-static Ref<AtomStringImpl> addStatic(AtomStringTableLocker& locker, StringTableImpl& atomStringTable, const StringImpl& base)
+static Ref<AtomStringImpl> addStatic(const StringImpl& base)
 {
     ASSERT(base.length());
     ASSERT(base.isStatic());
@@ -337,24 +379,18 @@ static Ref<AtomStringImpl> addStatic(AtomStringTableLocker& locker, StringTableI
     if (base.isAtom()) {
         if (base.is8Bit()) {
             StaticStringAtomBuffer<Latin1Character> buffer { base, base.span8(), base.hash() };
-            return addToStringTable<StaticStringAtomBuffer<Latin1Character>, StaticStringAtomTranslator<Latin1Character>>(locker, atomStringTable, buffer);
+            return addToStringTable<StaticStringAtomBuffer<Latin1Character>, StaticStringAtomTranslator<Latin1Character>>(buffer);
         }
         StaticStringAtomBuffer<char16_t> buffer { base, base.span16(), base.hash() };
-        return addToStringTable<StaticStringAtomBuffer<char16_t>, StaticStringAtomTranslator<char16_t>>(locker, atomStringTable, buffer);
+        return addToStringTable<StaticStringAtomBuffer<char16_t>, StaticStringAtomTranslator<char16_t>>(buffer);
     }
 
     if (base.is8Bit()) {
         Latin1Buffer buffer { base.span8(), base.hash() };
-        return addToStringTable<Latin1Buffer, BufferFromStaticDataTranslator<Latin1Character>>(locker, atomStringTable, buffer);
+        return addToStringTable<Latin1Buffer, BufferFromStaticDataTranslator<Latin1Character>>(buffer);
     }
     UTF16Buffer buffer { base.span16(), base.hash() };
-    return addToStringTable<UTF16Buffer, BufferFromStaticDataTranslator<char16_t>>(locker, atomStringTable, buffer);
-}
-
-static inline Ref<AtomStringImpl> addStatic(const StringImpl& base)
-{
-    AtomStringTableLocker locker;
-    return addStatic(locker, stringTable(), base);
+    return addToStringTable<UTF16Buffer, BufferFromStaticDataTranslator<char16_t>>(buffer);
 }
 
 RefPtr<AtomStringImpl> AtomStringImpl::add(const StaticStringImpl& string)
@@ -378,15 +414,7 @@ Ref<AtomStringImpl> AtomStringImpl::addSlowCase(StringImpl& string)
 
     ASSERT_WITH_MESSAGE(!string.isAtom(), "AtomStringImpl should not hit the slow case if the string is already an atom.");
 
-    AtomStringTableLocker locker;
-    auto addResult = stringTable().add(&string);
-
-    if (addResult.isNewEntry) {
-        ASSERT(addResult.iterator->get() == &string);
-        string.setIsAtom(true);
-    }
-
-    return *uncheckedDowncast<AtomStringImpl>(addResult.iterator->get());
+    return addStringEntry(string);
 }
 
 Ref<AtomStringImpl> AtomStringImpl::addSlowCase(Ref<StringImpl>&& string)
@@ -404,62 +432,15 @@ Ref<AtomStringImpl> AtomStringImpl::addSlowCase(Ref<StringImpl>&& string)
 
     ASSERT_WITH_MESSAGE(!string->isAtom(), "AtomStringImpl should not hit the slow case if the string is already an atom.");
 
-    AtomStringTableLocker locker;
-    auto addResult = stringTable().add(string.ptr());
-
-    if (addResult.isNewEntry) {
-        ASSERT(addResult.iterator->get() == string.ptr());
-        string->setIsAtom(true);
-        return uncheckedDowncast<AtomStringImpl>(WTF::move(string));
-    }
-
-    return *uncheckedDowncast<AtomStringImpl>(addResult.iterator->get());
+    // The caller's reference is dropped on return rather than moved into the result. On a new entry
+    // that costs one ref/deref pair over moving it, which only the cold path pays, and the counts end
+    // up the same either way: the table's reference plus the one being returned.
+    return addStringEntry(string);
 }
 
-Ref<AtomStringImpl> AtomStringImpl::addSlowCase(AtomStringTable& stringTable, StringImpl& string)
+Ref<AtomStringImpl> AtomStringImpl::addSlowCase(AtomStringTable&, StringImpl& string)
 {
-    // This check is necessary for null symbols.
-    // Their length is zero, but they are not AtomStringImpl.
-    if (!string.length())
-        return *uncheckedDowncast<AtomStringImpl>(StringImpl::empty());
-
-    if (string.isStatic()) {
-        AtomStringTableLocker locker;
-        return addStatic(locker, stringTable.table(), string);
-    }
-
-    if (string.isSymbol()) {
-        AtomStringTableLocker locker;
-        return addSymbol(locker, stringTable.table(), string);
-    }
-
-    ASSERT_WITH_MESSAGE(!string.isAtom(), "AtomStringImpl should not hit the slow case if the string is already an atom.");
-
-    AtomStringTableLocker locker;
-    auto addResult = stringTable.table().add(&string);
-
-    if (addResult.isNewEntry) {
-        ASSERT(addResult.iterator->get() == &string);
-        string.setIsAtom(true);
-    }
-
-    return *uncheckedDowncast<AtomStringImpl>(addResult.iterator->get());
-}
-
-// When removing a string from the table, we know it's already the one in the table, so no need for a string equality check.
-struct AtomStringTableRemovalHashTranslator {
-    static unsigned hash(const AtomStringImpl* string) { return string->hash(); }
-    static bool equal(const AtomStringTable::StringEntry& a, const AtomStringImpl* b) { return a == b; }
-};
-
-void AtomStringImpl::remove(AtomStringImpl* string)
-{
-    ASSERT(string->isAtom());
-    AtomStringTableLocker locker;
-    auto& atomStringTable = stringTable();
-    auto iterator = atomStringTable.find<AtomStringTableRemovalHashTranslator>(string);
-    bool wasRemoved = atomStringTable.remove(iterator);
-    RELEASE_ASSERT(wasRemoved, "The string being removed is an atom in the string table of an other thread!");
+    return addSlowCase(string);
 }
 
 RefPtr<AtomStringImpl> AtomStringImpl::lookUpSlowCase(StringImpl& string)
@@ -469,9 +450,14 @@ RefPtr<AtomStringImpl> AtomStringImpl::lookUpSlowCase(StringImpl& string)
     if (!string.length())
         return uncheckedDowncast<AtomStringImpl>(StringImpl::empty());
 
-    AtomStringTableLocker locker;
-    auto& atomStringTable = stringTable();
+    auto& table = AtomStringTable::singleton();
+    Locker locker { table.lock().read() };
+    auto& atomStringTable = table.tableUnderSharedLock();
     auto iterator = atomStringTable.find(&string);
+    // Shared, because this only reads. The reference is taken before the locker goes out of scope,
+    // which is what keeps the entry alive: an entry is only removed by
+    // AtomStringTable::releaseAndRemoveIfNeeded() under the exclusive lock, so no removal can run
+    // while any reader is counted. Neither the iterator nor the entry pointer may outlive this scope.
     if (iterator != atomStringTable.end())
         return uncheckedDowncast<AtomStringImpl>(iterator->get());
     return nullptr;
@@ -489,24 +475,26 @@ RefPtr<AtomStringImpl> AtomStringImpl::add(std::span<const char8_t> characters)
 
 RefPtr<AtomStringImpl> AtomStringImpl::lookUp(std::span<const Latin1Character> characters)
 {
-    AtomStringTableLocker locker;
-    auto& table = stringTable();
+    auto& table = AtomStringTable::singleton();
+    Locker locker { table.lock().read() };
+    auto& atomStringTable = table.tableUnderSharedLock();
 
     Latin1Buffer buffer { characters };
-    auto iterator = table.find<Latin1BufferTranslator>(buffer);
-    if (iterator != table.end())
+    auto iterator = atomStringTable.find<Latin1BufferTranslator>(buffer);
+    if (iterator != atomStringTable.end())
         return uncheckedDowncast<AtomStringImpl>(iterator->get());
     return nullptr;
 }
 
 RefPtr<AtomStringImpl> AtomStringImpl::lookUp(std::span<const char16_t> characters)
 {
-    AtomStringTableLocker locker;
-    auto& table = stringTable();
+    auto& table = AtomStringTable::singleton();
+    Locker locker { table.lock().read() };
+    auto& atomStringTable = table.tableUnderSharedLock();
 
     UTF16Buffer buffer { characters };
-    auto iterator = table.find<UTF16BufferTranslator>(buffer);
-    if (iterator != table.end())
+    auto iterator = atomStringTable.find<UTF16BufferTranslator>(buffer);
+    if (iterator != atomStringTable.end())
         return uncheckedDowncast<AtomStringImpl>(iterator->get());
     return nullptr;
 }
@@ -514,8 +502,9 @@ RefPtr<AtomStringImpl> AtomStringImpl::lookUp(std::span<const char16_t> characte
 #if ASSERT_ENABLED
 bool AtomStringImpl::isInAtomStringTable(StringImpl* string)
 {
-    AtomStringTableLocker locker;
-    return stringTable().contains(string);
+    auto& table = AtomStringTable::singleton();
+    Locker locker { table.lock().read() };
+    return table.tableUnderSharedLock().contains(string);
 }
 #endif
 

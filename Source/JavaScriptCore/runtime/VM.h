@@ -631,7 +631,7 @@ public:
     bool* addressOfMightBeExecutingTaintedCode() LIFETIME_BOUND { return &m_mightBeExecutingTaintedCode; }
     void setMightBeExecutingTaintedCode(bool value = true) { m_mightBeExecutingTaintedCode = value; }
 
-    AtomStringTable* atomStringTable() const { return m_atomStringTable; }
+    AtomStringTable* atomStringTable() const { return &AtomStringTable::singleton(); }
     WTF::SymbolRegistry& symbolRegistry() { return m_symbolRegistry.get(); }
     WTF::SymbolRegistry& privateSymbolRegistry() { return m_privateSymbolRegistry.get(); }
 

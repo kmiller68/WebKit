@@ -6072,8 +6072,8 @@ void SpeculativeJIT::compile(Node* node)
             if (canBeRope(node->child2()))
                 slowPath.append(branchIfRopeStringImpl(implGPR));
             slowPath.append(branchTest32(
-                Zero, Address(implGPR, StringImpl::flagsOffset()),
-                TrustedImm32(StringImpl::flagIsAtom())));
+                Zero, Address(implGPR, StringImpl::refCountOffset()),
+                TrustedImm32(StringImpl::refCountFlagIsAtom())));
             break;
         }
         case UntypedUse: {
@@ -6083,8 +6083,8 @@ void SpeculativeJIT::compile(Node* node)
             if (canBeRope(node->child2()))
                 slowPath.append(branchIfRopeStringImpl(implGPR));
             slowPath.append(branchTest32(
-                Zero, Address(implGPR, StringImpl::flagsOffset()),
-                TrustedImm32(StringImpl::flagIsAtom())));
+                Zero, Address(implGPR, StringImpl::refCountOffset()),
+                TrustedImm32(StringImpl::refCountFlagIsAtom())));
             auto hasUniquedImpl = jump();
 
             isNotString.link(this);
@@ -8483,7 +8483,7 @@ void SpeculativeJIT::compileGetByValWithThisMegamorphic(Node* node)
     loadPtr(Address(subscriptRegs.payloadGPR(), JSString::offsetOfValue()), scratch4GPR);
     if (canBeRope(m_graph.child(node, 2)))
         slowCases.append(branchIfRopeStringImpl(scratch4GPR));
-    slowCases.append(branchTest32(Zero, Address(scratch4GPR, StringImpl::flagsOffset()), TrustedImm32(StringImpl::flagIsAtom())));
+    slowCases.append(branchTest32(Zero, Address(scratch4GPR, StringImpl::refCountOffset()), TrustedImm32(StringImpl::refCountFlagIsAtom())));
 
     slowCases.append(loadMegamorphicProperty(vm(), baseGPR, scratch4GPR, nullptr, scratch3GPR, scratch1GPR, scratch2GPR, scratch3GPR));
     addSlowPathGenerator(slowPathCall(slowCases, this, operationGetByValWithThisMegamorphicGeneric, scratch3GPR, LinkableConstant::globalObject(*this, node), baseGPR, subscriptRegs, thisValueRegs));

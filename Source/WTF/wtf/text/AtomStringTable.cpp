@@ -23,17 +23,71 @@
 #include "config.h"
 #include <wtf/text/AtomStringTable.h>
 
+#include <wtf/NeverDestroyed.h>
+#include <wtf/text/AtomStringImpl.h>
+
 namespace WTF {
 
-AtomStringTable::~AtomStringTable()
+struct AtomStringTableRemovalHashTranslator {
+    static unsigned hash(const StringImpl* string) { return string->existingHash(); }
+    static bool equal(const AtomStringTable::StringEntry& a, const StringImpl* b) { return a == b; }
+};
+
+AtomStringTable& AtomStringTable::singleton()
 {
-    for (const auto& string : m_table) {
-        // Static strings are immortal and their atom flag was set at construction
-        // time (via StringImpl::StringAtom), not by setIsAtom(). Skip them here
-        // since setIsAtom() asserts !isStatic().
-        if (!string->isStatic())
-            string->setIsAtom(false);
-    }
+    static LazyNeverDestroyed<AtomStringTable> table;
+    static std::once_flag flag;
+    std::call_once(flag, [&] {
+        table.construct();
+    });
+    return table;
 }
 
+void AtomStringTable::reserveInitialCapacityIfEmpty(unsigned keyCount)
+{
+    Locker locker { m_lock.write() };
+    if (m_table.isEmpty())
+        m_table.reserveInitialCapacity(keyCount);
 }
+
+bool AtomStringTable::releaseAndRemoveIfNeeded(AtomStringImpl* string)
+{
+    ASSERT(string->isAtom());
+    auto& table = singleton();
+
+    // Exclusive for the whole function, with no read-locked fast path: the exchangeSub below is the
+    // decision to destroy, not a test of one made elsewhere. Under a shared lock two threads could
+    // each observe a count of 2 and both destroy, and a concurrent reader could take a reference to a
+    // string already committed to destruction.
+    Locker locker { table.m_lock.write() };
+
+    // The caller has not decremented: for a uniqued string the drop to the table's own reference has
+    // to happen here, under the lock, so that exactly one thread observes it. add() can have taken a
+    // reference between deref()'s load and our acquiring the lock, in which case this decrement just
+    // drops the caller's and the string lives on. Compare counts rather than raw values, because the
+    // low bits of the reference count hold the string kind.
+    //
+    // Acquire, because when we are the one destroying we go on to read the string's flags and run
+    // its destructor, and this is where we pick up the writes of a thread that took a reference
+    // and dropped it again after deref() decided. There is no need for a release half: the only
+    // thread that can destroy an atom string is one that reached this function, so it acquires the
+    // lock we are about to release, and the atom bit is never cleared once set.
+    auto oldRefCount = string->m_refCount.exchangeSub(StringImpl::s_refCountIncrement, std::memory_order_acquire);
+
+    if (oldRefCount / StringImpl::s_refCountIncrement != 2)
+        return false;
+
+    // Ours is gone and the table's is the only one left, so drop the entry and the reference it
+    // holds. Nothing can find the string to revive it after this, because finding it means holding
+    // this lock.
+    if (string->length()) {
+        auto iterator = table.m_table.find<AtomStringTableRemovalHashTranslator>(string);
+        ASSERT(iterator != table.m_table.end());
+        table.m_table.remove(iterator);
+    }
+    string->m_refCount.exchangeSub(StringImpl::s_refCountIncrement, std::memory_order_relaxed);
+    ASSERT(!string->refCount());
+    return true;
+}
+
+} // namespace WTF

@@ -31,6 +31,7 @@
 #include <wtf/StdLibExtras.h>
 #include <wtf/ZippedRange.h>
 #include <wtf/text/AtomString.h>
+#include <wtf/text/AtomStringTable.h>
 #include <wtf/text/CString.h>
 #include <wtf/text/ExternalStringImpl.h>
 #include <wtf/text/ParsingUtilities.h>
@@ -123,11 +124,9 @@ StringImpl::~StringImpl()
 
     STRING_STATS_REMOVE_STRING(*this);
 
-    if (isAtom()) {
-        ASSERT(!isSymbol());
-        if (length())
-            AtomStringImpl::remove(static_cast<AtomStringImpl*>(this));
-    } else if (isSymbol()) {
+    // Atom string removal is handled by AtomStringTable::releaseAndRemoveIfNeeded()
+    // before destroy() is called via destroyIfNeeded().
+    if (isSymbol()) {
         auto& symbol = static_cast<SymbolImpl&>(*this);
         if (CheckedPtr symbolRegistry = symbol.symbolRegistry())
             SUPPRESS_UNCOUNTED_ARG symbolRegistry->remove(*symbol.asRegisteredSymbolImpl());
@@ -158,6 +157,22 @@ void StringImpl::destroy(StringImpl* stringImpl)
 {
     stringImpl->~StringImpl();
     StringImplMalloc::free(stringImpl);
+}
+
+void StringImpl::destroyIfNeeded(uint32_t oldRefCount)
+{
+    // An atom string has to leave the table that uniques it before it can be destroyed, and only
+    // the table's lock makes that decision safe: a racing add() can revive the string, in which
+    // case it keeps the reference we were about to drop.
+    if (isAtom()) {
+        if (AtomStringTable::releaseAndRemoveIfNeeded(static_cast<AtomStringImpl*>(this)))
+            StringImpl::destroy(this);
+        return;
+    }
+
+    // Nothing uniques this string, so no other thread can find it and our reference is the last.
+    ASSERT(refCount() == 1);
+    StringImpl::destroy(this);
 }
 
 Ref<StringImpl> StringImpl::createWithoutCopyingNonEmpty(std::span<const char16_t> characters)
@@ -296,7 +311,7 @@ Ref<StringImpl> StringImpl::createStaticStringImpl(std::span<const Latin1Charact
         return *empty();
     Ref<StringImpl> result = createInternal(characters);
     result->hash();
-    result->m_refCount |= s_refCountFlagIsStaticString;
+    result->makeStatic();
     return result;
 }
 
@@ -306,7 +321,7 @@ Ref<StringImpl> StringImpl::createStaticStringImpl(std::span<const char16_t> cha
         return *empty();
     Ref<StringImpl> result = create8BitIfPossible(characters);
     result->hash();
-    result->m_refCount |= s_refCountFlagIsStaticString;
+    result->makeStatic();
     return result;
 }
 
@@ -1617,13 +1632,7 @@ NEVER_INLINE unsigned StringImpl::hashSlowCase() const
 
 unsigned StringImpl::concurrentHash() const
 {
-    unsigned hash;
-    if (is8Bit())
-        hash = StringHasher::computeHashAndMaskTop8Bits(span8());
-    else
-        hash = StringHasher::computeHashAndMaskTop8Bits(span16());
-    ASSERT(((hash << s_flagCount) >> s_flagCount) == hash);
-    return hash;
+    return hash();
 }
 
 SUPPRESS_NODELETE bool equalIgnoringNullity(std::span<const char16_t> a, StringImpl* b)

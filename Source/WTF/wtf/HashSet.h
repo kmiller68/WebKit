@@ -128,6 +128,20 @@ public:
     //   static bool equal(const ValueType&, const T&);
     //   static translate(ValueType&, const T&, unsigned hashCode);
     template<typename HashTranslator, typename T> AddResult add(const T&) LIFETIME_BOUND;
+
+    // A two-phase form of the translated add() above, for callers that need the probe and the
+    // insertion to happen under different kinds of exclusion. findSlotForInsert() only reads the
+    // table; addAtSlot() inserts at the position it returned without probing again.
+    //
+    // The position is only valid while the table is unmutated, so a caller that lets any insert or
+    // remove happen in between has to probe again. findSlotForInsert() also requires the table to
+    // already have storage, which capacity() reports.
+    //
+    // The position type is left to be deduced rather than named here, because HashSet also backs
+    // table implementations that offer no two-phase add, and naming it would demand the type of all
+    // of them.
+    template<typename HashTranslator, typename T> auto findSlotForInsert(const T&) const;
+    template<typename HashTranslator, typename FullLookupType, typename T> AddResult addAtSlot(FullLookupType, const T&) LIFETIME_BOUND;
     
     // An alternate version of translated add(), ensure() will still do translation
     // by hashing and comparing with some other type, to avoid the cost of type
@@ -384,6 +398,20 @@ template<typename HashTranslator>
 inline auto HashSet<Value, HashFunctions, Traits, TableTraits, shouldValidateKey>::add(const auto& value) LIFETIME_BOUND -> AddResult
 {
     return m_impl.template addPassingHashCode<HashSetTranslatorAdapter<HashTranslator>, shouldValidateKey>(value, [&]() ALWAYS_INLINE_LAMBDA { return value; });
+}
+
+template<typename Value, typename HashFunctions, typename Traits, typename TableTraits, ShouldValidateKey shouldValidateKey>
+template<typename HashTranslator, typename T>
+inline auto HashSet<Value, HashFunctions, Traits, TableTraits, shouldValidateKey>::findSlotForInsert(const T& value) const
+{
+    return m_impl.template findSlotForInsert<HashSetTranslatorAdapter<HashTranslator>, shouldValidateKey>(value);
+}
+
+template<typename Value, typename HashFunctions, typename Traits, typename TableTraits, ShouldValidateKey shouldValidateKey>
+template<typename HashTranslator, typename FullLookupType, typename T>
+inline auto HashSet<Value, HashFunctions, Traits, TableTraits, shouldValidateKey>::addAtSlot(FullLookupType lookupResult, const T& value) LIFETIME_BOUND -> AddResult
+{
+    return m_impl.template addAtSlot<HashSetTranslatorAdapter<HashTranslator>, shouldValidateKey>(lookupResult, value, [&]() ALWAYS_INLINE_LAMBDA { return value; });
 }
 
 template<typename T, typename U, typename V, typename W, ShouldValidateKey shouldValidateKey>
