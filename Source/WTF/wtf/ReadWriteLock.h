@@ -66,7 +66,8 @@ class WriteLockView;
 //    eventual-fairness handoff.
 //
 // A read lock is not recursive: taking a second read lock on a thread that already holds one
-// deadlocks if a writer announces itself in between.
+// deadlocks if a writer announces itself in between, and upgrading one of them deadlocks outright,
+// since the upgrade then waits for a departure only the upgrading thread can make.
 class WTF_CAPABILITY_LOCK ReadWriteLock {
     WTF_MAKE_NONMOVABLE(ReadWriteLock);
     WTF_DEPRECATED_MAKE_FAST_ALLOCATED(ReadWriteLock);
@@ -173,18 +174,17 @@ private:
     //
     // Giving up the read lock on failure is also what makes both outcomes expressible to clang's
     // thread-safety analysis, which can say "acquires exclusive if this returned true" but has no way
-    // to say "releases shared only if it returned false". It fits what this is for either way: read
-    // cheaply, discover a write is needed, and upgrade if that is free rather than holding readers off
-    // while queueing for the write lock.
+    // to say "releases shared only if it returned false".
     //
-    // There is deliberately no blocking upgrade(). Waiting for m_writerLock would deadlock against a
-    // writer that owns the phase, because that writer is waiting for this thread's read lock to be
-    // released. For the same reason two threads upgrading at once can both keep failing, so a caller
-    // that retries needs its own way out.
+    // This fails only to a writer that already holds m_writerLock. Otherwise it claims the phase and
+    // waits out the readers already inside, exactly as writeLock() does. What it must never do is wait
+    // for m_writerLock itself: the writer holding it may be draining, and what that writer is waiting
+    // for is this thread's read lock. Failing is also what keeps two threads upgrading at once from
+    // deadlocking, since the one that loses releases its read lock, which is one of the departures the
+    // winner is draining for.
     bool tryUpgrade() WTF_RELEASES_SHARED_LOCK() WTF_ACQUIRES_LOCK_IF(true) WTF_IGNORES_THREAD_SAFETY_ANALYSIS
     {
-        // This must not wait, because a writer holding m_writerLock may be draining, and what it is
-        // waiting for is us. Taking it also establishes that no writer owns the phase.
+        // Taking this establishes that no writer owns the phase. It must not wait; see above.
         if (!m_writerLock.tryLock()) {
             // Release through the normal path, which is the one that can wake exactly that writer.
             readUnlock();
@@ -193,16 +193,16 @@ private:
         uint32_t target = beginPhase();
         // Our own read lock is counted in m_readersIn and no readUnlock is coming for it, so count it
         // out here or the drain below would be waiting for us. Being counted out is also what makes
-        // the read lock gone either way, and it is why the uncontended upgrade needs no waiting at
-        // all: if we were the only reader, m_readersOut has already reached the target.
-        m_readersOut.exchangeAdd(s_readerIncrement, std::memory_order_relaxed);
-        if ((m_readersOut.load(std::memory_order_acquire) & s_readerCountMask) == target) [[likely]]
-            return true;
-        // Other readers were already inside and we are not willing to wait for them. Give the phase
-        // back, releasing any readers that queued behind us.
-        endPhase();
-        m_writerLock.unlock();
-        return false;
+        // the read lock gone either way, and it is why an upgrade with no other reader inside needs no
+        // waiting at all: m_readersOut has already reached the target.
+        //
+        // Acquire for the same reason writeLock() acquires where it checks the target: reaching it
+        // means every reader counted at the phase claim has departed, and this is where the releases
+        // in their readUnlock() become visible.
+        uint32_t readersOutIncludingUs = m_readersOut.exchangeAdd(s_readerIncrement, std::memory_order_acquire) + s_readerIncrement;
+        if ((readersOutIncludingUs & s_readerCountMask) != target) [[unlikely]]
+            writeLockSlow(target);
+        return true;
     }
 
     // m_readersIn: bits 31-8 readers entered, 7-4 phase id, 1 has parked readers, 0 writer present.
