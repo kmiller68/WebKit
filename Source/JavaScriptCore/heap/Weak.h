@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Apple Inc. All rights reserved.
+ * Copyright (C) 2009-2019, 2026 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -82,6 +82,10 @@ public:
     [[nodiscard]] inline WeakImpl* leakImpl();
     WeakImpl* unsafeImpl() const { return impl(); }
     void clear();
+
+    // This should generally only be called from a finalizer. Callers must be GC aware, so this never
+    // runs while the world is stopped. On the mutator, clear() is faster and does better bookkeeping.
+    void clearConcurrently();
 
 private:
     static inline WeakImpl* hashTableDeletedValue();

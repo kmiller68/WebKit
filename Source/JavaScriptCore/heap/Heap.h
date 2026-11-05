@@ -521,8 +521,11 @@ public:
 
     unsigned weakBlockCount() const { return m_weakBlockCount; }
 
-    // Guards changes to each WeakSet's m_blocks, so that WeakSet::finalizeDeadHandles() can walk a
-    // WeakSet off the mutator. Never hold it across a finalizer, since clear() may take it.
+    // Lets WeakSet::finalizeDeadHandles() and Weak::clearConcurrently() run off the mutator. A sweep
+    // running finalizeDeadHandles() off the mutator must finish before the next collection reaps.
+    // clearConcurrently()'s callers must be GC aware, so it never runs while the world is stopped, which
+    // is when marking and reaping walk the weak blocks. Never hold it across a finalizer, since clearing a
+    // handle may take it.
     Lock& weakBlockLock() WTF_RETURNS_LOCK(m_weakBlockLock) { return m_weakBlockLock; }
 
 #if ENABLE(RESOURCE_USAGE)
@@ -747,11 +750,12 @@ private:
     void runCollectionEpilogue();
     void sweepEagerlyInEpilogue();
     
-    void addDetachedWeakBlock(WeakBlock*);
-    void releaseDetachedWeakBlock(WeakBlock*);
-    void returnWeakBlockToPool(WeakBlock*);
-    WeakBlock* takeWeakBlockFromPool();
-    void destroyAllPooledWeakBlocks();
+    void addDetachedWeakBlock(Locker<Lock>&, WeakBlock*) WTF_REQUIRES_LOCK(m_weakBlockLock);
+    void releaseDetachedWeakBlock(Locker<Lock>&, WeakBlock*, IsConcurrent) WTF_REQUIRES_LOCK(m_weakBlockLock);
+    void returnWeakBlockToPool(Locker<Lock>&, WeakBlock*, IsConcurrent) WTF_REQUIRES_LOCK(m_weakBlockLock);
+    void addWeakBlockToPool(Locker<Lock>&, WeakBlock*) WTF_REQUIRES_LOCK(m_weakBlockLock);
+    WeakBlock* takeWeakBlockFromPool() WTF_REQUIRES_LOCK(m_weakBlockLock);
+    void destroyAllPooledWeakBlocks() WTF_REQUIRES_LOCK(m_weakBlockLock);
     unsigned maxPooledWeakBlocks();
 
     inline void incrementDeferralDepth();
@@ -869,9 +873,9 @@ private:
 #endif
 
     Lock m_weakBlockLock;
-    DoublyLinkedList<WeakBlock> m_detachedWeakBlocks;
-    DoublyLinkedList<WeakBlock> m_pooledWeakBlocks;
-    unsigned m_pooledWeakBlockCount { 0 };
+    DoublyLinkedList<WeakBlock> m_detachedWeakBlocks WTF_GUARDED_BY_LOCK(m_weakBlockLock);
+    DoublyLinkedList<WeakBlock> m_pooledWeakBlocks WTF_GUARDED_BY_LOCK(m_weakBlockLock);
+    unsigned m_pooledWeakBlockCount WTF_GUARDED_BY_LOCK(m_weakBlockLock) { 0 };
     unsigned m_weakBlockCount { 0 };
 
 #if ASSERT_ENABLED
